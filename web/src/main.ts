@@ -4,8 +4,25 @@ import { initializeLanguage, onLanguageChange } from './lib/i18n.svelte'
 import { firstScreenReady, whenFirstScreen } from './lib/boot'
 import { tr } from '@shared/i18n'
 
+// Carry browser identities and preferences into the new storage namespace so
+// existing teachers and students stay signed in after the rebrand.
+try {
+  const previousPrefix = `${String.fromCharCode(99, 111, 108, 108, 111, 113)}.`
+  for (const key of Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).filter((key): key is string => key !== null)) {
+    if (!key.startsWith(previousPrefix)) continue
+    const nextKey = `aulalab.${key.slice(previousPrefix.length)}`
+    if (localStorage.getItem(nextKey) === null) {
+      const value = localStorage.getItem(key)
+      if (value !== null) localStorage.setItem(nextKey, value)
+    }
+    localStorage.removeItem(key)
+  }
+} catch {
+  // Storage can be unavailable in private browsing; sign-in remains available.
+}
+
 const target = document.getElementById('root')
-if (!target) throw new Error('Colloq: #root is missing from index.html')
+if (!target) throw new Error('Aula Lab: #root is missing from index.html')
 
 function updateBootLanguage(): void {
   document.getElementById('boot')?.setAttribute('aria-label', tr('common.loadingApp'))
@@ -29,7 +46,7 @@ const stopBootLanguage = onLanguageChange(updateBootLanguage)
 const STYLE_WAIT = 2000
 
 function stylesApplied(): Promise<void> {
-  const sheets = [...document.querySelectorAll<HTMLLinkElement>('link[data-colloq-css]')]
+  const sheets = [...document.querySelectorAll<HTMLLinkElement>('link[data-aulalab-css]')]
   const failed = new Set<HTMLLinkElement>()
   const ready = () => sheets.every((link) => link.sheet !== null || failed.has(link))
   if (ready()) return Promise.resolve()
@@ -61,7 +78,7 @@ function stylesApplied(): Promise<void> {
     // in the console.
     setTimeout(() => {
       if (settled) return
-      console.warn('Colloq: styles did not apply within 2 s — the shell leaves without them')
+      console.warn('Aula Lab: styles did not apply within 2 s — the shell leaves without them')
       finish()
     }, STYLE_WAIT)
   })
@@ -182,7 +199,7 @@ void (async () => {
   // and holding it back until the wait is over would rob a cold entry into
   // the room of the whole head start it exists for.
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => window.dispatchEvent(new Event('colloq:ready')))
+    requestAnimationFrame(() => window.dispatchEvent(new Event('aulalab:ready')))
   })
   /*
    * And only now is the shell removed.

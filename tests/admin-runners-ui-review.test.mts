@@ -131,7 +131,7 @@ test('the metric lane\'s runs never take this server\'s free notebook cells, and
 test('an outdated machine\'s versions name the server\'s release as the server said it, never the panel bundle\'s', () => {
   assert.match(LIVE, /const homeVersion = \$derived\(machineGroups\?\.find\(\(group\) => group\.machineId === null\)\?\.version \?\? null\)/)
   assert.equal([...LIVE.matchAll(/groupLine\(group, [^)]*\), homeVersion\)|groupLine\(group, 0, homeVersion\)/g)].length, 2)
-  assert.doesNotMatch(LIVE, /__COLLOQ_VERSION__/)
+  assert.doesNotMatch(LIVE, /__AULALAB_VERSION__/)
 })
 
 /* --------------------------------------------------------- the Resources tab */
@@ -490,7 +490,7 @@ test('the dialog says when its commands carry this server\'s loopback, and takes
   assert.match(connect, /\{#if minted\.loopback\} <p [^>]*role="alert"> <Icon name="alert" size=\{14\} class="mt-0\.5 shrink-0" \/> <span>\{tr\('admin\.runners\.connect\.loopback'\)\}<\/span> <\/p> \{\/if\}/)
   assert.match(translate('ru', 'admin.runners.connect.loopback'), /PUBLIC_URL/)
   assert.doesNotMatch(translate('en', 'admin.runners.connect.loopback'), CYRILLIC)
-  // The door's bound and colloq-host's: the dialog refuses nothing they allow.
+  // The door's bound and aulalab-host's: the dialog refuses nothing they allow.
   const store = read('server/src/competitions/remote/store.ts')
   const max = Number(/export const REMOTE_CODE_MACHINES_MAX = (\d+)/.exec(store)?.[1])
   assert.ok(max > 0)

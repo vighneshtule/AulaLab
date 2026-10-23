@@ -46,11 +46,11 @@ export function createInventoryReader(run: Command = command, clock = Date.now) 
     const cached = names.get(name)
     if (cached && clock() - cached.at < 30_000) return cached.pending
     const pending = (async () => {
-      const image = (await run(['image', 'inspect', `colloq-kernel:${name}`, '--format', '{{.Id}}'])).trim()
+      const image = (await run(['image', 'inspect', `aulalab-kernel:${name}`, '--format', '{{.Id}}'])).trim()
       if (!/^sha256:[a-f0-9]{64}$/.test(image)) throw new Error('Environment image is unavailable')
       let source = images.get(image)
       if (!source) {
-        const container = `colloq-inventory-${randomUUID()}`
+        const container = `aulalab-inventory-${randomUUID()}`
         source = (async () => {
           try {
             return await run(['run', '--rm', '--pull=never', '--name', container,

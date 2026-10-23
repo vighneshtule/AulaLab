@@ -84,7 +84,7 @@ import { parseRemotePlacementKey, type RemoteKernelRole } from './remote-kernels
  * in TUNNEL_PROTOCOL_HEADER, and HELLO and WELCOME carry it again.
  */
 export const TUNNEL_PROTOCOL = 1
-export const TUNNEL_PROTOCOL_HEADER = 'X-Colloq-Tunnel-Protocol'
+export const TUNNEL_PROTOCOL_HEADER = 'X-AulaLab-Tunnel-Protocol'
 
 /** The upgrade's path under REMOTE_API_BASE: `GET tunnel` with `Authorization: Bearer cr1.…` (§4.2). */
 export const TUNNEL_PATH = 'tunnel'

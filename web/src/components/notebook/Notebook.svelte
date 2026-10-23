@@ -630,8 +630,8 @@
       if (!cellId || !ids.current.includes(cellId)) return
       void tick().then(() => follow(cellId))
     }
-    window.addEventListener('colloq:cell-settled', onSettled)
-    return () => window.removeEventListener('colloq:cell-settled', onSettled)
+    window.addEventListener('aulalab:cell-settled', onSettled)
+    return () => window.removeEventListener('aulalab:cell-settled', onSettled)
   })
 
   $effect(() => () => {
@@ -787,7 +787,7 @@
     // Selection can construct a previously unseen cell. Its window listener
     // must exist before handing focus to it (including Shift+Enter handoffs).
     void tick().then(() => {
-      window.dispatchEvent(new CustomEvent('colloq:enter-cell', { detail: { cellId: id } }))
+      window.dispatchEvent(new CustomEvent('aulalab:enter-cell', { detail: { cellId: id } }))
     })
   }
 
@@ -904,8 +904,8 @@
       select(plan.cellId, detail.scroll !== false)
       if (detail.focus !== false) enter(plan.cellId)
     }
-    window.addEventListener('colloq:step-cell', onStep)
-    return () => window.removeEventListener('colloq:step-cell', onStep)
+    window.addEventListener('aulalab:step-cell', onStep)
+    return () => window.removeEventListener('aulalab:step-cell', onStep)
   })
 
   /* --------------------------------------------------------- cold frame */
@@ -1079,7 +1079,7 @@
    * original once and lied about an open cell in a lecture.
    */
   function runCell(cellId: string, step: boolean): void {
-    window.dispatchEvent(new CustomEvent('colloq:run-cell', { detail: { cellId, step } }))
+    window.dispatchEvent(new CustomEvent('aulalab:run-cell', { detail: { cellId, step } }))
   }
 
   /**
@@ -1137,7 +1137,7 @@
      * a note, a `run` went out from here that the server silently throws away.
      *
      * Now the cell decides: all the checks, all the refusal words and the step
-     * are in one place (CellView · colloq:run-cell). As a bonus, Cmd+Enter
+     * are in one place (CellView · aulalab:run-cell). As a bonus, Cmd+Enter
      * works from here too — the notebook footer promises it in its hint line,
      * and the modifier guard below used to swallow it whole.
      */

@@ -14,14 +14,14 @@ workspace/
 kernel/environments/.*.built
 
 # Локальный запуск через make run.
-.colloq.pid
-.colloq.log
+.aulalab.pid
+.aulalab.log
 
-# Состояние супервизора занятия (make dev, colloq start): расписка идущей
+# Состояние супервизора занятия (make dev, aulalab start): расписка идущей
 # сессии, штампы сборки и образа ядра. Машинное, не исходник.
-.colloq/
+.aulalab/
 backups/
-# cloudflared, скачанный colloq для --share и host (cli/src/launch-cloudflared.ts):
+# cloudflared, скачанный aulalab для --share и host (cli/src/launch-cloudflared.ts):
 # в клоне каталог состояния — сам клон, и бинарь в сорок мегабайт ложится в bin/.
 /bin/
 

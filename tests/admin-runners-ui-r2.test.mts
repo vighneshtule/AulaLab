@@ -705,7 +705,7 @@ test('#0 the hidden test is said to go only to trusted machines that are online'
   assert.deepEqual(sealedWarning({ ...where, machines: [machine({ name: 'vast-any' })] }).trusted, ['vast-any'])
 })
 
-test('#0 the bare machine\'s command says what colloq-host does: Docker, the NVIDIA Container Toolkit and a driver check — no driver install', () => {
+test('#0 the bare machine\'s command says what aulalab-host does: Docker, the NVIDIA Container Toolkit and a driver check — no driver install', () => {
   const ru = translate('ru', 'admin.runners.connect.bare', { min: 580 })
   assert.doesNotMatch(ru, /поставит Docker и драйвер карт/)
   assert.match(ru, /Container Toolkit/)

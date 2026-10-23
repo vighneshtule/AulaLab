@@ -363,8 +363,8 @@ test('an open notebook does not travel a second time as a file', () => {
    * appear under any logic; without a file on disk, neither, simply because
    * there is nothing to read.
    */
-  fs.writeFileSync(path.join(sessionDir(id), 'Тетрадь.ipynb'), '{"cells": [], "metadata": {}}')
-  editing(id, 'p_ada', 'Тетрадь.ipynb')
+  fs.writeFileSync(path.join(sessionDir(id), 'Notebook.ipynb'), '{"cells": [], "metadata": {}}')
+  editing(id, 'p_ada', 'Notebook.ipynb')
   const text = buildContext(id, [], 'p_ada')
   assert.ok(!text.includes('OPEN FILE'), 'the notebook went out as a file as well')
 })

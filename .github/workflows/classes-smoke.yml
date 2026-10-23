@@ -5,10 +5,10 @@
 # covers, as k8s-e2e.yml runs. Images are built locally; this workflow never
 # pushes them.
 #
-# What the job stands for: a class machine as colloq-host runs one (its agent
+# What the job stands for: a class machine as aulalab-host runs one (its agent
 # in a container on the host's network, as uid 1000 with the docker socket's
 # group, its tree at the same path on the host), the real docker CLI and
-# daemon, and colloq-kernel:base with the real jupyter_server and ipykernel.
+# daemon, and aulalab-kernel:base with the real jupyter_server and ipykernel.
 # Home is the test process itself, on KERNEL_BACKEND=test: it starts no rooms
 # of its own and installs no chains beside the agent's. Since 0.26 a class's
 # council computes there too: an epoch of real pandas loaded into a pool of
@@ -94,8 +94,8 @@ jobs:
       # from the agent's own in production: it needs nsenter.
       - name: Build the base kernel and the agent's image locally
         run: |
-          docker build --build-arg KERNEL_ENV=base -t colloq-kernel:base kernel
-          docker build -t colloq-runner:classes-smoke - <<'EOF'
+          docker build --build-arg KERNEL_ENV=base -t aulalab-kernel:base kernel
+          docker build -t aulalab-runner:classes-smoke - <<'EOF'
           FROM docker:28-cli AS cli
           FROM node:22-bookworm-slim
           COPY --from=cli /usr/local/bin/docker /usr/local/bin/docker
@@ -110,8 +110,8 @@ jobs:
         id: parity
         timeout-minutes: 85
         env:
-          COLLOQ_CLASSES_DOCKER_TEST: '1'
-          COLLOQ_CLASSES_DOCKER_LOGS: ${{ runner.temp }}/classes-docker-logs
+          AULALAB_CLASSES_DOCKER_TEST: '1'
+          AULALAB_CLASSES_DOCKER_LOGS: ${{ runner.temp }}/classes-docker-logs
         run: node --import tsx --import ./tests/_cli.mts --test --test-reporter=spec --test-force-exit --test-concurrency=1 tests/classes-docker.test.mts
       # What a run cut short left running (the agent, the class containers):
       # their logs, read before anything removes them.
@@ -120,7 +120,7 @@ jobs:
         run: |
           dir="$RUNNER_TEMP/classes-docker-logs/containers"
           mkdir -p "$dir"
-          for id in $(docker ps -aq --filter label=colloq.test=classes-docker) $(docker ps -aq --filter label=colloq.kind=class-kernel); do
+          for id in $(docker ps -aq --filter label=aulalab.test=classes-docker) $(docker ps -aq --filter label=aulalab.kind=class-kernel); do
             name="$(docker inspect --format '{{.Name}}' "$id" | tr -d /)"
             docker logs --timestamps "$id" > "$dir/$name.log" 2>&1 || true
           done
@@ -139,11 +139,11 @@ jobs:
         env:
           PARITY: ${{ steps.parity.outcome }}
         run: |
-          docker ps -a --filter label=colloq.test=classes-docker --format '{{.Names}} {{.Status}}' || true
-          docker ps -a --filter label=colloq.kind=class-kernel --format '{{.Names}} {{.Status}}' || true
-          docker network ls --filter label=colloq.kind=class-network --format '{{.Name}}' || true
-          docker image ls --no-trunc colloq-kernel || true
-          left="$( { docker ps -aq --filter label=colloq.test=classes-docker; docker ps -aq --filter label=colloq.kind=class-kernel; docker network ls -q --filter label=colloq.kind=class-network; } 2>/dev/null || true)"
+          docker ps -a --filter label=aulalab.test=classes-docker --format '{{.Names}} {{.Status}}' || true
+          docker ps -a --filter label=aulalab.kind=class-kernel --format '{{.Names}} {{.Status}}' || true
+          docker network ls --filter label=aulalab.kind=class-network --format '{{.Name}}' || true
+          docker image ls --no-trunc aulalab-kernel || true
+          left="$( { docker ps -aq --filter label=aulalab.test=classes-docker; docker ps -aq --filter label=aulalab.kind=class-kernel; docker network ls -q --filter label=aulalab.kind=class-network; } 2>/dev/null || true)"
           if [ "$PARITY" = success ] && [ -n "$left" ]; then
             echo "::error::the run passed and left containers or networks on the daemon"
             exit 1

@@ -7,7 +7,7 @@ import { once } from 'node:events'
 import { createExportServer } from '../runtime/src/export-sidecar.ts'
 
 async function fixture(run: (url: string, out: string, result: string) => Promise<void>, kind?: 'resolve' | 'verify' | 'notebook', maxBytes?: number) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-export-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-export-'))
   const out = path.join(root, 'out'); const result = path.join(root, 'result')
   fs.mkdirSync(out); fs.mkdirSync(result)
   const server = createExportServer({ source: out, destination: result, token: 'secret-token', kind, maxBytes })

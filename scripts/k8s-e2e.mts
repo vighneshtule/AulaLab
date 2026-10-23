@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * The end-to-end check of Colloq installed by its Helm chart, against a live
+ * The end-to-end check of Aula Lab installed by its Helm chart, against a live
  * cluster: .github/workflows/k8s-e2e.yml builds one with k3d, but any cluster
  * with the chart installed in a disposable namespace will do.
  *
@@ -20,11 +20,11 @@
  *      (RUNTIME_COLOCATE_WITH_APP).
  *
  * Claiming makes this script the owner of the instance, so it refuses a
- * namespace that is not labelled colloq.dev/e2e=disposable: pointed at a real
+ * namespace that is not labelled aulalab.dev/e2e=disposable: pointed at a real
  * installation by mistake, it stops before it touches anything. Its seminar
  * and competition are removed at the end.
  *
- *   KUBECONFIG=… K8S_E2E_NAMESPACE=colloq-e2e node --import tsx scripts/k8s-e2e.mts
+ *   KUBECONFIG=… K8S_E2E_NAMESPACE=aulalab-e2e node --import tsx scripts/k8s-e2e.mts
  *
  *   KUBECONFIG           the cluster; required: the default kubeconfig is never read
  *   K8S_E2E_NAMESPACE    the chart's namespace; required
@@ -44,7 +44,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 /** The label a namespace must carry before this script claims the instance in it. */
-export const DISPOSABLE_LABEL = 'colloq.dev/e2e'
+export const DISPOSABLE_LABEL = 'aulalab.dev/e2e'
 /** Submission states that are final (shared/competitions.ts · SubmissionState). */
 const FINAL = new Set(['scored', 'notebookFailed', 'rejected', 'timedOut', 'outOfMemory', 'metricFailed', 'cancelled'])
 
@@ -61,13 +61,13 @@ export function forwardedPort(text: string): number | null {
   return match ? Number(match[1]) : null
 }
 
-/** Whether a Pod must be scheduled next to a Pod labelled colloq.dev/role=app. */
+/** Whether a Pod must be scheduled next to a Pod labelled aulalab.dev/role=app. */
 export function pinnedToApp(pod: Pod): boolean {
   const terms: any[] = pod.spec?.affinity?.podAffinity?.requiredDuringSchedulingIgnoredDuringExecution ?? []
   return terms.some((term) => term?.topologyKey === 'kubernetes.io/hostname' && (
-    term.labelSelector?.matchLabels?.['colloq.dev/role'] === 'app' ||
+    term.labelSelector?.matchLabels?.['aulalab.dev/role'] === 'app' ||
     (term.labelSelector?.matchExpressions ?? []).some((e: any) =>
-      e?.key === 'colloq.dev/role' && e.operator === 'In' && Array.isArray(e.values) && e.values.length === 1 && e.values[0] === 'app')))
+      e?.key === 'aulalab.dev/role' && e.operator === 'In' && Array.isArray(e.values) && e.values.length === 1 && e.values[0] === 'app')))
 }
 
 /**
@@ -80,7 +80,7 @@ export function colocationProblems(pods: Pod[], appNode: string): string[] {
   for (const pod of pods) {
     const claims = [...new Set((pod.spec?.volumes ?? []).map((v) => v.persistentVolumeClaim?.claimName).filter(Boolean))]
     if (claims.length === 0) continue
-    const name = `${pod.metadata?.labels?.['colloq.dev/role'] ?? 'Pod'} ${pod.metadata?.name ?? '?'}`
+    const name = `${pod.metadata?.labels?.['aulalab.dev/role'] ?? 'Pod'} ${pod.metadata?.name ?? '?'}`
     if (!pinnedToApp(pod)) problems.push(`${name} mounts ${claims.join(', ')} without a required podAffinity to the app`)
     const node = pod.spec?.nodeName
     if (node && node !== appNode) problems.push(`${name} runs on ${node}, the app on ${appNode}`)
@@ -116,9 +116,9 @@ function kubectl(args: string[], options: { quiet?: boolean, timeoutMs?: number 
 }
 
 async function appPod(): Promise<{ name: string, node: string, port: number }> {
-  const list = JSON.parse(await kubectl(['get', 'pods', '-l', 'colloq.dev/role=app', '-o', 'json']))
+  const list = JSON.parse(await kubectl(['get', 'pods', '-l', 'aulalab.dev/role=app', '-o', 'json']))
   const running = (list.items ?? []).filter((pod: any) => pod.status?.phase === 'Running' && !pod.metadata?.deletionTimestamp)
-  if (running.length !== 1) throw new Error(`expected one running app Pod (colloq.dev/role=app), found ${running.length}`)
+  if (running.length !== 1) throw new Error(`expected one running app Pod (aulalab.dev/role=app), found ${running.length}`)
   const pod = running[0]
   const ports: any[] = pod.spec.containers.flatMap((c: any) => c.ports ?? [])
   const port = ports.find((p) => p.name === 'http')?.containerPort ?? 3000
@@ -172,7 +172,7 @@ async function staffCookie(base: string, token: string): Promise<string> {
     headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token }) })
   if (!res.ok) throw new Error(`staff sign-in refused (${res.status})`)
   const cookie = (res.headers.get('set-cookie') ?? '').split(';')[0]
-  if (!cookie.startsWith('colloq_staff=')) throw new Error('no staff cookie was issued')
+  if (!cookie.startsWith('aulalab_staff=')) throw new Error('no staff cookie was issued')
   return cookie
 }
 
@@ -253,31 +253,31 @@ async function main(): Promise<void> {
 
   if (!state.claimed) {
     const res = await fetch(`${base}/api/admin/claim`, { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token: await setupToken(app.name), name: 'Kubernetes e2e', email: 'e2e@colloq.test' }) })
+      body: JSON.stringify({ token: await setupToken(app.name), name: 'Kubernetes e2e', email: 'e2e@aulalab.test' }) })
     if (res.status !== 201) throw new Error(`claiming the instance was refused (${res.status}): ${(await res.text()).slice(0, 300)}`)
     console.log('claimed the instance with the setup token from the app Pod')
   }
   // The claim replaced the token (admin/auth.ts · retireSetupToken): e2e.mts
   // signs in with the one the app keeps now, from a DATA_DIR of its own.
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-k8s-e2e-'))
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-k8s-e2e-'))
   const seen = new Map<string, Pod>()
   let watching = true
   const watcher = (async () => {
     while (watching) {
       try {
-        const list = JSON.parse(await kubectl(['get', 'pods', '-l', 'app.kubernetes.io/managed-by=colloq-runtime', '-o', 'json'],
+        const list = JSON.parse(await kubectl(['get', 'pods', '-l', 'app.kubernetes.io/managed-by=aulalab-runtime', '-o', 'json'],
           { quiet: true, timeoutMs: 15_000 }))
         for (const pod of list.items ?? []) if (pod.metadata?.uid) seen.set(pod.metadata.uid, pod)
       } catch { /* the next poll, or the checks below, will tell */ }
       await sleep(1000)
     }
   })()
-  const roles = () => [...seen.values()].map((pod) => pod.metadata?.labels?.['colloq.dev/role'] ?? '?')
+  const roles = () => [...seen.values()].map((pod) => pod.metadata?.labels?.['aulalab.dev/role'] ?? '?')
   try {
     const token = await setupToken(app.name)
     fs.writeFileSync(path.join(dataDir, 'setup-token'), token + '\n', { mode: 0o600 })
     await runE2e(base, dataDir)
-    const rooms = [...seen.values()].filter((pod) => pod.metadata?.labels?.['colloq.dev/role'] === 'kernel')
+    const rooms = [...seen.values()].filter((pod) => pod.metadata?.labels?.['aulalab.dev/role'] === 'kernel')
     if (!rooms.some((pod) => pod.spec?.nodeName)) throw new Error('no scheduled room Pod was seen while the seminar ran')
     console.log(`room Pods seen: ${rooms.map((pod) => `${pod.metadata?.name} on ${pod.spec?.nodeName}`).join(', ')}`)
 
@@ -296,7 +296,7 @@ async function main(): Promise<void> {
     // What the broker made, however the run ended: a failed seminar still
     // says where its room ran and whether it was pinned there.
     for (const pod of seen.values()) {
-      console.log(`  broker Pod ${pod.metadata?.name} (${pod.metadata?.labels?.['colloq.dev/role'] ?? '?'}) on ` +
+      console.log(`  broker Pod ${pod.metadata?.name} (${pod.metadata?.labels?.['aulalab.dev/role'] ?? '?'}) on ` +
         `${pod.spec?.nodeName ?? 'no node'}${pinnedToApp(pod) ? ', pinned to the app' : ''}`)
     }
   }

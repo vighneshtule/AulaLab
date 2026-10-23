@@ -16,10 +16,10 @@
  *
  * So the number comes from the package.json that travels with the code: the
  * nearest one above this module, which is server/package.json next to dist/
- * in the image (/opt/colloq/server in colloq-vast, /app in colloq-server), in
+ * in the image (/opt/aulalab/server in aulalab-vast, /app in aulalab-server), in
  * the wheel and in a checkout — scripts/version.mts keeps it equal to the
- * root's, and release-please bumps both. COLLOQ_VERSION from the environment
- * when no package.json says (the colloq-vast image sets it as well), and
+ * root's, and release-please bumps both. AULALAB_VERSION from the environment
+ * when no package.json says (the aulalab-vast image sets it as well), and
  * otherwise a version that is plainly no release. Each must have the shape
  * the contract accepts in a machine's facts (REMOTE_VERSION), or it is passed
  * over: a version home refuses to parse would refuse the machine with it.
@@ -52,7 +52,7 @@ export function runnerVersion(options: { from?: string; env?: NodeJS.ProcessEnv 
     if (parent === dir) break
     dir = parent
   }
-  const named = (options.env ?? process.env).COLLOQ_VERSION?.trim() ?? ''
+  const named = (options.env ?? process.env).AULALAB_VERSION?.trim() ?? ''
   return REMOTE_VERSION.test(named) ? named : UNKNOWN_RUNNER_VERSION
 }
 

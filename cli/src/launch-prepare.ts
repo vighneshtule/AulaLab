@@ -12,7 +12,7 @@ import { capture, Processes } from './launch-process.js'
 import { readJson, writeJson } from './launch-state.js'
 
 /**
- * One link of the chain of environments: one colloq-kernel:<name> image.
+ * One link of the chain of environments: one aulalab-kernel:<name> image.
  *
  * When we build from the application directory itself and there is a
  * Makefile next to it (viaMake below; the reason is at its computation in
@@ -26,7 +26,7 @@ import { readJson, writeJson } from './launch-state.js'
  * gets built there, and it can be seen line by line: the `kernel` target in
  * docker-compose.yml takes the ./kernel context and passes two arguments,
  * KERNEL_ENV (which environment sheet to copy) and PARENT (what to put the
- * layer on top of), and sets the tag colloq-kernel:<name>. Here this is said
+ * layer on top of), and sets the tag aulalab-kernel:<name>. Here this is said
  * with a direct docker call.
  *
  * We do not pass a parent at all when there is none: the default lives in
@@ -37,7 +37,7 @@ import { readJson, writeJson } from './launch-state.js'
  * assembled for the panel.
  *
  * BUILDKIT_PROGRESS=plain comes from there too: the output goes both to the
- * terminal and to .colloq.log line by line, while the "pretty" progress
+ * terminal and to .aulalab.log line by line, while the "pretty" progress
  * redraws itself with carriage returns and turns into mush in the log.
  *
  * buildRoot is not the application root but the BUILD root: it is also the
@@ -66,7 +66,7 @@ async function buildKernelImage(
     `KERNEL_ENV=${name}`,
     ...(parentImage ? ['--build-arg', `PARENT=${parentImage}`] : []),
     '-t',
-    `colloq-kernel:${name}`,
+    `aulalab-kernel:${name}`,
     kernel,
   ]
   const build = processes.start('Python build', 'docker', args, quiet, {
@@ -83,7 +83,7 @@ async function buildKernelImage(
  * Environments live in two places. The shipped ones (base, cv, gpu) lie next
  * to the application and are only read: for an installed package that is
  * site-packages, which cannot be written to at all. A person creates their
- * own with `colloq env new`, and they go into COLLOQ_HOME.
+ * own with `aulalab env new`, and they go into AULALAB_HOME.
  *
  * Keeping these two places apart throughout the start (in the fingerprint, in
  * the inheritance chain, in the `docker build` context) means dragging the
@@ -99,7 +99,7 @@ async function buildKernelImage(
 function kernelRoot(root: string, home: string): string {
   const own = path.join(home, 'environments')
   if (home === root || !fs.existsSync(own)) return root
-  const staged = path.join(home, '.colloq/kernel-build')
+  const staged = path.join(home, '.aulalab/kernel-build')
   const to = path.join(staged, 'kernel')
   fs.rmSync(staged, { recursive: true, force: true })
   // preserveTimestamps: the copy must keep the modification time. The first
@@ -139,21 +139,21 @@ export async function prepare(
    * kernelRoot returned root itself.
    *
    * It used to go by dist, and broke in the gap between two different forks: a
-   * working tree (that is, !dist) started with COLLOQ_HOME=~/classA merged the
-   * environments into <home>/.colloq/kernel-build and right away called make,
+   * working tree (that is, !dist) started with AULALAB_HOME=~/classA merged the
+   * environments into <home>/.aulalab/kernel-build and right away called make,
    * which does not see the merge. The class fell over on "No <name>.txt", and
    * if the name matched a shipped one, the SHIPPED list was built silently
    * instead of one's own, which is exactly the "redefine cv for one's course"
    * the merge was introduced for.
    *
    * dist stays in the condition as the second term for a single reason: for
-   * an installed colloq without environments of its own there is nothing to
+   * an installed aulalab without environments of its own there is nothing to
    * merge either and kernelFrom equals root, but the Makefile does not travel
    * into the package, and there is nothing to call there.
    */
   const viaMake = !dist && kernelFrom === root
   /*
-   * The COLLOQ_UNSAFE_DEV_FILES requirement is gone from here.
+   * The AULALAB_UNSAFE_DEV_FILES requirement is gone from here.
    *
    * It used to be: on anything that is not Linux, the start refused until a
    * line with the word UNSAFE appeared in .env. For a teacher with a MacBook
@@ -168,7 +168,7 @@ export async function prepare(
    * of building.
    */
   if ((await capture(root, env, 'docker', ['info', '--format', '{{.ServerVersion}}'])).code !== 0)
-    throw new Error('Docker is not responding. Start Docker and run colloq run again.')
+    throw new Error('Docker is not responding. Start Docker and run aulalab run again.')
   if (stopped()) throw new Error('Launch cancelled.')
   const inputs = kernelInputs(kernelFrom, kernelEnv)
   const sourceHash = fingerprint(kernelFrom, inputs)
@@ -183,7 +183,7 @@ export async function prepare(
   type KernelStamp = { fingerprint: string; id: string; parentId?: string }
   const stamps: Array<{ file: string; value: KernelStamp }> = []
   const inspect = async (name: string): Promise<{ Id: string; Created: string } | undefined> => {
-    const result = await capture(root, env, 'docker', ['image', 'inspect', `colloq-kernel:${name}`])
+    const result = await capture(root, env, 'docker', ['image', 'inspect', `aulalab-kernel:${name}`])
     if (stopped()) throw new Error('Launch cancelled.')
     if (result.code !== 0) return undefined
     try {
@@ -205,7 +205,7 @@ export async function prepare(
     // docker), not about the application, hence home. The directory of an
     // installed application may well be closed for writing, and we have
     // nothing to write there.
-    const marker = path.join(home, `.colloq/kernel-${item.name}.json`)
+    const marker = path.join(home, `.aulalab/kernel-${item.name}.json`)
     const stamp = readJson<KernelStamp>(marker)
     const freshImage =
       image &&
@@ -241,7 +241,7 @@ export async function prepare(
       throw new Error('The sources changed during the build. Start again, or use make dev.')
     stamps.push({ file: marker, value: { fingerprint: item.fingerprint, id: image.Id, parentId } })
     parentId = image.Id
-    parentImage = `colloq-kernel:${item.name}`
+    parentImage = `aulalab-kernel:${item.name}`
     parentCreated = Date.parse(image.Created)
   }
   for (const stamp of stamps) writeJson(stamp.file, stamp.value)
@@ -264,18 +264,18 @@ export async function prepare(
     for (const required of ['web/dist/index.html', 'server/dist/server.js'])
       if (!fs.existsSync(path.join(root, required)))
         throw new Error(
-          `The installation is incomplete: no ${required} in ${root}. Reinstall colloq (pip install --force-reinstall colloq).`,
+          `The installation is incomplete: no ${required} in ${root}. Reinstall aulalab (pip install --force-reinstall aulalab).`,
         )
     return
   }
   /*
    * The build mark is about THIS source tree, so it stays next to it, not in
    * the class directory. Only a working tree gets here (a distribution hits the
-   * return above), and it is writable by definition. Also, moving COLLOQ_HOME
+   * return above), and it is writable by definition. Also, moving AULALAB_HOME
    * to a new class does not look like "the build is out of date" and does not
    * cost the teacher an extra three minutes before class.
    */
-  const file = path.join(root, '.colloq/build.json')
+  const file = path.join(root, '.aulalab/build.json')
   if (options.build || !buildIsCurrent(root, readJson<BuildStamp>(file), options.fast)) {
     const before = fingerprint(root)
     console.log('Building the application…')

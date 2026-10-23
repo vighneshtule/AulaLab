@@ -3,7 +3,7 @@
  *
  * Before this change, any web server error showed one page — "the room is not
  * open yet" — with advice to check the address. It lied three times over: a
- * room with that name might not exist at all, Colloq on the teacher's machine
+ * room with that name might not exist at all, Aula Lab on the teacher's machine
  * could be silent while the tunnel was alive, and the relay could fail on its
  * own, with the address having nothing to do with it. Now there are four
  * states, and what is checked here is not the layout but what the change was
@@ -63,7 +63,7 @@ function texts(): any {
 
 const TEXT = texts()
 const STATES = ['waiting', 'missing', 'down', 'fault']
-const FACT = { host: 'hse.colloq.ru', code: 0, text: '', id: '', reason: '' }
+const FACT = { host: 'hse.example.edu', code: 0, text: '', id: '', reason: '' }
 
 /** All the dictionary paths: ru and en must match on them down to the last key. */
 function paths(node: any, at = ''): string[] {
@@ -104,7 +104,7 @@ test('each of the four states has its own text in both languages', () => {
           `${state}.${part} in ${lang} is empty or a fragment: "${said}"`,
         )
         // The English page does not speak Russian. The reverse is not checked:
-        // "Colloq" in a Russian phrase is a name, not a forgotten translation.
+        // "Aula Lab" in a Russian phrase is a name, not a forgotten translation.
         if (lang === 'en') {
           assert.doesNotMatch(
             said,
@@ -147,7 +147,7 @@ test('"no such room" shows the address the request came to', () => {
   for (const lang of ['ru', 'en'] as const) {
     assert.match(
       TEXT[lang].states.missing.lede(FACT),
-      /hse\.colloq\.ru/,
+      /hse\.aulalab\.ru/,
       `${lang}: the missing name is not named: the person has nothing to check the link against`,
     )
   }
@@ -183,12 +183,12 @@ test('the room is polled only where there is something to come back to', () => {
 })
 
 test('the polling mark in the markup and in the script is one and the same', () => {
-  const meta = /<meta name="colloq-page" content="([a-z]+)" \/>/.exec(html)?.[1]
+  const meta = /<meta name="aulalab-page" content="([a-z]+)" \/>/.exec(html)?.[1]
   const mark = /const MARK = '([^']+)'/.exec(html)?.[1]
   assert.ok(meta && mark, 'the page mark or the search for it in the script is missing')
   assert.equal(
     mark,
-    `name="colloq-page" content="${meta}"`,
+    `name="aulalab-page" content="${meta}"`,
     'the markup and the script drifted apart: polling will look in the response for a word that is not there — ' +
       'and the tab will reload into the same page forever or never reload at all',
   )
@@ -232,9 +232,9 @@ test('the markup without JS says the same as the script in Russian', () => {
 
 test('the page is open to checks: the game and the state', () => {
   assert.match(html, /window\.capy = \{/, 'the game is no longer available to live checks')
-  assert.match(html, /window\.colloqPage = \{/, 'the page state is not visible to checks')
+  assert.match(html, /window\.aulalabPage = \{/, 'the page state is not visible to checks')
   for (const key of ['setState', 'setLang', 'get state()', 'get lang()', 'get polls()']) {
-    assert.ok(html.includes(key), `window.colloqPage has no ${key}`)
+    assert.ok(html.includes(key), `window.aulalabPage has no ${key}`)
   }
 })
 
@@ -291,7 +291,7 @@ suite('the error page on the server', { skip: HAVE_PYTHON ? false : 'no python3'
     assert.equal(r.status, 404, 'the error page went out with a success code: from outside it would pass for the room')
     const body = await r.text()
     assert.equal(body, html, 'the server served a different file than the one in the repository')
-    assert.match(body, /<meta name="colloq-page" content="offline" \/>/)
+    assert.match(body, /<meta name="aulalab-page" content="offline" \/>/)
   })
 
   test('the page needs nothing from outside', async () => {

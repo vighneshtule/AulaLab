@@ -21,7 +21,7 @@ import type { EntrantCompetitionView, EntrantSubmissions } from '../shared/compe
 let dir: string
 let SendBox: Component<any>
 before(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-sendbox-render-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-sendbox-render-'))
   const source = await readFile(new URL('../web/src/components/competitions/SendBox.svelte', import.meta.url), 'utf8')
   let code = compile(source, { filename: 'SendBox.svelte', generate: 'server' }).js.code
   for (const [from, to] of [

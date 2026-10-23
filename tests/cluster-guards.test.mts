@@ -18,13 +18,13 @@ test('install, prepare and update reject missing explicit release before host op
   }
 })
 test('incomplete restore blocks starts and publication before any host command', () => {
-  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-restore-guard-'))
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-restore-guard-'))
   try {
     fs.writeFileSync(path.join(state, '.restore-in-progress'), 'durable recovery marker')
     const release = path.join(state, 'release.json'); fs.writeFileSync(release, JSON.stringify(manifest()))
     for (const args of [['start'], ['public-url', 'https://example.invalid'], ['smoke'], ['gpu-preflight'],
       ...['prepare', 'install', 'update', 'rollback'].map(cmd => [cmd, '--release', release])]) {
-      const result = spawnSync('bash', [script, ...args], { encoding: 'utf8', env: { ...process.env, COLLOQ_STATE_DIR: state } })
+      const result = spawnSync('bash', [script, ...args], { encoding: 'utf8', env: { ...process.env, AULALAB_STATE_DIR: state } })
       assert.notEqual(result.status, 0)
       assert.match(result.stderr, /restore.*progress|incomplete.*restore/i)
       assert.equal(fs.existsSync(path.join(state, '.operation.lock')), false)
@@ -32,13 +32,13 @@ test('incomplete restore blocks starts and publication before any host command',
   } finally { fs.rmSync(state, { recursive: true, force: true }) }
 })
 test('all cluster writer mutations contend on the shared operation lock before kubernetes calls', () => {
-  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-lock-guard-'))
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-lock-guard-'))
   try {
     const bin = path.join(state, 'bin'); fs.mkdirSync(bin)
     fs.writeFileSync(path.join(bin, 'uname'), '#!/bin/sh\necho Linux\n', { mode: 0o755 })
     fs.writeFileSync(path.join(bin, 'id'), '#!/bin/sh\necho 0\n', { mode: 0o755 })
     fs.writeFileSync(path.join(bin, 'k3s'), '#!/bin/sh\necho unexpected-kubernetes-call >&2\nexit 91\n', { mode: 0o755 })
-    const env = { ...process.env, COLLOQ_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` }
+    const env = { ...process.env, AULALAB_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` }
     const bundle = path.join(state, 'bundle'); fs.mkdirSync(path.join(bundle, 'scripts'), { recursive: true })
     const hashes: Record<string, string> = {}
     for (const file of ['cluster.sh', 'release.py', 'state-lock.py', 'backup.sh', 'runtime-backup.py', 'restore.sh', 'host.sh', 'lib.sh']) {
@@ -62,24 +62,24 @@ test('all cluster writer mutations contend on the shared operation lock before k
   } finally { fs.rmSync(state, { recursive: true, force: true }) }
 })
 test('start consumes restored schema metadata before permitting the first application writer', () => {
-  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-start-order-'))
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-start-order-'))
   try {
     const bin = path.join(state, 'bin'); fs.mkdirSync(bin)
     for (const [name, body] of Object.entries({ uname: 'echo Linux', id: 'echo 0', curl: 'exit 0',
-      k3s: 'case "$*" in *"scale deployment/colloq-app --replicas=1"*) test ! -e "$COLLOQ_STATE_DIR/recovery/release.json" || exit 91;; esac\nexit 0' })) {
+      k3s: 'case "$*" in *"scale deployment/aulalab-app --replicas=1"*) test ! -e "$AULALAB_STATE_DIR/recovery/release.json" || exit 91;; esac\nexit 0' })) {
       fs.writeFileSync(path.join(bin, name), `#!/bin/sh\n${body}\n`, { mode: 0o755 })
     }
     fs.mkdirSync(path.join(state, 'releases')); fs.mkdirSync(path.join(state, 'recovery'))
     fs.writeFileSync(path.join(state, 'releases/current.json'), JSON.stringify(manifest()))
     fs.writeFileSync(path.join(state, 'recovery/release.json'), JSON.stringify(manifest()))
-    const result = spawnSync('bash', [script, 'start'], { encoding: 'utf8', env: { ...process.env, COLLOQ_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` } })
+    const result = spawnSync('bash', [script, 'start'], { encoding: 'utf8', env: { ...process.env, AULALAB_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` } })
     assert.equal(result.status, 0, result.stderr)
     assert.equal(fs.existsSync(path.join(state, 'recovery/release.json')), false)
     assert.equal(fs.existsSync(path.join(state, 'recovery/applied-release.json')), true)
   } finally { fs.rmSync(state, { recursive: true, force: true }) }
 })
 test('make restore forwards the portable archive and release as distinct quoted arguments', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-make-restore-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-make-restore-'))
   try {
     fs.copyFileSync(new URL('../Makefile', import.meta.url), path.join(dir, 'Makefile'))
     fs.mkdirSync(path.join(dir, 'scripts'))
@@ -96,14 +96,14 @@ test('make restore forwards the portable archive and release as distinct quoted 
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
 })
 test('restore Service reset requires completed file replacement and confirmed absent writers', () => {
-  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-service-reset-'))
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-service-reset-'))
   try {
     const bin = path.join(state, 'bin'); fs.mkdirSync(bin)
     for (const [name, body] of Object.entries({ uname: 'echo Linux', id: 'echo 0',
-      k3s: 'case "$*" in *"get pods"*) if [ "$PROOF_API_FAIL" = 1 ]; then exit 71; fi; if [ "$PROOF_WRITER" = 1 ]; then echo pod/active; fi;; *"delete services"*) touch "$COLLOQ_STATE_DIR/deleted";; esac\nexit 0' })) {
+      k3s: 'case "$*" in *"get pods"*) if [ "$PROOF_API_FAIL" = 1 ]; then exit 71; fi; if [ "$PROOF_WRITER" = 1 ]; then echo pod/active; fi;; *"delete services"*) touch "$AULALAB_STATE_DIR/deleted";; esac\nexit 0' })) {
       fs.writeFileSync(path.join(bin, name), `#!/bin/sh\n${body}\n`, { mode: 0o755 })
     }
-    const env = { ...process.env, COLLOQ_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` }
+    const env = { ...process.env, AULALAB_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` }
     const run = (extra = {}) => spawnSync('bash', [script, 'restore-services'], { encoding: 'utf8', env: { ...env, ...extra } })
     assert.notEqual(run().status, 0)
     fs.writeFileSync(path.join(state, '.restore-in-progress'), JSON.stringify({ phase: 'files-restored' }))
@@ -118,7 +118,7 @@ test('restore Service reset requires completed file replacement and confirmed ab
 })
 
 test('cluster commands use the bundled client with the managed kubeconfig and no extra kubectl argument', () => {
-  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-client-context-'))
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-client-context-'))
   try {
     const bin = path.join(state, 'bin'); fs.mkdirSync(bin)
     for (const [name, body] of Object.entries({uname:'echo Linux',id:'echo 0',curl:'exit 0',
@@ -126,9 +126,9 @@ test('cluster commands use the bundled client with the managed kubeconfig and no
       fs.writeFileSync(path.join(bin,name), `#!/bin/sh\n${body}\n`, {mode:0o755})
     }
     const result=spawnSync('bash',[script,'status'],{encoding:'utf8',env:{...process.env,
-      KUBECONFIG:'/unrelated/operator-cluster',COLLOQ_STATE_DIR:state,PATH:`${bin}:${process.env.PATH}`}})
+      KUBECONFIG:'/unrelated/operator-cluster',AULALAB_STATE_DIR:state,PATH:`${bin}:${process.env.PATH}`}})
     assert.equal(result.status,0,result.stderr)
-    assert.match(result.stdout,/-n colloq get deployments,pods,pvc/)
+    assert.match(result.stdout,/-n aulalab get deployments,pods,pvc/)
   } finally { fs.rmSync(state,{recursive:true,force:true}) }
 })
 
@@ -142,7 +142,7 @@ test('cluster commands use the bundled client with the managed kubeconfig and no
  * script.
  */
 test('public-url --if-current changes the address only while it is still the expected one', () => {
-  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-public-url-cas-'))
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-public-url-cas-'))
   try {
     const bin = path.join(state, 'bin'); fs.mkdirSync(bin)
     const calls = path.join(state, 'k3s-calls')
@@ -154,7 +154,7 @@ test('public-url --if-current changes the address only while it is still the exp
     fs.writeFileSync(path.join(state, 'releases/current.json'), JSON.stringify(manifest()))
     const config = path.join(state, 'config.env')
     fs.writeFileSync(config, 'INSTITUTION=Test\nPUBLIC_URL=https://someone-else.example\n')
-    const env = { ...process.env, COLLOQ_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` }
+    const env = { ...process.env, AULALAB_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` }
     const run = (...args: string[]) => spawnSync('bash', [script, 'public-url', ...args], { encoding: 'utf8', env })
 
     // Someone else's address: refused with a distinct exit code, the file and
@@ -171,7 +171,7 @@ test('public-url --if-current changes the address only while it is still the exp
     assert.equal(r.status, 0, r.stderr)
     assert.deepEqual(fs.readFileSync(config, 'utf8').split('\n').filter(l => l.startsWith('PUBLIC_URL=')), ['PUBLIC_URL=http://127.0.0.1:30080'])
     assert.match(fs.readFileSync(config, 'utf8'), /^INSTITUTION=Test$/m)
-    assert.match(fs.readFileSync(calls, 'utf8'), /rollout restart deployment\/colloq-app/)
+    assert.match(fs.readFileSync(calls, 'utf8'), /rollout restart deployment\/aulalab-app/)
 
     // Repeating the same cleanup is neither a refusal nor a second restart: the
     // address is already the right one.
@@ -193,12 +193,12 @@ test('public-url --if-current changes the address only while it is still the exp
  * CrashLoop.
  */
 test('cluster render carries the broker memory from --env-file or the kept config.env', () => {
-  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-runtime-env-'))
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-runtime-env-'))
   try {
     const release = path.join(state, 'release.json'); fs.writeFileSync(release, JSON.stringify(manifest()))
-    const env = { ...process.env, COLLOQ_STATE_DIR: state }
+    const env = { ...process.env, AULALAB_STATE_DIR: state }
     const brokerEnv = (stdout: string) => Object.fromEntries(JSON.parse(stdout).items
-      .find((x: any) => x.kind === 'Deployment' && x.metadata.name === 'colloq-runtime')
+      .find((x: any) => x.kind === 'Deployment' && x.metadata.name === 'aulalab-runtime')
       .spec.template.spec.containers[0].env.map((e: any) => [e.name, e.value]))
     fs.writeFileSync(path.join(state, 'config.env'), 'PUBLIC_URL=https://x.example\nRUNTIME_KERNEL_MEMORY=3Gi\n')
     let r = spawnSync('bash', [script, 'render', '--release', release], { encoding: 'utf8', env })
@@ -216,7 +216,7 @@ test('cluster render carries the broker memory from --env-file or the kept confi
   } finally { fs.rmSync(state, { recursive: true, force: true }) }
 })
 test('update refuses unusable broker memory before the backup stops any room', () => {
-  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-runtime-env-update-'))
+  const state = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-runtime-env-update-'))
   try {
     const bin = path.join(state, 'bin'); fs.mkdirSync(bin)
     fs.writeFileSync(path.join(bin, 'uname'), '#!/bin/sh\necho Linux\n', { mode: 0o755 })
@@ -235,7 +235,7 @@ test('update refuses unusable broker memory before the backup stops any room', (
     fs.writeFileSync(path.join(state, 'releases/current.json'), JSON.stringify(manifest()))
     fs.writeFileSync(path.join(state, 'config.env'), 'RUNTIME_KERNEL_MEMORY=8Gi\nRUNTIME_KERNEL_MEMORY_MAX=4Gi\n')
     const r = spawnSync('bash', [path.join(bundle, 'scripts/cluster.sh'), 'update', '--release', release], { encoding: 'utf8',
-      env: { ...process.env, COLLOQ_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` } })
+      env: { ...process.env, AULALAB_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` } })
     assert.notEqual(r.status, 0)
     assert.match(r.stderr, /exceeds RUNTIME_KERNEL_MEMORY_MAX/)
     assert.doesNotMatch(r.stderr, /unexpected-kubernetes-call/)

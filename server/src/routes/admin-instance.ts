@@ -1416,7 +1416,7 @@ export function adminInstanceRoutes(): Router {
   /**
    * Destructive, and owner-only for exactly that reason: this is not "hide the
    * card". It drops the roster, the notebook snapshot and every file the room
-   * uploaded or wrote, none of which Colloq keeps a second copy of — a student
+   * uploaded or wrote, none of which Aula Lab keeps a second copy of — a student
    * may be standing in the room as it goes. Archiving is the reversible action;
    * this one is for a seminar that must actually be gone.
    *

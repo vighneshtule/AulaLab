@@ -51,7 +51,7 @@ def chain(name, done, visiting):
         raise ValueError('invalid environment name: ' + name)
     visiting.add(name)
     source = (ROOT / 'kernel/environments' / (name + '.txt')).read_text()
-    parents = re.findall(r'^#\s*colloq:\s*from\s+(\S+)\s*$', source, re.MULTILINE)
+    parents = re.findall(r'^#\s*aulalab:\s*from\s+(\S+)\s*$', source, re.MULTILINE)
     if len(parents) > 1:
         raise ValueError('multiple environment parents: ' + name)
     parent = parents[0] if parents else None
@@ -61,7 +61,7 @@ def chain(name, done, visiting):
     visiting.remove(name)
 
 
-GPU_DIRECTIVE = re.compile(r'^#\s*colloq:\s*gpu\s*$', re.MULTILINE)
+GPU_DIRECTIVE = re.compile(r'^#\s*aulalab:\s*gpu\s*$', re.MULTILINE)
 
 
 def catalog_environment(name, environment, image, gpu_flags):
@@ -100,7 +100,7 @@ def data_schema(root):
 def published(tag):
     """The digest a tag already names in the registry, or None.
 
-    publish.yml pushes colloq-app, colloq-runtime and the CPU kernels under
+    publish.yml pushes aulalab-app, aulalab-runtime and the CPU kernels under
     these very tags as soon as a release is made, and the Helm chart it
     publishes pins their digests. Building them again here would move the tags
     to a second build of the same commit: the chart would keep installing images
@@ -147,7 +147,7 @@ def main():
     global ROOT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--version', help='release tag; defaults to v<package.json version> at --source-commit')
-    parser.add_argument('--registry', required=True, help='repository prefix, e.g. ghcr.io/owner/colloq')
+    parser.add_argument('--registry', required=True, help='repository prefix, e.g. ghcr.io/owner/aulalab')
     parser.add_argument('--k3s-version', required=True)
     parser.add_argument('--environments', default='base,kaggle-base')
     parser.add_argument('--default-environment', default='base')
@@ -161,7 +161,7 @@ def main():
     if args.version is not None and not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,63}', args.version):
         parser.error('invalid release version')
     output = pathlib.Path(args.output).resolve()
-    build_context = tempfile.TemporaryDirectory(prefix='colloq-source-')
+    build_context = tempfile.TemporaryDirectory(prefix='aulalab-source-')
     # All Dockerfiles, COPY inputs and package lists come from this exact commit.
     # Live tracked edits, ignored files and untracked files never enter the build.
     ROOT = archive_source(ROOT, args.source_commit, pathlib.Path(build_context.name) / 'source')
@@ -202,7 +202,7 @@ def main():
     value['tooling'] = {'sourceFiles': release.tooling_hashes(ROOT)}
     if gpu_tooling:
         value['tooling']['gpu'] = gpu_tooling
-    with tempfile.TemporaryDirectory(prefix='colloq-build-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='aulalab-build-') as tmp:
         metadata = pathlib.Path(tmp) / 'image.json'
         for kind, target in [('app', 'production'), ('runtime', 'broker')]:
             value[kind + 'Image'] = build(args.registry + '-' + kind + ':' + args.version,

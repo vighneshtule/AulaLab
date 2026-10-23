@@ -49,7 +49,7 @@
  * WHAT A KERNEL WROTE IS PARTICIPANT DATA (§8.6). Every walk, read and write
  * goes through the anchored filesystem (secure-files.ts): no link is ever
  * followed, a link and a special file never travel, and a kernel's `ln -s
- * /var/lib/colloq-runner/runner.json x.csv` is a name the walk passes by. A
+ * /var/lib/aulalab-runner/runner.json x.csv` is a name the walk passes by. A
  * file goes home only from the agent's own staging, copied there through a
  * descriptor opened without following and hashed as it is copied, so the
  * bytes that go are the bytes that were hashed; a file with several hard
@@ -627,7 +627,7 @@ export type RoomUploader = (upload: RoomUpload) => Promise<RoomUploadAnswer>
  * agent's client calls home: the credential in the Authorization header and
  * nowhere else, no redirect followed, a reply without home's marker or a 429
  * or a 5xx transient, any other refusal home's by its code. The body streams
- * as it is paced (`duplex: 'half'`): its length is said by X-Colloq-Bytes of
+ * as it is paced (`duplex: 'half'`): its length is said by X-AulaLab-Bytes of
  * the file uncompressed, as for a run's results.
  *
  * But a 413 without the marker is a proxy's in front of home refusing a body
@@ -908,7 +908,7 @@ const sameGens = (a: Partial<Record<RemoteKernelRole, number>>, b: Partial<Recor
 const depth = (at: string): number => at.split('/').length
 
 /** A name of home's TEMP_FILE shape (workspace.ts), short whatever the target's: what a crash leaves is a hidden temp, swept at the copy's first walk of the next life. */
-const tempName = (): string => `.colloq.saving-${randomBytes(6).toString('hex')}`
+const tempName = (): string => `.aulalab.saving-${randomBytes(6).toString('hex')}`
 
 export class RoomFiles {
   private readonly options: RoomFilesOptions

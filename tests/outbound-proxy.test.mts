@@ -4,7 +4,7 @@
  * A university server often gets out only through an HTTP proxy named in
  * HTTPS_PROXY/HTTP_PROXY/NO_PROXY. These tests prove the three promises:
  * nothing changes without the variables; with them, what leaves the campus
- * (the model endpoint, GitHub) goes through the proxy while Colloq's own
+ * (the model endpoint, GitHub) goes through the proxy while Aula Lab's own
  * traffic and NO_PROXY destinations go direct; and the OpenAI SDK, which has a
  * transport of its own, follows the same road. The proxy is a local fake that
  * records what it was asked; nothing leaves this machine.
@@ -107,12 +107,12 @@ test('the variables read as curl reads them: lowercase first, a bare host gets h
   })
 })
 
-test("Colloq's own destinations always go direct; the outside world goes through the proxy", () => {
+test("Aula Lab's own destinations always go direct; the outside world goes through the proxy", () => {
   const none = parseNoProxy('')
   const direct = [
     'http://127.0.0.1:49213/api/kernels', 'http://localhost:3000/', 'http://[::1]:8888/', // a room's published port
-    'http://colloq-room-abc123:8888/api/status', 'http://colloq-runtime:8787/v1/rooms', // compose, k3s broker
-    'http://colloq-room-abc.colloq.svc:8888/api', 'http://ollama.default.svc.cluster.local:11434/v1', // k3s Services
+    'http://aulalab-room-abc123:8888/api/status', 'http://aulalab-runtime:8787/v1/rooms', // compose, k3s broker
+    'http://aulalab-room-abc.aulalab.svc:8888/api', 'http://ollama.default.svc.cluster.local:11434/v1', // k3s Services
     'http://10.1.2.3:8000/v1', 'http://192.168.1.20/v1', 'http://172.20.0.5/', 'http://100.64.3.4/', // a model on the LAN
     'http://169.254.169.254/', 'http://[fd00::5]:8000/', 'http://host.docker.internal:11434/', 'https://printer.local/',
   ]
@@ -152,7 +152,7 @@ test('with a proxy set, fetch goes through it for the outside and direct for loo
     // Plain http: an ordinary proxy request, body and all.
     assert.equal(await (await fetch('http://example.test/x', { method: 'POST', body: 'hi' })).text(), 'proxied http://example.test/x hi')
     // https (GitHub import): a CONNECT tunnel to the right authority.
-    await assert.rejects(fetch('https://api.github.com/repos/colloq-edu/colloq/contents'))
+    await assert.rejects(fetch('https://api.github.com/repos/vighneshtule/aulalab/contents'))
     // A room's Jupyter on a loopback port: never through the proxy.
     assert.equal(await (await fetch(`http://127.0.0.1:${local.port}/api/status`)).text(), 'direct')
     // NO_PROXY: goes direct, which here means a name that does not resolve.

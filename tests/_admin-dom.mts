@@ -790,7 +790,7 @@ export function installDom(stubs: Record<string, string> = {}): void {
   }
   Object.defineProperty(fakeWindow, 'fetch', { configurable: true, get: () => globalThis.fetch })
   Object.defineProperty(fakeWindow, 'location', { configurable: true, value: fakeLocation })
-  ;(globalThis as Record<string, unknown>).__COLLOQ_VERSION__ = '0.0.0-test'
+  ;(globalThis as Record<string, unknown>).__AULALAB_VERSION__ = '0.0.0-test'
 }
 
 export type { FakeElement }

@@ -19,7 +19,7 @@
  * this module free of home.
  *
  * The owner's decision (18 Sep 2026): the hardened profile ALWAYS, not only
- * when a class is open to the outside. Before it the local path (`colloq
+ * when a class is open to the outside. Before it the local path (`aulalab
  * start`, `make dev`, `make run`/`make up`, the vast image) had two holes
  * beyond kernel isolation itself:
  *
@@ -28,7 +28,7 @@
  *      in the image (or a package a student installed) would take them back;
  *   2. an open network. Student code reached the teacher's router, every
  *      machine on their home or university network, the computer itself (on
- *      colima `host.docker.internal:3000` is the live Colloq server, checked on
+ *      colima `host.docker.internal:3000` is the live Aula Lab server, checked on
  *      18 Sep 2026) and the cloud metadata at 169.254.169.254 on a rented
  *      machine.
  *
@@ -41,7 +41,7 @@
  * CapEff and CapBnd inside are zeros; the kernel, pip and the terminal work).
  *
  * The network is handled by iptables rules on the docker daemon's machine, in
- * chains only we own (COLLOQ-ROOMS-*), with jumps from DOCKER-USER (everything
+ * chains only we own (AULALAB-ROOMS-*), with jumps from DOCKER-USER (everything
  * the container sends beyond the host) and from INPUT (everything it sends to
  * the host itself: its LAN addresses, the bridge gateway, neighbouring
  * published ports). DOCKER-USER is the only place in FORWARD that docker
@@ -64,8 +64,8 @@
  * installer's story (perimeter.ts · helperImage at home).
  *
  * Two operator settings on top (Sep 2026, for university installs).
- * COLLOQ_ROOM_NETWORK=none cuts rooms off entirely: no internet, no campus, no
- * DNS, only the replies to the Colloq server that reaches their Jupyter.
+ * AULALAB_ROOM_NETWORK=none cuts rooms off entirely: no internet, no campus, no
+ * DNS, only the replies to the Aula Lab server that reaches their Jupyter.
  * KERNEL_BLOCKED_CIDRS adds ranges to the private ones: a campus's public
  * addresses, services that trust campus IPs.
  *
@@ -74,8 +74,8 @@
  * the network would be worse than refusing: the teacher believes they are
  * protected. For a trusted machine where the helper cannot start (rootless
  * docker, Docker Desktop with Enhanced Container Isolation, podman) there is an
- * explicit way out: COLLOQ_ROOM_NETWORK=open; rooms run without the ban, and
- * the server and `colloq doctor` say so out loud.
+ * explicit way out: AULALAB_ROOM_NETWORK=open; rooms run without the ban, and
+ * the server and `aulalab doctor` say so out loud.
  *
  * Three subtleties that make the rules the way they are.
  *
@@ -110,8 +110,8 @@
  * fe80:: on the bridge, so there is nothing to get around the ban with via v6.
  *
  * ON A MACHINE (§7.5, §7.6). The same flags and the same rules, under names of
- * the machine's own: the bridge `colloq-mrooms-<i6>` and the chains
- * `COLLOQ-MR<i6>-FWD`, `-IN` and `-DENY`, where `<i6>` is six hex characters
+ * the machine's own: the bridge `aulalab-mrooms-<i6>` and the chains
+ * `AULALAB-MR<i6>-FWD`, `-IN` and `-DENY`, where `<i6>` is six hex characters
  * of the agent's INSTANCE_LABEL (`machinePerimeter`). The agent reaches its
  * rooms the way a home on the host does, through a port published on
  * 127.0.0.1, so its plan exempts nothing, and the IN chain refuses the rooms
@@ -122,7 +122,7 @@ import net from 'node:net'
 import os from 'node:os'
 
 /** The rooms network the server creates itself when it lives on the host. */
-export const ROOM_NETWORK = 'colloq-rooms'
+export const ROOM_NETWORK = 'aulalab-rooms'
 
 /**
  * This network's subnet, deliberately outside docker's pools (172.17–31/16 and
@@ -136,7 +136,7 @@ export const ROOM_NETWORK = 'colloq-rooms'
 export const DEFAULT_ROOM_SUBNET = '10.213.0.0/22'
 
 /**
- * The profile version: the `colloq.profile` label on a room container.
+ * The profile version: the `aulalab.profile` label on a room container.
  *
  * A container without it was brought up before hardening: a live one lives on
  * until it stops (removing it in the middle of class means losing every
@@ -162,7 +162,7 @@ export const BLACKHOLE_DNS = '192.0.2.1'
 export const PERIMETER_KIND = 'room-perimeter'
 
 /** The comment on our jumps: it is how (and the only way) we find them. */
-export const PERIMETER_TAG = 'colloq-rooms'
+export const PERIMETER_TAG = 'aulalab-rooms'
 
 /**
  * Where a room must not go. The owner's list plus what nobody goes to by
@@ -210,9 +210,9 @@ export interface PerimeterScope {
 /** Home's perimeter: the bridge, chains and comment every room has lived under since 18 Sep 2026. */
 export const HOME_PERIMETER: PerimeterScope = Object.freeze({
   network: ROOM_NETWORK,
-  chains: 'COLLOQ-ROOMS',
+  chains: 'AULALAB-ROOMS',
   tag: PERIMETER_TAG,
-  labels: Object.freeze(['colloq.kind=room-network']),
+  labels: Object.freeze(['aulalab.kind=room-network']),
 })
 
 /** A machine's perimeter, with the six hex characters it is named by. */
@@ -224,12 +224,12 @@ export interface MachinePerimeter extends PerimeterScope {
 const INSTANCE_LABEL_SHAPE = /^[a-z0-9.-]+=([0-9a-f]{6})[0-9a-f]*$/
 
 /**
- * The perimeter of one machine's class kernels: `colloq-mrooms-<i6>` and the
- * chains `COLLOQ-MR<i6>-*`, `<i6>` being the first six hex characters of the
+ * The perimeter of one machine's class kernels: `aulalab-mrooms-<i6>` and the
+ * chains `AULALAB-MR<i6>-*`, `<i6>` being the first six hex characters of the
  * agent's INSTANCE_LABEL.
  *
  * Six characters, not the label's sixteen: an iptables chain name holds 28
- * characters at most, and `COLLOQ-MR<i6>-DENY` is twenty. They are spelled
+ * characters at most, and `AULALAB-MR<i6>-DENY` is twenty. They are spelled
  * the same in every name, lower case as the label has them and as §7.1 writes
  * them: the bridge, the comment, the chains and the containers
  * (room-spec.ts · machineRoomContainer), so one `grep <i6>` over
@@ -243,10 +243,10 @@ export function machinePerimeter(instanceLabel: string): MachinePerimeter {
   if (!i6) throw new Error(`not an agent instance label: ${JSON.stringify(instanceLabel)}`)
   return {
     i6,
-    network: `colloq-mrooms-${i6}`,
-    chains: `COLLOQ-MR${i6}`,
-    tag: `colloq-mrooms-${i6}`,
-    labels: ['colloq.kind=class-network', instanceLabel],
+    network: `aulalab-mrooms-${i6}`,
+    chains: `AULALAB-MR${i6}`,
+    tag: `aulalab-mrooms-${i6}`,
+    labels: ['aulalab.kind=class-network', instanceLabel],
   }
 }
 
@@ -262,20 +262,20 @@ export type RoomNetworkMode = 'blocked' | 'open' | 'none'
 let unknownModeWarned = false
 
 /**
- * COLLOQ_ROOM_NETWORK: `open` is the way out for a trusted machine, `none`
+ * AULALAB_ROOM_NETWORK: `open` is the way out for a trusted machine, `none`
  * the way in for an institution that lets student code reach nothing at all,
  * anything else means the ban. A typo ("opne") does not become an open
  * network: there must be no erring toward the hole, so an unknown word means
  * the ban and a line in the journal.
  */
 export function roomNetworkMode(env: NodeJS.ProcessEnv = process.env): RoomNetworkMode {
-  const raw = (env.COLLOQ_ROOM_NETWORK ?? '').trim().toLowerCase()
+  const raw = (env.AULALAB_ROOM_NETWORK ?? '').trim().toLowerCase()
   if (raw === 'open') return 'open'
   if (raw === 'none') return 'none'
   if (raw !== '' && raw !== 'blocked' && !unknownModeWarned) {
     unknownModeWarned = true
     console.warn(
-      `[kernel] COLLOQ_ROOM_NETWORK=${raw}: unknown value, local addresses stay blocked (use "none" to cut rooms off entirely, "open" to lift the block)`,
+      `[kernel] AULALAB_ROOM_NETWORK=${raw}: unknown value, local addresses stay blocked (use "none" to cut rooms off entirely, "open" to lift the block)`,
     )
   }
   return 'blocked'
@@ -373,7 +373,7 @@ export interface RoomHardening {
    */
   pids: number
   mode: RoomNetworkMode
-  /** The `colloq.profile` label (`profileFor` the mode). */
+  /** The `aulalab.profile` label (`profileFor` the mode). */
   profile: string
 }
 
@@ -404,11 +404,11 @@ export function roomHardeningArgs(hardening: RoomHardening): string[] {
     // No IPv6 at all: there are no v6 rules, so there must be no addresses.
     '--sysctl=net.ipv6.conf.all.disable_ipv6=1',
     '--sysctl=net.ipv6.conf.default.disable_ipv6=1',
-    // COLLOQ_ROOM_NETWORK=none: the resolver's upstream is an address the
+    // AULALAB_ROOM_NETWORK=none: the resolver's upstream is an address the
     // rules refuse, so not even a DNS query leaves (see the header).
     ...(hardening.mode === 'none' ? [`--dns=${BLACKHOLE_DNS}`] : []),
     '--label',
-    `colloq.profile=${hardening.profile}`,
+    `aulalab.profile=${hardening.profile}`,
   ]
 }
 
@@ -416,7 +416,7 @@ export function roomHardeningArgs(hardening: RoomHardening): string[] {
  * `docker network create` arguments for the rooms network.
  *
  * ICC is off: rooms do not see each other even when our rules are absent
- * (COLLOQ_ROOM_NETWORK=open); a neighbour's Jupyter is closed by a token, but
+ * (AULALAB_ROOM_NETWORK=open); a neighbour's Jupyter is closed by a token, but
  * there is no reason to knock on it. The server reaches a room not over this
  * network but through a published port, so it does not need ICC. IPv6 is
  * turned off explicitly, in case daemon.json has `default-network-opts` with
@@ -632,7 +632,7 @@ export interface PerimeterPolicy {
  * The plan a machine installs for its rooms: home's mode and ranges as the
  * floor (D21), the machine's own on top.
  *
- * A machine may be stricter than home (its owner set COLLOQ_ROOM_NETWORK=none
+ * A machine may be stricter than home (its owner set AULALAB_ROOM_NETWORK=none
  * there, or blocks a range of its own campus) and never looser: the stricter
  * of the two modes wins, and the ranges are both lists together, so nothing
  * the machine says can take one of home's away. `open` is not a mode a machine
@@ -679,7 +679,7 @@ export function machinePerimeterPlan(
  * lives in its own.
  */
 const FIND_DOCKERD = `set -u
-say() { printf 'colloq-perimeter: %s\\n' "$*"; }
+say() { printf 'aulalab-perimeter: %s\\n' "$*"; }
 me=$(readlink /proc/self/ns/net)
 pid=
 for p in /proc/[0-9]*; do
@@ -704,12 +704,12 @@ export function perimeterScript(plan: PerimeterPlan, scope: PerimeterScope = HOM
   const chain = chainsOf(scope)
   return `${FIND_DOCKERD}[ -n "$pid" ] || { say 'no dockerd process in the host namespaces'; exit 20; }
 fw iptables -w -n -L DOCKER-USER >/dev/null 2>&1 || { say 'no DOCKER-USER chain: Docker does not manage iptables on this host'; exit 21; }
-if ! fw iptables-restore -w --noflush <<'COLLOQ_RULES'
-${perimeterRules(plan, 'reject', scope)}COLLOQ_RULES
+if ! fw iptables-restore -w --noflush <<'AULALAB_RULES'
+${perimeterRules(plan, 'reject', scope)}AULALAB_RULES
 then
   say 'REJECT is unavailable, falling back to DROP'
-  fw iptables-restore -w --noflush <<'COLLOQ_RULES' || { say 'iptables-restore refused the rules'; exit 22; }
-${perimeterRules(plan, 'drop', scope)}COLLOQ_RULES
+  fw iptables-restore -w --noflush <<'AULALAB_RULES' || { say 'iptables-restore refused the rules'; exit 22; }
+${perimeterRules(plan, 'drop', scope)}AULALAB_RULES
 fi
 fw iptables -w -C DOCKER-USER -m comment --comment ${scope.tag} -j ${chain.fwd} 2>/dev/null \\
   || fw iptables -w -I DOCKER-USER 1 -m comment --comment ${scope.tag} -j ${chain.fwd} \\
@@ -757,7 +757,7 @@ export function helperArgs(image: string, script: string): string[] {
     '--pull=never',
     '--no-healthcheck',
     '--label',
-    `colloq.kind=${PERIMETER_KIND}`,
+    `aulalab.kind=${PERIMETER_KIND}`,
     '--entrypoint=sh',
     image,
     '-c',

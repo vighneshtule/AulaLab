@@ -1,4 +1,4 @@
-import entryMessages from 'virtual:colloq-entry-messages'
+import entryMessages from 'virtual:aulalab-entry-messages'
 import { registerMessages } from '@shared/i18n-runtime'
 export * from '@shared/i18n-runtime'
 

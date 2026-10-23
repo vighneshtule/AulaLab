@@ -142,8 +142,8 @@ export function loadRuntimeConfig(
   readCatalog(catalogFile)
   const port = Number(env.RUNTIME_PORT ?? 8787)
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid RUNTIME_PORT')
-  const namespace = env.RUNTIME_NAMESPACE ?? 'colloq',
-    workspaceClaim = env.RUNTIME_WORKSPACE_CLAIM ?? 'colloq-workspace',
+  const namespace = env.RUNTIME_NAMESPACE ?? 'aulalab',
+    workspaceClaim = env.RUNTIME_WORKSPACE_CLAIM ?? 'aulalab-workspace',
     imagePullSecret = env.RUNTIME_IMAGE_PULL_SECRET
   if (
     !dnsName(namespace) ||

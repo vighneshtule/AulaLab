@@ -102,19 +102,19 @@ test('read_notebook shows cell names, types and whether there is output', async 
 
   const listed = await call(hands(id, turn(id)), 'read_notebook', {})
   assert.equal(listed.step.kind, 'read')
-  assert.equal(listed.step.target, 'Тетрадь.ipynb')
+  assert.equal(listed.step.target, 'Notebook.ipynb')
   assert.match(listed.said, new RegExp(cellId(first)), 'the cell name is not in the list')
   assert.match(listed.said, /markdown/)
   assert.match(listed.said, /print\("hello, seminar"\)/)
-  assert.match(listed.said, /вывод есть/, 'nothing is said about output, so there will be nothing to rerun')
+  assert.match(listed.said, /has output/, 'nothing is said about output, so there will be nothing to rerun')
 })
 
 test('no notebook with that name: a humane refusal', async () => {
   const id = room()
   const tried = await call(hands(id, turn(id)), 'read_notebook', { path: 'Разбор.ipynb' })
   assert.equal(tried.step.kind, 'note')
-  assert.match(tried.said, /не тетрадь этой комнаты/)
-  assert.match(tried.said, /Тетрадь\.ipynb/, 'it does not say which notebooks exist')
+  assert.match(tried.said, /is not a notebook in this room/)
+  assert.match(tried.said, /Notebook\.ipynb/, 'it does not say which notebooks exist')
 })
 
 test('read_notebook names the other notebooks of the room', async () => {
@@ -122,8 +122,8 @@ test('read_notebook names the other notebooks of the room', async () => {
   assert.equal(createBook(id, 'Разбор.ipynb').ok, true)
 
   const listed = await call(hands(id, turn(id)), 'read_notebook', {})
-  assert.equal(listed.step.target, 'Тетрадь.ipynb', 'without a path, something other than the room notebook is read')
-  assert.match(listed.said, /Ещё тетради в комнате: Разбор\.ipynb/, 'the second notebook is not named')
+  assert.equal(listed.step.target, 'Notebook.ipynb', 'without a path, something other than the room notebook is read')
+  assert.match(listed.said, /Other notebooks in the room: Разбор\.ipynb/, 'the second notebook is not named')
 })
 
 test('the second notebook gets edited, and a pre-edit copy lands next to it', async () => {
@@ -153,8 +153,8 @@ test('the second notebook gets edited, and a pre-edit copy lands next to it', as
 
   const said = saidAboutCells(id, entry)
   assert.match(said, /Разбор\.before-oracle\.ipynb/, 'it does not say where the copy is')
-  assert.match(said, /не возвращается/, 'the version history was lied about by omission')
-  assert.ok(!/до правки оракула/.test(said), 'the second notebook was promised a button in the history')
+  assert.match(said, /cannot be restored through version history/, 'the version history was lied about by omission')
+  assert.ok(!/before the oracle's edit/.test(said), 'the second notebook was promised a button in the history')
   assert.equal(
     listVersions(id, 50).filter((row) => row.kind === 'checkpoint').length,
     0,
@@ -200,7 +200,7 @@ test('add_cell puts the cell into the named notebook, not the room notebook', as
   assert.equal(gone.step.removed, 1)
   assert.equal(other.length, was)
   const said = saidAboutCells(id, entry)
-  assert.match(said, /^Разбор\.ipynb: добавил \d\d; убрал 1 ячейка\./, said)
+  assert.match(said, /^Разбор\.ipynb: added \d\d; removed 1 cell\./, said)
   assert.ok(!/Тетрадь\.ipynb/.test(said), 'the answer attributed the edit to the room notebook')
 })
 
@@ -221,7 +221,7 @@ test('edit_cell changes the room document, not the notebook file', async () => {
   // The file is a projection: a write into it would be accepted and silently
   // lost, so the refusal stayed, but it now leads to the cells.
   const toFile = await call(hands(id, entry), 'write_file', {
-    path: 'Тетрадь.ipynb',
+    path: 'Notebook.ipynb',
     content: '{}',
   })
   assert.equal(toFile.step.kind, 'note')
@@ -241,7 +241,7 @@ test('an edit does not erase the output but calls it stale', async () => {
     source: 'print("новое")',
   })
   assert.equal(readCell(target).outputs.length, 1, 'the output was erased, so the room will not learn what was there')
-  assert.match(wrote.said, /устаревш/i, 'nothing is said about the stale output')
+  assert.match(wrote.said, /stale/i, 'nothing is said about the stale output')
 })
 
 test('add_cell goes after the given cell, and without one to the end', async () => {
@@ -272,7 +272,7 @@ test('remove_cell removes a cell, but not one that is computing', async () => {
   doc.transact(() => doomed.set('state', 'running'))
   const busy = await call(hands(id, entry), 'remove_cell', { cellId: cellId(doomed) })
   assert.equal(busy.step.kind, 'note')
-  assert.match(busy.said, /в очереди на ядро/)
+  assert.match(busy.said, /queued for the kernel/)
   assert.equal(cells(id).length, 2, 'the computing cell was removed anyway')
 
   doc.transact(() => doomed.set('state', 'idle'))
@@ -287,7 +287,7 @@ test('a nonexistent cell gets a humane refusal, not silence', async () => {
   for (const name of ['edit_cell', 'remove_cell']) {
     const tried = await call(hands(id, entry), name, { cellId: 'c_нетакой', source: 'x' })
     assert.equal(tried.step.kind, 'note', name)
-    assert.match(tried.said, /в комнате нет/, name)
+    assert.match(tried.said, /is not in the room/, name)
     assert.match(tried.said, /read_notebook/, name)
   }
   assert.equal(cells(id).length, 2)
@@ -309,10 +309,10 @@ test('a notebook file rewritten around the room is named out loud by the turn', 
    * `useTool` takes the first one before handing control to the step.
    */
   const step = call(hands(id, entry), 'list_files', {})
-  writeText(id, 'Тетрадь.ipynb', '{"cells": [], "nbformat": 4, "nbformat_minor": 5}')
+  writeText(id, 'Notebook.ipynb', '{"cells": [], "nbformat": 4, "nbformat_minor": 5}')
   const ran = await step
 
-  assert.match(ran.said, /мимо комнаты/, 'the model was not told that the write did not apply')
+  assert.match(ran.said, /changed outside the room|None of the file edits were applied/, 'the model was not told that the write did not apply')
   assert.match(ran.said, /edit_cell/, 'it does not say how to really apply it')
   /*
    * And as a separate row in the feed, not only in the model's answer.
@@ -323,12 +323,12 @@ test('a notebook file rewritten around the room is named out loud by the turn', 
    * for.
    */
   assert.equal(ran.also?.kind, 'note')
-  assert.match(ran.also!.target, /Тетрадь\.ipynb/)
+  assert.match(ran.also!.target, /Notebook\.ipynb/)
   assert.equal(source(id, 1), was, 'the write to the file reached the cells anyway')
 
   const said = saidAboutCells(id, entry)
-  assert.match(said, /Тетрадь\.ipynb/, 'the room was not told about the rewritten file')
-  assert.match(said, /не изменилось ничего/)
+  assert.match(said, /Notebook\.ipynb/, 'the room was not told about the rewritten file')
+  assert.match(said, /no cells changed/)
 })
 
 test('our own projection does not count as a deception', async () => {
@@ -343,7 +343,7 @@ test('our own projection does not count as a deception', async () => {
   // becomes exactly what the room writes into it: there is no deception
   // here, and nothing to say about it.
   const step = call(hands(id, entry), 'list_files', {})
-  writeText(id, 'Тетрадь.ipynb', bookText(id, 'Тетрадь.ipynb')!)
+  writeText(id, 'Notebook.ipynb', bookText(id, 'Notebook.ipynb')!)
   const ran = await step
 
   assert.ok(!/мимо комнаты/.test(ran.said), 'the projection was taken for a forgery')
@@ -362,7 +362,7 @@ test('a checkpoint is set once per turn and restores the notebook', async () => 
 
   const marks = listVersions(id, 50).filter((row) => row.kind === 'checkpoint')
   assert.equal(marks.length, 1, 'a mark per cell would push the one that is needed out of the panel')
-  assert.equal(marks[0].label, 'до правки оракула')
+  assert.equal(marks[0].label, "before the oracle's edit")
   assert.equal(marks[0].author_id, BY.participantId, 'the mark belongs to nobody')
 
   // One button, and the notebook is as it was before the turn.
@@ -395,10 +395,10 @@ test('the answer names the cells that would have to be rerun', async () => {
   await call(hands(id, entry), 'add_cell', { type: 'code', source: 'y = 2' })
 
   const said = saidAboutCells(id, entry)
-  assert.match(said, /поправил 02/)
-  assert.match(said, /добавил 03/)
-  assert.match(said, /перезапустите/)
-  assert.match(said, /до правки оракула/, 'it does not say where to go back to')
+  assert.match(said, /edited 02/)
+  assert.match(said, /added 03/)
+  assert.match(said, /Run them again/i)
+  assert.match(said, /before the oracle's edit/, 'it does not say where to go back to')
 })
 
 test('undoing a turn still restores files', async () => {
@@ -441,14 +441,14 @@ test('a participant in a lecture is given no cell tools at all', async () => {
     source: 'решение = 42',
   })
   assert.equal(tried.step.kind, 'note')
-  assert.match(tried.said, /преподавател/i)
+  assert.match(tried.said, /teacher/i)
   assert.equal(source(id, 1), 'print("hello, seminar")', 'a participant edited the lecture notebook')
 
   const added = await call(hands(id, entry, 'participant'), 'add_cell', {
     type: 'code',
     source: 'x',
   })
-  assert.match(added.said, /преподавател/i)
+  assert.match(added.said, /teacher/i)
   assert.equal(cells(id).length, 2)
 })
 
@@ -476,12 +476,12 @@ test('the cell lock: one cell is open to a participant, the whole notebook to th
     source: 'и тут тоже',
   })
   assert.equal(refused.step.kind, 'note')
-  assert.match(refused.said, /преподавател/i)
+  assert.match(refused.said, /teacher/i)
 
   const theirCell = await call(hands(id, entry, 'participant'), 'remove_cell', {
     cellId: cellId(open),
   })
-  assert.match(theirCell.said, /убирает преподаватель/, 'an open cell gave the right to remove it')
+  assert.match(theirCell.said, /Only the teacher may remove/, 'an open cell gave the right to remove it')
 
   const host = await call(hands(id, entry, 'host'), 'edit_cell', {
     cellId: cellId(closed),
@@ -501,7 +501,7 @@ test('after the bell even a teacher-style turn of a participant does not edit th
     source: 'x = 1',
   })
   assert.equal(tried.step.kind, 'note')
-  assert.match(tried.said, /Занятие закончено/)
+  assert.match(tried.said, /The class is over/)
   assert.equal(source(id, 1), 'print("hello, seminar")')
 
   // The teacher may: the room stays theirs after the bell.
@@ -552,7 +552,7 @@ test('create_notebook creates a room notebook, and add_cell writes into it right
   const said = saidAboutCells(id, entry)
   assert.doesNotMatch(said, /before-oracle/)
   // And the truth is told about going back: there is nowhere to go, not "in the version history".
-  assert.match(said, /до хода не было/)
+  assert.match(said, /did not exist before the turn/)
 })
 
 test('a notebook is not written as a file, neither one known to the room nor one not created yet', async () => {
@@ -604,7 +604,7 @@ test('for a missing notebook the refusal names a way out, not only the absence',
     type: 'code',
     source: 'x = 1',
   })
-  assert.match(student.said, /преподавател/i)
+  assert.match(student.said, /teacher/i)
   assert.doesNotMatch(student.said, /create_notebook/)
   setRules(id, {} as never)
 })
@@ -637,8 +637,8 @@ test('read_notebook returns a page and, if asked, the outputs themselves', async
   }
 
   const page = await call(hands(id, entry), 'read_notebook', { from: 3, count: 2 })
-  assert.match(page.said, /Показаны ячейки 3–4 из 10/)
-  assert.match(page.said, /read_notebook по .+ с from: 5/)
+  assert.match(page.said, /Showing cells 3–4 of 10/)
+  assert.match(page.said, /with from: 5/)
 
   const plain = await call(hands(id, entry), 'read_notebook', {})
   assert.doesNotMatch(plain.said, /сирена 07:14/, 'the outputs went along without being asked for')
@@ -654,7 +654,7 @@ test('run_cell refuses humanely where running is not allowed', async () => {
 
   const notCode = await call(hands(id, entry), 'run_cell', { cell: markdown })
   assert.equal(notCode.step.kind, 'note')
-  assert.match(notCode.said, /не ячейка с кодом/)
+  assert.match(notCode.said, /is not a code cell/)
 
   const missing = await call(hands(id, entry), 'run_cell', { cell: 'c_нет' })
   assert.equal(missing.step.kind, 'note')
@@ -664,14 +664,14 @@ test('run_cell refuses humanely where running is not allowed', async () => {
   getSessionDoc(id).doc.transact(() => code.set('state', 'running'))
   const busy = await call(hands(id, entry), 'run_cell', { cell: cellId(code) })
   assert.equal(busy.step.kind, 'note')
-  assert.match(busy.said, /очеред|считается/)
+  assert.match(busy.said, /already running|queued for the kernel/i)
   getSessionDoc(id).doc.transact(() => code.set('state', 'idle'))
 
   // The `run` rule is the same as for the fingers of the person asking.
   setRules(id, { ...LECTURE_ROOM })
   const student = await call(hands(id, entry, 'participant'), 'run_cell', { cell: cellId(code) })
   assert.equal(student.step.kind, 'note')
-  assert.match(student.said, /преподавател/i)
+  assert.match(student.said, /teacher/i)
   setRules(id, {} as never)
 })
 
@@ -688,9 +688,9 @@ test('script edits made around the tools are named one by one', () => {
   writeText(id, '_archive.py', 'import os\n')
   rmSync(path.join(sessionDir(id), 'data.csv'))
   const said = movedFiles(id, was)
-  assert.match(said, /data\.csv \(удалён\)/)
-  assert.match(said, /train\.py \(переписан\)/)
-  assert.match(said, /_archive\.py \(заведён\)/)
+  assert.match(said, /data\.csv \(deleted\)/)
+  assert.match(said, /train\.py \(rewritten\)/)
+  assert.match(said, /_archive\.py \(created\)/)
 })
 
 test('an unknown tool names the ones that exist, and malformed JSON names its schema', async () => {

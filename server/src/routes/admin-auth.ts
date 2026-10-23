@@ -179,7 +179,7 @@ export function adminAuthRoutes(): Router {
    * too — but not the one that was printed. The claim replaced it
    * (retireSetupToken), and the new one is only in <DATA_DIR>/setup-token,
    * readable by whoever runs the server. It is the documented way back in
-   * when the owner has lost their personal link, and the `colloq start`
+   * when the owner has lost their personal link, and the `aulalab start`
    * banner and the operator scripts sign in with it the same way.
    */
   router.post('/api/admin/signin/token', (req, res) => {

@@ -1,5 +1,5 @@
 /**
- * `colloq start --share`: one link for the class, and what stands behind it.
+ * `aulalab start --share`: one link for the class, and what stands behind it.
  *
  * The tunnel itself is opened by scripts/host.sh, as with --host: it also
  * keeps the receipt of the temporary address, checks the address from outside
@@ -11,7 +11,7 @@
  * by everyone behind such a door means someone else's code right next to the
  * notebooks of the whole class. The check stands twice, before the start by
  * the settings and before the tunnel by the live server, and a third one, the
- * same in meaning, stands in host.sh: both `colloq host` and `make host`,
+ * same in meaning, stands in host.sh: both `aulalab host` and `make host`,
  * which do not see the supervisor, go through it.
  *
  * The link block (renderShareBlock). The script prints the tunnel address, but
@@ -78,18 +78,18 @@ export function publishRefusal(check: PublishCheck): string | null {
 export function refusalText(reason: string, local?: string): string {
   return [
     `Not published: ${reason}.`,
-    'A public link lets anyone who has it run code on this computer, so colloq',
+    'A public link lets anyone who has it run code on this computer, so aulalab',
     'publishes a class only when every room runs in a Docker container of its own.',
     'Check Docker and KERNEL_BACKEND / KERNEL_ISOLATION in .env, then try again.',
     ...(local ? [`The class keeps running locally: ${local}`] : []),
   ].join('\n')
 }
 
-/** The marker line of host.sh under COLLOQ_SHARE=1: the address is up, the outside check passed or not. */
-export const SHARE_MARKER = '@colloq-share'
+/** The marker line of host.sh under AULALAB_SHARE=1: the address is up, the outside check passed or not. */
+export const SHARE_MARKER = '@aulalab-share'
 
 export function parseShareMarker(line: string): { url: string; verified: boolean } | null {
-  const match = /^@colloq-share (ok|unverified) (https:\/\/[A-Za-z0-9.-]+)\/?\s*$/.exec(line)
+  const match = /^@aulalab-share (ok|unverified) (https:\/\/[A-Za-z0-9.-]+)\/?\s*$/.exec(line)
   return match ? { url: match[2]!, verified: match[1] === 'ok' } : null
 }
 
@@ -129,14 +129,14 @@ export interface ShareBlock {
   total: number
   /** The outside check passed; null means it was not checked (a background start). */
   verified: boolean | null
-  /** The class went to the background: colloq stop closes it, not Ctrl+C. */
+  /** The class went to the background: aulalab stop closes it, not Ctrl+C. */
   detached: boolean
   /** RELAY_DOMAIN from .env, so that the advice about Russia is a ready command. */
   relayDomain: string
 }
 
 /**
- * The link block. The lines have no colour: they also go into .colloq.log.
+ * The link block. The lines have no colour: they also go into .aulalab.log.
  *
  * The order is the order of the teacher's questions: what to give the
  * students; what to give nobody; how long the link lives; why it is different
@@ -146,7 +146,7 @@ export interface ShareBlock {
 export function renderShareBlock(block: ShareBlock): string[] {
   const out: string[] = [
     '',
-    `  ┌ Colloq is online at ${block.url}`,
+    `  ┌ Aula Lab is online at ${block.url}`,
     '  │',
     '  │ Your panel on this address (the link signs you in — keep it to yourself):',
     `  │   ${block.teacher}`,
@@ -181,13 +181,13 @@ export function renderShareBlock(block: ShareBlock): string[] {
   out.push(
     '  │',
     block.detached
-      ? '  │ The link lives until colloq stop, which closes it with the class.'
+      ? '  │ The link lives until aulalab stop, which closes it with the class.'
       : '  │ The link lives while this terminal is open: Ctrl+C closes it and the class.',
     '  │ A quick tunnel gets a new address on every start: send the new link each time.',
     '  │ Cloudflare addresses do not open from Russia. For students there, use a relay:',
     block.relayDomain
-      ? `  │   colloq start --host <name>.${block.relayDomain}`
-      : '  │   colloq start --host <name> with RELAY_* in .env (see the docs: networking)',
+      ? `  │   aulalab start --host <name>.${block.relayDomain}`
+      : '  │   aulalab start --host <name> with RELAY_* in .env (see the docs: networking)',
     '  └',
     '',
   )
@@ -210,7 +210,7 @@ export async function readClasses(
   dataDir: string,
   limit = 3,
 ): Promise<{ classes: ShareClass[]; total: number }> {
-  const file = path.join(dataDir, 'colloq.db')
+  const file = path.join(dataDir, 'aulalab.db')
   if (!fs.existsSync(file)) return { classes: [], total: 0 }
   try {
     const { default: Database } = await import('better-sqlite3')

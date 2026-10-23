@@ -16,7 +16,19 @@ import { MAX_NOTE_CHARS } from '@shared/lecture'
 // not always hold.
 ensureDataDir()
 
-const dbPath = path.join(config.dataDir, 'colloq.db')
+const dbPath = path.join(config.dataDir, 'aulalab.db')
+// Keep an existing local installation's database and SQLite sidecars intact
+// when the product data file is renamed for the new brand.
+const previousDbPath = path.join(config.dataDir, `${String.fromCharCode(99, 111, 108, 108, 111, 113)}.db`)
+if (!fs.existsSync(dbPath) && fs.existsSync(previousDbPath)) {
+  const files = ['', '-wal', '-shm']
+    .map((suffix) => [previousDbPath + suffix, dbPath + suffix] as const)
+    .filter(([from]) => fs.existsSync(from))
+  if (files.some(([, to]) => fs.existsSync(to))) {
+    throw new Error('Cannot migrate the existing database: a destination file already exists')
+  }
+  for (const [from, to] of files) fs.renameSync(from, to)
+}
 export const db = new Database(dbPath)
 db.pragma('journal_mode = WAL')
 db.pragma('synchronous = NORMAL')
@@ -52,7 +64,7 @@ function stampDataSchema(): void {
   const found = Number(db.pragma('user_version', { simple: true }))
   if (found > DATA_SCHEMA_VERSION) {
     const what =
-      `colloq.db in ${config.dataDir} was written by a newer Colloq: data schema ${found}, ` +
+      `aulalab.db in ${config.dataDir} was written by a newer Aula Lab: data schema ${found}, ` +
       `while this release knows ${DATA_SCHEMA_VERSION}.`
     if (process.env[ALLOW_SCHEMA_DOWNGRADE] !== '1') {
       db.close()
@@ -93,7 +105,7 @@ for (const suffix of ['', '-wal', '-shm']) {
  *
  * In WAL mode writes pile up in a separate file and move into the main one
  * when SQLite sees fit. A seminar writes a lot and reads almost nothing, so
- * that moment may not come for hours: `colloq.db` looks like yesterday, while
+ * that moment may not come for hours: `aulalab.db` looks like yesterday, while
  * the whole day lies in the `-wal` next to it. Copying "the database" at that
  * moment means copying yesterday, and that is exactly what everyone who
  * copies one file does.
@@ -114,7 +126,7 @@ const CHECKPOINT_EVERY_MS = 5 * 60 * 1000
  *
  * `VACUUM INTO` reads a consistent snapshot and writes one finished file —
  * with no `-wal` next to it and no question of "did everything make it".
- * Copying `colloq.db` on the fly does not give that: half the day lies in the
+ * Copying `aulalab.db` on the fly does not give that: half the day lies in the
  * journal, and the copy lags by hours.
  *
  * The path must not exist — SQLite refuses to write over it, and that is
@@ -147,7 +159,7 @@ checkpointTimer.unref?.()
  * Checkpoint the journal and close the file — on exit.
  *
  * `process.exit` does not close the database: the WAL journal stays next to
- * it, and the `colloq.db` of a stopped instance is yesterday, while today is
+ * it, and the `aulalab.db` of a stopped instance is yesterday, while today is
  * in a file nobody copies. better-sqlite3 does a checkpoint by itself on
  * close().
  */
@@ -256,7 +268,7 @@ db.exec(`
    */
   /*
    * A course is a permanent public page that collects a semester of seminars
-   * in the order in which they were taught. The only address in Colloq a
+   * in the order in which they were taught. The only address in Aula Lab a
    * person would want to bookmark.
    *
    * The SCHEMA of these tables (courses, publications, publication_steps,
@@ -533,7 +545,7 @@ ensureColumn('participants', 'token_host', 'token_host INTEGER NOT NULL DEFAULT 
 /**
  * Which browser this person came in from last time.
  *
- * The mark from the `colloq_device` cookie (server/src/bans.ts). It lies in
+ * The mark from the `aulalab_device` cookie (server/src/bans.ts). It lies in
  * the participant row because a ban is created by a single identifier — but
  * what has to be closed is also the browser that a minute later will come
  * back as "a new person" with a clean localStorage. There is nowhere to take
@@ -580,7 +592,7 @@ ensureColumn('sessions', 'finished_at', 'finished_at INTEGER')
  *
  * An eight-character identifier is fine for a room opened once from a link
  * in a chat. A course is given to a class for a year, and
- * `colloq.ru/c/ml-strong` is remembered, dictated aloud and survives a lost
+ * `example.edu/c/ml-strong` is remembered, dictated aloud and survives a lost
  * message, while `/c/vspnrgt5` does none of that.
  *
  * Columns, not JSON: the database must hold the address's uniqueness,
@@ -644,7 +656,7 @@ export function createSession(id: string, name: string, environment?: string | n
   // lies in the cache next to the found ones and would outlive its birth.
   forgetRoom(id)
   // A brand-new room is the open room: nothing has been decided about it yet,
-  // and the default is what Colloq has always been.
+  // and the default is what Aula Lab has always been.
   return {
     id,
     name,

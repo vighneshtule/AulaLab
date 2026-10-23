@@ -9,14 +9,14 @@ function keysIn(file: string): string[] {
   return [...new Set([...read(file).matchAll(/["'](server\.[^"']+)["']/g)].map(match => match[1]))]
 }
 
-test('terminal system messages have both languages and retain the Colloq marker', () => {
+test('terminal system messages have both languages and retain the Aula Lab marker', () => {
   const keys = keysIn('server/src/kernel/terminal.ts')
-  const notices = keys.filter(key => translate('ru', key).startsWith('[colloq]'))
+  const notices = keys.filter(key => translate('ru', key).startsWith('[aulalab]'))
   assert.ok(notices.length >= 10, 'terminal notices must remain covered')
   for (const key of keys) assert.ok(hasTranslation(key), key)
   for (const key of notices) {
     assert.match(translate('ru', key), /[А-Яа-яЁё]/, key)
-    assert.match(translate('en', key), /^\[colloq\]/, key)
+    assert.match(translate('en', key), /^\[aulalab\]/, key)
     assert.doesNotMatch(translate('en', key), /[А-Яа-яЁё]/, key)
   }
 })

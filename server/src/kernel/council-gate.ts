@@ -69,18 +69,18 @@ import { COUNCIL_GATE_MOUNT } from '@shared/remote-kernels'
  */
 
 /** The gate's module, as the kernel imports it from COUNCIL_GATE_MOUNT. */
-export const COUNCIL_GATE_MODULE = 'colloq_gate'
+export const COUNCIL_GATE_MODULE = 'aulalab_gate'
 
 /** The key of an attempt's request metadata that carries its run id, the token the entry opened the gate for. */
-export const COUNCIL_GATE_RUN_KEY = 'colloqRun'
+export const COUNCIL_GATE_RUN_KEY = 'aulalabRun'
 
 /**
  * The name of the exception the gate refuses with: the guard's own
- * (danger.ts · COLLOQ_REFUSED, the same string, held by
+ * (danger.ts · AULALAB_REFUSED, the same string, held by
  * tests/council-gate.test.mts), so that an attempt's card draws a refusal as
  * one line without a traceback, whichever module refused.
  */
-export const COUNCIL_GATE_REFUSED = 'ColloqRefused'
+export const COUNCIL_GATE_REFUSED = 'AulaLabRefused'
 
 /**
  * What the gate's refusal says, in English, for the log: never a card's
@@ -88,7 +88,7 @@ export const COUNCIL_GATE_REFUSED = 'ColloqRefused'
  * entry's refusal is (kernel/index.ts · runCouncilOne, councilEnterRefusal):
  * the entry did not confirm the attempt's copies, and nothing ran.
  */
-export const COUNCIL_GATE_REFUSAL = 'colloq gate: this request was not run, as no entry opened the gate for it'
+export const COUNCIL_GATE_REFUSAL = 'aulalab gate: this request was not run, as no entry opened the gate for it'
 
 /** Whether an attempt's error is the gate's refusal (and not the guard's, which shares its exception's name). */
 export function isGateRefusal(ename: string, evalue: string): boolean {
@@ -96,12 +96,12 @@ export function isGateRefusal(ename: string, evalue: string): boolean {
 }
 
 /**
- * The module, `colloq_gate.py`. Its API: `open_for(token)`, `close()`,
+ * The module, `aulalab_gate.py`. Its API: `open_for(token)`, `close()`,
  * `installed()` (true while the kernel's `do_execute` is its wrapper). It
  * binds no name in the user's namespace: the refused code is one
  * expression that raises, and the module lives in `sys.modules` alone.
  */
-export const COUNCIL_GATE_PYTHON = `"""The gate of a Colloq council worker's kernel (remote-classes.md §9.6).
+export const COUNCIL_GATE_PYTHON = `"""The gate of a Aula Lab council worker's kernel (remote-classes.md §9.6).
 
 A worker gets an attempt's entry, the attempt and its exit in one batch, and
 the kernel runs them in order. A non-silent request runs only when the gate
@@ -250,10 +250,10 @@ def load_ipython_extension(ip):
  * first on `sys.path`, and the module loaded through `extra_extensions`
  * (see the head of this file).
  */
-export const COUNCIL_GATE_CONFIG = `# Colloq (remote-classes.md §9.6): every kernel of a council container is born with the gate.
-import sys as _colloq_sys
-if ${JSON.stringify(COUNCIL_GATE_MOUNT)} not in _colloq_sys.path:
-    _colloq_sys.path.insert(0, ${JSON.stringify(COUNCIL_GATE_MOUNT)})
+export const COUNCIL_GATE_CONFIG = `# Aula Lab (remote-classes.md §9.6): every kernel of a council container is born with the gate.
+import sys as _aulalab_sys
+if ${JSON.stringify(COUNCIL_GATE_MOUNT)} not in _aulalab_sys.path:
+    _aulalab_sys.path.insert(0, ${JSON.stringify(COUNCIL_GATE_MOUNT)})
 c = get_config()  # noqa: F821
 c.InteractiveShellApp.extra_extensions = [${JSON.stringify(COUNCIL_GATE_MODULE)}]
 `

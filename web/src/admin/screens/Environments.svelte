@@ -393,7 +393,7 @@
    * What is wrong with the draft's header — in one line, without blocking
    * the save.
    *
-   * Both troubles are silent: `# colloq: python 3.8` is not recognised by the
+   * Both troubles are silent: `# aulalab: python 3.8` is not recognised by the
    * parser at all (there is no such slim image), and an environment with its
    * own version on top of another image is a build refusal waiting to
    * happen. Saying so here costs a line; finding it out from the build log
@@ -842,7 +842,7 @@
               {:else}
                 <!--
                   `.enter` and not a keyframe of this screen's own: index.css
-                  names this exact case in the comment over `colloq-enter` — "a
+                  names this exact case in the comment over `aulalab-enter` — "a
                   status settling" — and the panel gains nothing from a second
                   vocabulary for it. It is also opacity plus 3px, which is why
                   there is no reduced-motion branch here: index.css already swaps
@@ -1103,7 +1103,7 @@
             The Python version is a choice, not a line you have to know by
             heart.
 
-            It is still written into the text below (`# colloq: python 3.12`),
+            It is still written into the text below (`# aulalab: python 3.12`),
             and on purpose: the file remains the only truth about the
             environment, and the buttons are a way to type it. That is also
             why it is read from there: a directive typed by hand highlights

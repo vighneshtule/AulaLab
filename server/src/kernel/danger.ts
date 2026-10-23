@@ -60,20 +60,20 @@ import { tr } from '@shared/i18n'
  */
 
 /** The hidden module the guard lives in. Not a name in the student's `globals()`. */
-export const GUARD_MODULE = '_colloq_guard'
+export const GUARD_MODULE = '_aulalab_guard'
 
 /**
  * The name of the exception the guard refuses with.
  *
  * One for the global guard and for the council isolation: the server
  * recognises its own refusal by it and prints ONE human line without a
- * traceback; the `<colloq-guard>` frames are not student code, and there is
+ * traceback; the `<aulalab-guard>` frames are not student code, and there is
  * nothing there for the student to read.
  */
-export const COLLOQ_REFUSED = 'ColloqRefused'
+export const AULALAB_REFUSED = 'AulaLabRefused'
 
 /** The key the report travels under in the kernel reply's `user_expressions`. */
-export const GUARD_REPORT_KEY = 'colloq'
+export const GUARD_REPORT_KEY = 'aulalab'
 
 /** The expression the server uses to ask the kernel whether the guard is up. */
 export const GUARD_REPORT_EXPR = `__import__('sys').modules['${GUARD_MODULE}'].report`
@@ -110,7 +110,7 @@ import os
 import sys
 
 
-class ColloqRefused(Exception):
+class AulaLabRefused(Exception):
     """The cell asked for something the room has only one of, shared by all.
 
     The name is visible to the student, so it is short and our own: the server
@@ -235,7 +235,7 @@ def _say(what, why):
 
 
 def _refuse(what, why='kernel'):
-    raise ColloqRefused(_say(what, why))
+    raise AulaLabRefused(_say(what, why))
 
 
 def _deadly():
@@ -496,7 +496,7 @@ def _check_text(text):
             continue
         try:
             bad = _bad_words(_words(piece))
-        except ColloqRefused:
+        except AulaLabRefused:
             raise
         except Exception:
             bad = None
@@ -985,7 +985,7 @@ export function guardInstallLine(): string {
   return (
     `if getattr(__import__('sys').modules.get(${MODULE}), 'version', None) != ` +
     `${JSON.stringify(implVersion())}: ` +
-    `exec(compile(${implLiteral()}, '<colloq-guard>', 'exec'), ` +
+    `exec(compile(${implLiteral()}, '<aulalab-guard>', 'exec'), ` +
     `__import__('sys').modules.setdefault(${MODULE}, ` +
     `__import__('types').ModuleType(${MODULE})).__dict__)`
   )

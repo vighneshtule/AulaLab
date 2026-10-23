@@ -22,7 +22,7 @@ import { setLocaleResolver } from '../shared/i18n.js'
 let dir: string
 const components = new Map<string, Component<any>>()
 before(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-late-render-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-late-render-'))
   const local = (name: string) => pathToFileURL(path.join(dir, `${name}.mjs`)).href
   const sources: [string, string][] = [
     ['Skeleton', '../web/src/components/ui/Skeleton.svelte'],

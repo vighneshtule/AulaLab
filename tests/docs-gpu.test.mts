@@ -200,7 +200,7 @@ test('the guides warn that nvidia.com/gpu for submissions is the rooms\' own res
 /*
  * ------------------------------------------------------------ the sizes
  *
- * `docker images` on the VM, 13 Oct 2026: colloq-kernel:base-gpu 9.88GB, the
+ * `docker images` on the VM, 13 Oct 2026: aulalab-kernel:base-gpu 9.88GB, the
  * kaggle-gpu trial (the same pins) 12.7GB. The size includes the parent's
  * layers, so kaggle-gpu adds about 2.8 GB. Disk advice (100 GB) is unchanged.
  */
@@ -375,8 +375,8 @@ test('the guides say what the cap inside holds: PyTorch and CatBoost\'s pool, no
   assert.match(harness, /_HOOKS\["catboost"\] = _default_catboost/)
   assert.match(harness, /params\.get\("gpu_ram_part"\) is None/, 'CatBoost\'s own gpu_ram_part is no longer kept: the guides say it is')
   assert.doesNotMatch(harness, /_HOOKS\["(tensorflow|jax)"\]/, 'sitecustomize now caps TensorFlow or JAX: the guides say nothing does')
-  assert.match(runner, /`COLLOQ_GPU_MEMORY_MB=\$\{/)
-  assert.match(runner, /`COLLOQ_GPU_CARD_MB=\$\{/)
+  assert.match(runner, /`AULALAB_GPU_MEMORY_MB=\$\{/)
+  assert.match(runner, /`AULALAB_GPU_CARD_MB=\$\{/)
   for (const lang of LANGS) {
     const said = heldParagraph(lang)
     // The probe that took the cap away before (polars asks about torch at its own import).
@@ -389,7 +389,7 @@ test('the guides say what the cap inside holds: PyTorch and CatBoost\'s pool, no
       `${lang}/competitions.html#gpu does not warn that TensorFlow and JAX are not capped`)
   }
   const inside = line(vastReadme(), '- inside, ')
-  for (const word of [/COLLOQ_GPU_MEMORY_MB/, /COLLOQ_GPU_CARD_MB/, /gpu_ram_part/, /polars/, /TensorFlow and JAX/]) {
+  for (const word of [/AULALAB_GPU_MEMORY_MB/, /AULALAB_GPU_CARD_MB/, /gpu_ram_part/, /polars/, /TensorFlow and JAX/]) {
     assert.match(inside, word, `the Vast README's inside half does not name ${word}`)
   }
 })
@@ -467,7 +467,7 @@ test('deleting a competition is described as the route does it: its runs are sto
  * ------------------------------------------------- Kubernetes, after the review
  */
 test('the Kubernetes guide lists the GPU queue, /dev/shm and pull values with the chart\'s defaults', () => {
-  const values = read('deploy/helm/colloq/values.yaml')
+  const values = read('deploy/helm/aulalab/values.yaml')
   const block = values.slice(values.indexOf('\n  competitions:\n'), values.indexOf('\npersistence:'))
   const value = (key: string): string => {
     const found = new RegExp(`^    ${key}: (\\S+)$`, 'm').exec(block)
@@ -549,7 +549,7 @@ test('the k3s README names every competition GPU setting the installer renders i
 })
 
 test('values.yaml says where competition Pods run, as the guide does', () => {
-  const values = read('deploy/helm/colloq/values.yaml')
+  const values = read('deploy/helm/aulalab/values.yaml')
   const at = values.indexOf('# RUNTIME_ROOM_NODE_SELECTOR / RUNTIME_ROOM_TOLERATIONS')
   assert.notEqual(at, -1)
   const comment = values.slice(at, values.indexOf('  nodeSelector: {}', at)).replace(/\s*#\s*/g, ' ')

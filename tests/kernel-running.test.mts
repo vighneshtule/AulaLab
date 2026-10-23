@@ -104,7 +104,7 @@ jupyter.on('upgrade', (req, socket, head) => {
         status: 'ok',
         execution_count: 1,
         ...(guard
-          ? { user_expressions: { colloq: { status: 'ok', data: { 'text/plain': JSON.stringify(guard) }, metadata: {} } } }
+          ? { user_expressions: { aulalab: { status: 'ok', data: { 'text/plain': JSON.stringify(guard) }, metadata: {} } } }
           : {}),
       })
       reply(ws, msg.header, 'status', { execution_state: 'idle' })
@@ -277,7 +277,7 @@ test('staff read the list, another class is numbers only, and only the owner sto
   // One `docker stats` for every container, and none again within ten seconds.
   const stats = () => fake.calls.filter((args) => args[0] === 'stats')
   assert.equal(stats().length, 1)
-  assert.deepEqual(stats()[0]!.slice(4).sort(), ['colloq-room-run-mine', 'colloq-room-run-mine-own', 'colloq-room-run-other'])
+  assert.deepEqual(stats()[0]!.slice(4).sort(), ['aulalab-room-run-mine', 'aulalab-room-run-mine-own', 'aulalab-room-run-other'])
   const again = await running(owner.cookie)
   assert.equal(stats().length, 1, 'the sample is kept for ten seconds')
   assert.equal(again.classes.find((row) => row.id === 'run-other')?.name, 'Чужой семинар 7')
@@ -315,7 +315,7 @@ test("the owner's stop: the personal notebooks alone, then the class, said in th
   })
   assert.equal(own.status, 200)
   assert.deepEqual((await own.json()) as StopKernelResponse, { stopped: true, freedMb: 2048 })
-  assert.deepEqual([...fake.containers.keys()], ['colloq-room-run-stop'], 'only the personal-notebook container goes')
+  assert.deepEqual([...fake.containers.keys()], ['aulalab-room-run-stop'], 'only the personal-notebook container goes')
   assert.deepEqual(notes('run-stop').at(-1), tr('server.kernel.ownStoppedByOwner'))
   // The list shows it at once, not after the ten-second sample.
   const after = (await running(owner.cookie)).classes.find((row) => row.id === 'run-stop')
@@ -329,7 +329,7 @@ test("the owner's stop: the personal notebooks alone, then the class, said in th
   assert.equal(whole.status, 200)
   assert.deepEqual((await whole.json()) as StopKernelResponse, { stopped: true, freedMb: 4096 })
   assert.equal(fake.containers.size, 0)
-  assert.ok(fake.calls.some((args) => args.join(' ') === 'rm -f colloq-room-run-stop'))
+  assert.ok(fake.calls.some((args) => args.join(' ') === 'rm -f aulalab-room-run-stop'))
   assert.equal(notes('run-stop').at(-1), tr('server.kernel.stoppedByOwner'))
   assert.equal((await running(owner.cookie)).classes.length, 0)
 
@@ -373,7 +373,7 @@ test('stopping the idle ones takes only the empty, quiet classes, each re-checke
     assert.deepEqual(body.stopped, [{ id: 'run-idle', freedMb: 4096 + 1024 }])
     assert.deepEqual(body.skipped, [])
     assert.equal(body.freedMb, 4096 + 1024)
-    assert.deepEqual([...fake.containers.keys()], ['colloq-room-run-busy'])
+    assert.deepEqual([...fake.containers.keys()], ['aulalab-room-run-busy'])
     // People in a room are a warning for the single stop, not a refusal.
     assert.deepEqual(lastEvent('room.kernel_stopped').detail, { what: 'class', freedMb: 5120, forced: false, online: 0, idle: true })
 
@@ -400,7 +400,7 @@ test('the batch stops only the classes the owner confirmed, and re-checks each o
   // Someone walks into B while A is being removed.
   let leave: (() => void) | null = null
   fake.intercept = (args) => {
-    if (args[0] === 'rm' && args.at(-1) === 'colloq-room-race-a' && !leave) leave = present('race-b')
+    if (args[0] === 'rm' && args.at(-1) === 'aulalab-room-race-a' && !leave) leave = present('race-b')
   }
   try {
     const res = await call(app.base, 'POST', '/api/admin/resources/running/stop-idle', {
@@ -413,7 +413,7 @@ test('the batch stops only the classes the owner confirmed, and re-checks each o
       { id: 'race-b', reason: 'online' },
       { id: 'race-gone', reason: 'gone' },
     ])
-    assert.deepEqual([...fake.containers.keys()].sort(), ['colloq-room-race-b', 'colloq-room-race-later'])
+    assert.deepEqual([...fake.containers.keys()].sort(), ['aulalab-room-race-b', 'aulalab-room-race-later'])
     // One census for the whole batch: no fresh `docker stats` per class, the
     // seconds in which someone could walk in unseen.
     assert.ok(stats() - before <= 1, `the batch sampled docker stats ${stats() - before} times`)
@@ -428,7 +428,7 @@ test('the batch stops only the classes the owner confirmed, and re-checks each o
       kernel.stopKernelsByOwner('race-later', 'class', { idleOnly: true }),
       (err: unknown) => err instanceof kernel.KernelStopRefusal && err.reason === 'online',
     )
-    assert.equal(fake.containers.has('colloq-room-race-later'), true)
+    assert.equal(fake.containers.has('aulalab-room-race-later'), true)
   } finally {
     back()
   }

@@ -268,7 +268,7 @@ function causeText(cause: LossCause, detail: string | null): string {
 /**
  * The machine refused the lease (§3.4 "Decline", §13 note 3).
  *
- * `draining` — the machine stops (`colloq-host runner update`, a leave,
+ * `draining` — the machine stops (`aulalab-host runner update`, a leave,
  * `--now` after the container started): the row waits again with no loss
  * counted and no decline either, whatever phase the run was in. Any other
  * reason comes before a container started (the image, the data, the wheels,
@@ -535,7 +535,7 @@ export function unclassRunner(runnerId: string, now = remoteNow()): { runner: Ru
 }
 
 /**
- * The machine revokes itself (colloq-host runner leave, §13c note 19): its
+ * The machine revokes itself (aulalab-host runner leave, §13c note 19): its
  * leaving sync lists nothing held, and from its next call on its secret is
  * refused, as after the owner's «Отключить». The sync has been reconciled
  * by then (lease.ts · reconcileSync), so a run it no longer lists is lost
@@ -608,7 +608,7 @@ export function untrustRunner(runnerId: string, now = remoteNow()): number {
  * at one `now` — and one silence loses them in one pass of the clock. Counted
  * lease by lease, a machine holding three runs was drained for one restart:
  * with one GPU machine, every GPU notebook of a class stopped, while §10.2
- * expects `docker kill colloq-runner` only to requeue the runs. So the leases
+ * expects `docker kill aulalab-runner` only to requeue the runs. So the leases
  * lost at one moment are one loss, and only losses after a container
  * started count at all: one before it is refunded as if never taken, cost
  * nobody a minute, and says nothing about the machine's runs.

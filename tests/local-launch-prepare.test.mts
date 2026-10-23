@@ -8,7 +8,7 @@ import { prepare } from '../cli/src/launch-prepare.js'
 import { Processes } from '../cli/src/launch-process.js'
 
 function fixture() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-prepare-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-prepare-'))
   for (const dir of ['bin', 'kernel/environments'])
     fs.mkdirSync(path.join(root, dir), { recursive: true })
   fs.writeFileSync(path.join(root, 'kernel/Dockerfile'), 'FROM fake')
@@ -16,7 +16,7 @@ function fixture() {
   fs.writeFileSync(path.join(root, 'kernel/environments/base.txt'), 'numpy==1')
   fs.writeFileSync(
     path.join(root, 'kernel/environments/child.txt'),
-    '# colloq: from base\npandas==1',
+    '# aulalab: from base\npandas==1',
   )
   const imagesFile = path.join(root, 'images.json')
   const images = {
@@ -45,7 +45,7 @@ function fixture() {
     fs.appendFileSync('builds',name+'\\n');
     const images=JSON.parse(fs.readFileSync('images.json'));
     const source=fs.readFileSync('kernel/environments/'+name+'.txt','utf8');
-    const parent=source.match(/# colloq: from (\\S+)/)?.[1];
+    const parent=source.match(/# aulalab: from (\\S+)/)?.[1];
     const Id=crypto.createHash('sha256').update(source+(parent?images[parent].Id:'')).digest('hex');
     images[name]={Id,Created:new Date().toISOString()};
     fs.writeFileSync('images.json',JSON.stringify(images));
@@ -56,7 +56,7 @@ function fixture() {
     ...process.env,
     PATH: path.join(root, 'bin') + ':' + process.env.PATH,
     KERNEL_ENV: 'child',
-    COLLOQ_UNSAFE_DEV_FILES: '1',
+    AULALAB_UNSAFE_DEV_FILES: '1',
   })
   const processes = new Processes(root, config.env)
   return {
@@ -118,7 +118,7 @@ test('source changes during a kernel build fail without marking the new sources 
   const f = fixture()
   try {
     await f.run()
-    const marker = path.join(f.root, '.colloq/kernel-child.json')
+    const marker = path.join(f.root, '.aulalab/kernel-child.json')
     const original = fs.readFileSync(marker, 'utf8')
     fs.appendFileSync(path.join(f.root, 'kernel/environments/child.txt'), '\nscipy')
     f.config.env.FAKE_EDIT_DURING_BUILD = '1'
@@ -130,7 +130,7 @@ test('source changes during a kernel build fail without marking the new sources 
 })
 
 /**
- * The same, but for an installed colloq: the app is in one place, the state
+ * The same, but for an installed aulalab: the app is in one place, the state
  * in another, and the teacher's custom environment lives in the second
  * directory.
  *
@@ -141,12 +141,12 @@ test('source changes during a kernel build fail without marking the new sources 
  * custom environment land where docker will pick it up.
  */
 function distFixture(kernelEnv = 'mine') {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-dist-'))
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-dist-'))
   const root = path.join(base, 'app'),
     home = path.join(base, 'home')
   for (const dir of [path.join(base, 'bin'), path.join(root, 'kernel/environments'), home])
     fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(path.join(root, '.colloq-dist.json'), '{"name":"colloq"}')
+  fs.writeFileSync(path.join(root, '.aulalab-dist.json'), '{"name":"aulalab"}')
   fs.writeFileSync(path.join(root, 'kernel/Dockerfile'), 'FROM fake')
   fs.writeFileSync(path.join(root, 'kernel/requirements.txt'), 'jupyter')
   fs.writeFileSync(path.join(root, 'kernel/environments/base.txt'), 'numpy==1')
@@ -196,22 +196,22 @@ function distFixture(kernelEnv = 'mine') {
   }
 }
 
-test('a custom environment from the state directory is built for an installed colloq', async () => {
+test('a custom environment from the state directory is built for an installed aulalab', async () => {
   const f = distFixture()
   try {
     fs.mkdirSync(path.join(f.home, 'environments'), { recursive: true })
-    fs.writeFileSync(path.join(f.home, 'environments/mine.txt'), '# colloq: from base\nstatsmodels')
+    fs.writeFileSync(path.join(f.home, 'environments/mine.txt'), '# aulalab: from base\nstatsmodels')
     await f.run()
     // The parent came with the app, the child was created by the teacher;
     // docker read both from one context.
-    assert.deepEqual(f.builds(), ['base numpy==1', 'mine # colloq: from base|statsmodels'])
+    assert.deepEqual(f.builds(), ['base numpy==1', 'mine # aulalab: from base|statsmodels'])
     // A second run rebuilds nothing: the merge keeps the modification time.
     await f.run()
     assert.equal(f.builds().length, 2)
     // An edit to the custom list reaches the build, the bundled parent stays.
     fs.appendFileSync(path.join(f.home, 'environments/mine.txt'), '\nseaborn')
     await f.run()
-    assert.deepEqual(f.builds().slice(2), ['mine # colloq: from base|statsmodels|seaborn'])
+    assert.deepEqual(f.builds().slice(2), ['mine # aulalab: from base|statsmodels|seaborn'])
   } finally {
     f.close()
   }
@@ -222,7 +222,7 @@ test('a custom name overrides the bundled one, and without custom environments n
   try {
     await f.run()
     assert.deepEqual(f.builds(), ['base numpy==1'])
-    assert.ok(!fs.existsSync(path.join(f.home, '.colloq/kernel-build')))
+    assert.ok(!fs.existsSync(path.join(f.home, '.aulalab/kernel-build')))
   } finally {
     f.close()
   }
@@ -230,16 +230,16 @@ test('a custom name overrides the bundled one, and without custom environments n
   try {
     fs.mkdirSync(path.join(g.home, 'environments'), { recursive: true })
     fs.writeFileSync(path.join(g.home, 'environments/base.txt'), 'numpy==9')
-    fs.writeFileSync(path.join(g.home, 'environments/mine.txt'), '# colloq: from base\nplotly')
+    fs.writeFileSync(path.join(g.home, 'environments/mine.txt'), '# aulalab: from base\nplotly')
     await g.run()
-    assert.deepEqual(g.builds(), ['base numpy==9', 'mine # colloq: from base|plotly'])
+    assert.deepEqual(g.builds(), ['base numpy==9', 'mine # aulalab: from base|plotly'])
   } finally {
     g.close()
   }
 })
 
 /**
- * A working tree with its own COLLOQ_HOME: there is a Makefile next to it,
+ * A working tree with its own AULALAB_HOME: there is a Makefile next to it,
  * and the teacher's environment lives in the second directory.
  *
  * This is exactly the gap between two forks. Merging the directories keyed on
@@ -254,7 +254,7 @@ test('a custom name overrides the bundled one, and without custom environments n
  * that docker built from the merged context what the person wrote.
  */
 function splitFixture(kernelEnv = 'mine') {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-split-'))
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-split-'))
   const root = path.join(base, 'tree'),
     home = path.join(base, 'home')
   for (const dir of [path.join(base, 'bin'), path.join(root, 'kernel/environments'), home])
@@ -328,14 +328,14 @@ function splitFixture(kernelEnv = 'mine') {
   }
 }
 
-test('in a working tree with COLLOQ_HOME a custom environment is built and make is not called', async () => {
+test('in a working tree with AULALAB_HOME a custom environment is built and make is not called', async () => {
   const f = splitFixture()
   try {
     fs.mkdirSync(path.join(f.home, 'environments'), { recursive: true })
-    fs.writeFileSync(path.join(f.home, 'environments/mine.txt'), '# colloq: from base\nstatsmodels')
+    fs.writeFileSync(path.join(f.home, 'environments/mine.txt'), '# aulalab: from base\nstatsmodels')
     await f.run()
     assert.deepEqual(f.makeCalls(), [], 'make does not see <home>/environments — it must not be called')
-    assert.deepEqual(f.builds(), ['base numpy==1', 'mine # colloq: from base|statsmodels'])
+    assert.deepEqual(f.builds(), ['base numpy==1', 'mine # aulalab: from base|statsmodels'])
   } finally {
     f.close()
   }

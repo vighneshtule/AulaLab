@@ -10,14 +10,14 @@
  * Why this is a separate file and not inline. There are three readers, `link`,
  * `status` and `doctor`, and while each read it in its own way, they disagreed
  * on one screen: status called the supervisor's pid "the server", doctor right
- * away declared the real listener of the port "a second Colloq" and advised
+ * away declared the real listener of the port "a second Aula Lab" and advised
  * stopping one's own class, and both took the port from .env, where nobody had
  * changed it.
  *
  * Three things are NOT done here, and each on purpose.
  *
  * The port is not taken from .env. The questions differ: .env says what is
- * configured, the receipt says what the class runs on. `colloq run --port 4100`
+ * configured, the receipt says what the class runs on. `aulalab run --port 4100`
  * does not touch .env (launch-config.ts · launchConfig), and the two answers
  * coincide only by chance.
  *

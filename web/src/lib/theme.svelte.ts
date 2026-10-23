@@ -1,5 +1,5 @@
 /**
- * Colour theme — the one piece of state in Colloq that is deliberately NOT
+ * Colour theme — the one piece of state in Aula Lab that is deliberately NOT
  * shared. The notebook, the kernel, the thread and the terminal are the room's;
  * whether the room is drawn on white or on navy is each viewer's own business,
  * so this never touches the Y.Doc or awareness.
@@ -14,7 +14,7 @@ export interface ThemeStore {
   toggle(): void
 }
 
-const STORAGE_KEY = 'colloq.theme.v1'
+const STORAGE_KEY = 'aulalab.theme.v1'
 
 const media: MediaQueryList | null =
   typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -61,7 +61,7 @@ function onSystemChange(event: MediaQueryListEvent): void {
  * The neighbouring window of the same room — the council console — follows
  * the switch.
  *
- * The theme choice is stored per browser (`colloq.theme.v1`), not per tab,
+ * The theme choice is stored per browser (`aulalab.theme.v1`), not per tab,
  * and the second window must obey the same toggle: switch the theme in the
  * notebook, and the console next to it on a second monitor must repaint
  * along with it rather than wait for a reload. `storage` arrives only in

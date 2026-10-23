@@ -4,7 +4,7 @@
  * The registry is assembled from four files, one file per group. The order in
  * help is the order of the array inside the group's file.
  *
- * Here is only what the teacher runs a class with after `pip install colloq`:
+ * Here is only what the teacher runs a class with after `pip install aulalab`:
  * bring it up, expose it to the outside, look, stop, take a backup. The
  * workshop (renting machines, the cluster, the relay, DNS, the build, tests)
  * lives in the Makefile and scripts/, and there is no wrapper over it here.
@@ -70,7 +70,7 @@ export type Command = {
   group: Group
   /** One line in English: what it does. */
   summary: string
-  /** Starts with 'colloq '. */
+  /** Starts with 'aulalab '. */
   usage: string
   args?: Arg[]
   flags: Flag[]

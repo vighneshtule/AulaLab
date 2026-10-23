@@ -89,22 +89,22 @@ const DEFAULTS = {
   KERNEL_PIDS: undefined,
   KERNEL_OWN_PIDS: undefined,
   KERNEL_SHM: undefined,
-  COLLOQ_ROOM_NETWORK: undefined,
+  AULALAB_ROOM_NETWORK: undefined,
 }
 
 /** A machine's instance label, in the agent's shape (runner-agent/images.ts · INSTANCE_LABEL). */
-const LABEL = 'ru.colloq.competition-instance=a1b2c3d4e5f60718'
+const LABEL = 'ru.aulalab.competition-instance=a1b2c3d4e5f60718'
 const I6 = 'a1b2c3'
-const BRIDGE = `colloq-mrooms-${I6}`
+const BRIDGE = `aulalab-mrooms-${I6}`
 const HOME_MOUNT = '/srv/workspace/cl1'
-const MACHINE_MOUNT = '/var/lib/colloq-runner/rooms/cl1'
-const MACHINE_IMAGE = 'colloq-revision:rev-7f3a'
+const MACHINE_MOUNT = '/var/lib/aulalab-runner/rooms/cl1'
+const MACHINE_IMAGE = 'aulalab-revision:rev-7f3a'
 /** What home's placementToken would be: 40 hex characters of its own (§6.9). */
 const MACHINE_TOKEN = 'f'.repeat(40)
 const GEN = 3
 const COUNCIL_MOUNTS: readonly RoomMount[] = [
-  { source: '/var/lib/colloq-runner/council/cl1/epochs', target: '/colloq/epochs', readOnly: true },
-  { source: '/var/lib/colloq-runner/council/cl1/scratch', target: '/colloq/scratch', readOnly: false },
+  { source: '/var/lib/aulalab-runner/council/cl1/epochs', target: '/aulalab/epochs', readOnly: true },
+  { source: '/var/lib/aulalab-runner/council/cl1/scratch', target: '/aulalab/scratch', readOnly: false },
 ]
 
 /** The flags that take a value as the next element. */
@@ -149,12 +149,12 @@ const CASES: Case[] = [
 
 /** Home's argv for a case, from its own wrapper; and the numbers the machine's intent would carry for it. */
 function homeSide(c: Case): { args: string[]; pids: number; memoryMb: number; cpus: number; shm: string } {
-  return withEnv({ ...DEFAULTS, COLLOQ_ROOM_NETWORK: c.mode, KERNEL_SHM: c.shm }, () => ({
+  return withEnv({ ...DEFAULTS, AULALAB_ROOM_NETWORK: c.mode, KERNEL_SHM: c.shm }, () => ({
     args: runArgs({
       sessionId: 'cl1',
       env: c.env,
       mount: HOME_MOUNT,
-      network: c.containerForm ? 'colloq' : 'colloq-rooms',
+      network: c.containerForm ? 'aulalab' : 'aulalab-rooms',
       publish: !c.containerForm,
       gpu: c.gpu,
       role: c.role,
@@ -199,7 +199,7 @@ for (const c of CASES) {
     const machine = machineRoomRunArgs(machineSpec(c, home), { instanceLabel: LABEL, gen: GEN })
     const ro = c.role === 'council' ? ':ro' : ''
     const homeName = roomContainer('cl1', c.role)
-    const machineName = `colloq-class-${I6}-cl1-${c.role}`
+    const machineName = `aulalab-class-${I6}-cl1-${c.role}`
 
     /*
      * Home's flags, each named difference put in its place: what is replaced
@@ -209,7 +209,7 @@ for (const c of CASES) {
      */
     const expected = flags(home.args).flatMap((flag): string[] => {
       if (flag === `--name ${homeName}`) return [`--name ${machineName}`]
-      if (flag === `--network ${c.containerForm ? 'colloq' : 'colloq-rooms'}`) {
+      if (flag === `--network ${c.containerForm ? 'aulalab' : 'aulalab-rooms'}`) {
         return c.containerForm ? [`--network ${BRIDGE}`, '-p 127.0.0.1:0:8888'] : [`--network ${BRIDGE}`]
       }
       if (flag.startsWith('-e JUPYTER_TOKEN=')) return [`-e JUPYTER_TOKEN=${MACHINE_TOKEN}`]
@@ -217,8 +217,8 @@ for (const c of CASES) {
         return [`-v ${MACHINE_MOUNT}:/workspace/cl1${ro}`, ...(c.role === 'council' ? COUNCIL_MOUNTS.map(mountFlag) : [])]
       }
       if (flag === `--label ${ROOM_KERNEL_LABEL}`) return [`--label ${CLASS_KERNEL_LABEL}`]
-      if (flag === `colloq-kernel:${c.env}`) {
-        return [`--label colloq.placement=cl1:${c.role}:${GEN}`, `--label ${LABEL}`, ...MACHINE_ROOM_FLAGS, MACHINE_IMAGE]
+      if (flag === `aulalab-kernel:${c.env}`) {
+        return [`--label aulalab.placement=cl1:${c.role}:${GEN}`, `--label ${LABEL}`, ...MACHINE_ROOM_FLAGS, MACHINE_IMAGE]
       }
       return [flag]
     })
@@ -230,11 +230,11 @@ for (const c of CASES) {
     const machineFlags = flags(machine)
     assert.deepEqual(only(homeFlags, machineFlags), [
       `--name ${homeName}`,
-      `--network ${c.containerForm ? 'colloq' : 'colloq-rooms'}`,
+      `--network ${c.containerForm ? 'aulalab' : 'aulalab-rooms'}`,
       homeFlags.find((flag) => flag.startsWith('-e JUPYTER_TOKEN='))!,
       `-v ${HOME_MOUNT}:/workspace/cl1${ro}`,
       `--label ${ROOM_KERNEL_LABEL}`,
-      `colloq-kernel:${c.env}`,
+      `aulalab-kernel:${c.env}`,
     ])
     assert.deepEqual(only(machineFlags, homeFlags), [
       `--name ${machineName}`,
@@ -244,7 +244,7 @@ for (const c of CASES) {
       `-v ${MACHINE_MOUNT}:/workspace/cl1${ro}`,
       ...(c.role === 'council' ? COUNCIL_MOUNTS.map(mountFlag) : []),
       `--label ${CLASS_KERNEL_LABEL}`,
-      `--label colloq.placement=cl1:${c.role}:${GEN}`,
+      `--label aulalab.placement=cl1:${c.role}:${GEN}`,
       `--label ${LABEL}`,
       ...MACHINE_ROOM_FLAGS,
       MACHINE_IMAGE,
@@ -262,7 +262,7 @@ for (const c of CASES) {
 }
 
 test('the seven variables are the six of before plus the class hash seed, in that order', () => {
-  const args = withEnv(DEFAULTS, () => runArgs({ sessionId: 'cl1', env: 'base', mount: HOME_MOUNT, network: 'colloq-rooms', publish: true, gpu: null }))
+  const args = withEnv(DEFAULTS, () => runArgs({ sessionId: 'cl1', env: 'base', mount: HOME_MOUNT, network: 'aulalab-rooms', publish: true, gpu: null }))
   const env = envOf(args)
   assert.match(env[0]!, /^JUPYTER_TOKEN=[0-9a-f]{40}$/)
   assert.deepEqual(env.slice(1), [
@@ -279,20 +279,20 @@ test('the seven variables are the six of before plus the class hash seed, in tha
 
 test("one seed per class: the room's, the personal notebooks' and the council's containers share it, another class has another", () => {
   const seedOf = (sessionId: string, role: RoomRole) =>
-    envOf(withEnv(DEFAULTS, () => runArgs({ sessionId, env: 'base', mount: '/m', network: 'colloq-rooms', publish: true, gpu: null, role }))).at(-1)
+    envOf(withEnv(DEFAULTS, () => runArgs({ sessionId, env: 'base', mount: '/m', network: 'aulalab-rooms', publish: true, gpu: null, role }))).at(-1)
   const seeds = (['room', 'own', 'council'] as const).map((role) => seedOf('cl1', role))
   assert.deepEqual(seeds, Array(3).fill(`PYTHONHASHSEED=${classHashSeed('cl1')}`))
   assert.notEqual(seedOf('cl2', 'room'), seeds[0])
 })
 
-test('classHashSeed is 1 + (sha256("colloq-hashseed:" + id) mod 4294967295): never 0, never past what Python takes', () => {
+test('classHashSeed is 1 + (sha256("aulalab-hashseed:" + id) mod 4294967295): never 0, never past what Python takes', () => {
   // The number, pinned: a class keeps its seed across releases, at home and on every machine.
   assert.equal(classHashSeed('r1'), 3677742916)
   assert.equal(HASH_SEED_MAX, 4294967295)
   const ids = ['', 'r1', 'pvhu2h7f', 'x'.repeat(64), ...Array.from({ length: 300 }, (_, i) => `class-${i}`)]
   const seen = new Set<number>()
   for (const id of ids) {
-    const digest = BigInt(`0x${createHash('sha256').update(`colloq-hashseed:${id}`).digest('hex')}`)
+    const digest = BigInt(`0x${createHash('sha256').update(`aulalab-hashseed:${id}`).digest('hex')}`)
     const seed = classHashSeed(id)
     assert.equal(seed, Number(digest % 4294967295n) + 1, id)
     assert.ok(Number.isSafeInteger(seed) && seed >= 1 && seed <= HASH_SEED_MAX, `${id}: ${seed}`)
@@ -303,19 +303,19 @@ test('classHashSeed is 1 + (sha256("colloq-hashseed:" + id) mod 4294967295): nev
 })
 
 test("pool.ts · runArgs is a wrapper: the core's argv for the spec home's own sources give", () => {
-  withEnv({ ...DEFAULTS, KERNEL_PIDS: '1024', KERNEL_OWN_PIDS: '4096', KERNEL_SHM: '2g', COLLOQ_ROOM_NETWORK: 'none' }, () => {
+  withEnv({ ...DEFAULTS, KERNEL_PIDS: '1024', KERNEL_OWN_PIDS: '4096', KERNEL_SHM: '2g', AULALAB_ROOM_NETWORK: 'none' }, () => {
     for (const role of ['room', 'own', 'council'] as const) {
-      const home = runArgs({ sessionId: 'cl1', env: 'base-gpu', mount: HOME_MOUNT, network: 'colloq-rooms', publish: true, gpu: '0', role, memoryMb: 8192, cpus: 2.5 })
+      const home = runArgs({ sessionId: 'cl1', env: 'base-gpu', mount: HOME_MOUNT, network: 'aulalab-rooms', publish: true, gpu: '0', role, memoryMb: 8192, cpus: 2.5 })
       const token = envOf(home)[0]!.slice('JUPYTER_TOKEN='.length)
       assert.deepEqual(home, roomRunArgs({
         name: roomContainer('cl1', role),
         role,
         sessionId: 'cl1',
         environment: 'base-gpu',
-        image: 'colloq-kernel:base-gpu',
+        image: 'aulalab-kernel:base-gpu',
         mount: HOME_MOUNT,
         extraMounts: [],
-        network: 'colloq-rooms',
+        network: 'aulalab-rooms',
         publish: true,
         gpu: '0',
         memoryMb: 8192,
@@ -334,10 +334,10 @@ test("pool.ts · runArgs is a wrapper: the core's argv for the spec home's own s
 
 test('every container of a class has a token of its own: a line in a draft or an attempt never opens the lecture', () => {
   const tokenOf = (role: RoomRole) =>
-    envOf(withEnv(DEFAULTS, () => runArgs({ sessionId: 'cl1', env: 'base', mount: '/m', network: 'colloq-rooms', publish: true, gpu: null, role })))[0]
+    envOf(withEnv(DEFAULTS, () => runArgs({ sessionId: 'cl1', env: 'base', mount: '/m', network: 'aulalab-rooms', publish: true, gpu: null, role })))[0]
   const tokens = (['room', 'own', 'council'] as const).map(tokenOf)
   assert.equal(new Set(tokens).size, 3, JSON.stringify(tokens))
-  assert.equal(roomContainer('cl1', 'council'), 'colloq-room-cl1-council')
+  assert.equal(roomContainer('cl1', 'council'), 'aulalab-room-cl1-council')
 })
 
 /* ------------------------------------------------------------ the machine's */
@@ -364,19 +364,19 @@ const spec = (over: Partial<MachineRoomSpec> = {}): MachineRoomSpec => ({
 test("a machine's class container: its name, its bridge, Jupyter on 127.0.0.1 only, its labels and never a pull", () => {
   for (const role of ['room', 'own', 'council'] as const) {
     const args = machineRoomRunArgs(spec({ role }), { instanceLabel: LABEL, gen: 9 })
-    assert.equal(args[args.indexOf('--name') + 1], `colloq-class-${I6}-cl1-${role}`)
-    assert.equal(machineRoomContainer(LABEL, 'cl1', role), `colloq-class-${I6}-cl1-${role}`)
+    assert.equal(args[args.indexOf('--name') + 1], `aulalab-class-${I6}-cl1-${role}`)
+    assert.equal(machineRoomContainer(LABEL, 'cl1', role), `aulalab-class-${I6}-cl1-${role}`)
     assert.equal(args[args.indexOf('--network') + 1], BRIDGE)
     // Published on the loopback alone: a rented VM's public address never sees port 8888.
     assert.deepEqual(flags(args).filter((flag) => flag.startsWith('-p ')), ['-p 127.0.0.1:0:8888'])
     const labels = flags(args).filter((flag) => flag.startsWith('--label ')).map((flag) => flag.slice(8))
     assert.deepEqual(labels, [
-      'colloq.profile=1',
-      'colloq.kind=class-kernel',
-      'colloq.session=cl1',
-      'colloq.environment=base',
-      `colloq.role=${role}`,
-      `colloq.placement=cl1:${role}:9`,
+      'aulalab.profile=1',
+      'aulalab.kind=class-kernel',
+      'aulalab.session=cl1',
+      'aulalab.environment=base',
+      `aulalab.role=${role}`,
+      `aulalab.placement=cl1:${role}:9`,
       LABEL,
     ])
     // Home's census looks for room-kernel and must never meet a machine's container.
@@ -390,14 +390,14 @@ test("a machine's class container: its name, its bridge, Jupyter on 127.0.0.1 on
 test("the card goes to the class's own container only, and with it its label and its shared memory", () => {
   const room = machineRoomRunArgs(spec({ environment: 'base-gpu', gpu: '1' }), { instanceLabel: LABEL, gen: 1 })
   assert.equal(room[room.indexOf('--gpus') + 1], 'device=1')
-  assert.ok(room.includes('colloq.gpu=1') && room.includes(`--shm-size=${ROOM_SHM}`), JSON.stringify(room))
+  assert.ok(room.includes('aulalab.gpu=1') && room.includes(`--shm-size=${ROOM_SHM}`), JSON.stringify(room))
   // A card passed for the personal notebooks or the council is a caller's mistake, and gives them nothing.
   for (const role of ['own', 'council'] as const) {
     const args = machineRoomRunArgs(spec({ role, environment: 'base-gpu', gpu: '1' }), { instanceLabel: LABEL, gen: 1 })
     assert.ok(!args.includes('--gpus'), `${role}: ${JSON.stringify(args)}`)
-    assert.ok(!args.some((arg) => arg.startsWith('colloq.gpu=') || arg.startsWith('--shm-size')), `${role}: ${JSON.stringify(args)}`)
-    const home = withEnv(DEFAULTS, () => runArgs({ sessionId: 'cl1', env: 'base-gpu', mount: '/m', network: 'colloq-rooms', publish: true, gpu: '0', role }))
-    assert.ok(!home.includes('--gpus') && !home.some((arg) => arg.startsWith('colloq.gpu=')), `${role} at home: ${JSON.stringify(home)}`)
+    assert.ok(!args.some((arg) => arg.startsWith('aulalab.gpu=') || arg.startsWith('--shm-size')), `${role}: ${JSON.stringify(args)}`)
+    const home = withEnv(DEFAULTS, () => runArgs({ sessionId: 'cl1', env: 'base-gpu', mount: '/m', network: 'aulalab-rooms', publish: true, gpu: '0', role }))
+    assert.ok(!home.includes('--gpus') && !home.some((arg) => arg.startsWith('aulalab.gpu=')), `${role} at home: ${JSON.stringify(home)}`)
   }
 })
 
@@ -405,8 +405,8 @@ test('the council sees the class folder read-only, and its epochs and scratch as
   const council = machineRoomRunArgs(spec({ role: 'council', pids: 2048, extraMounts: COUNCIL_MOUNTS }), { instanceLabel: LABEL, gen: 2 })
   assert.deepEqual(flags(council).filter((flag) => flag.startsWith('-v ')), [
     `-v ${MACHINE_MOUNT}:/workspace/cl1:ro`,
-    '-v /var/lib/colloq-runner/council/cl1/epochs:/colloq/epochs:ro',
-    '-v /var/lib/colloq-runner/council/cl1/scratch:/colloq/scratch',
+    '-v /var/lib/aulalab-runner/council/cl1/epochs:/aulalab/epochs:ro',
+    '-v /var/lib/aulalab-runner/council/cl1/scratch:/aulalab/scratch',
   ])
   assert.ok(council.includes('--pids-limit=2048'))
   // The class's and the personal notebooks' containers write the class folder, as at home.
@@ -418,14 +418,14 @@ test('the council sees the class folder read-only, and its epochs and scratch as
 
 test('the none mode reaches a machine container as it reaches home: the blackhole resolver and its profile label', () => {
   const args = machineRoomRunArgs(spec({ mode: 'none', profile: profileFor('none') }), { instanceLabel: LABEL, gen: 1 })
-  assert.ok(args.includes('--dns=192.0.2.1') && args.includes('colloq.profile=1-none'), JSON.stringify(args))
+  assert.ok(args.includes('--dns=192.0.2.1') && args.includes('aulalab.profile=1-none'), JSON.stringify(args))
   assert.ok(!machineRoomRunArgs(spec(), { instanceLabel: LABEL, gen: 1 }).some((arg) => arg.startsWith('--dns')))
 })
 
 test("the agent's own instance label names its containers and its bridge by its first six hex characters", () => {
   const i6 = /=([0-9a-f]{6})/.exec(INSTANCE_LABEL)![1]!
-  assert.equal(machineRoomContainer(INSTANCE_LABEL, 'cl1', 'own'), `colloq-class-${i6}-cl1-own`)
-  assert.equal(machinePerimeter(INSTANCE_LABEL).network, `colloq-mrooms-${i6}`)
+  assert.equal(machineRoomContainer(INSTANCE_LABEL, 'cl1', 'own'), `aulalab-class-${i6}-cl1-own`)
+  assert.equal(machinePerimeter(INSTANCE_LABEL).network, `aulalab-mrooms-${i6}`)
   const args = machineRoomRunArgs(spec(), { instanceLabel: INSTANCE_LABEL, gen: 4 })
   assert.ok(args.includes(INSTANCE_LABEL), JSON.stringify(args))
 })
@@ -433,8 +433,8 @@ test("the agent's own instance label names its containers and its bridge by its 
 test('the placement label reads back as the slot it names, and anything else reads as none', () => {
   for (const role of ['room', 'own', 'council'] as const) {
     const label = placementLabel({ sessionId: 'cl_1-x', role, gen: 12 })
-    assert.equal(label, `colloq.placement=cl_1-x:${role}:12`)
-    assert.deepEqual(slotOfPlacementLabel(label.slice('colloq.placement='.length)), { sessionId: 'cl_1-x', role, gen: 12 })
+    assert.equal(label, `aulalab.placement=cl_1-x:${role}:12`)
+    assert.deepEqual(slotOfPlacementLabel(label.slice('aulalab.placement='.length)), { sessionId: 'cl_1-x', role, gen: 12 })
   }
   for (const junk of ['', 'cl1', 'cl1:room', 'cl1:room:0', 'cl1:room:-1', 'cl1:room:1.5', 'cl1:guest:1', 'c l1:room:1', 'cl1:room:1:2', `cl1:room:${'9'.repeat(17)}`]) {
     assert.equal(slotOfPlacementLabel(junk), null, junk)
@@ -453,7 +453,7 @@ test('a spec that would leave a container without a ceiling is refused, never la
   for (const [field, value] of [['memoryMb', 0], ['memoryMb', 0.5], ['memoryMb', NaN], ['cpus', 0], ['cpus', -1], ['pids', 0], ['pids', 1.5], ['hashSeed', -1], ['hashSeed', HASH_SEED_MAX + 1], ['hashSeed', 0.5]] as const) {
     assert.throws(() => machineRoomRunArgs(spec({ [field]: value } as Partial<MachineRoomSpec>), placement), new RegExp(`out of range: ${field}`), `${field} ${value}`)
   }
-  assert.throws(() => machineRoomRunArgs(spec(), { instanceLabel: 'colloq.kind=runner-check', gen: 1 }), /not an agent instance label/)
+  assert.throws(() => machineRoomRunArgs(spec(), { instanceLabel: 'aulalab.kind=runner-check', gen: 1 }), /not an agent instance label/)
   assert.throws(() => machineRoomRunArgs(spec(), { instanceLabel: LABEL, gen: 0 }), /not a placement generation/)
   assert.throws(() => machineRoomRunArgs(spec({ role: 'guest' as RoomRole }), placement), /not a class container role/)
   assert.throws(() => machineRoomRunArgs(spec({ sessionId: 'a:b' }), placement), /not a class id/)
@@ -512,8 +512,8 @@ type Reply = { code: number; out: string }
  */
 function fakeDocker(container: { name: string; state: 'exited' | 'running' }) {
   const old = { ...process.env }, oldSpawn = cp.spawn, oldFetch = globalThis.fetch, exists = fs.existsSync
-  Object.assign(process.env, { KERNEL_BACKEND: 'docker', KERNEL_ISOLATION: 'required', KERNEL_NETWORK: 'room-net', COLLOQ_CONTAINER: 'colloq-app' })
-  delete process.env.COLLOQ_ROOM_NETWORK
+  Object.assign(process.env, { KERNEL_BACKEND: 'docker', KERNEL_ISOLATION: 'required', KERNEL_NETWORK: 'room-net', AULALAB_CONTAINER: 'aulalab-app' })
+  delete process.env.AULALAB_ROOM_NETWORK
   fs.existsSync = ((p: fs.PathLike) => p === '/.dockerenv' || exists(p)) as typeof fs.existsSync
   const live = new Map([[container.name, { ...container }]])
   const oldEnv = ['JUPYTER_TOKEN=x', 'OMP_NUM_THREADS=2', 'MKL_NUM_THREADS=2', 'OPENBLAS_NUM_THREADS=2', 'NUMEXPR_NUM_THREADS=2', 'PLOTLY_RENDERER=plotly_mimetype']
@@ -524,7 +524,7 @@ function fakeDocker(container: { name: string; state: 'exited' | 'running' }) {
     if (args[0] === 'version' || args[0] === 'image') return { code: 0, out: 'ready' }
     if (args[0] === 'ps') return { code: 0, out: '' }
     if (args[0] === 'inspect' && args[1] === '--type') {
-      return args.at(-1) === 'colloq-app' ? { code: 0, out: SERVER_IMAGE } : { code: 1, out: 'No such container' }
+      return args.at(-1) === 'aulalab-app' ? { code: 0, out: SERVER_IMAGE } : { code: 1, out: 'No such container' }
     }
     if (args[0] === 'inspect') {
       const found = live.get(args[1]!)
@@ -539,7 +539,7 @@ function fakeDocker(container: { name: string; state: 'exited' | 'running' }) {
       return { code: 0, out: '' }
     }
     if (args[0] === 'run') {
-      if (args.includes('--privileged')) return { code: 0, out: 'colloq-perimeter: ok' }
+      if (args.includes('--privileged')) return { code: 0, out: 'aulalab-perimeter: ok' }
       const name = args[args.indexOf('--name') + 1]!
       live.set(name, { name, state: 'running' })
       return { code: 0, out: name }
@@ -576,10 +576,10 @@ const recreated = (calls: string[][]) => calls.filter((args) => args[0] === 'rm'
 test('a live container started before PYTHONHASHSEED keeps its kernel: the seed is not part of the recreate check', async () => {
   const id = 'seed-live'
   createSession(id, id)
-  const docker = fakeDocker({ name: `colloq-room-${id}`, state: 'running' })
+  const docker = fakeDocker({ name: `aulalab-room-${id}`, state: 'running' })
   try {
     const endpoint = await endpointForSession(id, 'base')
-    assert.equal(endpoint.url, `http://colloq-room-${id}:8888`)
+    assert.equal(endpoint.url, `http://aulalab-room-${id}:8888`)
     assert.deepEqual(recreated(docker.calls), [], 'a live room lost its variables for a variable it lacks')
     assert.equal(docker.live.size, 1)
   } finally { await docker.restore(id) }
@@ -588,11 +588,11 @@ test('a live container started before PYTHONHASHSEED keeps its kernel: the seed 
 test('a stopped container started before PYTHONHASHSEED is started again as it is, not recreated', async () => {
   const id = 'seed-stopped'
   createSession(id, id)
-  const docker = fakeDocker({ name: `colloq-room-${id}`, state: 'exited' })
+  const docker = fakeDocker({ name: `aulalab-room-${id}`, state: 'exited' })
   try {
     await endpointForSession(id, 'base')
     assert.deepEqual(recreated(docker.calls), [])
-    assert.ok(docker.calls.some((args) => args[0] === 'start' && args[1] === `colloq-room-${id}`), JSON.stringify(docker.calls))
+    assert.ok(docker.calls.some((args) => args[0] === 'start' && args[1] === `aulalab-room-${id}`), JSON.stringify(docker.calls))
   } finally { await docker.restore(id) }
 })
 
@@ -602,7 +602,7 @@ test("a new container gets the seed: the next start of a class's container carri
   const docker = fakeDocker({ name: 'someone-else', state: 'running' })
   try {
     await endpointForSession(id, 'base')
-    const created = docker.calls.find((args) => args[0] === 'run' && args[args.indexOf('--name') + 1] === `colloq-room-${id}`)
+    const created = docker.calls.find((args) => args[0] === 'run' && args[args.indexOf('--name') + 1] === `aulalab-room-${id}`)
     assert.ok(created, JSON.stringify(docker.calls))
     assert.ok(created.includes(`PYTHONHASHSEED=${classHashSeed(id)}`), JSON.stringify(created))
   } finally { await docker.restore(id) }
@@ -611,7 +611,7 @@ test("a new container gets the seed: the next start of a class's container carri
 test("the council's slot is its own: forgetting it leaves the room's address where it was", async () => {
   const id = 'seed-slot'
   createSession(id, id)
-  const docker = fakeDocker({ name: `colloq-room-${id}`, state: 'running' })
+  const docker = fakeDocker({ name: `aulalab-room-${id}`, state: 'running' })
   try {
     await endpointForSession(id, 'base')
     const asked = docker.calls.length
@@ -628,7 +628,7 @@ test("the council's slot is its own: forgetting it leaves the room's address whe
 test('neither backend of this server starts a council: a plain refusal before docker or the broker hears of it', async () => {
   const id = 'seed-council'
   createSession(id, id)
-  const docker = fakeDocker({ name: `colloq-room-${id}`, state: 'running' })
+  const docker = fakeDocker({ name: `aulalab-room-${id}`, state: 'running' })
   try {
     await assert.rejects(endpointForSession(id, 'base', 'council'), /council worker pool runs only on machines/)
     assert.deepEqual(docker.calls, [], 'the refusal went as far as docker')

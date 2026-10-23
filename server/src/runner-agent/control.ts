@@ -1,6 +1,6 @@
 /**
  * The running agent's door for its own commands: `runner drain` and `runner
- * leave` (deploy/vast/colloq-host · drain_runner, runner_leave), which reach
+ * leave` (deploy/vast/aulalab-host · drain_runner, runner_leave), which reach
  * it through `docker exec` as another process in the same container.
  *
  * A UNIX SOCKET IN THE TREE (agent.sock, 0600, uid 1000 like the agent): a
@@ -14,7 +14,7 @@
  *
  * A dropped connection is an answer too: an agent that restarted under a
  * drain has forgotten it (draining does not survive a restart), and the
- * command says so and fails, which colloq-host reads as "stop it; its runs go
+ * command says so and fails, which aulalab-host reads as "stop it; its runs go
  * back to the queue".
  *
  * `status` answers the running agent's own status, as it is this moment, in

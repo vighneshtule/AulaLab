@@ -171,7 +171,7 @@
  * offset turns a footer strip into a journey the room has to watch. 3px is
  * enough to read as "this is new" and too little to read as motion.
  */
-@keyframes colloq-enter {
+@keyframes aulalab-enter {
   from {
     opacity: 0;
     transform: translateY(3px);
@@ -188,7 +188,7 @@
  * must keep its real duration: opacity carries the meaning (something is new),
  * and opacity is not what makes a reader ill.
  */
-@keyframes colloq-fade {
+@keyframes aulalab-fade {
   from {
     opacity: 0;
   }
@@ -227,7 +227,7 @@
 @media (prefers-reduced-motion: reduce) {
   .enter,
   .animate-fade-up {
-    animation-name: colloq-fade;
+    animation-name: aulalab-fade;
   }
 }
 
@@ -833,7 +833,7 @@
    * one, and it belongs at the call site (CellView's footer strip), not here.
    */
   .enter {
-    animation: colloq-enter 160ms var(--ease-out);
+    animation: aulalab-enter 160ms var(--ease-out);
   }
 }
 

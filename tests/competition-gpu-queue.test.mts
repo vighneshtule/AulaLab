@@ -144,7 +144,7 @@ function send(competition: Competition, name: string, at: number, source = 'prin
 }
 
 /** A run the stand-in holds until it is cancelled. */
-const HOLD = '# colloq-test: {"hold": 60000}\nmodel.fit()'
+const HOLD = '# aulalab-test: {"hold": 60000}\nmodel.fit()'
 
 async function until(reached: () => boolean, timeoutMs = 10_000): Promise<void> {
   const deadline = Date.now() + timeoutMs
@@ -754,9 +754,9 @@ test('deleting a competition stops its runs first, so their card is not handed t
 /* ------------------------------------------------- a neighbour's burst */
 
 /** torch's own out-of-memory in a participant's cell, as the harness reports it. */
-const TORCH_OOM = '# colloq-test: {"status": "cell_error", "hold": 100, "detail": "Traceback (most recent call last):\\n  Cell In[3], line 1\\nOutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 GiB."}\nmodel.fit()'
+const TORCH_OOM = '# aulalab-test: {"status": "cell_error", "hold": 100, "detail": "Traceback (most recent call last):\\n  Cell In[3], line 1\\nOutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 GiB."}\nmodel.fit()'
 /** A neighbour the watchdog stops for going past its share, a moment after the victim's error. */
-const OVER_SHARE = '# colloq-test: {"status": "oom", "killedBy": "gpu", "hold": 600}\nmodel.fit()'
+const OVER_SHARE = '# aulalab-test: {"status": "oom", "killedBy": "gpu", "hold": 600}\nmodel.fit()'
 
 test('a run that runs out of video memory while the watchdog stops its neighbour on the card goes back to the queue once, in our words', async () => {
   await withEnv({ KERNEL_GPUS: '0', COMPETITION_GPUS: '0', COMPETITION_GPU_PER_DEVICE: '2' }, async () => {
@@ -799,7 +799,7 @@ test('an out-of-memory beside a neighbour that ends on its own is the run\'s own
     reset()
     const g = makeCompetition(true)
     const victim = send(g, 'О1', 1, TORCH_OOM)
-    const neighbour = send(g, 'О2', 2, '# colloq-test: {"hold": 400}\nmodel.fit()')
+    const neighbour = send(g, 'О2', 2, '# aulalab-test: {"hold": 400}\nmodel.fit()')
     try {
       assert.equal(await pumpOnce(), 2)
       const started = Date.now()

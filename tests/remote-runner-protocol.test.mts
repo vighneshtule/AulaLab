@@ -178,9 +178,9 @@ const MANIFEST = '1'.repeat(64)
 const SEALED_MANIFEST = '2'.repeat(64)
 const COMPETITION = 'x77h25nx'
 const SUBMISSION = 'ab2cd3ef'
-const REF = `ghcr.io/colloq-edu/colloq-kernel@sha256:${'3'.repeat(64)}`
+const REF = `ghcr.io/vighneshtule/aulalab-kernel@sha256:${'3'.repeat(64)}`
 /** The template of runner.ts · containerName for a notebook. */
-const containerOf = (submissionId: string, token = '0a1b2c3d'): string => `colloq-comp-${submissionId}-${token}-run`
+const containerOf = (submissionId: string, token = '0a1b2c3d'): string => `aulalab-comp-${submissionId}-${token}-run`
 /** A competition as limitsFor reads it: its limits and nothing else. */
 const competitionWith = (limits: { wallSeconds: number; memoryMb: number; cpus: number }) =>
   ({ limits: { ...limits, perDay: 5 } }) as unknown as Parameters<typeof limitsFor>[0]
@@ -270,15 +270,15 @@ test('one version, one path, and a marker that tells home from the relay in fron
   assert.equal(REMOTE_PROTOCOL, 1)
   assert.equal(REMOTE_API_ROOT, '/api/runners')
   assert.equal(REMOTE_API_BASE, '/api/runners/v1')
-  assert.equal(REMOTE_MARKER_HEADER, 'X-Colloq-Runner-Api')
+  assert.equal(REMOTE_MARKER_HEADER, 'X-AulaLab-Runner-Api')
   // The marker says "home", not which version of it: the protocol travels beside it.
-  assert.equal(REMOTE_MARKER, 'colloq-runners')
-  assert.equal(REMOTE_PROTOCOL_HEADER, 'X-Colloq-Runner-Protocol')
+  assert.equal(REMOTE_MARKER, 'aulalab-runners')
+  assert.equal(REMOTE_PROTOCOL_HEADER, 'X-AulaLab-Runner-Protocol')
   // The relay's HTML 404 and 502, frps's 504, its EOF turned 404: no marker, a hiccup whatever the status.
   for (const status of [200, 401, 404, 409, 426, 502, 504]) {
     assert.equal(remoteTransient(status, null), true, `unmarked ${status}`)
     assert.equal(remoteTransient(status, undefined), true)
-    assert.equal(remoteTransient(status, 'colloq'), true, 'a header of the same name and another value is not home\'s')
+    assert.equal(remoteTransient(status, 'aulalab'), true, 'a header of the same name and another value is not home\'s')
   }
   // Home saying "not now".
   for (const status of [429, 500, 503, 507]) assert.equal(remoteTransient(status, REMOTE_MARKER), true, `marked ${status}`)
@@ -324,17 +324,17 @@ test('a machine credential: one shape, in one header, and recognisable at every 
 
 test('the join target carries the code in its fragment and home as a bare origin', () => {
   const code = 'a'.repeat(32)
-  assert.equal(remoteJoinTarget('https://vsos.colloq.ru/', code), `https://vsos.colloq.ru#${code}`)
-  assert.deepEqual(parseRemoteJoinTarget(`  https://vsos.colloq.ru#${code}\n`), { home: 'https://vsos.colloq.ru', code })
+  assert.equal(remoteJoinTarget('https://vsos.example.edu/', code), `https://vsos.example.edu#${code}`)
+  assert.deepEqual(parseRemoteJoinTarget(`  https://vsos.example.edu#${code}\n`), { home: 'https://vsos.example.edu', code })
   // A home on the same network, or a test's.
   assert.deepEqual(parseRemoteJoinTarget(`http://127.0.0.1:3000/#${code}`), { home: 'http://127.0.0.1:3000', code })
   for (const text of [
-    'https://vsos.colloq.ru', `https://vsos.colloq.ru#${code.slice(1)}`, `https://vsos.colloq.ru#${code.toUpperCase()}`,
-    `https://vsos.colloq.ru/api#${code}`, `https://vsos.colloq.ru?x=1#${code}`, `https://user:pass@vsos.colloq.ru#${code}`,
-    `ftp://vsos.colloq.ru#${code}`, `vsos.colloq.ru#${code}`, `#${code}`,
+    'https://vsos.example.edu', `https://vsos.example.edu#${code.slice(1)}`, `https://vsos.example.edu#${code.toUpperCase()}`,
+    `https://vsos.example.edu/api#${code}`, `https://vsos.example.edu?x=1#${code}`, `https://user:pass@vsos.example.edu#${code}`,
+    `ftp://vsos.example.edu#${code}`, `vsos.example.edu#${code}`, `#${code}`,
   ]) assert.equal(parseRemoteJoinTarget(text), null, text)
-  refused(() => remoteJoinTarget('https://vsos.colloq.ru/path', code))
-  refused(() => remoteJoinTarget('https://vsos.colloq.ru', 'nope'))
+  refused(() => remoteJoinTarget('https://vsos.example.edu/path', code))
+  refused(() => remoteJoinTarget('https://vsos.example.edu', 'nope'))
 })
 
 test('only a machine whose runner code is home\'s takes new work, and make dev matches only itself', () => {
@@ -365,8 +365,8 @@ test('a data manifest names a set of contents: any order, the same name; any cha
   assert.notEqual(remoteManifest(files.slice(1), sha256), manifest, 'a removed file')
   // By code unit, not by locale: `S` before `t`, the same on every machine; one line per file under a line of its own.
   assert.equal(remoteManifest(files, same),
-    `colloq.remote.data.v1\nSample.csv\t${'3'.repeat(64)}\ntest.csv\t${'2'.repeat(64)}\ntrain.csv\t${'1'.repeat(64)}\n`)
-  assert.equal(remoteManifest([], same), 'colloq.remote.data.v1\n', 'a competition without open files has a manifest too')
+    `aulalab.remote.data.v1\nSample.csv\t${'3'.repeat(64)}\ntest.csv\t${'2'.repeat(64)}\ntrain.csv\t${'1'.repeat(64)}\n`)
+  assert.equal(remoteManifest([], same), 'aulalab.remote.data.v1\n', 'a competition without open files has a manifest too')
   for (const bad of [
     [files[0], files[0]], [{ name: '../solution.csv', sha256: '1'.repeat(64) }], [{ name: '.hidden', sha256: '1'.repeat(64) }],
     [{ name: 'a..b', sha256: '1'.repeat(64) }], [{ name: 'a b.csv', sha256: '1'.repeat(64) }], [{ name: 'x.csv', sha256: 'XYZ' }],
@@ -379,10 +379,10 @@ test('the image pins home captures (image-identity.ts) are pins a lease and a wa
   const digest = `sha256:${'3'.repeat(64)}`
   const inspect = {
     Id: `sha256:${'1'.repeat(64)}`, Os: 'linux', Architecture: 'amd64', RootFS: { Type: 'layers', Layers: ['a', 'b'].map((d) => `sha256:${d.repeat(64)}`) },
-    RepoDigests: [`colloq-kernel@${digest}`, `ghcr.io/colloq-edu/colloq-kernel@${digest}`],
+    RepoDigests: [`aulalab-kernel@${digest}`, `ghcr.io/vighneshtule/aulalab-kernel@${digest}`],
   }
   const pins = [
-    imageIdentity(inspect, 'ghcr.io/colloq-edu/colloq-kernel'),
+    imageIdentity(inspect, 'ghcr.io/vighneshtule/aulalab-kernel'),
     // Docker Hub's short form, which home writes out in full.
     imageIdentity({ ...inspect, RepoDigests: [`python@${digest}`] }, 'python'),
     // The longest entry home keeps, with docker.io/library/ put in front of it.
@@ -596,9 +596,9 @@ test('a lease is refused for every field outside its shape', () => {
   for (const [path, value] of [
     [['attemptId'], 'c'.repeat(31)], [['seq'], 0], [['competitionId'], '../x'], [['submissionId'], 'AB2CD3EF'],
     // A container named for another submission: a kill by its name would reach someone else's run.
-    [['container'], containerOf('zz22zz22')], [['container'], `colloq-comp-${SUBMISSION}-0a1b2c3d-score`], [['container'], 'colloq-runner'],
+    [['container'], containerOf('zz22zz22')], [['container'], `aulalab-comp-${SUBMISSION}-0a1b2c3d-score`], [['container'], 'aulalab-runner'],
     [['deadlineMs'], 0], [['deadlineMs'], REMOTE_RUN_MS_MAX + 1], [['harness'], '0123456789abc'], [['data'], undefined],
-    [['revision', 'ref'], 'ghcr.io/colloq-edu/colloq-kernel:v0.24.0-kaggle-base'], [['revision', 'ref'], `GHCR.io/Colloq/X@sha256:${'3'.repeat(64)}`],
+    [['revision', 'ref'], 'ghcr.io/vighneshtule/aulalab-kernel:v0.24.0-kaggle-base'], [['revision', 'ref'], `GHCR.io/AulaLab/X@sha256:${'3'.repeat(64)}`],
     [['revision', 'ref'], `${'a/'.repeat(300)}x@sha256:${'3'.repeat(64)}`], [['revision', 'layers'], `sha256:${'4'.repeat(64)}`],
     [['limits', 'wallSeconds'], REMOTE_WALL_SECONDS_MAX + 1], [['limits', 'memoryMb'], 65_537], [['limits', 'cpus'], 33],
     [['limits', 'targetBytes'], REMOTE_FILE_BYTES + 1], [['limits', 'outputKillBytes'], undefined],
@@ -696,7 +696,7 @@ test('a reply\'s keys the agent does not know are dropped at every depth and nev
   Object.assign(newer.leases[0], { entrantName: 'Иванов', email: 'a@b.c', score: 0.93, metric: 'def score(...)', solution: 'x' })
   Object.assign(newer.leases[0].revision, { gpu: true })
   Object.assign(newer.leases[0].limits, { gpu: 1 })
-  Object.assign(newer.leases[0].notebook, { path: '/var/lib/colloq' })
+  Object.assign(newer.leases[0].notebook, { path: '/var/lib/aulalab' })
   Object.assign(newer.revoke[0], { note: 'x' })
   Object.assign(newer.want, { wheels: [] })
   Object.assign(newer.want.revisions[0], { size: 237_000_000 })
@@ -831,7 +831,7 @@ test('outcome: refused for every field outside its shape, and when its files dis
     [['outcome', 'status'], 'notebook_unreadable'], [['outcome', 'status'], 'scored'], [['outcome', 'cell'], -2], [['outcome', 'cell'], 2.5],
     [['outcome', 'cells'], REMOTE_CELLS_MAX + 1], [['outcome', 'wall'], -1], [['outcome', 'produced'], 'yes'], [['outcome', 'crowded'], undefined],
     [['outcome', 'detail'], 'x'.repeat(REMOTE_DETAIL_CHARS + 1)], [['outcome', 'log'], 'x'.repeat(REMOTE_LOG_CHARS + 1)],
-    [['outcome', 'submission'], '/var/lib/colloq-runner/x/submission.csv'], [['outcome', 'score'], 0.9],
+    [['outcome', 'submission'], '/var/lib/aulalab-runner/x/submission.csv'], [['outcome', 'score'], 0.9],
     [['outcome', 'diagnostics', 'exit'], 256], [['outcome', 'diagnostics', 'exit'], -1], [['outcome', 'diagnostics', 'backend'], 'broker'],
     [['outcome', 'diagnostics', 'killedBy'], 'teacher'], [['outcome', 'diagnostics', 'peakBytes'], -1], [['outcome', 'diagnostics', 'peakBytes'], 1e300],
     [['outcome', 'diagnostics', 'oomKilled'], undefined], [['outcome', 'diagnostics', 'host'], 'vast'],
@@ -909,7 +909,7 @@ test('a forged progress.json cannot take a machine\'s heartbeat down: it is clam
 
 test('an honest outcome travels unchanged, without its path', () => {
   const run = {
-    status: 'ok', cell: 13, cells: 14, wall: 31_337, submission: '/var/lib/colloq-runner/data/competitions/x/attempts/c/result/submission.csv',
+    status: 'ok', cell: 13, cells: 14, wall: 31_337, submission: '/var/lib/aulalab-runner/data/competitions/x/attempts/c/result/submission.csv',
     detail: '', log: '', diagnostics: { exit: 0, oomKilled: false, backend: 'docker', peakBytes: 1_234_567_890 },
   }
   assert.deepEqual(remoteOutcome({ ...run, produced: true }), finished.outcome)

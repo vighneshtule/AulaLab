@@ -1,0 +1,32 @@
+# Description of the github.com/vighneshtule/AulaLab mirror worker.
+#
+# The file is here not for the sake of wrangler itself: the worker is uploaded
+# by the deploy.sh next to it with plain curl, because npx wrangler pulls fifty
+# packages from the network, and the mirror usually gets fixed exactly when the
+# network is bad anyway.
+#
+# But this file remains the single source of truth for the name, the
+# compatibility date and the routes: deploy.sh reads the values FROM HERE (sed
+# over three lines) instead of carrying its own copy. Otherwise a route edit in
+# one place would silently drift from the other, and `wrangler deploy` from
+# another machine would return the mirror to the old settings.
+
+name = "aulalab-cc-mirror"
+main = "worker.js"
+compatibility_date = "2025-09-19"
+
+# The worker must not also get an address like *.workers.dev: a third copy of
+# the site is as superfluous for search engines here as www.
+workers_dev = false
+
+# Both names of the mirror lead to the worker. www it redirects to the apex
+# right away, that is, the www route is needed precisely so that there is
+# someone to answer with the redirect. zone_name, not zone_id: a zone id tells
+# the reader nothing.
+[[routes]]
+pattern = "github.com/vighneshtule/AulaLab/*"
+zone_name = "github.com/vighneshtule/AulaLab"
+
+[[routes]]
+pattern = "www.github.com/vighneshtule/AulaLab/*"
+zone_name = "github.com/vighneshtule/AulaLab"

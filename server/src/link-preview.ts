@@ -12,7 +12,7 @@
  * (/og/competitions/<slug>.png), the competitions list (/og/competitions.png)
  * and a course (/og/courses/<handle>.png); a class page in a course shows
  * its course's card under its own title. Other pages share a common one,
- * from web/public/og/colloq.png.
+ * from web/public/og/aulalab.png.
  */
 import { stat } from 'node:fs/promises'
 import path from 'node:path'
@@ -32,8 +32,8 @@ import { findCourse, findPublication, listMaterials } from './publish/store.js'
 import { courseRows, pageContext, pageDay } from './routes/course-view.js'
 import { instanceTimeZone, instanceToday } from './time-zone.js'
 
-/** The common card: an export from Paper (artboard "Превью · colloq.ru"), kept in web/public. */
-const IMAGE = 'og/colloq.png'
+/** The common card: an export from Paper (artboard "Превью · example.edu"), kept in web/public. */
+const IMAGE = 'og/aulalab.png'
 const IMAGE_WIDTH = CARD_WIDTH
 const IMAGE_HEIGHT = CARD_HEIGHT
 
@@ -226,7 +226,7 @@ async function genericImage(origin: string, staticDir: string): Promise<string |
  * The title and tags for the page at this path.
  *
  * A room with a known name gets its own name; everything else gets the common
- * Colloq card, the same as the landing page's. An unknown room deliberately
+ * Aula Lab card, the same as the landing page's. An unknown room deliberately
  * looks like any other page: a card in a chat is not the place to reveal
  * whether such an address exists.
  */
@@ -237,7 +237,7 @@ export async function linkPreview(
 ): Promise<PageExtras> {
   const room = ROOM_PATH.exec(requestPath)
   const session = room ? getSession(room[1]) : null
-  const siteName = 'Colloq'
+  const siteName = 'Aula Lab'
   const origin = config.publicUrl.replace(/\/+$/, '')
   // A competition, the competitions list and a course have their own cards
   // too (og-card.ts); an unknown or draft one looks like any other page.
@@ -286,7 +286,7 @@ export async function linkPreview(
     ['og:type', 'website'],
     ['og:locale', OG_LOCALE[language] ?? OG_LOCALE.ru],
     ['og:site_name', siteName],
-    // A class page's own title is «04 · Лики и хаки данных»; the tab adds « · Colloq».
+    // A class page's own title is «04 · Лики и хаки данных»; the tab adds « · Aula Lab».
     ['og:title', page ? page.title : title],
     ['og:description', description],
   ]

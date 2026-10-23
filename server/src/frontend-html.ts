@@ -25,7 +25,7 @@ export interface PageExtras {
 /** Small public bootstrap data: the browser need not fetch it before mounting. */
 export function withInitialLanguage(html: string, language: Locale, extras: PageExtras = {}): string {
   const locale = normalizeLocale(language)
-  const meta = `<meta name="colloq-language" content="${locale}">`
+  const meta = `<meta name="aulalab-language" content="${locale}">`
   if (extras.title !== undefined) {
     const title = extras.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     html = html.replace(/<title>[^<]*<\/title>/i, () => `<title>${title}</title>`)

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Colloq on a Vast.ai VM: paste this whole file into the template's
+# Aula Lab on a Vast.ai VM: paste this whole file into the template's
 # "On-start script" field (VM templates need the #! line). Edit the settings
 # block; everything else ships inside the image. Runs on every boot and is
 # idempotent: an unchanged instance is left running.
@@ -8,14 +8,14 @@
 # Full template settings, variables and trade-offs: deploy/vast/README.md.
 
 # ---- settings -------------------------------------------------------------
-export COLLOQ_IMAGE="ghcr.io/OWNER/colloq-vast:VERSION"
+export AULALAB_IMAGE="ghcr.io/OWNER/aulalab-vast:VERSION"
 
 # Public address. Pick one:
 #   relay (your own frps; the path that works from Russia):
-#     COLLOQ_HOSTNAME=class1  RELAY_DOMAIN=relay.example.org  RELAY_ADDR=…  RELAY_TOKEN=…
-#   named Cloudflare tunnel: CLOUDFLARE_TUNNEL_TOKEN=…  COLLOQ_HOSTNAME=class.example.org
+#     AULALAB_HOSTNAME=class1  RELAY_DOMAIN=relay.example.org  RELAY_ADDR=…  RELAY_TOKEN=…
+#   named Cloudflare tunnel: CLOUDFLARE_TUNNEL_TOKEN=…  AULALAB_HOSTNAME=class.example.org
 #   nothing: a quick *.trycloudflare.com address, printed in the log
-export COLLOQ_HOSTNAME=""
+export AULALAB_HOSTNAME=""
 export RELAY_DOMAIN=""
 export RELAY_ADDR=""
 export RELAY_PORT="7000"
@@ -38,45 +38,45 @@ export OPENAI_API_KEY=""           # empty: the assistant is off (can be set lat
 # card 1 for submissions, two at a time; the other cards stay with the rooms.
 export KERNEL_PRELOAD="base"
 # Where prebuilt kernel images come from, as <repo>:v<version>-<env>. Empty:
-# the published ghcr.io/colloq-edu/colloq-kernel ones (base, kaggle-base), and
+# the published ghcr.io/vighneshtule/aulalab-kernel ones (base, kaggle-base), and
 # a build here for the rest. "none": always build here.
 export KERNEL_IMAGE_REPO=""
 
 # Private registry only (a read-only token): used by docker on the VM.
-export COLLOQ_REGISTRY_USER=""
-export COLLOQ_REGISTRY_TOKEN=""
+export AULALAB_REGISTRY_USER=""
+export AULALAB_REGISTRY_TOKEN=""
 # ---------------------------------------------------------------------------
 
 # Not settings: this file exists only for Vast VMs, and says so.
-#   COLLOQ_ON_VAST: the container may open a quick trycloudflare tunnel when no
+#   AULALAB_ON_VAST: the container may open a quick trycloudflare tunnel when no
 #     address is configured (anywhere else it opens none; entrypoint.sh).
-#   COLLOQ_FREEZE_UPDATES: switch off unattended-upgrades and hold the NVIDIA
+#   AULALAB_FREEZE_UPDATES: switch off unattended-upgrades and hold the NVIDIA
 #     packages. On 28 Sep 2026 unattended-upgrades upgraded the NVIDIA userspace
 #     under the loaded kernel module 20 minutes after boot ("Driver/library
 #     version mismatch", no GPU until a reboot). A rented VM keeps the driver it
-#     booted with; off Vast colloq-host leaves the host's updates alone.
-export COLLOQ_ON_VAST=1
-export COLLOQ_FREEZE_UPDATES=1
+#     booted with; off Vast aulalab-host leaves the host's updates alone.
+export AULALAB_ON_VAST=1
+export AULALAB_FREEZE_UPDATES=1
 
 set -euo pipefail
 # The log carries the owner's setup link until someone claims the instance.
 umask 077
-exec > >(tee -a /var/log/colloq-onstart.log) 2>&1
-echo "== colloq on-start $(date -Is)"
+exec > >(tee -a /var/log/aulalab-onstart.log) 2>&1
+echo "== aulalab on-start $(date -Is)"
 
 # Docker comes with Vast's Ubuntu VM images; install it only if it is missing.
 command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | sh
 systemctl enable --now docker >/dev/null 2>&1 || true
 for _ in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 2; done
 
-if [ -n "$COLLOQ_REGISTRY_TOKEN" ]; then
-  printf '%s' "$COLLOQ_REGISTRY_TOKEN" \
-    | docker login "${COLLOQ_IMAGE%%/*}" -u "${COLLOQ_REGISTRY_USER:-colloq}" --password-stdin
+if [ -n "$AULALAB_REGISTRY_TOKEN" ]; then
+  printf '%s' "$AULALAB_REGISTRY_TOKEN" \
+    | docker login "${AULALAB_IMAGE%%/*}" -u "${AULALAB_REGISTRY_USER:-aulalab}" --password-stdin
 fi
 
 # The host-side manager lives in the image; install it, then let it do the rest.
-# After `colloq-host update` the instance runs the image named in
-# /etc/colloq/image, and COLLOQ_IMAGE above only chose the first one.
-image="$(head -1 /etc/colloq/image 2>/dev/null || true)"
-docker run --rm -v /usr/local/sbin:/host "${image:-$COLLOQ_IMAGE}" install-host /host
-exec /usr/local/sbin/colloq-host up
+# After `aulalab-host update` the instance runs the image named in
+# /etc/aulalab/image, and AULALAB_IMAGE above only chose the first one.
+image="$(head -1 /etc/aulalab/image 2>/dev/null || true)"
+docker run --rm -v /usr/local/sbin:/host "${image:-$AULALAB_IMAGE}" install-host /host
+exec /usr/local/sbin/aulalab-host up

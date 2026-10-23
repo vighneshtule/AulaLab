@@ -19,7 +19,7 @@ export const commonMessages: MessageCatalog = {
   'common.environmentFreeze': { ru: 'Скачать pip freeze', en: 'Download pip freeze' },
   'common.environmentFreezeReading': { ru: 'Читаем pip freeze…', en: 'Reading pip freeze…' },
   'common.environmentFreezeFailed': { ru: 'Не удалось скачать pip freeze. Попробуйте ещё раз.', en: 'Could not download the pip freeze. Try again.' },
-  'common.loadingApp': { ru: 'Загрузка Colloq', en: 'Loading Colloq' },
+  'common.loadingApp': { ru: 'Загрузка Aula Lab', en: 'Loading Aula Lab' },
   'common.loading': { ru: 'Загрузка…', en: 'Loading…' },
   'common.gigabytes': { ru: '{size} ГБ', en: '{size} GB' },
   'common.megabytes': { ru: '{size} МБ', en: '{size} MB' },

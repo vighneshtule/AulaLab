@@ -19,7 +19,7 @@ fs.writeFileSync(path.join(root, 'assets/app-hash.js.gz'), gz)
 fs.writeFileSync(path.join(root, 'assets/plain.js'), source)
 fs.writeFileSync(path.join(root, 'pdf/pdf.worker.min.mjs'), source)
 fs.writeFileSync(path.join(root, 'pdf/pdf.worker.min.mjs.br'), br)
-fs.writeFileSync(path.join(root, 'index.html'), '<title>Colloq</title>')
+fs.writeFileSync(path.join(root, 'index.html'), '<title>Aula Lab</title>')
 process.env.STATIC_DIR = root
 let server: http.Server
 let base = ''

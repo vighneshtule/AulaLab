@@ -11,7 +11,7 @@ import { TEST_ROOT } from './_env.mts'
 import { RuntimeClient, selectKernelBackend, requireKernelIsolation } from '../server/src/kernel/runtime-client.js'
 
 const revision = `sha256:${'a'.repeat(64)}`
-const endpoint = {url:'http://colloq-kernel-demo.colloq.svc:8888',token:'r'.repeat(64),instanceId:'pod-one',environment:'base',revision}
+const endpoint = {url:'http://aulalab-kernel-demo.aulalab.svc:8888',token:'r'.repeat(64),instanceId:'pod-one',environment:'base',revision}
 async function fixture(handler: http.RequestListener) {
   const server=http.createServer(handler)
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve))

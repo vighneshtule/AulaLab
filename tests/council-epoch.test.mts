@@ -79,7 +79,7 @@ test('the export is three statements and the load four, and none binds a name in
   assert.equal(loadLines[1], lines[0], 'the isolation, as the export installs it')
   assert.match(loadLines[2], /'epoch_version', None\) != "[0-9a-f]{12}": exec\(compile\(/)
   for (const line of loadLines) assert.doesNotMatch(line, /^[A-Za-z_][A-Za-z0-9_]*\s*=[^=]/, `a name bound: ${line.slice(0, 40)}`)
-  assert.ok(load.code.includes(`.load(globals(), "${sha}", "${'b'.repeat(64)}", {'dir': "/colloq/epochs"`))
+  assert.ok(load.code.includes(`.load(globals(), "${sha}", "${'b'.repeat(64)}", {'dir': "/aulalab/epochs"`))
   assert.deepEqual(load.userExpressions, { [COUNCIL_REPORT_KEY]: COUNCIL_SEED_EXPR })
   // A load is asked by hashes, and only by hashes.
   assert.throws(() => loadExpression({ manifest: 'x', body: sha }))
@@ -101,7 +101,7 @@ test('a worker\'s entry carries its inputs, and refuses to be built without a re
   // A worker's ceiling is on whatever the instance's switch says.
   assert.ok(call.includes("'memory': True"))
   assert.ok(call.includes(`'source': ${JSON.stringify('print(conn)\nx = "true"')}`))
-  assert.ok(call.includes(`'runId': "abc_1-2", 'scratch': "/colloq/scratch"`))
+  assert.ok(call.includes(`'runId': "abc_1-2", 'scratch': "/aulalab/scratch"`))
   assert.ok(call.includes(`'workspace': "/workspace/s1"`))
   assert.throws(() => councilEnterSource(1024, { runId: '../x' }), /REMOTE_RUN_ID/)
   assert.throws(() => councilEnterSource(1024, { capMb: 0 }), /memory cap/)
@@ -219,7 +219,7 @@ after(() => {
 })
 
 function scratch(base = tmpdir()): string {
-  const root = mkdtempSync(path.join(base, 'colloq-epoch-'))
+  const root = mkdtempSync(path.join(base, 'aulalab-epoch-'))
   roots.push(root)
   return root
 }
@@ -558,7 +558,7 @@ test('the check of left names: what an attempt reads before it binds, in every s
     `exec(compile(${JSON.stringify(install)}, '<install>', 'exec'), {})`,
     `m = sys.modules[${JSON.stringify(COUNCIL_MODULE)}]`,
     "left = {'conn': 'connection', 'gen': 'generator'}",
-    `print('@@' + json.dumps([m._colloq_needs(source, left) for source in ${JSON.stringify(cases.map(([source]) => source))}]))`,
+    `print('@@' + json.dumps([m._aulalab_needs(source, left) for source in ${JSON.stringify(cases.map(([source]) => source))}]))`,
   ].join('\n')
   const found = run(script) as string[][]
   cases.forEach(([source, wanted], index) => assert.deepEqual(found[index], wanted, source))
@@ -734,7 +734,7 @@ test('process state travels: warnings, decimal, the recursion limit, sys.path, t
     writeFileSync(path.join(ws, 'lib', 'helpers.py'), 'def double(x):\n    return 2 * x\n')
     const setup = [
       'import warnings, decimal, sys, os',
-      "warnings.filterwarnings('ignore', message='colloq-test')",
+      "warnings.filterwarnings('ignore', message='aulalab-test')",
       'decimal.getcontext().prec = 7',
       'sys.setrecursionlimit(4321)',
       `sys.path.append(${JSON.stringify(path.join(ws, 'lib'))})`,
@@ -755,7 +755,7 @@ test('process state travels: warnings, decimal, the recursion limit, sys.path, t
     assert.deepEqual(report.local, ['helpers'])
     const probe = "[__import__('decimal').getcontext().prec, __import__('sys').getrecursionlimit(), __import__('os').path.realpath(__import__('os').getcwd()), "
       + "__import__('os').environ.get('TEACHER_SETTING'), __import__('os').environ.get('JUPYTER_TOKEN'), helpers.double(2), osp.join('a', 'b'), abc.Mapping.__name__, "
-      + "any(f[1] is not None and f[1].pattern == 'colloq-test' for f in __import__('warnings').filters)"
+      + "any(f[1] is not None and f[1].pattern == 'aulalab-test' for f in __import__('warnings').filters)"
       + (noNumeric ? ']' : ", __import__('pandas').get_option('display.max_rows')]")
     const out = worker({ report, dir: cas, workspace: ws, probe, prep: "import os\nos.environ.pop('JUPYTER_TOKEN', None)" })
     assert.equal(out.seed.ok, true, out.seed.error)
@@ -1020,7 +1020,7 @@ test('a view numpy would copy in band travels out of band: as a view of its owne
         { source: "import sys\nsys.modules['_probe'].seen.append([float(X[0, 0]), type(X.base).__name__ != 'NoneType'])" },
       ],
       probe: '[bool(np.shares_memory(X, data)), list(X.shape), float(X.sum()), float(y.sum()), list(train.shape), float(test["a"].iloc[0]), '
-        + 'bool(M.flags.writeable), float(M[5]), [__import__("sys").modules["_colloq_council"]._backing(one) is not None '
+        + 'bool(M.flags.writeable), float(M[5]), [__import__("sys").modules["_aulalab_council"]._backing(one) is not None '
         + 'for one in (X, train._mgr.blocks[0].values, test._mgr.blocks[0].values, M)], bool(np.shares_memory(rows, data))]',
     })
     assert.equal(out.seed.ok, true, out.seed.error)
@@ -1050,7 +1050,7 @@ test('an export runs under an address-space ceiling of its own, and an in-band c
       'fake.getrlimit = lambda what: (-1, -1)',
       'fake.setrlimit = lambda what, pair: calls.append(list(pair))',
       "sys.modules['resource'] = fake",
-      'm._colloq_calls = calls',
+      'm._aulalab_calls = calls',
     ].join('\n')
     // An array of a subclass pickles in band by its own reduce, a copy: the probe hears whether it ran.
     const setup = [
@@ -1066,7 +1066,7 @@ test('an export runs under an address-space ceiling of its own, and an in-band c
       'small = [1, 2]',
     ].join('\n')
     const nearlyFull = [
-      "m = __import__('sys').modules['_colloq_council']",
+      "m = __import__('sys').modules['_aulalab_council']",
       // A card nearby: no ceiling at all, and the container's own memory is the only guard left.
       'm._gpu_near = lambda: True',
       `m._cgroup = lambda *names: {'memory.max': ${1100 * MiB}, 'memory.current': ${1000 * MiB}}.get(names[0])`,
@@ -1074,7 +1074,7 @@ test('an export runs under an address-space ceiling of its own, and an in-band c
     const { reports, after } = notebook(setup, [
       { seq: 1, mainRuns: 1, dir: path.join(root, 'e1'), budgetBytes: MiB },
       { seq: 2, mainRuns: 1, dir: path.join(root, 'e2'), before: nearlyFull },
-    ], "[sys.modules['_probe'].reduced, sys.modules['_colloq_council']._colloq_calls]", prep)
+    ], "[sys.modules['_probe'].reduced, sys.modules['_aulalab_council']._aulalab_calls]", prep)
     const [tight, full] = reports
     assert.equal(tight.ok, true, tight.error ?? undefined)
     assert.deepEqual(tight.left, [{ name: 't', why: 'budget' }])
@@ -1253,7 +1253,7 @@ const smapsRollup = existsSync('/proc/self/smaps_rollup')
 // statfs(2)'s f_type of a tmpfs, where a file's pages are shared memory rather than a disk's page cache.
 const TMPFS_MAGIC = 0x01021994
 /**
- * A folder on a disk filesystem, as the agent's epoch store is (/var/lib/colloq-runner by default) and as the measure
+ * A folder on a disk filesystem, as the agent's epoch store is (/var/lib/aulalab-runner by default) and as the measure
  * of a worker's own memory assumes (council-isolation.ts · _dirty): tmpdir() unless that is a tmpfs, as Debian 13,
  * Fedora and Arch mount /tmp, else /var/tmp.
  */
@@ -1327,7 +1327,7 @@ test('an attempt maps from the descriptor its seed kept, and a mapping that fail
       // The agent lets an older epoch's files go while workers still hold it.
       { source: `import os\nos.unlink(${JSON.stringify(file)})`, bare: true },
       { source: "import sys\nsys.modules['_probe'].seen.append([type(arr.base).__name__, bool(arr.flags.owndata)])" },
-      { source: "import sys\nsys.modules['_colloq_council']._mmap = None", bare: true },
+      { source: "import sys\nsys.modules['_aulalab_council']._mmap = None", bare: true },
       { source: 'x = 1', budget: 1024 },
     ],
   })

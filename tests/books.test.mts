@@ -46,19 +46,19 @@ test('a new room has one notebook, and it lies in the folder as a file', () => {
   const { doc } = getSessionDoc(ROOM)
   const books = allBooks(doc)
   assert.equal(books.length, 1)
-  assert.equal(books[0].book.path, 'Тетрадь.ipynb')
+  assert.equal(books[0].book.path, 'Notebook.ipynb')
   // The first notebook's root stayed the same: it holds the whole history and
   // the whole cache of those already in the room.
   assert.equal(books[0].book.root, 'cells')
 
   projectBooks(ROOM)
   const listed = listFiles(ROOM).map((entry) => entry.path)
-  assert.ok(listed.includes('Тетрадь.ipynb'), 'the notebook is not in the tree')
+  assert.ok(listed.includes('Notebook.ipynb'), 'the notebook is not in the tree')
 })
 
 test("the notebook's file is a real .ipynb that reads back", () => {
   projectBooks(ROOM)
-  const text = readText(ROOM, 'Тетрадь.ipynb')?.text ?? ''
+  const text = readText(ROOM, 'Notebook.ipynb')?.text ?? ''
   const flat = parseIpynb(text)
   assert.ok(flat, 'what was written does not parse as a notebook')
   assert.equal(flat.length, 2, 'the starting cells did not reach the file')
@@ -89,7 +89,7 @@ test("outputs do not go into the notebook's file, however many there are in the 
   assert.equal((cell.get('outputs') as Y.Array<unknown>).length, 1, 'the output did not land in the document')
 
   projectBooks(ROOM)
-  const text = readText(ROOM, 'Тетрадь.ipynb')?.text ?? ''
+  const text = readText(ROOM, 'Notebook.ipynb')?.text ?? ''
   const written = JSON.parse(text) as { cells: { outputs?: unknown[] }[] }
   assert.ok(written.cells.length > 0, 'no cells are left in the file')
   for (const [i, inFile] of written.cells.entries()) {
@@ -102,7 +102,7 @@ test("outputs do not go into the notebook's file, however many there are in the 
 
   // The same file taken straight from the room (the Oracle and the download go
   // here).
-  const direct = bookText(ROOM, 'Тетрадь.ipynb') ?? ''
+  const direct = bookText(ROOM, 'Notebook.ipynb') ?? ''
   assert.ok(!direct.includes('image/png'), 'the output went into the notebook text for the Oracle')
 })
 
@@ -111,7 +111,7 @@ test('a notebook edit reaches the file', () => {
   const cells = getCells(doc)
   doc.transact(() => cellSource(cells.get(1)).insert(0, '# добавлено\n'))
   projectBooks(ROOM)
-  assert.match(readText(ROOM, 'Тетрадь.ipynb')?.text ?? '', /# добавлено/)
+  assert.match(readText(ROOM, 'Notebook.ipynb')?.text ?? '', /# добавлено/)
 })
 
 test('a second notebook is created alongside and gets its own root', () => {
@@ -156,7 +156,7 @@ test('something that is not a notebook does not open as one', () => {
   fs.writeFileSync(path.join(sessionDir(ROOM), 'сломанная.ipynb'), 'это не json')
   const tried = openBook(ROOM, 'сломанная.ipynb')
   assert.ok(!tried.ok)
-  assert.match(tried.why, /некорректные данные \.ipynb/)
+  assert.match(tried.why, /contains invalid \.ipynb data\./)
 })
 
 test('an empty .ipynb file is a new notebook, not a broken one', () => {
@@ -186,7 +186,7 @@ test('a removed notebook stops being a notebook', () => {
 })
 
 test('nobody writes over a notebook: both the upload and the Oracle know that', () => {
-  assert.equal(isBookFile(ROOM, 'Тетрадь.ipynb'), true)
+  assert.equal(isBookFile(ROOM, 'Notebook.ipynb'), true)
   assert.equal(isBookFile(ROOM, 'прошлая.ipynb'), true)
   // An ordinary .ipynb that just lies in the folder does not count as a
   // notebook — it can be written over.
@@ -199,7 +199,7 @@ test("a notebook's text is taken from the room, not from a lagging file", () => 
   doc.transact(() => getCells(doc).push([createCell('code', 'только_что = True')]))
   // The file has not been rewritten yet — the projection is deferred — while
   // the Oracle needs what is in the room right now.
-  assert.match(bookText(ROOM, 'Тетрадь.ipynb') ?? '', /только_что/)
+  assert.match(bookText(ROOM, 'Notebook.ipynb') ?? '', /только_что/)
 })
 
 test('a removed notebook does not come back by itself', () => {
@@ -312,7 +312,7 @@ test('the room does not forget a notebook that did not fit into the tree', () =>
   const { doc } = getSessionDoc(id)
   ensureInitialNotebook(doc, 'Толпа')
   projectBooks(id)
-  assert.ok(bookAt(doc, 'Тетрадь.ipynb'), 'the room notebook is missing')
+  assert.ok(bookAt(doc, 'Notebook.ipynb'), 'the room notebook is missing')
 
   const dir = sessionDir(id)
   for (let i = 0; i < 2100; i += 1) {
@@ -321,7 +321,7 @@ test('the room does not forget a notebook that did not fit into the tree', () =>
   assert.equal(listFiles(id).length, 2000, 'the tree ceiling changed, so the test is no longer about anything')
 
   assert.deepEqual(forgetMissingBooks(id), [], 'a live notebook was removed from the room')
-  assert.ok(bookAt(doc, 'Тетрадь.ipynb'), 'the room notebook disappeared')
+  assert.ok(bookAt(doc, 'Notebook.ipynb'), 'the room notebook disappeared')
 
   // But one whose file really was removed behind the tree's back is
   // forgotten.
@@ -338,7 +338,7 @@ test('the room does not forget a notebook that did not fit into the tree', () =>
 test('os.remove in a cell does not remove the room notebook from the room', () => {
   /*
    * The check for missing files runs after EVERY cell run, and removing the
-   * room notebook means erasing its cells. `os.remove('Тетрадь.ipynb')` in
+   * room notebook means erasing its cells. `os.remove('Notebook.ipynb')` in
    * somebody's cell is not the room's consent to part with what it has been
    * writing for the whole hour: the file here is a projection, and the
    * projection comes back.
@@ -348,14 +348,14 @@ test('os.remove in a cell does not remove the room notebook from the room', () =
   const { doc } = getSessionDoc(id)
   ensureInitialNotebook(doc, 'Уборка')
   projectBooks(id)
-  const file = path.join(sessionDir(id), 'Тетрадь.ipynb')
+  const file = path.join(sessionDir(id), 'Notebook.ipynb')
   assert.ok(fs.existsSync(file))
   const cells = bookCells(doc, 'cells').length
   assert.ok(cells > 0)
 
   fs.rmSync(file)
   assert.deepEqual(forgetMissingBooks(id), [], 'the room notebook was removed from the room')
-  assert.ok(bookAt(doc, 'Тетрадь.ipynb'), 'the room notebook disappeared from the list')
+  assert.ok(bookAt(doc, 'Notebook.ipynb'), 'the room notebook disappeared from the list')
   assert.equal(bookCells(doc, 'cells').length, cells, "the room's cells were erased")
 
   projectBooks(id)
@@ -373,14 +373,14 @@ test('restoring a version does not write the history into another notebook', () 
   createSession(id, 'История', null)
   const { doc } = getSessionDoc(id)
   ensureInitialNotebook(doc, 'История')
-  const roomBook = bookAt(doc, 'Тетрадь.ipynb')!
+  const roomBook = bookAt(doc, 'Notebook.ipynb')!
   assert.equal(roomBook.root, 'cells')
 
   createBook(id, 'вторая.ipynb')
   const second = bookAt(doc, 'вторая.ipynb')!
   doc.transact(() => bookCells(doc, second.root).push([createCell('code', 'своё = 1')]))
 
-  dropBook(id, 'Тетрадь.ipynb')
+  dropBook(id, 'Notebook.ipynb')
   assert.equal(allBooks(doc)[0].book.root, second.root, 'the second notebook became first')
 
   // Restoring a version where the room had its own notebook: the cells must
@@ -415,7 +415,7 @@ test('a closed room does not come back to life from deferred work', () => {
 
   projectBooks(id)
   forgetMissingBooks(id)
-  moveBook(id, 'Тетрадь.ipynb', 'другая.ipynb')
-  dropBook(id, 'Тетрадь.ipynb')
+  moveBook(id, 'Notebook.ipynb', 'другая.ipynb')
+  dropBook(id, 'Notebook.ipynb')
   assert.equal(peekSessionDoc(id), null, 'the room came back into memory by itself')
 })

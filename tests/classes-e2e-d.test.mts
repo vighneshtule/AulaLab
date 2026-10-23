@@ -798,7 +798,7 @@ scenario('D19 · bye{restart}: no failover within its 120 s grace however silent
   }
   const containers = { moving: a.agent.classContainer(moving.id, 'room')!, kept: a.agent.classContainer(kept.id, 'room')! }
 
-  // colloq-host runner update: the marker, then docker stop. The agent's last sync says why it is the last.
+  // aulalab-host runner update: the marker, then docker stop. The agent's last sync says why it is the last.
   fs.writeFileSync(stateLayout(a.agent.root).restartMarker, '')
   assert.equal((await a.agent.terminate()).code, 0, a.agent.log())
   assert.ok(home.classLines.some((line) => line.includes(`machine ${a.runnerId} is restarting its agent`)), home.classLines.join('\n'))
@@ -1064,7 +1064,7 @@ scenario('D21 · revoke, «Не принимает занятия» and leave: e
   assert.equal(unclassed.agent.sandboxRuns().length, 2, 'both ran on the unclassed machine, the only one there is')
   noDelete(unclassed, uContainer.id)
 
-  // `colloq-host runner leave`: the agent drains, its leaving sync moves the class, it removes its class containers and goes.
+  // `aulalab-host runner leave`: the agent drains, its leaving sync moves the class, it removes its class containers and goes.
   const leaving = await scene.machine('d21l')
   const l = await scene.room({ room: 'machines' })
   await classOn(leaving, l)

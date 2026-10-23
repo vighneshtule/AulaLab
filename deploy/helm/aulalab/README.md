@@ -1,0 +1,441 @@
+# Aula Lab Helm chart
+
+Aula Lab in one namespace of your Kubernetes: the web app (`aulalab-app`), the
+runtime broker (`aulalab-runtime`), and one kernel Pod per room that the broker
+creates through the namespaced Kubernetes API. Competition submissions run as
+broker-created Pods too. Everything the chart renders passes restricted Pod
+Security, carries requests, limits, probes and the standard
+`app.kubernetes.io/*` labels, uses images pinned by digest, and declares every
+network flow for a namespace whose default is deny.
+
+The published chart carries the release's image digests and kernel catalog:
+
+```sh
+helm install aulalab oci://ghcr.io/vighneshtule/charts/aulalab --version 0.9.0 \
+  --namespace aulalab \
+  --set ingress.host=aulalab.example.edu \
+  --set ingress.tls.secretName=aulalab-tls
+```
+
+The copy of the chart in the source tree has empty digests and refuses to
+render until they are set. After the install, `NOTES` print how to open Aula Lab
+and how the first owner gets in: read the setup token from the app's data volume
+(`kubectl -n aulalab exec deploy/aulalab-app -- cat /data/setup-token`) and open
+`https://<host>/admin/t/<token>`.
+
+**One replica, strategy Recreate.** The database is SQLite with a single writer
+and the rooms' live state is in that one process, so `aulalab-app` and
+`aulalab-runtime` run one replica each and are never scaled. An upgrade restarts
+the app for a few seconds; rooms keep running meanwhile.
+
+**One Aula Lab per namespace.** The broker treats every room Pod in its namespace
+as its own, and objects have fixed names (`aulalab-app`, `aulalab-runtime`, the
+ServiceAccount `aulalab-kernel` that room Pods run as, the competition
+NetworkPolicies the broker looks up by name). A second release in the same
+namespace fails on those names instead of sharing rooms with the first.
+
+## What the platform provides
+
+| # | Assumption | Where it varies |
+|---|---|---|
+| 1 | Kubernetes 1.30 or newer (upstream, Deckhouse and similar). In-place room resize needs 1.33 and the `pods/resize` permission; without either it is reported unsupported, not an error. | `runtime.inPlaceResize` |
+| 2 | One namespace with namespace-admin rights. The chart creates no cluster-scoped object: no Namespace, PersistentVolume, RuntimeClass, DaemonSet, CRD or ClusterRole. The broker's Role holds only verbs a namespace admin holds; a Role may only grant what its author holds, so drop `pods/resize` if yours lacks it (`kubectl auth can-i patch pods --subresource=resize`). | `runtime.inPlaceResize` |
+| 3 | Pod Security `restricted` and a policy engine (Kyverno, Gatekeeper) requiring requests and limits, liveness and readiness probes, a non-root read-only root filesystem, no host access, images from the internal registry pinned by digest, standard labels. | `global.imageRegistry`, `commonLabels`, `rooms.podLabels` |
+| 4 | NetworkPolicies are enforced (Calico, Cilium) and the namespace may deny by default. Every flow Aula Lab needs is declared, both directions. | `networkPolicy.*` |
+| 5 | ingress-nginx with a corporate certificate from an existing Secret or cert-manager. Users come from the corporate network or VPN. | `ingress.*` |
+| 6 | A StorageClass with ReadWriteOnce; ReadWriteMany (CephFS, NFS) optional. | `persistence.*` |
+| 7 | No internet from the cluster: images through a registry mirror (Harbor, Nexus), packages through a PyPI mirror, the model through an internal OpenAI-compatible endpoint or off, an optional HTTP proxy and an internal CA. | `global.imageRegistry`, `dependencies.*`, `config.ai.*`, `outbound.*` |
+| 8 | Secrets from Vault through External Secrets, deployment through ArgoCD. The chart never needs a random value at render time: every secret can come from an existing Secret. | `config.existingSecret`, `secrets.*`, `metrics.existingSecret` |
+| 9 | Prometheus Operator (optional ServiceMonitor), logs from stdout. | `metrics.*`, `config.logFormat` |
+| 10 | Backups by volume snapshots (Velero, CSI) plus consistent database snapshots the app writes into its data volume. | `config.dbSnapshotHours`, `config.dbSnapshotKeep` |
+| 11 | GPU nodes optional: runtime class, node selector and tolerations of GPU rooms are values, and so is the extended resource a GPU competition's submissions request; the device plugin and its sharing (time-slicing, MPS, MIG) are the platform's. | `gpu.*` |
+
+## Storage: ReadWriteOnce or ReadWriteMany
+
+Two claims: `aulalab-data` (the database, the owner's keys, competition data;
+10Gi) and `aulalab-workspace` (every room's files; 100Gi). The app mounts both,
+room and personal-notebook Pods mount the workspace, competition Pods the data.
+
+- **ReadWriteOnce** (the default, always available): a volume is attached to
+  one node, so everything that mounts it must run there. The chart sets
+  `RUNTIME_COLOCATE_WITH_APP=1` and the broker gives each of its Pods a required
+  affinity to the app's node; the app itself prefers the node where rooms
+  already run, because a new app Pod needs their attachment of the volume. That
+  node's memory is the classroom's memory: size it for the rooms.
+- **ReadWriteMany**: no co-location, rooms spread over the cluster
+  (`RUNTIME_COLOCATE_WITH_APP=0`). SQLite has a single writer, the app, so a
+  shared filesystem with proper locking (CephFS, NFSv4) is enough; the data
+  claim may stay ReadWriteOnce on block storage
+  (`persistence.data.accessMode: ReadWriteOnce`), which brings co-location back.
+
+`ReadWriteOncePod` cannot work (the app and the rooms share the volumes). With
+`existingClaim` the chart creates nothing and cannot see the claim: set
+`accessMode` to that claim's mode. Claims are annotated to survive
+`helm uninstall` and the deletion of an ArgoCD application.
+
+## GPU for competition submissions
+
+Off by default. A teacher may ask for a GPU per competition (on a catalog
+environment with `gpu: true`); with `gpu.competitions.resource` set, the
+notebook step of each submission then requests `gpu.competitions.count` units of
+that extended resource (requests equal limits) and runs with the GPU rooms'
+`gpu.runtimeClassName`, `gpu.nodeSelector` and `gpu.tolerations`, and with a
+memory-backed `/dev/shm` of half its memory, at most `gpu.competitions.shmMb`
+(1024 MiB), for PyTorch's DataLoader workers. The metric step never gets a GPU:
+it mounts the hidden answers. Everything else on a GPU environment's image (the metric, package
+preparation, a competition that asked for no GPU) runs on the CPU with
+`NVIDIA_VISIBLE_DEVICES=void`, so an image built from `nvidia/cuda` gets no card
+on a node whose default runtime is NVIDIA's. While the resource is empty the app
+refuses submissions to a competition that asks for a GPU and says why; it never
+runs them on the CPU instead.
+
+What one unit is, the platform's NVIDIA device plugin decides (directly, or
+through the GPU operator's `devicePlugin.config`), not the chart:
+
+- **Time-slicing** (`sharing.timeSlicing.resources: [{name: nvidia.com/gpu, replicas: 4}]`):
+  every card is offered four times and four submissions share it in time, with
+  no memory or fault isolation between them. With `renameByDefault: true` the
+  replicas are `nvidia.com/gpu.shared`: set that name here.
+- **MPS** (`sharing.mps`, device plugin 0.15 or newer): replicas as above, each
+  limited to an equal part of the card's memory. **Set `gpu.competitions.shmMb: 0`.**
+  The plugin mounts its MPS daemon's shared memory at the container's `/dev/shm`,
+  and the kubelet mounts a Pod's own volumes after the plugin's: a submission's
+  own `/dev/shm` would hide the daemon's, CUDA could not reach the MPS server,
+  and every GPU notebook would train on the CPU or fail
+  ([NVIDIA/k8s-device-plugin#467](https://github.com/NVIDIA/k8s-device-plugin/issues/467)).
+  With 0 the `/dev/shm` is the daemon's, shared by the node's MPS clients and
+  sized by it. Rooms keep their own 1Gi `/dev/shm`, so keep them off MPS nodes:
+  rename the MPS replicas (`renameByDefault: true`, `nvidia.com/gpu.shared`)
+  and set that name here.
+- **MIG** (A100, A30, H100 and newer): slices isolated in hardware. The `mixed`
+  strategy names them by profile, e.g. `nvidia.com/mig-1g.10gb`; `single` keeps
+  `nvidia.com/gpu`.
+
+Rooms always request one `nvidia.com/gpu`. Where the cards a class uses must
+never be shared with submissions, give submissions a name of their own (a MIG
+profile, or time-sliced replicas renamed to `nvidia.com/gpu.shared` on nodes
+labelled for that device-plugin configuration). A count above 1 makes sense for
+whole cards and MIG slices; time-sliced replicas of one card add no compute
+(`failRequestsGreaterThanOne: true` makes the plugin refuse such requests).
+
+**ReadWriteOnce storage pins every competition Pod to the app's node**
+(`RUNTIME_COLOCATE_WITH_APP=1`, above), GPU submissions included: the units
+must be on that node, so the app must run on a GPU node (`app.nodeSelector`,
+`app.tolerations`), or the data claim must be ReadWriteMany. Otherwise no node
+satisfies both, and every GPU submission waits in the queue "for resources" for
+as long as nobody looks. The chart sees no nodes and cannot check this; after
+the install, run a competition's baseline check on a GPU environment.
+
+**How many at once: `gpu.competitions.slots`.** The app's queue keeps that many
+GPU submissions at the broker and lets CPU work (other competitions, rescores,
+baseline checks) go past the GPU submissions that wait for their turn. Set it
+to how many submissions the resource can serve at once, `count` units each,
+after what GPU rooms take when they request the same resource. Unset, the queue
+sends one at a time. Too high costs throughput, not results: a GPU submission
+the scheduler cannot place holds a general slot for 30 seconds and then waits
+in the queue again.
+
+**When Kubernetes refuses a GPU submission's Pod.** A ResourceQuota that names
+the resource (`requests.nvidia.com/gpu: "2"`) bounds GPU rooms and GPU
+submissions together, and the API server refuses a Pod over it. That refusal,
+a missing RuntimeClass (`gpu.runtimeClassName`; `nvidia` is created by the GPU
+operator, and absent without it), or an admission policy that turns down the GPU
+parts of the Pod sends the submission back to the queue: it is retried a few
+seconds to a minute later, and its teacher sees the cause next to it. A CPU job
+refused the same way still fails, as it always did. Keep
+`gpu.competitions.slots` × `count` within such a quota, less what GPU rooms
+hold.
+
+**Image pull: `gpu.competitions.pullSeconds`.** GPU catalog images are 10 to
+13 GB, and every job of a GPU environment runs one: the notebook on a GPU node,
+the metric and package preparation on any node of the students' pool. A node
+that has never run the image pulls it after the Pod is created, and the broker
+waits up to `pullSeconds` (900) for that before the job's own time starts; the
+Pod's `activeDeadlineSeconds` grows by as much. A job that started still gets
+exactly its own limit. To spare the first class the wait, pull the GPU images
+onto those nodes beforehand (for instance, a DaemonSet on those nodes whose init
+containers are the GPU images, each running `true`).
+
+## Secrets, Vault and ArgoCD
+
+| Secret | Keys | Mounted by | Replace with |
+|---|---|---|---|
+| `aulalab-app-config` | `OPENAI_API_KEY`, `SESSION_SECRET` | app, as environment | `config.existingSecret`: any app setting, which then wins over the values |
+| `aulalab-runtime-auth` | `runtime-token` | app and broker | `secrets.runtimeToken.existingSecret` (+ `existingSecretKey`) |
+| `aulalab-room-secret` | `room-secret` | broker only | `secrets.roomSecret.existingSecret` (+ `existingSecretKey`) |
+| `aulalab-metrics` | `metrics-token` | app (`METRICS_TOKEN`), ServiceMonitor | `metrics.existingSecret` (+ `existingSecretKey`) |
+
+The runtime token, the room secret and the metrics token are generated once when
+nothing else is given, and read back from the live Secret with `lookup` on every
+`helm upgrade`, so they never change. **ArgoCD cannot do that:** it renders with
+`helm template`, where `lookup` sees no cluster, and every refresh would make new
+values (the application stays OutOfSync, and a sync restarts every room). Under
+ArgoCD set `existingSecret` for each, or `value` from a plugin such as
+argocd-vault-plugin. A value is 43 to 128 characters of `[A-Za-z0-9_-]`:
+
+```sh
+kubectl -n aulalab create secret generic aulalab-runtime --from-literal=runtime-token="$(openssl rand -hex 32)"
+kubectl -n aulalab create secret generic aulalab-rooms --from-literal=room-secret="$(openssl rand -hex 32)"
+```
+
+or, with External Secrets:
+
+```yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata: {name: aulalab-app, namespace: aulalab}
+spec:
+  secretStoreRef: {kind: ClusterSecretStore, name: vault}
+  target: {name: aulalab-app}
+  data:
+    - {secretKey: OPENAI_API_KEY, remoteRef: {key: aulalab, property: openai-api-key}}
+    - {secretKey: SESSION_SECRET, remoteRef: {key: aulalab, property: session-secret}}
+```
+
+with `config.existingSecret: aulalab-app`. Changing the room secret replaces
+every room's Pod at its next start (room tokens derive from it); changing
+`SESSION_SECRET` signs everyone out. Without `SESSION_SECRET` the app keeps a
+generated one in its data volume.
+
+## Network
+
+| From | To | Port |
+|---|---|---|
+| ingress controller (`networkPolicy.ingressController.from`) | app | 3000 |
+| Prometheus (`networkPolicy.monitoring.from`, only with `metrics.enabled`) | app | 3000 |
+| app | broker | 8787 |
+| app, broker | room and personal-notebook Pods | 8888 |
+| broker | competition exporters (notebook, scorer, resolver Pods) | 8765 |
+| broker | Kubernetes API (`networkPolicy.kubeApiServer`) | 443, 6443 |
+| package resolver | package proxy | 3128 |
+| package proxy | public IPv4 (`dependencies.publicEgress`), the mirror (`dependencies.mirrorEgress`) | 443, as listed |
+| app | external endpoints (`networkPolicy.app.egress`) | as listed |
+| every Aula Lab Pod except competition notebooks and scorers | cluster DNS (`networkPolicy.dns.to`) | 53 UDP/TCP |
+
+Rooms reach cluster DNS and nothing else (`rooms.network: none` takes DNS away
+too); competition notebooks and scorers reach nothing at all. Kubernetes
+policies select addresses and labels, never names, so:
+
+- **Ingress controller.** The default selects `app.kubernetes.io/name:
+  ingress-nginx` Pods in the namespace `ingress-nginx`. A controller on the host
+  network arrives from node addresses: use an `ipBlock` of your nodes. An empty
+  list admits nobody.
+- **Cluster DNS.** The default is `k8s-app: kube-dns` in `kube-system`. With
+  NodeLocal DNSCache add its address (`- ipBlock: {cidr: 169.254.20.10/32}`).
+- **Kubernetes API.** `kubernetes.default.svc` is rewritten to the API servers'
+  own addresses before policy applies, so the default allows 443 and 6443 to
+  any address. Narrow `networkPolicy.kubeApiServer.cidrs` to what
+  `kubectl get endpointslices -n default -l kubernetes.io/service-name=kubernetes`
+  shows. Cilium gives the API servers an identity an `ipBlock` does not match
+  (unless it runs with `policy-cidr-match-mode=nodes`):
+  `networkPolicy.kubeApiServer.ciliumEntity: true` adds a namespaced
+  CiliumNetworkPolicy allowing the `kube-apiserver` entity.
+- **The app's way out.** None by default. List the model endpoint, the
+  outbound proxy and, for notebook import, GitHub in
+  `networkPolicy.app.egress` as CIDRs and ports. With a proxy, only the proxy.
+- **The package mirror.** Helm cannot resolve names: list the mirror's
+  addresses in `dependencies.mirrorEgress`. The proxy itself still admits only
+  the names in `dependencies.indexUrl` and `dependencies.filesHosts`.
+
+`config.inbound.trustedProxies` defaults to `private`: only the ingress
+controller reaches the app, from a pod address, and ingress-nginx overwrites
+`X-Forwarded-For` with the client's address. If every student appears as one
+address (a load balancer in front of ingress-nginx that hides clients), list it
+in `config.inbound.sharedAddresses`, or make the balancer pass client addresses.
+
+## Registry, proxy and CA
+
+`global.imageRegistry` replaces the registry of every image, the catalog's
+kernel images included, and keeps the repository path and digest, which is what
+a Harbor or Nexus proxy of `ghcr.io` expects:
+`harbor.bank.local/ghcr` turns `ghcr.io/vighneshtule/aulalab-app@sha256:…` into
+`harbor.bank.local/ghcr/vighneshtule/aulalab-app@sha256:…`. Pull secrets
+(`global.imagePullSecrets`) go to every Pod of the chart; the broker gives the
+first one to the Pods it creates.
+
+`outbound.httpsProxy`/`httpProxy`/`noProxy` apply to the app's own calls (the
+model, GitHub); cluster names and private addresses always go direct. A proxy
+URL with a password belongs in `config.existingSecret` as `HTTPS_PROXY`. The
+institution's CA (`outbound.extraCa.pem`, or `existingConfigMap` and `key`) is
+mounted into the app as `NODE_EXTRA_CA_CERTS` and handed to package
+preparation. Competition "own packages" go through the mirror
+(`dependencies.indexUrl`), not through the proxy.
+
+## Upgrades
+
+- `helm upgrade` (or an ArgoCD sync) restarts the app with Recreate: a few
+  seconds without the site; open rooms reconnect by themselves and keep their
+  variables, since room Pods are the broker's, not the release's.
+- Before a migration raises the data schema the app writes a consistent
+  database snapshot into `/data/snapshots`; a release refuses data of a newer
+  schema, so going back across a schema change means restoring that snapshot
+  (or a volume snapshot) together with the older release.
+- A change to what a room Pod runs (a kernel image in the catalog, room
+  scratch space, pull secret, room secret) replaces each room's Pod the next
+  time that room starts a kernel, which loses the room's variables: upgrade
+  between classes. Placement (node selectors, tolerations, priority, runtime
+  class, co-location) is different: a running room keeps its Pod, and only its
+  next Pod follows the new setting. Room memory and cores change in place on
+  Kubernetes 1.33+ with `runtime.inPlaceResize`.
+- A helm upgrade keeps the previous release's kernel revisions in the catalog,
+  not current (`catalog.retainPrevious`, at most
+  `catalog.maxRetainedPerEnvironment` per environment, read from the live
+  ConfigMap), so rooms pinned to them keep their Python. A render without the
+  cluster (ArgoCD) cannot read them back: there a room whose revision is gone
+  moves to its environment's current one on its next start.
+- Switching a generated secret to `existingSecret` removes the generated one:
+  copy its value into the new Secret first to keep rooms and sign-ins.
+- `helm uninstall` keeps the claims and leaves the broker's room Pods and
+  Services, which Helm never owned:
+  `kubectl -n aulalab delete pod,service -l app.kubernetes.io/managed-by=aulalab-runtime`.
+
+## Values
+
+Every value, with the environment variable it becomes. `values.yaml` has the
+same list with longer explanations; `values.schema.json` rejects unknown keys.
+
+### Images and catalog
+
+| Value | Default | Becomes |
+|---|---|---|
+| `global.imageRegistry` | `""` | registry of every image, catalog included |
+| `global.imagePullSecrets` | `[]` | `imagePullSecrets` of both Pods; the first is `RUNTIME_IMAGE_PULL_SECRET` |
+| `commonLabels` | `{}` | labels of every object and Pod, and part of `RUNTIME_POD_LABELS` |
+| `image.registry` | `ghcr.io` | registry of the app and runtime images |
+| `image.pullPolicy` | `IfNotPresent` | `imagePullPolicy` |
+| `image.app.repository` / `image.app.digest` | `vighneshtule/aulalab-app` / release | app image |
+| `image.runtime.repository` / `image.runtime.digest` | `vighneshtule/aulalab-runtime` / release | broker image, `RUNTIME_COMPETITION_EXPORTER_IMAGE` |
+| `catalog.release` | `v<appVersion>` | `release` of `catalog.json` |
+| `catalog.defaultEnvironment` | `base` | `defaultEnvironment` of `catalog.json` |
+| `catalog.environments[]` | release | `name`, `image` (pinned), `gpu`, `packages`, `python`, `current` of `catalog.json` (ConfigMap `aulalab-catalog`: `KERNEL_CATALOG_FILE`, `RUNTIME_CATALOG_FILE`) |
+
+### App settings
+
+| Value | Default | Becomes |
+|---|---|---|
+| `config.existingSecret` | `""` | the app's `envFrom` Secret instead of `aulalab-app-config` |
+| `config.publicUrl` | `https://<ingress.host>` | `PUBLIC_URL` |
+| `config.uiLanguage` | `""` (English) | `UI_LANGUAGE` |
+| `config.timezone` | `""` (Europe/Moscow) | `TZ` |
+| `config.institution` | `""` | `INSTITUTION` |
+| `config.adminEmail` | `""` | `ADMIN_EMAIL` |
+| `config.openSeminarCreation` | `false` | `OPEN_SEMINAR_CREATION` |
+| `config.maxUploadMb` | `50` | `MAX_UPLOAD_MB` |
+| `config.maxSessionMb` | `1024` | `MAX_SESSION_MB` |
+| `config.councilCopyMb` | `512` | `COUNCIL_COPY_MB` |
+| `config.councilMemoryGuard` | `true` | `COUNCIL_MEMORY_GUARD` (`1`/`0`) |
+| `config.sessionSecret` | `""` | `SESSION_SECRET` (Secret) |
+| `config.logFormat` | `text` | `LOG_FORMAT` (only `json` is written) |
+| `config.dbSnapshotHours` | `24` | `DB_SNAPSHOT_HOURS` |
+| `config.dbSnapshotKeep` | `7` | `DB_SNAPSHOT_KEEP` |
+| `config.ai.provider` | `openai` | `AI_PROVIDER` |
+| `config.ai.apiKey` | `""` | `OPENAI_API_KEY` (Secret) |
+| `config.ai.baseUrl` | `""` | `OPENAI_BASE_URL` |
+| `config.ai.model` | `""` | `OPENAI_MODEL` |
+| `config.ai.reasoning` | `false` | `AI_REASONING` |
+| `config.inbound.trustedProxies` | `private` | `TRUSTED_PROXIES` |
+| `config.inbound.sharedAddresses` | `""` | `SHARED_ADDRESSES` |
+| `config.inbound.trustCfConnectingIp` | `false` | `TRUST_CF_CONNECTING_IP` (`1`/`0`) |
+| `config.inbound.hsts` | `true` | `HSTS` (`1`/`0`) |
+| `config.extraEnv` | `{}` | any other app setting, as `NAME: value` |
+| `outbound.httpsProxy` | `""` | `HTTPS_PROXY`, `https_proxy` |
+| `outbound.httpProxy` | `""` | `HTTP_PROXY`, `http_proxy` |
+| `outbound.noProxy` | `""` | `NO_PROXY`, `no_proxy` |
+| `outbound.extraCa.pem` | `""` | ConfigMap `aulalab-extra-ca`, `NODE_EXTRA_CA_CERTS=/etc/aulalab-ca/extra-ca.pem` |
+| `outbound.extraCa.existingConfigMap` / `key` | `""` / `extra-ca.pem` | the same from your ConfigMap |
+| `dependencies.indexUrl` | `""` (PyPI) | `DEPENDENCY_INDEX_URL` (app and broker) |
+| `dependencies.filesHosts` | `""` | `DEPENDENCY_FILES_HOSTS` (app and broker) |
+| `dependencies.mirrorEgress` | `[]` | egress of `competition-proxy-isolation` |
+| `dependencies.publicEgress` | `true` | the proxy's rule for public IPv4 on 443 |
+
+Non-secret settings form the ConfigMap `aulalab-app-env`; empty values are left
+out so the app's default applies. The app reads the ConfigMap, then the Secret
+(which wins), then its own `env`, which wins over both and holds the wiring
+(`KERNEL_BACKEND=broker`, paths, ports) and the settings other objects depend on
+(`AULALAB_ROOM_NETWORK`, `DEPENDENCY_*`, `NODE_EXTRA_CA_CERTS`, `METRICS_TOKEN`).
+
+### Secrets
+
+| Value | Default | Becomes |
+|---|---|---|
+| `secrets.runtimeToken.existingSecret` / `existingSecretKey` / `value` | generated | Secret `aulalab-runtime-auth`; `KERNEL_RUNTIME_TOKEN_FILE`, `RUNTIME_TOKEN_FILE` |
+| `secrets.roomSecret.existingSecret` / `existingSecretKey` / `value` | generated | Secret `aulalab-room-secret`; `RUNTIME_ROOM_SECRET_FILE` |
+
+### Rooms and GPU
+
+| Value | Default | Becomes |
+|---|---|---|
+| `rooms.memory` | `4Gi` | `RUNTIME_KERNEL_MEMORY` |
+| `rooms.cpu` | `2` | `RUNTIME_KERNEL_CPU` |
+| `rooms.maxMemory` | `""` (broker's node minus 1 GiB) | `RUNTIME_KERNEL_MEMORY_MAX` |
+| `rooms.ephemeralStorage` | `2Gi` | `RUNTIME_KERNEL_EPHEMERAL` |
+| `rooms.network` | `""` | `AULALAB_ROOM_NETWORK`; `none` removes DNS from `room-isolation` |
+| `rooms.nodeSelector` | `{}` | `RUNTIME_ROOM_NODE_SELECTOR` (JSON); also competition job and resolver Pods, which run student code |
+| `rooms.tolerations` | `[]` | `RUNTIME_ROOM_TOLERATIONS` (JSON); also competition job and resolver Pods |
+| `rooms.priorityClassName` | `""` | `RUNTIME_PRIORITY_CLASS` (every broker-created Pod) |
+| `rooms.podLabels` | `{}` | `RUNTIME_POD_LABELS` (JSON, with `app.kubernetes.io/name`, `part-of` and `commonLabels`; never `instance`, which ArgoCD's label tracking would take for its own and prune) |
+| `rooms.podAnnotations` | `{}` | `RUNTIME_POD_ANNOTATIONS` (JSON) |
+| `gpu.runtimeClassName` | `nvidia` | `RUNTIME_GPU_RUNTIME_CLASS` (`""`: none); also a competition notebook given a GPU |
+| `gpu.nodeSelector` | `{}` | `RUNTIME_GPU_NODE_SELECTOR` (JSON); also a competition notebook given a GPU |
+| `gpu.tolerations` | `[]` | `RUNTIME_GPU_TOLERATIONS` (JSON); also a competition notebook given a GPU |
+| `gpu.competitions.resource` | `""` (off) | `RUNTIME_COMPETITION_GPU_RESOURCE`, rendered only when set: the extended resource a GPU competition's notebook step requests, e.g. `nvidia.com/gpu`, `nvidia.com/mig-1g.10gb` (see *GPU for competition submissions*) |
+| `gpu.competitions.count` | `1` | `RUNTIME_COMPETITION_GPU_COUNT`, with the resource: units per submission, 1..8 |
+| `gpu.competitions.slots` | `null` (one at a time) | `RUNTIME_COMPETITION_GPU_SLOTS`, with the resource, rendered only when set: GPU submissions the cluster runs at once, 1..256 |
+| `gpu.competitions.shmMb` | `1024` | `RUNTIME_COMPETITION_GPU_SHM_MB`, with the resource: the ceiling of a GPU submission's `/dev/shm`, MiB (also at most half its memory); `0`: none, for MPS |
+| `gpu.competitions.pullSeconds` | `900` | `RUNTIME_COMPETITION_GPU_PULL_SECONDS`: the image pull allowance of every Pod of a GPU catalog image, 0..3600 |
+
+Set `rooms.maxMemory` on a cluster of unequal nodes: without it the broker takes
+its own node's memory as every room's ceiling. A room reserves its memory and
+cores in full (requests equal limits), so a ResourceQuota on the namespace must
+hold the app, the broker and every room open at once, plus competition jobs.
+
+### Storage
+
+| Value | Default | Becomes |
+|---|---|---|
+| `persistence.accessMode` | `ReadWriteOnce` | both claims; `RUNTIME_COLOCATE_WITH_APP=1` when either is ReadWriteOnce |
+| `persistence.storageClass` | `""` (cluster default; `-`: none) | `storageClassName` of both claims |
+| `persistence.retain` | `true` | `helm.sh/resource-policy: keep`, `argocd.argoproj.io/sync-options: Prune=false,Delete=false` |
+| `persistence.data.size` / `accessMode` / `storageClass` / `existingClaim` | `10Gi` / `""` / `""` / `""` | claim `aulalab-data`; `RUNTIME_COMPETITION_DATA_CLAIM` |
+| `persistence.workspace.size` / `accessMode` / `storageClass` / `existingClaim` | `100Gi` / `""` / `""` / `""` | claim `aulalab-workspace`; `RUNTIME_WORKSPACE_CLAIM` |
+
+### Ingress, Service, metrics
+
+| Value | Default | Becomes |
+|---|---|---|
+| `ingress.enabled` | `true` | Ingress `aulalab-app` (`false`: Service only) |
+| `ingress.className` | `nginx` | `ingressClassName` |
+| `ingress.host` | required | the rule's host, the TLS host, `PUBLIC_URL` |
+| `ingress.annotations` | body 256m, timeouts 3600, buffering off | annotations (`null` drops one) |
+| `ingress.tls.enabled` / `secretName` | `true` / `aulalab-tls` | the TLS section |
+| `ingress.tls.certManager.clusterIssuer` / `issuer` | `""` | `cert-manager.io/cluster-issuer` / `cert-manager.io/issuer` |
+| `service.type` / `annotations` | `ClusterIP` / `{}` | Service `aulalab-app` (port 3000) |
+| `metrics.enabled` | `false` | `METRICS_TOKEN` from Secret `aulalab-metrics` |
+| `metrics.token` / `existingSecret` / `existingSecretKey` | generated / `""` / `metrics-token` | the token's source |
+| `metrics.serviceMonitor.enabled` / `interval` / `scrapeTimeout` / `labels` | `false` / `30s` / `10s` / `{}` | ServiceMonitor `aulalab-app` with the bearer token |
+
+### Network policy
+
+| Value | Default | Becomes |
+|---|---|---|
+| `networkPolicy.dns.to` | `kube-system` / `k8s-app: kube-dns` | DNS egress of every Aula Lab Pod |
+| `networkPolicy.ingressController.from` | `ingress-nginx` / `app.kubernetes.io/name: ingress-nginx` | ingress of the app on 3000 |
+| `networkPolicy.monitoring.from` | `monitoring` / `app.kubernetes.io/name: prometheus` | ingress of the app on 3000, with `metrics.enabled` |
+| `networkPolicy.kubeApiServer.cidrs` / `ports` | `0.0.0.0/0`, `::/0` / `443`, `6443` | the broker's egress to the API servers |
+| `networkPolicy.kubeApiServer.ciliumEntity` | `false` | CiliumNetworkPolicy `aulalab-runtime-kube-api` |
+| `networkPolicy.app.egress` | `[]` | the app's egress, `{cidrs, ports}` |
+| `networkPolicy.app.extraEgress` / `runtime.extraEgress` | `[]` | raw egress rules for the app / the broker |
+
+### Workloads
+
+| Value | Default | Becomes |
+|---|---|---|
+| `podSecurityContext` | non-root 1000:1000, fsGroup 1000, RuntimeDefault seccomp | both Pods (uid 1000 is shared with rooms) |
+| `containerSecurityContext` | no privilege escalation, read-only root, drop ALL | both containers |
+| `app.resources` | 250m/512Mi, limits 2/2Gi | the app container |
+| `app.nodeSelector` / `tolerations` / `affinity` / `podAnnotations` / `priorityClassName` | empty | the app Pod (`affinity` replaces the ReadWriteOnce preference) |
+| `app.startupProbe` / `livenessProbe` / `readinessProbe` | `/api/livez` (10 min to start), `/api/livez`, `/api/readyz` | the app's probes |
+| `runtime.inPlaceResize` | `true` | `RUNTIME_IN_PLACE_RESIZE`, `pods/resize` in the Role |
+| `runtime.resources` | 100m/128Mi, limits 1/512Mi | the broker container |
+| `runtime.nodeSelector` / `tolerations` / `affinity` / `podAnnotations` / `priorityClassName` | empty | the broker Pod |
+| `runtime.livenessProbe` / `readinessProbe` | TCP 8787 | the broker's probes |

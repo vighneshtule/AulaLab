@@ -17,7 +17,7 @@ with tempfile.TemporaryDirectory() as tmp:
  root=pathlib.Path(tmp); source=root/'source'; target=root/'target'; source.mkdir(); target.mkdir()
  for name in ('data','workspace','secrets'): (source/name).mkdir(); (target/name).mkdir()
  (source/'workspace'/'restored-room').write_text('restored')
- with sqlite3.connect(source/'data'/'colloq.db') as c: c.execute('create table x(value)')
+ with sqlite3.connect(source/'data'/'aulalab.db') as c: c.execute('create table x(value)')
  release=root/'release.json'; release.write_text(json.dumps(dict(dataSchemaVersion=1,compatibleDataSchemaVersions=[1],catalog={})))
  archive=root/'backup.tar.gz'; m.backup(types.SimpleNamespace(root=str(source),release=str(release),output=str(archive),mode='live',quiesced=False,name=''))
  scripts=root/'scripts'; scripts.mkdir()
@@ -25,15 +25,15 @@ with tempfile.TemporaryDirectory() as tmp:
  (target/'tombstone').write_text('retired-room')
  (scripts/'cluster.sh').write_text('''#!/usr/bin/env bash
 set -euo pipefail
-echo "$1" >> "$COLLOQ_STATE_DIR/events"
+echo "$1" >> "$AULALAB_STATE_DIR/events"
 if [ "$1" = restore-services ]; then
-  test -f "$COLLOQ_STATE_DIR/.restore-in-progress"
-  test -f "$COLLOQ_STATE_DIR/workspace/restored-room"
+  test -f "$AULALAB_STATE_DIR/.restore-in-progress"
+  test -f "$AULALAB_STATE_DIR/workspace/restored-room"
   if [ "$FAIL_RESET" = 1 ]; then exit 99; fi
-  python3 -c 'import json,os; from pathlib import Path; p=Path(os.environ["COLLOQ_STATE_DIR"]); assert json.loads((p/".restore-in-progress").read_text())["phase"]=="files-restored"; (p/"tombstone").unlink()'
+  python3 -c 'import json,os; from pathlib import Path; p=Path(os.environ["AULALAB_STATE_DIR"]); assert json.loads((p/".restore-in-progress").read_text())["phase"]=="files-restored"; (p/"tombstone").unlink()'
 fi
 ''')
- env={**os.environ,'COLLOQ_STATE_DIR':str(target),'NAME':'','FAIL_RESET':'0'}
+ env={**os.environ,'AULALAB_STATE_DIR':str(target),'NAME':'','FAIL_RESET':'0'}
  command=['bash',str(scripts/'restore.sh'),'--archive',str(archive),'--release',str(release)]
  failed=subprocess.run(command+['--replace'],env={**env,'FAIL_RESET':'1'},capture_output=True,text=True)
  assert failed.returncode==99, failed.stdout+failed.stderr
@@ -62,7 +62,7 @@ with tempfile.TemporaryDirectory() as tmp:
  root=pathlib.Path(tmp); source=root/'source'; target=root/'target'; source.mkdir(); target.mkdir()
  for name in ('data','workspace','secrets'): (source/name).mkdir(); (target/name).mkdir()
  (target/'data'/'old').write_text('old')
- with sqlite3.connect(source/'data'/'colloq.db') as c: c.execute('create table x(value)')
+ with sqlite3.connect(source/'data'/'aulalab.db') as c: c.execute('create table x(value)')
  release=root/'release.json'; release.write_text(json.dumps(dict(dataSchemaVersion=1,compatibleDataSchemaVersions=[1],catalog={})))
  archive=root/'backup.tar.gz'; m.backup(types.SimpleNamespace(root=str(source),release=str(release),output=str(archive),mode='live',quiesced=False,name=''))
  real=m.sync_directory
@@ -82,7 +82,7 @@ with tempfile.TemporaryDirectory() as tmp:
   assert.equal(result.status, 0, result.stderr)
 })
 test('interrupted tree replacement leaves a durable marker and requires validated explicit recovery', () => {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-interrupted-'))
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-interrupted-'))
   const source = path.join(temp, 'source'),
     target = path.join(temp, 'target'),
     archive = path.join(temp, 'backup.tar.gz'),
@@ -100,7 +100,7 @@ test('interrupted tree replacement leaves a durable marker and requires validate
       spawnSync('python3', [
         '-c',
         'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("create table x(value)"); c.commit()',
-        path.join(source, 'data/colloq.db'),
+        path.join(source, 'data/aulalab.db'),
       ]).status,
       0,
     )

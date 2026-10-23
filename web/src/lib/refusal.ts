@@ -29,10 +29,10 @@
 /** The collaboration socket's close code that means an edit was refused. */
 export const REFUSED_CLOSE = 4403
 
-const KEY = 'colloq.refused'
-const TRIES = 'colloq.refused.tries'
+const KEY = 'aulalab.refused'
+const TRIES = 'aulalab.refused.tries'
 /** Set exactly between a refusal `reload()` and the next page load. */
-const AUTO = 'colloq.refused.auto'
+const AUTO = 'aulalab.refused.auto'
 
 /**
  * How many times in a row one tab agrees to reload because of a refusal.

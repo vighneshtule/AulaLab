@@ -18,7 +18,7 @@ async function servedByAnother(port: number, runId: string): Promise<boolean> {
   try {
     const response = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(3000) })
     const health = await response.json() as { localRunId?: string | null; version?: string }
-    // Colloq answered (another service on this port has no version field), and not as this session.
+    // Aula Lab answered (another service on this port has no version field), and not as this session.
     return typeof health.version === 'string' && (health.localRunId ?? null) !== runId
   } catch {
     return false
@@ -28,8 +28,8 @@ async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2)
   if (command === 'discover') {
     let receipt: {pid?: number;runId:string;leaseFile:string;url:string;port:number;dataDir:string}
-    if (process.env.COLLOQ_LOCAL_SESSION === '1') {
-      receipt = {runId:process.env.COLLOQ_LOCAL_RUN_ID!, leaseFile:process.env.COLLOQ_PUBLIC_URL_LEASE_FILE!, url:process.env.COLLOQ_LOCAL_URL!,port:Number(process.env.PORT || 3000),dataDir:process.env.DATA_DIR || path.resolve('data')}
+    if (process.env.AULALAB_LOCAL_SESSION === '1') {
+      receipt = {runId:process.env.AULALAB_LOCAL_RUN_ID!, leaseFile:process.env.AULALAB_PUBLIC_URL_LEASE_FILE!, url:process.env.AULALAB_LOCAL_URL!,port:Number(process.env.PORT || 3000),dataDir:process.env.DATA_DIR || path.resolve('data')}
     } else {
       if (!fs.existsSync(args[0])) { process.exitCode = 2; return }
       receipt = JSON.parse(fs.readFileSync(args[0], 'utf8'))
@@ -39,9 +39,9 @@ async function main(): Promise<void> {
          * and they must not be confused.
          *
          * The local session crashed: then there is no server on its port either,
-         * and what needs saying is "start colloq first". But the receipt can
+         * and what needs saying is "start aulalab first". But the receipt can
          * simply be SOMEONE ELSE'S: on 20 Sep 2026 `make vast-up` brought it to a
-         * rented machine along with the working tree (the `.colloq/` directory
+         * rented machine along with the working tree (the `.aulalab/` directory
          * from `make dev` on the laptop), the server there ran as a systemd
          * service, and publishing refused because of a process that had never
          * existed on that machine. A server that answers on this port and does
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
          * absent (code 2, the same as for a missing file).
          */
         if (await servedByAnother(Number(receipt.port), receipt.runId)) { process.exitCode = 2; return }
-        throw new Error('Local session is no longer running; start colloq first')
+        throw new Error('Local session is no longer running; start aulalab first')
       }
     }
     if (!Number.isInteger(receipt.port) || receipt.port < 1 || receipt.port > 65535) throw new Error('Invalid local session port')

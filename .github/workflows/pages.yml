@@ -1,4 +1,4 @@
-# colloq.ru: the landing page and the published seminars.
+# example.edu: the landing page and the published seminars.
 #
 # The site lives in `site/` of this same repository, not in a separate one. The
 # separate one was set up with the caveat "Pages cannot do private

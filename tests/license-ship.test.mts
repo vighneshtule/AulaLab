@@ -33,7 +33,7 @@ test('the PyPI page links the source, the tracker and the changelog', () => {
   const urls = pyproject.split('[project.urls]')[1]!.split('\n[')[0]!
   for (const key of ['Homepage', 'Documentation', 'Source', 'Issues', 'Changelog'])
     assert.match(urls, new RegExp(`^${key} = "https://`, 'm'), `${key} is missing`)
-  assert.doesNotMatch(pyproject, /authors = \[\{ name = "Colloq" \}\]/)
+  assert.doesNotMatch(pyproject, /authors = \[\{ name = "Aula Lab" \}\]/)
 })
 
 test('no workflow leaves the token in .git/config after checkout', () => {

@@ -11,9 +11,9 @@
  * direct. Without the variables nothing changes at all: the module does not
  * even load undici, whose import alone would claim the global dispatcher slot.
  *
- * The one thing the proxy must never carry is Colloq's own traffic: the room
+ * The one thing the proxy must never carry is Aula Lab's own traffic: the room
  * kernels' Jupyter (a loopback port, a Docker container name, a Kubernetes
- * Service under `.svc`) and the k3s broker (`colloq-runtime`). A campus proxy
+ * Service under `.svc`) and the k3s broker (`aulalab-runtime`). A campus proxy
  * cannot reach any of them, and with HTTP_PROXY set every cell run would fail
  * unless NO_PROXY listed names the operator cannot know in advance. So
  * loopback, private and link-local addresses, single-label names and the
@@ -140,7 +140,7 @@ export function parseNoProxy(value: string): NoProxyRules {
   return rules
 }
 
-/** Addresses no campus proxy can reach on Colloq's behalf: loopback, private, carrier-grade NAT, link-local. */
+/** Addresses no campus proxy can reach on Aula Lab's behalf: loopback, private, carrier-grade NAT, link-local. */
 const LOCAL_ADDRESSES = new net.BlockList()
 for (const [address, bits] of [
   ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8],
@@ -156,7 +156,7 @@ function literalFamily(host: string): 'ipv4' | 'ipv6' | null {
   return family === 4 ? 'ipv4' : family === 6 ? 'ipv6' : null
 }
 
-/** Colloq's own destinations: kernels, the broker, a model on the LAN (see the header). */
+/** Aula Lab's own destinations: kernels, the broker, a model on the LAN (see the header). */
 export function localDestination(host: string): boolean {
   const family = literalFamily(host)
   if (family) return LOCAL_ADDRESSES.check(host, family)

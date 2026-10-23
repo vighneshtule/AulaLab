@@ -1,13 +1,8 @@
-# Проверка входа без кэша
+# Uncached join performance
 
-Первое появление формы и готовность комнаты — разные измерения. Для полного
-входа нужно проверить загрузку файлов, отправку формы, оба WebSocket-соединения,
-получение документа и появление рабочей тетради. Если первый экран тетради
-содержит текст, ожидание редактора кода даёт ложный таймаут.
+The first appearance of the join form and room readiness are different measurements. A complete join check must cover asset loading, form submission, both WebSocket connections, document receipt, and the notebook appearing. If the notebook's first screen contains text, waiting for a code editor creates a false timeout.
 
-`scripts/entry-perf.mjs` открывает свежий браузерный контекст. Требуются Chrome
-и установленный `playwright-core`; `ENTRY_PLAYWRIGHT` задаёт путь к библиотеке,
-`ENTRY_CHROME` — к браузеру, если он находится не по стандартному пути macOS.
+`scripts/entry-perf.mjs` opens a fresh browser context. It requires Chrome and `playwright-core`. Use `ENTRY_PLAYWRIGHT` to set the library path and `ENTRY_CHROME` to set the browser path when Chrome is not at its usual macOS location.
 
 ```bash
 ENTRY_URL=http://localhost:3000/s/disposable-room \
@@ -16,63 +11,40 @@ ENTRY_OUTPUT=/tmp/entry.json \
 node scripts/entry-perf.mjs
 ```
 
-Для проверок с входом используйте отдельное занятие: создаётся тестовый
-участник. Скрипт не пишет в чат, не изменяет ячейки и не запускает код.
-Без `ENTRY_JOIN=1` измеряется только форма. Отчёт содержит этапы входа,
-размеры/время загрузки ресурсов, долгие задачи браузера и состояние соединений.
-Параметры авторизации из адресов WebSocket в отчёт не записываются.
+For a join test, use a separate class: the script creates a test participant. It does not post to chat, change cells, or run code. Without `ENTRY_JOIN=1`, it measures only the form. The report contains join phases, resource sizes and load times, long browser tasks, and connection state. WebSocket URL authentication parameters are not written to the report.
 
-- `ENTRY_READY=editor` — ждать доступного редактора, подходящего для первого экрана с кодом.
-- `ENTRY_READY=notebook` — допускает первый экран с Markdown.
-- `ENTRY_CHECK_SCROLL=1` — проверить глубокую прокрутку, возвращение к уже посещённой ячейке и переход к ещё не созданной.
-- `ENTRY_DELAY_MS` — одинаковая дополнительная задержка каждого HTTP-запроса.
-- `ENTRY_DWELL_MS` — время набора имени перед отправкой.
-- `ENTRY_PROFILE` — файл профиля CPU Chrome.
+- `ENTRY_READY=editor` waits for an available editor, suitable when the first screen contains code.
+- `ENTRY_READY=notebook` accepts a first screen containing Markdown.
+- `ENTRY_CHECK_SCROLL=1` checks deep scrolling, returning to a visited cell, and moving to a cell that has not yet been created.
+- `ENTRY_DELAY_MS` adds the same delay to each HTTP request.
+- `ENTRY_DWELL_MS` sets how long the name is typed before submission.
+- `ENTRY_PROFILE` sets the Chrome CPU profile file.
 
-## Первый этап: тетрадь, 11 сентября 2026
+## Stage 1: notebook, 11 September 2026
 
-В настоящем занятии с 279 ячейками создавалось около 30 тысяч DOM-узлов.
-Парковка внутреннего редактора не откладывала создание самих компонентов
-ячеек. На публичной ссылке в одном замере тетрадь появилась через 45,35 секунды.
-Этот результат включает сеть и не является стабильной характеристикой сервера.
+A real class with 279 cells created about 30,000 DOM nodes. Deferring the internal editor did not defer creation of the cell components themselves. In one measurement from a public link, the notebook appeared after 45.35 seconds. That result includes network time and is not a stable measure of server performance.
 
-Для сравнения одну и ту же тетрадь скопировали в изолированное локальное
-занятие и последовательно открыли двумя свежими браузерами:
+For comparison, the same notebook was copied to an isolated local class and opened in sequence in two fresh browsers:
 
-| Этап | До | После |
+| Phase | Before | After |
 | --- | ---: | ---: |
-| Форма входа | 3,01 с | 3,18 с |
-| Появление тетради | 15,43 с | 11,39 с |
-| Готовность комнаты | 19,95 с | 16,93 с |
-| Начальные DOM-узлы | 30 157 | 9 058 |
+| Join form | 3.01 s | 3.18 s |
+| Notebook visible | 15.43 s | 11.39 s |
+| Room ready | 19.95 s | 16.93 s |
+| Initial DOM nodes | 30,157 | 9,058 |
 
-Изменения откладывают создание невидимых ячеек и их кнопок вставки, сохраняют
-компонент после первого посещения, заранее загружают пакеты комнаты после
-отрисовки формы и параллельно запросу входа. Выбранные и исполняемые ячейки
-создаются независимо от их положения.
+The changes defer creation of unseen cells and their insert buttons, retain a component after its first visit, preload room bundles after the form renders and in parallel with the join request, and create selected and executing cells regardless of their position.
 
-Это локальное сравнение на одной машине, а не обещание такого же времени
-через интернет. Для отдельной проверки влияния сети повторяйте тот же сценарий
-через публичную ссылку и loopback без параллельных сборок/нагрузочных тестов.
+This is a local comparison on one machine, not a promise of the same timing over the internet. To measure network effects separately, repeat the same scenario through a public link and through loopback, without concurrent builds or load tests.
 
-## Второй этап: первый экран приложения
+## Stage 2: first application screen
 
-После отдельного запроса ускорить именно оболочку уменьшен её стартовый
-граф зависимостей. Полные словари загружаются перед нужным экраном; первому
-экрану достаточно 164 из 2568 ключей, с обоими языками. Чтение карточки занятия
-из localStorage отделено от библиотеки совместного редактирования Yjs.
-Текущий язык интерфейса сервер теперь передаёт в HTML, поэтому первый вход
-не ждёт отдельного запроса `/api/instance`. Фоновая синхронизация языка остаётся.
+A separate request to speed up the application shell reduced its startup dependency graph. The full dictionaries load before the relevant screen; at that time, the first screen needed 164 of 2,568 message keys. Reading the class card from `localStorage` was separated from the Yjs collaboration library. The server began sending the interface language in HTML, so the first join no longer waited for a separate `/api/instance` request. **The current product interface is English-only.**
 
-| Стартовый JavaScript | До | После |
+| Startup JavaScript | Before | After |
 | --- | ---: | ---: |
-| Исходные байты | 564 328 | 131 066 |
-| Brotli | 139 977 | 42 711 |
-| gzip | 169 062 | 48 740 |
+| Source bytes | 564,328 | 131,066 |
+| Brotli | 139,977 | 42,711 |
+| gzip | 169,062 | 48,740 |
 
-Раннюю загрузку шрифта кода для нового посетителя также отложили: 31 КБ
-не конкурируют с файлами формы. Возвращающиеся участники сохраняют раннюю
-предзагрузку. При эмуляции 256 кбит/с и задержки 150 мс первый экран появился
-через **4,39 с вместо 8,78 с**. Это сравнение одинаковых условий, а не гарантия
-времени на произвольном подключении. Форму проверили на обоих языках, включая
-выбор метки, отказ во входе и последующую загрузку переводов админки/истории.
+The early code-font download for a new visitor was also deferred: its 31 KB no longer competes with the form assets. Returning participants retain early preloading. With 256 kbit/s and 150 ms latency simulated, the first screen appeared in **4.39 s instead of 8.78 s**. This is a comparison under identical conditions, not a guarantee for an arbitrary connection. The join form was checked in English, including name selection, refusal handling, and subsequent loading of the admin and activity-history catalogs.

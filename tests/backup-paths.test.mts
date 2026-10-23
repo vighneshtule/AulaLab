@@ -2,7 +2,7 @@
  * Class-page files are in the backup, and the restore lets them back in.
  *
  * The database names page files only by hash (publish/page-files.ts); a
- * backup of colloq.db without data/page-files restores every class page with
+ * backup of aulalab.db without data/page-files restores every class page with
  * downloads that 404. backup-local.sh packs an explicit list, and restore.sh
  * refuses any name outside its own list, so both have to know the folder:
  * forgetting it in the second turns every new backup into one that cannot be

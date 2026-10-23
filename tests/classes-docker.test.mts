@@ -1,22 +1,22 @@
 /**
  * Classes on machines («занятия на машинах») on Linux with real Docker: the
  * parity job (docs/architecture/remote-classes.md §17.3), run by
- * .github/workflows/classes-smoke.yml with COLLOQ_CLASSES_DOCKER_TEST=1 and
+ * .github/workflows/classes-smoke.yml with AULALAB_CLASSES_DOCKER_TEST=1 and
  * skipped everywhere else, `npm test` included: nothing here touches a docker
  * daemon unless that variable says so.
  *
  * WHAT IS REAL. Home is the app of this process with its tunnel door
  * (tests/_remote-e2e-home.mts) on KERNEL_BACKEND=test: it starts no room of its
- * own, so its daemon holds no Colloq home (D20) and no chains beside the
+ * own, so its daemon holds no Aula Lab home (D20) and no chains beside the
  * agent's. The machine is the agent from the checkout
  * (server/src/runner-agent/main.ts, unmodified, its own timings: main.ts's
  * own main(), told only that the host has AGENT_CPUS cores, AGENT_ENTRY) in a
- * container of its own as colloq-host runs one: on the host's network
+ * container of its own as aulalab-host runs one: on the host's network
  * (D19, read from its own HostConfig), as uid 1000 with the docker socket's
  * group (deploy/vast/entrypoint.sh · drop_to_app), its tree at the same path
  * on the host and handed to uid 1000 first (prepare_runner_as_root), the
  * perimeter's helper run from its own image by id. Its docker is the real CLI
- * against the real daemon, and the class runs colloq-kernel:base, the real
+ * against the real daemon, and the class runs aulalab-kernel:base, the real
  * jupyter_server and ipykernel, from a pinned ref the agent checks by its
  * layers as it checks any (images.ts). Between them the fault proxy
  * (tests/_tunnel-fault.mts) stands where relay2 does. The machines' clock runs
@@ -29,7 +29,7 @@
  * THE IMAGE'S REF. A machine runs only portable revisions (D22): a ref
  * `repo@sha256:…` and a layer fingerprint. A local build has a digest of its
  * own only in the containerd image store, which lists it as
- * `colloq-kernel@sha256:…` (dependencies/image-identity.ts · registryRefOf,
+ * `aulalab-kernel@sha256:…` (dependencies/image-identity.ts · registryRefOf,
  * with this repository preferred, as KERNEL_IMAGE_REPO would name it); the
  * workflow keeps the daemon's images there. The revision is noted at home
  * with that ref and those layers, as revisions.ts notes one it captured.
@@ -89,11 +89,11 @@
  * (see the scenario).
  *
  * WHAT IT MADE IT REMOVES, by its own names and labels, and then checks it is
- * gone (Machine · leftovers): the agent's container (colloq.test.run), every
+ * gone (Machine · leftovers): the agent's container (aulalab.test.run), every
  * container and network of the agent's tree (its INSTANCE_LABEL), its chains
  * (the removal script of its own perimeter), the revision's tag the agent
  * made, and the tree (as root: its files are uid 1000's). With
- * COLLOQ_CLASSES_DOCKER_LOGS set, the logs are kept there for the workflow's
+ * AULALAB_CLASSES_DOCKER_LOGS set, the logs are kept there for the workflow's
  * artifact as the run goes: home's lines and the facts every LOG_FLUSH_MS and
  * after each scenario, each agent life's log as it ends and after each
  * scenario, each class container's as its class ends, and what a scenario
@@ -150,7 +150,7 @@ import { KERNEL_UID } from '../server/src/runner-agent/room-files.js'
 import { Home, sha256, sleep } from './_remote-e2e-home.mts'
 import { TunnelFault } from './_tunnel-fault.mts'
 
-const enabled = process.env.COLLOQ_CLASSES_DOCKER_TEST === '1'
+const enabled = process.env.AULALAB_CLASSES_DOCKER_TEST === '1'
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const ENTRY = path.join(REPO, 'server/src/runner-agent/main.ts')
@@ -168,30 +168,30 @@ const AGENT_CPUS = 8
 const AGENT_ENTRY = [
   `const { main } = await import(${JSON.stringify(ENTRY)})`,
   `const { readMachine } = await import(${JSON.stringify(path.join(REPO, 'server/src/runner-agent/machine.ts'))})`,
-  `const machine = () => ({ ...readMachine(process.env.COLLOQ_RUNNER_STATE), cpus: ${AGENT_CPUS} })`,
+  `const machine = () => ({ ...readMachine(process.env.AULALAB_RUNNER_STATE), cpus: ${AGENT_CPUS} })`,
   "process.exit(await main(['run'], process.env, undefined, { machine }))",
 ].join('\n')
 /** The class environment's image, built as runtime-smoke.yml builds it. */
-const KERNEL_IMAGE = 'colloq-kernel:base'
+const KERNEL_IMAGE = 'aulalab-kernel:base'
 /** The repository a local build's digest is listed under (the containerd store): the one this run prefers, as KERNEL_IMAGE_REPO would. */
-const KERNEL_REPO = 'colloq-kernel'
+const KERNEL_REPO = 'aulalab-kernel'
 /** The agent's own image: the workflow's (Node 22 and the docker CLI). */
-const AGENT_IMAGE = 'colloq-runner:classes-smoke'
-/** The system daemon's socket, mounted into the agent's container as colloq-host mounts it. */
+const AGENT_IMAGE = 'aulalab-runner:classes-smoke'
+/** The system daemon's socket, mounted into the agent's container as aulalab-host mounts it. */
 const SOCKET = '/var/run/docker.sock'
 const RUN = randomBytes(4).toString('hex')
 /** Every container of this file's own carries both: the agent's, and the throwaway ones it runs to make and remove the tree. */
-const TEST_LABEL = 'colloq.test=classes-docker'
-const RUN_LABEL = `colloq.test.run=${RUN}`
-/** Where the job's logs go (COLLOQ_CLASSES_DOCKER_LOGS); none kept without it. */
-const LOGS = process.env.COLLOQ_CLASSES_DOCKER_LOGS?.trim() || null
+const TEST_LABEL = 'aulalab.test=classes-docker'
+const RUN_LABEL = `aulalab.test.run=${RUN}`
+/** Where the job's logs go (AULALAB_CLASSES_DOCKER_LOGS); none kept without it. */
+const LOGS = process.env.AULALAB_CLASSES_DOCKER_LOGS?.trim() || null
 /** jupyter_server's kernel WebSocket ping, WS_PING_INTERVAL: only to line the long cut up with its timer, never asserted. */
 const PING_INTERVAL_GUESS_MS = 30_000
 /** The door a machine's every sync comes through (competitions/remote/routes.ts · POST /sync). */
 const SYNC_PATH = `${REMOTE_API_BASE}/sync`
 /** The machines' clock passes this often in production (liveness.ts · TICK_MS). */
 const CLOCK_PASS_MS = 5_000
-/** Home's lines and the facts are written whole again this often while the file runs (COLLOQ_CLASSES_DOCKER_LOGS). */
+/** Home's lines and the facts are written whole again this often while the file runs (AULALAB_CLASSES_DOCKER_LOGS). */
 const LOG_FLUSH_MS = 15_000
 /** How long a scenario out of time may take to reach its next wait and stop: a docker call's own bound, and a little. */
 const BODY_STOP_MS = 150_000
@@ -255,7 +255,7 @@ async function logsOf(container: string): Promise<Array<{ at: number; text: stri
 
 const textOf = (lines: ReadonlyArray<{ text: string }>): string => lines.map((line) => line.text).join('\n')
 
-/** A file of the job's logs, appended to (COLLOQ_CLASSES_DOCKER_LOGS); nothing without the variable. */
+/** A file of the job's logs, appended to (AULALAB_CLASSES_DOCKER_LOGS); nothing without the variable. */
 function keepLog(name: string, text: string): void {
   if (!LOGS || !text) return
   fs.mkdirSync(LOGS, { recursive: true })
@@ -289,7 +289,7 @@ const scenarioSignal = new AsyncLocalStorage<AbortSignal>()
 let lastBody: Promise<unknown> = Promise.resolve()
 
 /**
- * A scenario of the file, skipped without COLLOQ_CLASSES_DOCKER_TEST. At its
+ * A scenario of the file, skipped without AULALAB_CLASSES_DOCKER_TEST. At its
  * timeout node:test fails it and goes on, while its body runs on: past its
  * next wait it would heal the relay, start an agent or place a class beside
  * the next scenario's. So its waits give up then, and afterEach waits for it.
@@ -346,7 +346,7 @@ const TMPFS_MAGIC = 0x01021994
 
 /**
  * Where the machine's tree goes: on a disk filesystem, as the agent's
- * /var/lib/colloq-runner is, since the council's measure of a worker's own
+ * /var/lib/aulalab-runner is, since the council's measure of a worker's own
  * memory assumes its epoch store is on one (council-isolation.ts · _dirty).
  * os.tmpdir() unless that is a tmpfs, as Debian 13, Fedora and Arch mount
  * /tmp, else /var/tmp.
@@ -365,12 +365,12 @@ function machineBase(): string {
 /**
  * The class machine: its tree on the host, and its agent's container. A new
  * container on the same tree, under the same name, is the same machine's
- * next agent life (the identity is in the tree), as `colloq-host runner up`
+ * next agent life (the identity is in the tree), as `aulalab-host runner up`
  * makes it after the old one was killed.
  */
 class Machine {
-  /** As colloq-host names its own `colloq-runner`, this run's. */
-  readonly name = `colloq-runner-parity-${RUN}`
+  /** As aulalab-host names its own `aulalab-runner`, this run's. */
+  readonly name = `aulalab-runner-parity-${RUN}`
   readonly root: string
   readonly tree: string
   /** The agent's INSTANCE_LABEL (runner-agent/images.ts: a hash of its DATA_DIR as the daemon sees it): what its containers carry. */
@@ -384,9 +384,9 @@ class Machine {
   id = ''
 
   constructor(base: string) {
-    this.root = fs.realpathSync(fs.mkdtempSync(path.join(base, 'colloq-cd-')))
+    this.root = fs.realpathSync(fs.mkdtempSync(path.join(base, 'aulalab-cd-')))
     this.tree = path.join(this.root, 'm')
-    this.instanceLabel = `ru.colloq.competition-instance=${createHash('sha256').update(path.resolve(path.join(this.tree, 'data'))).digest('hex').slice(0, 16)}`
+    this.instanceLabel = `ru.aulalab.competition-instance=${createHash('sha256').update(path.resolve(path.join(this.tree, 'data'))).digest('hex').slice(0, 16)}`
     this.scope = machinePerimeter(this.instanceLabel)
   }
 
@@ -396,7 +396,7 @@ class Machine {
       '--entrypoint', 'sh', AGENT_IMAGE, '-c', `mkdir -p "$1" && chown ${KERNEL_UID}:${KERNEL_UID} "$1" && chmod 0700 "$1"`, 'sh', this.tree])
   }
 
-  /** The agent started, in its container on the host's network: colloq-host's `docker run` of it, with the entry point's environment (entrypoint.sh · runner). */
+  /** The agent started, in its container on the host's network: aulalab-host's `docker run` of it, with the entry point's environment (entrypoint.sh · runner). */
   async start(): Promise<void> {
     this.lives++
     this.id = ''
@@ -406,8 +406,8 @@ class Machine {
       '--user', `${KERNEL_UID}:${KERNEL_UID}`, '--group-add', String(group),
       '--label', TEST_LABEL, '--label', RUN_LABEL,
       '-v', `${SOCKET}:${SOCKET}`, '-v', `${this.tree}:${this.tree}`, '-v', `${REPO}:${REPO}:ro`, '-w', REPO,
-      '-e', `COLLOQ_RUNNER_JOIN=${this.join}`, '-e', `COLLOQ_RUNNER_STATE=${this.tree}`, '-e', `DATA_DIR=${path.join(this.tree, 'data')}`,
-      '-e', `COLLOQ_RUNNER_CONTAINER=${this.name}`, '-e', `COLLOQ_CONTAINER=${this.name}`, '-e', `COLLOQ_RUNNER_IMAGE=${AGENT_IMAGE}`,
+      '-e', `AULALAB_RUNNER_JOIN=${this.join}`, '-e', `AULALAB_RUNNER_STATE=${this.tree}`, '-e', `DATA_DIR=${path.join(this.tree, 'data')}`,
+      '-e', `AULALAB_RUNNER_CONTAINER=${this.name}`, '-e', `AULALAB_CONTAINER=${this.name}`, '-e', `AULALAB_RUNNER_IMAGE=${AGENT_IMAGE}`,
       '-e', 'NODE_ENV=development', '-e', 'KERNEL_BACKEND=docker', '-e', 'COMPETITION_BACKEND=docker',
       '--entrypoint', 'node', AGENT_IMAGE, '--import', 'tsx', '--input-type=module', '-e', AGENT_ENTRY,
     ])
@@ -420,7 +420,7 @@ class Machine {
     return asked.code === 0 && asked.stdout.trim() === 'true'
   }
 
-  /** SIGKILL, as a crash or `docker kill colloq-runner` ends an agent: nothing handed back, the class containers left running. Its container goes then. */
+  /** SIGKILL, as a crash or `docker kill aulalab-runner` ends an agent: nothing handed back, the class containers left running. Its container goes then. */
   async kill(): Promise<void> {
     await docker(['kill', '--signal', 'KILL', this.name])
     await waitFor('the agent\'s container to stop', async () => !(await this.running()), 60_000)
@@ -477,7 +477,7 @@ class Machine {
     const networks = await ids(['network', 'ls', '-q', '--filter', `label=${this.instanceLabel}`])
     if (networks.length > 0) await docker(['network', 'rm', ...networks])
     const removed = await docker(helperArgs(AGENT_IMAGE, perimeterRemovalScript(this.scope)))
-    if (!/colloq-perimeter: removed/.test(removed.stdout)) keepLog('teardown.log', `the chains of ${this.scope.chains} were not removed: ${removed.stdout}${removed.stderr}`)
+    if (!/aulalab-perimeter: removed/.test(removed.stdout)) keepLog('teardown.log', `the chains of ${this.scope.chains} were not removed: ${removed.stdout}${removed.stderr}`)
     await docker(['run', '--rm', '--network', 'none', '--user', '0:0', '--label', TEST_LABEL, '--label', RUN_LABEL, '-v', `${this.root}:${this.root}`,
       '--entrypoint', 'rm', AGENT_IMAGE, '-rf', '--', this.tree])
     fs.rmSync(this.root, { recursive: true, force: true })
@@ -587,7 +587,7 @@ before(async () => {
   assert.equal(process.env.KERNEL_BACKEND, 'test', 'home runs on KERNEL_BACKEND=test (tests/_env.mts)')
   // The file's docker goes to the system daemon whatever is set (DOCKER_ENV); a DOCKER_HOST naming another one is a mistake to say.
   const host = (process.env.DOCKER_HOST ?? '').trim()
-  if (host !== '' && host !== `unix://${SOCKET}`) throw new Error(`DOCKER_HOST is ${host}: the agent mounts the system daemon's ${SOCKET}, as colloq-host does`)
+  if (host !== '' && host !== `unix://${SOCKET}`) throw new Error(`DOCKER_HOST is ${host}: the agent mounts the system daemon's ${SOCKET}, as aulalab-host does`)
   for (const image of [KERNEL_IMAGE, AGENT_IMAGE]) {
     if ((await docker(['image', 'inspect', '--format', '{{.Id}}', image])).code !== 0) {
       throw new Error(`${image} is not on this daemon: build it as .github/workflows/classes-smoke.yml does`)
@@ -620,7 +620,7 @@ before(async () => {
   }
   machine = new Machine(machineBase())
   await machine.prepare()
-  machine.join = relay.joinTarget(mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'parity', createdBy: 'colloq-host' }).code)
+  machine.join = relay.joinTarget(mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'parity', createdBy: 'aulalab-host' }).code)
   await machine.start()
   const one = theMachine()
   runnerId = await waitFor('the machine to join', () => listRunners().find((runner) => runner.state === 'active')?.id, 180_000, () => one.tail())
@@ -1167,7 +1167,7 @@ scenario('the machine joins with classes from a container on the host network, a
   assert.match(said, /class admission canary: ok/, 'the canary saw the sandbox hold from the inside: no root, no capability, no socket, no agent file, nothing of the host, the LAN, metadata or IPv6 reachable, the folder both ways')
   assert.doesNotMatch(said, /not on the host's network/)
 
-  // The agent as colloq-host runs it: uid 1000, with the docker socket's group as its only way to the daemon.
+  // The agent as aulalab-host runs it: uid 1000, with the docker socket's group as its only way to the daemon.
   const who = (await one.exec(['id'])).stdout.trim()
   assert.match(who, new RegExp(`^uid=${KERNEL_UID}\\b.*\\bgroups=.*\\b${fs.statSync(SOCKET).gid}\\b`), who)
   const own = await inspectOf<{ HostConfig: { NetworkMode: string } }>(one.name)
@@ -1177,7 +1177,7 @@ scenario('the machine joins with classes from a container on the host network, a
   const network = await inspectOf<{ Labels: Record<string, string>; EnableIPv6: boolean; Options: Record<string, string>; IPAM: { Config: Array<{ Subnet: string }> } }>(one.scope.network, 'network')
   assert.ok(network, `no network ${one.scope.network}`)
   const [instanceKey, instanceValue] = one.instanceLabel.split('=') as [string, string]
-  assert.equal(network.Labels['colloq.kind'], 'class-network')
+  assert.equal(network.Labels['aulalab.kind'], 'class-network')
   assert.equal(network.Labels[instanceKey], instanceValue)
   assert.equal(network.EnableIPv6, false)
   assert.equal(network.Options['com.docker.network.bridge.enable_icc'], 'false')
@@ -1196,7 +1196,7 @@ scenario('the machine joins with classes from a container on the host network, a
   const deny = rules.filter((rule) => rule.startsWith(`-A ${chains}-DENY `))
   record(t, `perimeter: bridge ${one.scope.network} ${subnet}, chains ${chains}-*, deny ${deny.map((rule) => rule.slice(`-A ${chains}-DENY `.length)).join(' / ')}`)
   // The canary ran under the agent's check label, by its own name, and removed itself (--rm).
-  assert.equal((await docker(['ps', '-aq', '--filter', `label=${CHECK_LABEL}`, '--filter', `name=colloq-runner-canary-${one.scope.i6}`])).stdout.trim(), '')
+  assert.equal((await docker(['ps', '-aq', '--filter', `label=${CHECK_LABEL}`, '--filter', `name=aulalab-runner-canary-${one.scope.i6}`])).stdout.trim(), '')
 })
 
 scenario('placement, cells, help, input(), interrupt, restart and the terminal against the real jupyter_server, in a container the daemon holds to home\'s argv', 420_000, async () => {
@@ -1230,10 +1230,10 @@ scenario('placement, cells, help, input(), interrupt, restart and the terminal a
   assert.equal(held.HostConfig.RestartPolicy.Name, 'no')
   assert.deepEqual([held.HostConfig.LogConfig.Type, held.HostConfig.LogConfig.Config['max-size'], held.HostConfig.LogConfig.Config['max-file']], ['local', '8m', '2'])
   assert.equal(held.HostConfig.Sysctls?.['net.ipv6.conf.all.disable_ipv6'], '1')
-  assert.equal(`colloq.kind=${held.Config.Labels['colloq.kind']}`, CLASS_KERNEL_LABEL)
+  assert.equal(`aulalab.kind=${held.Config.Labels['aulalab.kind']}`, CLASS_KERNEL_LABEL)
   assert.equal(held.Config.Labels[PLACEMENT_LABEL], `${id}:room:${placed.gen}`)
-  assert.deepEqual([held.Config.Labels['colloq.role'], held.Config.Labels['colloq.session'], held.Config.Labels[instanceKey]], ['room', id, instanceValue])
-  assert.ok(held.Config.Labels['colloq.profile'])
+  assert.deepEqual([held.Config.Labels['aulalab.role'], held.Config.Labels['aulalab.session'], held.Config.Labels[instanceKey]], ['room', id, instanceValue])
+  assert.ok(held.Config.Labels['aulalab.profile'])
   assert.deepEqual(held.Mounts.map((mount) => [mount.Type, mount.Source, mount.Destination, mount.RW]), [['bind', path.join(theMachine().tree, 'rooms', id), `/workspace/${id}`, true]])
   assert.ok(held.Config.Env.includes(`PYTHONHASHSEED=${classHashSeed(id)}`), 'the class\'s one hash seed (D28)')
 
@@ -1820,7 +1820,7 @@ scenario('the council on the machine: real pandas exported by the class notebook
    * The council opens (§9.2, §9.5): its pool starts four workers in the
    * class's council container on the machine, and the class notebook's
    * kernel there exports its state into its own container's
-   * /tmp/colloq-epoch, which the agent copies out (docker cp), takes into its
+   * /tmp/aulalab-epoch, which the agent copies out (docker cp), takes into its
    * store by content and links into the epochs folder the workers map.
    */
   const council = lead.notebook.add('# решение')
@@ -2032,7 +2032,7 @@ scenario('the council on the machine: real pandas exported by the class notebook
   const found = said(wrote4).json
   assert.ok(found, `the scribe's attempt said nothing it found: ${JSON.stringify(wrote4.outputs)}`)
   record(t, `council: the scratch root ${found.mode}, owned by uid ${found.owner}; a worker (uid ${found.uid}) listing it: ${found.listing}, changing its mode: ${found.chmod}`)
-  assert.match(found.cwd, /^\/colloq\/scratch\/[0-9a-f]{32}$/, 'its own folder, named by its run')
+  assert.match(found.cwd, /^\/aulalab\/scratch\/[0-9a-f]{32}$/, 'its own folder, named by its run')
   assert.deepEqual([found.data, found.spoiled, found.uid], [data, 30, KERNEL_UID], 'the class file read through its folder; the class folder read-only (EROFS); the kernels\' uid')
   const body = 'id,v\n1,2\n'
   const kept = await waitFor('out.csv kept on the card', () => {
@@ -2108,7 +2108,7 @@ scenario('the council on the machine: real pandas exported by the class notebook
     assert.deepEqual([leanRaised.status, leanRaised.ename, reported(leanRaised)], ['error', 'RuntimeError', null], JSON.stringify(leanRaised))
     assert.deepEqual([heldBack.status, heldBack.ename, printedBy(unheld[1])], ['error', COUNCIL_GATE_REFUSED, ''], JSON.stringify(heldBack))
     assert.equal(afterRaised.status, 'ok')
-    const failing = trip(randomBytes(16).toString('hex'), "print('parity-gate-never')", '/proc/colloq-no-scratch')
+    const failing = trip(randomBytes(16).toString('hex'), "print('parity-gate-never')", '/proc/aulalab-no-scratch')
     const [failedEntry, refused, gaveBack] = [await reply(failing[0]), await reply(failing[1]), await reply(failing[2])]
     assert.equal(reported(failedEntry)?.ok, false, `the entry held: ${JSON.stringify(failedEntry)}`)
     assert.deepEqual([refused.status, refused.ename], ['error', COUNCIL_GATE_REFUSED], JSON.stringify(refused))

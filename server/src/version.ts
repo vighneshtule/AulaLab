@@ -16,4 +16,4 @@
  */
 import rootPackage from '../../package.json' with { type: 'json' }
 
-export const COLLOQ_VERSION: string = rootPackage.version
+export const AULALAB_VERSION: string = rootPackage.version

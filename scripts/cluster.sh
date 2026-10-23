@@ -3,8 +3,8 @@
 set -euo pipefail
 ORIGINAL_ARGS=("$@")
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-STATE="${COLLOQ_STATE_DIR:-/var/lib/colloq}"
-NS=colloq
+STATE="${AULALAB_STATE_DIR:-/var/lib/aulalab}"
+NS=aulalab
 PORT=30080
 CMD="${1:-help}"; [ "$#" -eq 0 ] || shift
 RELEASE="${RELEASE_MANIFEST:-}"
@@ -79,7 +79,7 @@ case "$CMD" in
   validate) exec python3 "$SCRIPT_DIR/release.py" validate --release "$RELEASE" ;;
   render)
     runtime=(); env_file="$(operator_env)"; [ -z "$env_file" ] || runtime=(--env-file "$env_file")
-    exec python3 "$SCRIPT_DIR/release.py" render --release "$RELEASE" --state-dir "$STATE" --node-name "${COLLOQ_NODE_NAME:-colloq}" ${runtime[@]+"${runtime[@]}"} ;;
+    exec python3 "$SCRIPT_DIR/release.py" render --release "$RELEASE" --state-dir "$STATE" --node-name "${AULALAB_NODE_NAME:-aulalab}" ${runtime[@]+"${runtime[@]}"} ;;
   help)
     cat <<'HELP'
 cluster.sh validate|render --release FILE       inspect before host changes
@@ -93,7 +93,7 @@ cluster.sh public-url https://example.edu       update public URL, restart app i
 cluster.sh public-url URL --if-current OLD      only while it is still OLD; exit 4 otherwise
 cluster.sh smoke|gpu-preflight                 disposable room/CUDA execution checks
 
-State: /var/lib/colloq (COLLOQ_STATE_DIR overrides). App: 127.0.0.1:30080.
+State: /var/lib/aulalab (AULALAB_STATE_DIR overrides). App: 127.0.0.1:30080.
 Install/prepare require an explicit release with immutable image digests.
 Updates require a verified backup first. k3s upgrades are separate operations.
 HELP
@@ -117,33 +117,33 @@ case "$CMD" in
 esac
 
 stop_writers() {
-  k scale deployment/colloq-app deployment/colloq-runtime --replicas=0
-  k wait --for=delete pod -l 'colloq.dev/role in (app,runtime)' --timeout=90s
+  k scale deployment/aulalab-app deployment/aulalab-runtime --replicas=0
+  k wait --for=delete pod -l 'aulalab.dev/role in (app,runtime)' --timeout=90s
   # Stop the broker before deleting kernels: it must not recreate a room.
-  k delete pods -l colloq.kind=room-kernel --wait=true --timeout=120s
-  k delete services -l 'app.kubernetes.io/managed-by=colloq-runtime,colloq.dev/retired!=true' --ignore-not-found
+  k delete pods -l aulalab.kind=room-kernel --wait=true --timeout=120s
+  k delete services -l 'app.kubernetes.io/managed-by=aulalab-runtime,aulalab.dev/retired!=true' --ignore-not-found
 }
 
 firewall() {
   command -v iptables >/dev/null || die 'iptables is required to keep Kubernetes host ports private'
   # This does not block the NetworkPolicy local-node exception. See deploy/k3s/README.md.
-  iptables -N COLLOQ-HOST 2>/dev/null || true
-  iptables -F COLLOQ-HOST
-  iptables -A COLLOQ-HOST -i lo -j RETURN
-  iptables -A COLLOQ-HOST -s 10.42.0.0/16 -j RETURN
-  iptables -A COLLOQ-HOST -p tcp -m multiport --dports 6443,10250,30080 -j DROP
-  iptables -A COLLOQ-HOST -p udp --dport 8472 -j DROP
-  iptables -A COLLOQ-HOST -j RETURN
-  iptables -C INPUT -j COLLOQ-HOST 2>/dev/null || iptables -I INPUT 1 -j COLLOQ-HOST
+  iptables -N AULALAB-HOST 2>/dev/null || true
+  iptables -F AULALAB-HOST
+  iptables -A AULALAB-HOST -i lo -j RETURN
+  iptables -A AULALAB-HOST -s 10.42.0.0/16 -j RETURN
+  iptables -A AULALAB-HOST -p tcp -m multiport --dports 6443,10250,30080 -j DROP
+  iptables -A AULALAB-HOST -p udp --dport 8472 -j DROP
+  iptables -A AULALAB-HOST -j RETURN
+  iptables -C INPUT -j AULALAB-HOST 2>/dev/null || iptables -I INPUT 1 -j AULALAB-HOST
   if [ -s /proc/net/if_inet6 ]; then
     command -v ip6tables >/dev/null || die 'ip6tables is required on IPv6-enabled hosts'
-    ip6tables -N COLLOQ-HOST 2>/dev/null || true
-    ip6tables -F COLLOQ-HOST
-    ip6tables -A COLLOQ-HOST -i lo -j RETURN
-    ip6tables -A COLLOQ-HOST -p tcp -m multiport --dports 6443,10250,30080 -j DROP
-    ip6tables -A COLLOQ-HOST -p udp --dport 8472 -j DROP
-    ip6tables -A COLLOQ-HOST -j RETURN
-    ip6tables -C INPUT -j COLLOQ-HOST 2>/dev/null || ip6tables -I INPUT 1 -j COLLOQ-HOST
+    ip6tables -N AULALAB-HOST 2>/dev/null || true
+    ip6tables -F AULALAB-HOST
+    ip6tables -A AULALAB-HOST -i lo -j RETURN
+    ip6tables -A AULALAB-HOST -p tcp -m multiport --dports 6443,10250,30080 -j DROP
+    ip6tables -A AULALAB-HOST -p udp --dport 8472 -j DROP
+    ip6tables -A AULALAB-HOST -j RETURN
+    ip6tables -C INPUT -j AULALAB-HOST 2>/dev/null || ip6tables -I INPUT 1 -j AULALAB-HOST
   fi
 }
 
@@ -157,13 +157,13 @@ check_k3s_version() {
 bootstrap() {
   local wanted tmp
   wanted="$(release field --release "$RELEASE" --field k3sVersion)"
-  if systemctl cat colloq.service >/dev/null 2>&1; then
-    die 'legacy colloq.service exists; stop/remove that root service and migrate its data explicitly before installing k3s workloads'
+  if systemctl cat aulalab.service >/dev/null 2>&1; then
+    die 'legacy aulalab.service exists; stop/remove that root service and migrate its data explicitly before installing k3s workloads'
   fi
   gpu_toolkit
   if command -v k3s >/dev/null; then
     check_k3s_version "$RELEASE"
-    [ -f /etc/rancher/k3s/colloq-managed ] || die 'existing k3s is not Colloq-managed; review deploy/k3s/README.md before migration'
+    [ -f /etc/rancher/k3s/aulalab-managed ] || die 'existing k3s is not Aula Lab-managed; review deploy/k3s/README.md before migration'
     if [ "${GPU_RUNTIME_CHANGED:-0}" = 1 ]; then systemctl restart k3s; fi
     systemctl is-active --quiet k3s || systemctl start k3s
     return
@@ -195,10 +195,10 @@ kubelet-arg:
 CONFIG
   cat > /etc/systemd/system/k3s.service <<'UNIT'
 [Unit]
-Description=Colloq single-node k3s
+Description=Aula Lab single-node k3s
 Wants=network-online.target
-After=network-online.target colloq-firewall.service
-Requires=colloq-firewall.service
+After=network-online.target aulalab-firewall.service
+Requires=aulalab-firewall.service
 [Service]
 Type=notify
 ExecStart=/usr/local/bin/k3s server
@@ -213,21 +213,21 @@ TasksMax=infinity
 WantedBy=multi-user.target
 UNIT
   # Persist host exposure restrictions across reboot without a broad firewall reset.
-  install -m 0755 "$SCRIPT_DIR/cluster.sh" /usr/local/sbin/colloq-cluster-firewall
-  cat > /etc/systemd/system/colloq-firewall.service <<'UNIT'
+  install -m 0755 "$SCRIPT_DIR/cluster.sh" /usr/local/sbin/aulalab-cluster-firewall
+  cat > /etc/systemd/system/aulalab-firewall.service <<'UNIT'
 [Unit]
-Description=Keep Colloq Kubernetes host ports private
+Description=Keep Aula Lab Kubernetes host ports private
 Before=k3s.service
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/colloq-cluster-firewall firewall
+ExecStart=/usr/local/sbin/aulalab-cluster-firewall firewall
 RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 UNIT
-  touch /etc/rancher/k3s/colloq-managed
+  touch /etc/rancher/k3s/aulalab-managed
   systemctl daemon-reload
-  systemctl enable --now colloq-firewall.service
+  systemctl enable --now aulalab-firewall.service
   systemctl enable --now k3s
 }
 
@@ -266,10 +266,10 @@ gpu_toolkit() {
 gpu_plugin() {
   [ "$(release field --release "$1" --field gpu)" = true ] || return 0
   # The plugin runs in a trusted namespace; carry only the pull credential there.
-  k get secret colloq-registry -o json | python3 -c 'import json,sys; value=json.load(sys.stdin); value["metadata"]={"name":"colloq-registry","namespace":"kube-system"}; print(json.dumps(value))' \
+  k get secret aulalab-registry -o json | python3 -c 'import json,sys; value=json.load(sys.stdin); value["metadata"]={"name":"aulalab-registry","namespace":"kube-system"}; print(json.dumps(value))' \
     | kube apply -f - >/dev/null
   release gpu --release "$1" | kube apply -f -
-  kube -n kube-system rollout status daemonset/colloq-nvidia-device-plugin --timeout=180s
+  kube -n kube-system rollout status daemonset/aulalab-nvidia-device-plugin --timeout=180s
   # A running plugin can precede the kubelet's next node-status update.
   local count deadline=$((SECONDS + 60))
   while [ "$SECONDS" -lt "$deadline" ]; do
@@ -285,16 +285,16 @@ gpu_preflight() {
   [ "$(release field --release "$manifest" --field gpu)" = true ] || return 0
   nvidia-smi --query-gpu=index,name --format=csv,noheader || die 'NVIDIA host driver failed'
   # Never evict a room to obtain a GPU. A busy device makes the bounded probe fail.
-  k delete pod colloq-gpu-check --ignore-not-found --wait=true >/dev/null
+  k delete pod aulalab-gpu-check --ignore-not-found --wait=true >/dev/null
   release gpu-smoke --release "$manifest" | k create -f - >/dev/null
-  if ! k wait --for=jsonpath='{.status.phase}'=Succeeded pod/colloq-gpu-check --timeout=200s; then
-    k describe pod colloq-gpu-check >&2
-    k logs colloq-gpu-check >&2 || true
-    k delete pod colloq-gpu-check --wait=true >/dev/null
+  if ! k wait --for=jsonpath='{.status.phase}'=Succeeded pod/aulalab-gpu-check --timeout=200s; then
+    k describe pod aulalab-gpu-check >&2
+    k logs aulalab-gpu-check >&2 || true
+    k delete pod aulalab-gpu-check --wait=true >/dev/null
     die 'CUDA probe failed or no exclusive GPU was free; existing rooms were not evicted'
   fi
-  k logs colloq-gpu-check
-  k delete pod colloq-gpu-check --wait=true >/dev/null
+  k logs aulalab-gpu-check
+  k delete pod aulalab-gpu-check --wait=true >/dev/null
 }
 
 wait_for_node() {
@@ -342,22 +342,22 @@ effective_release() {
 
 registry_secret() {
   if [ -n "$REGISTRY_CONFIG" ]; then
-    k create secret generic colloq-registry --type=kubernetes.io/dockerconfigjson --from-file=".dockerconfigjson=$REGISTRY_CONFIG" --dry-run=client -o json | k apply -f - >/dev/null
-  elif ! k get secret colloq-registry >/dev/null 2>&1; then
-    k create secret generic colloq-registry --type=kubernetes.io/dockerconfigjson --from-literal='.dockerconfigjson={"auths":{}}' >/dev/null
+    k create secret generic aulalab-registry --type=kubernetes.io/dockerconfigjson --from-file=".dockerconfigjson=$REGISTRY_CONFIG" --dry-run=client -o json | k apply -f - >/dev/null
+  elif ! k get secret aulalab-registry >/dev/null 2>&1; then
+    k create secret generic aulalab-registry --type=kubernetes.io/dockerconfigjson --from-literal='.dockerconfigjson={"auths":{}}' >/dev/null
   fi
 }
 
 # Kubernetes uses the same imagePullSecret as the actual workloads. ctr/crictl
 # pulls would bypass it and break otherwise valid private-registry releases.
 prepull_images() {
-  k delete pod colloq-image-check --ignore-not-found --wait=true >/dev/null
+  k delete pod aulalab-image-check --ignore-not-found --wait=true >/dev/null
   release prepull --release "$1" | k create -f - >/dev/null
-  if ! k wait --for=jsonpath='{.status.phase}'=Succeeded pod/colloq-image-check --timeout=900s; then
-    k describe pod colloq-image-check >&2
+  if ! k wait --for=jsonpath='{.status.phase}'=Succeeded pod/aulalab-image-check --timeout=900s; then
+    k describe pod aulalab-image-check >&2
     die 'release images could not be pulled/run as UID 1000; inspect the preflight Pod before retrying'
   fi
-  k delete pod colloq-image-check --wait=true >/dev/null
+  k delete pod aulalab-image-check --wait=true >/dev/null
 }
 
 prepare() {
@@ -384,19 +384,19 @@ prepare() {
   # update and rollback pull the same set before their backup, while classes
   # still run; pulling it again here would only lengthen the stop.
   if [ -z "${PULLED:-}" ] || ! cmp -s "$PULLED" "$effective"; then prepull_images "$effective"; fi
-  if k get deployment colloq-app >/dev/null 2>&1; then stop_writers; fi
+  if k get deployment aulalab-app >/dev/null 2>&1; then stop_writers; fi
   for secret in runtime-token room-secret; do
     if [ ! -s "$STATE/secrets/$secret" ]; then
       python3 -c 'import secrets; print(secrets.token_hex(32))' > "$STATE/secrets/$secret"
     fi
     chmod 0600 "$STATE/secrets/$secret"
   done
-  k create secret generic colloq-runtime-auth --from-file="runtime-token=$STATE/secrets/runtime-token" --dry-run=client -o json | k apply -f - >/dev/null
-  k create secret generic colloq-room-secret --from-file="room-secret=$STATE/secrets/room-secret" --dry-run=client -o json | k apply -f - >/dev/null
+  k create secret generic aulalab-runtime-auth --from-file="runtime-token=$STATE/secrets/runtime-token" --dry-run=client -o json | k apply -f - >/dev/null
+  k create secret generic aulalab-room-secret --from-file="room-secret=$STATE/secrets/room-secret" --dry-run=client -o json | k apply -f - >/dev/null
   if [ -n "$ENV_FILE" ]; then cp "$ENV_FILE" "$STATE/config.env"; chmod 0600 "$STATE/config.env"; fi
   if [ -f "$STATE/config.env" ]; then
     release config --release "$effective" --env-file "$STATE/config.env" | k apply -f - >/dev/null
-  elif ! k get secret colloq-app-config >/dev/null 2>&1; then
+  elif ! k get secret aulalab-app-config >/dev/null 2>&1; then
     release config --release "$effective" | k apply -f - >/dev/null
   fi
   [ ! -f "$STATE/config.env" ] || runtime=(--env-file "$STATE/config.env")
@@ -427,16 +427,16 @@ start() {
   if [ -f "$STATE/recovery/release.json" ]; then
     release validate --release "$STATE/releases/current.json" --data-release "$STATE/recovery/release.json" >/dev/null
   fi
-  k scale deployment/colloq-runtime --replicas=1
-  k rollout status deployment/colloq-runtime --timeout=180s
+  k scale deployment/aulalab-runtime --replicas=1
+  k rollout status deployment/aulalab-runtime --timeout=180s
   # Once the app is admitted it may migrate SQLite even if readiness later fails.
   # Consume the restored-schema override before that first possible writer.
   release consume-recovery --release "$STATE/releases/current.json" --state-dir "$STATE"
-  k scale deployment/colloq-app --replicas=1
-  k rollout status deployment/colloq-app --timeout=180s
+  k scale deployment/aulalab-app --replicas=1
+  k rollout status deployment/aulalab-app --timeout=180s
   wait_for_app
   gpu_preflight
-  printf 'Colloq ready on http://127.0.0.1:%s; use cluster.sh smoke to verify two-room execution.\n' "$PORT"
+  printf 'Aula Lab ready on http://127.0.0.1:%s; use cluster.sh smoke to verify two-room execution.\n' "$PORT"
 }
 
 case "$CMD" in
@@ -465,12 +465,12 @@ case "$CMD" in
     check_k3s_version "$RELEASE"
     registry_secret
     prepull_images "$PULLED"
-    running="$(k get deployment colloq-app -o jsonpath='{.spec.replicas}' 2>/dev/null || true)"
-    if ! MODE=consistent RESUME=0 RELEASE="$data" COLLOQ_STATE_DIR="$STATE" "$SCRIPT_DIR/backup.sh"; then
+    running="$(k get deployment aulalab-app -o jsonpath='{.spec.replicas}' 2>/dev/null || true)"
+    if ! MODE=consistent RESUME=0 RELEASE="$data" AULALAB_STATE_DIR="$STATE" "$SCRIPT_DIR/backup.sh"; then
       # Nothing has been changed yet, so the classes come back on the release
       # they were running rather than stay down until someone reads the log.
       if [ -n "$running" ] && [ "$running" != 0 ] &&
-         [ "$(k get deployment colloq-app -o jsonpath='{.spec.replicas}' 2>/dev/null || true)" = 0 ]; then
+         [ "$(k get deployment aulalab-app -o jsonpath='{.spec.replicas}' 2>/dev/null || true)" = 0 ]; then
         printf 'cluster: the backup failed after writers were stopped; starting the installed release again\n' >&2
         start
       fi
@@ -490,13 +490,13 @@ try:
 except (OSError, ValueError, AttributeError):
     raise SystemExit('restore-services requires the verified files-restored recovery phase')
 PY
-    writers="$(k get pods -l 'colloq.dev/role in (app,runtime,kernel)' -o name)"
+    writers="$(k get pods -l 'aulalab.dev/role in (app,runtime,kernel)' -o name)"
     [ -z "$writers" ] \
       || die 'restore-services refuses while app, broker or kernel Pods exist'
-    writers="$(k get pods -l colloq.kind=room-kernel -o name)"
+    writers="$(k get pods -l aulalab.kind=room-kernel -o name)"
     [ -z "$writers" ] \
       || die 'restore-services refuses while room Pods exist'
-    k delete services -l app.kubernetes.io/managed-by=colloq-runtime --ignore-not-found --wait=true --timeout=90s
+    k delete services -l app.kubernetes.io/managed-by=aulalab-runtime --ignore-not-found --wait=true --timeout=90s
     ;;
   status)
     need_cluster
@@ -507,13 +507,13 @@ PY
     # read inside the Pod: it answers as long as the process runs.
     healthy=0
     printf '\nhealth, asked inside the app Pod:\n'
-    k exec deployment/colloq-app -- node -e "$HEALTH_PROBE" || healthy=1
+    k exec deployment/aulalab-app -- node -e "$HEALTH_PROBE" || healthy=1
     printf 'ready for traffic on 127.0.0.1:%s: ' "$PORT"
     if curl -fsS --max-time 5 -o /dev/null "http://127.0.0.1:$PORT/api/readyz"; then echo yes; else echo no; healthy=1; fi
     exit "$healthy" ;;
-  logs) need_cluster; k logs -f deployment/colloq-app --tail=80 ;;
+  logs) need_cluster; k logs -f deployment/aulalab-app --tail=80 ;;
   gpu-preflight) need_cluster; gpu_preflight ;;
-  smoke) need_cluster; k exec deployment/colloq-app -- node /app/dist/runtime-smoke.js ;;
+  smoke) need_cluster; k exec deployment/aulalab-app -- node /app/dist/runtime-smoke.js ;;
   public-url)
     need_cluster
     changed=0
@@ -548,9 +548,9 @@ PY
     fi
     [ "$changed" = 0 ] || die 'could not update public URL'
     release config --release "$STATE/releases/current.json" --env-file "$STATE/config.env" | k apply -f - >/dev/null
-    if [ "$(k get deployment colloq-app -o jsonpath='{.spec.replicas}')" != 0 ]; then
-      k rollout restart deployment/colloq-app
-      k rollout status deployment/colloq-app --timeout=180s
+    if [ "$(k get deployment aulalab-app -o jsonpath='{.spec.replicas}')" != 0 ]; then
+      k rollout restart deployment/aulalab-app
+      k rollout status deployment/aulalab-app --timeout=180s
     fi
     ;;
   *) die "unknown command: $CMD" ;;

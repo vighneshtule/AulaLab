@@ -2,15 +2,15 @@
  * `make host` on a k3s machine: no docker, with a panel link, with cleanup.
  *
  * Three failures found on one and the same path — `make vast-up HOST=…` under
- * a release, where scripts/host.sh runs with COLLOQ_CLUSTER=1:
+ * a release, where scripts/host.sh runs with AULALAB_CLUSTER=1:
  *
  *  - the script required docker on its first line, although under a release
  *    the server and the kernels live in k3s and the VM may have no docker at
  *    all — the tmux session with the tunnel died a second later and the
  *    address was never set;
  *  - the panel link was printed only for someone who had set DATA_DIR
- *    themselves: the k3s token lives in <COLLOQ_STATE_DIR>/data
- *    (/var/lib/colloq/data), while the script looked for it in ./data;
+ *    themselves: the k3s token lives in <AULALAB_STATE_DIR>/data
+ *    (/var/lib/aulalab/data), while the script looked for it in ./data;
  *  - after Ctrl+C the cluster kept handing out links to a dead tunnel: the
  *    cleanup went around cluster.sh.
  *
@@ -37,7 +37,7 @@ const TOOLS = ['bash', 'sh', 'cat', 'grep', 'tail', 'cut', 'mktemp', 'rm', 'wc',
   'head', 'tr', 'dirname', 'env', 'mkdir', 'ls', 'id', 'uname']
 
 function stand() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-cluster-host-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-cluster-host-'))
   fs.mkdirSync(path.join(dir, 'scripts'))
   for (const file of ['host.sh', 'lib.sh']) fs.copyFileSync(path.join(repo, 'scripts', file), path.join(dir, 'scripts', file))
   const calls = path.join(dir, 'cluster-calls')
@@ -73,8 +73,8 @@ else if (a.some(x => x.endsWith('/api/health')) && !a.includes('-o')) process.st
   const state = path.join(dir, 'state')
   fs.mkdirSync(path.join(state, 'data'), { recursive: true })
   fs.writeFileSync(path.join(state, 'data/setup-token'), TOKEN + '\n')
-  fs.writeFileSync(path.join(dir, '.env'), `COLLOQ_CLUSTER=1\nRELAY_DOMAIN=\nPUBLIC_URL=${LOCAL}\n`)
-  const env: NodeJS.ProcessEnv = { PATH: bin, HOME: dir, COLLOQ_STATE_DIR: state }
+  fs.writeFileSync(path.join(dir, '.env'), `AULALAB_CLUSTER=1\nRELAY_DOMAIN=\nPUBLIC_URL=${LOCAL}\n`)
+  const env: NodeJS.ProcessEnv = { PATH: bin, HOME: dir, AULALAB_STATE_DIR: state }
   return { dir, bin, calls, env }
 }
 
@@ -116,7 +116,7 @@ test('k3s: no docker needed, the panel link comes from the cluster state and Ctr
     assert.equal(run.host.exitCode, null, out)
     assert.doesNotMatch(out, /docker/i)
     assert.deepEqual(lines(s.calls), [`public-url ${TUNNEL}`], out)
-    // The panel link: without DATA_DIR, from <COLLOQ_STATE_DIR>/data.
+    // The panel link: without DATA_DIR, from <AULALAB_STATE_DIR>/data.
     assert.match(out, new RegExp(`${TUNNEL}/admin/t/${TOKEN}`), out)
     assert.match(out, /taken off the cluster too/)
 
@@ -141,7 +141,7 @@ test('k3s: an address someone else set after us is left alone on exit', async ()
     run = await publish(s, { FAKE_FOREIGN: '1' })
     assert.equal(run.host.exitCode, null, run.read())
     // Another address was set over ours, by a second `make host` or by hand.
-    fs.writeFileSync(path.join(s.dir, '.env'), `COLLOQ_CLUSTER=1\nRELAY_DOMAIN=\nPUBLIC_URL=https://other.example\n`)
+    fs.writeFileSync(path.join(s.dir, '.env'), `AULALAB_CLUSTER=1\nRELAY_DOMAIN=\nPUBLIC_URL=https://other.example\n`)
     await stop(run.host)
     const after = run.read()
     assert.deepEqual(lines(s.calls).at(-1), `public-url ${LOCAL} --if-current ${TUNNEL}`)

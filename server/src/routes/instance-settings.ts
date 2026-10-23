@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { currentStaff, ownerOnly, requireStaff } from '../admin/auth.js'
 import { recordAdminEvent } from '../admin/audit-log.js'
 import { getInstanceLanguage, setInstanceLanguage } from '../admin/settings.js'
-import { isLocale, tr } from '@shared/i18n'
+import { tr } from '@shared/i18n'
 export function instanceSettingsRoutes(): Router {
   const router = Router()
   router.get('/api/instance', (_req, res) => {
@@ -26,7 +26,7 @@ export function instanceSettingsRoutes(): Router {
         Array.isArray(body) ||
         Object.keys(body).length !== 1 ||
         !('language' in body) ||
-        !isLocale(body.language)
+        body.language !== 'en'
       ) {
         res.status(400).json({ error: tr('common.invalidLanguage'), reason: 'invalid' })
         return

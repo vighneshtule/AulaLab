@@ -27,7 +27,7 @@
 
   let { guest, sessionId }: Props = $props()
 
-  const key = $derived(`colloq:staffGuest:dismissed:${sessionId}`)
+  const key = $derived(`aulalab:staffGuest:dismissed:${sessionId}`)
 
   function wasDismissed(name: string): boolean {
     try {

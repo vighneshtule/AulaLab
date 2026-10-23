@@ -26,10 +26,10 @@ import { placementSatisfies, policyMetadata, policyPlacement, withoutPlacement }
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 const sessionHash = (id: string) => hash(id).slice(0, 40)
-export const roomName = (id: string) => `colloq-room-${sessionHash(id)}`
+export const roomName = (id: string) => `aulalab-room-${sessionHash(id)}`
 /**
  * The Pod and Service of a class's personal notebooks: the room's name with
- * `-own`, the Docker container's naming (`colloq-room-<id>-own`), so that
+ * `-own`, the Docker container's naming (`aulalab-room-<id>-own`), so that
  * `kubectl get pods` lists the two side by side. 56 characters, inside the
  * 63 a Service name may have.
  */
@@ -38,7 +38,7 @@ export const kernelName = (id: string, role: RuntimeKernelRole = 'room') =>
   role === 'own' ? ownName(id) : roomName(id)
 /** The queue key of one of a room's two Pods; a room ID never contains `#`. */
 const slotOf = (id: string, role: RuntimeKernelRole) => (role === 'own' ? `${id}#own` : id)
-const MANAGER = 'colloq-runtime'
+const MANAGER = 'aulalab-runtime'
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 export class RuntimeError extends Error {
   constructor(
@@ -76,33 +76,33 @@ interface Options {
  * live room's Service, and the broker refuses a Service that differs from the
  * one it would create, so changing it would refuse every live class.
  *
- * The personal notebooks' Pod keeps `colloq.dev/role=kernel`: the room
+ * The personal notebooks' Pod keeps `aulalab.dev/role=kernel`: the room
  * isolation NetworkPolicy selects by it (Jupyter ingress from app and runtime
  * only, egress to DNS at most), and a second policy the chart could forget
  * would be a Pod with an open network. What tells the two apart is
- * `colloq.kind` (`own-kernel`, not `room-kernel`), so the room's Service does
+ * `aulalab.kind` (`own-kernel`, not `room-kernel`), so the room's Service does
  * not select the personal Pod and the other way round, plus an explicit
- * `colloq.dev/kernel=own` for operators and policies.
+ * `aulalab.dev/kernel=own` for operators and policies.
  */
 const labels = (id: string, role: RuntimeKernelRole = 'room'): Record<string, string> =>
   role === 'own'
     ? {
-        'colloq.dev/role': 'kernel',
+        'aulalab.dev/role': 'kernel',
         'app.kubernetes.io/managed-by': MANAGER,
-        'colloq.kind': 'own-kernel',
-        'colloq.dev/session': sessionHash(id),
-        'colloq.dev/kernel': 'own',
+        'aulalab.kind': 'own-kernel',
+        'aulalab.dev/session': sessionHash(id),
+        'aulalab.dev/kernel': 'own',
       }
     : {
-        'colloq.dev/role': 'kernel',
+        'aulalab.dev/role': 'kernel',
         'app.kubernetes.io/managed-by': MANAGER,
-        'colloq.kind': 'room-kernel',
-        'colloq.dev/session': sessionHash(id),
+        'aulalab.kind': 'room-kernel',
+        'aulalab.dev/session': sessionHash(id),
       }
 function owned(object: KubeObject, id: string, role: RuntimeKernelRole = 'room'): boolean {
   return (
     object.metadata?.name === kernelName(id, role) &&
-    object.metadata.annotations?.['colloq.dev/session-id'] === id &&
+    object.metadata.annotations?.['aulalab.dev/session-id'] === id &&
     Object.entries(labels(id, role)).every(([k, v]) => object.metadata.labels?.[k] === v)
   )
 }
@@ -113,8 +113,8 @@ function assertOwned(object: KubeObject, id: string, role: RuntimeKernelRole = '
 function retired(service: KubeObject | null): boolean {
   // Either marker is enough to fail closed if an operator partially modifies
   // the resource. Ordinary cleanup must never erase a retirement reservation.
-  return service?.metadata.annotations?.['colloq.dev/retired'] === 'true' ||
-    service?.metadata.labels?.['colloq.dev/retired'] === 'true'
+  return service?.metadata.annotations?.['aulalab.dev/retired'] === 'true' ||
+    service?.metadata.labels?.['aulalab.dev/retired'] === 'true'
 }
 function omitDefault(object: Record<string, any>, key: string, value: unknown): void {
   if (isDeepStrictEqual(object[key], value)) delete object[key]
@@ -869,7 +869,7 @@ export class RuntimeController {
       ...(gpu ? { 'nvidia.com/gpu': 1 } : {}),
     }
     const workload = {
-      serviceAccountName: 'colloq-kernel',
+      serviceAccountName: 'aulalab-kernel',
       automountServiceAccountToken: false,
       enableServiceLinks: false,
       restartPolicy: 'Never',
@@ -989,11 +989,11 @@ export class RuntimeController {
         name: kernelName(id, role),
         ...policyMetadata(
           config,
-          { ...labels(id, role), 'colloq.dev/environment': environment.name },
+          { ...labels(id, role), 'aulalab.dev/environment': environment.name },
           {
-            'colloq.dev/session-id': id,
-            'colloq.dev/revision': revision,
-            'colloq.dev/template-hash': templateHash(spec),
+            'aulalab.dev/session-id': id,
+            'aulalab.dev/revision': revision,
+            'aulalab.dev/template-hash': templateHash(spec),
           },
         ),
       },
@@ -1007,7 +1007,7 @@ export class RuntimeController {
       metadata: {
         name: kernelName(id, role),
         labels: labels(id, role),
-        annotations: { 'colloq.dev/session-id': id },
+        annotations: { 'aulalab.dev/session-id': id },
       },
       spec: {
         type: 'ClusterIP',
@@ -1064,11 +1064,11 @@ export class RuntimeController {
      * is another template, and the Pod is replaced below.
      */
     const templates = [
-      { hash: desired.metadata.annotations?.['colloq.dev/template-hash'], spec: desired.spec },
+      { hash: desired.metadata.annotations?.['aulalab.dev/template-hash'], spec: desired.spec },
       ...(role === 'room' ? [legacyTemplate(desired.spec, environment.gpu)] : []),
     ]
     const template = pod
-      ? templates.find((candidate) => candidate.hash === pod!.metadata.annotations?.['colloq.dev/template-hash'])
+      ? templates.find((candidate) => candidate.hash === pod!.metadata.annotations?.['aulalab.dev/template-hash'])
       : undefined
     // An infeasible spec can survive a failed rollback and a broker restart.
     // Recover from the actual kubelet allocation before adopting the Pod. Do
@@ -1142,7 +1142,7 @@ export class RuntimeController {
         console.warn(
           `[runtime] ${kernelName(id, role)} was changed at admission and is refused; differing fields: ` +
             `${workloadDifferences(pod.spec, desired.spec).join(', ')}. Exempt broker-created Pods ` +
-            '(colloq.dev/role=kernel) from mutating webhooks such as sidecar injection',
+            '(aulalab.dev/role=kernel) from mutating webhooks such as sidecar injection',
         )
         throw new RuntimeError('Managed Pod does not match the requested workload policy', 409)
       }
@@ -1270,8 +1270,8 @@ export class RuntimeController {
       if (service) await this.deleteResource('services', id, service)
       const tombstone: KubeObject = {
         apiVersion: 'v1', kind: 'Service',
-        metadata: {name: roomName(id), labels: {...labels(id), 'colloq.dev/retired':'true'},
-          annotations: {'colloq.dev/session-id':id, 'colloq.dev/retired':'true'}},
+        metadata: {name: roomName(id), labels: {...labels(id), 'aulalab.dev/retired':'true'},
+          annotations: {'aulalab.dev/session-id':id, 'aulalab.dev/retired':'true'}},
         // Selectorless headless Services otherwise default to RequireDualStack
         // on current Kubernetes, even in this IPv4 deployment.
         spec: {type:'ClusterIP',clusterIP:'None',ipFamilies:['IPv4'],ipFamilyPolicy:'SingleStack',ports:[{name:'retired',protocol:'TCP',port:8888,targetPort:8888}]},
@@ -1335,12 +1335,12 @@ export class RuntimeController {
   /**
    * The census of kernel Pods: rooms, and since 0.10 their personal notebooks'
    * Pods, marked `role: own`. The selector already matches both
-   * (`colloq.dev/role=kernel`); a Pod is counted only under the name and the
+   * (`aulalab.dev/role=kernel`); a Pod is counted only under the name and the
    * labels its role gives it.
    */
   async list(): Promise<RuntimeRoom[]> {
     const selector = encodeURIComponent(
-      'colloq.dev/role=kernel,app.kubernetes.io/managed-by=colloq-runtime',
+      'aulalab.dev/role=kernel,app.kubernetes.io/managed-by=aulalab-runtime',
     )
     const pods: KubeObject[] = []
     const continuations = new Set<string>()
@@ -1365,7 +1365,7 @@ export class RuntimeController {
       }
     } while (continuation)
     return pods.flatMap((pod) => {
-      const id = pod.metadata.annotations?.['colloq.dev/session-id']
+      const id = pod.metadata.annotations?.['aulalab.dev/session-id']
       if (!id || !isRuntimeSessionId(id) || !pod.metadata.uid) return []
       const role: RuntimeKernelRole = pod.metadata.name === ownName(id) ? 'own' : 'room'
       if (!owned(pod, id, role)) return []
@@ -1383,8 +1383,8 @@ export class RuntimeController {
           sessionId: id,
           instanceId: pod.metadata.uid,
           phase: podPhase(pod),
-          environment: pod.metadata.labels?.['colloq.dev/environment'] ?? '',
-          revision: pod.metadata.annotations?.['colloq.dev/revision'] ?? '',
+          environment: pod.metadata.labels?.['aulalab.dev/environment'] ?? '',
+          revision: pod.metadata.annotations?.['aulalab.dev/revision'] ?? '',
           ...(milliCpus !== undefined ? { cpus: milliCpus / 1000 } : {}),
           ...(memoryMb !== undefined ? { memoryMb } : {}),
           ...(podReason(pod) ? { reason: podReason(pod) } : {}),

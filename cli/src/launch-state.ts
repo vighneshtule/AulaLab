@@ -10,10 +10,10 @@ import type { LaunchOptions } from './launch-config.js'
  *
  * There used to be one root, the repository, and everything lay in it at
  * once: server/dist with web/dist, .env, data/ with the database, and
- * workspace/ with the students' files. While colloq was started from a clone,
+ * workspace/ with the students' files. While aulalab was started from a clone,
  * this was true and cost nothing.
  *
- * `pip install colloq` breaks that truth. The code arrives wherever the
+ * `pip install aulalab` breaks that truth. The code arrives wherever the
  * installer puts it (site-packages, Cellar, /usr/lib): the directory is
  * overwritten entirely by the next update and on many machines is not
  * writable at all. A class, though, is .env with the sign-in keys, data/ with
@@ -22,8 +22,8 @@ import type { LaunchOptions } from './launch-config.js'
  * losing them one day.
  *
  * So there are two roots, and they are named:
- *   COLLOQ_APP_DIR — the application: server/dist, web/dist, kernel/, node_modules;
- *   COLLOQ_HOME    — the state: .env, .colloq/, .colloq.pid, .colloq.log,
+ *   AULALAB_APP_DIR — the application: server/dist, web/dist, kernel/, node_modules;
+ *   AULALAB_HOME    — the state: .env, .aulalab/, .aulalab.pid, .aulalab.log,
  *                    data/, workspace/.
  *
  * The first rule matters more than the others: in the repository both point
@@ -49,11 +49,11 @@ function expandHome(value: string): string {
   return value === '~' || value.startsWith('~/') ? path.join(os.homedir(), value.slice(1)) : value
 }
 
-/** The repository: a Makefile next to a package.json whose name is colloq. */
+/** The repository: a Makefile next to a package.json whose name is aulalab. */
 function isRepository(dir: string): boolean {
   try {
     if (!fs.existsSync(path.join(dir, 'Makefile'))) return false
-    return /"name"\s*:\s*"colloq"/.test(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'))
+    return /"name"\s*:\s*"aulalab"/.test(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'))
   } catch {
     return false
   }
@@ -66,7 +66,7 @@ function isRepository(dir: string): boolean {
  * This is what test rigs look like (a copy of cli/src/launch*.ts in an empty
  * directory, without a Makefile), and a clone whose Makefile was renamed. The
  * state in such a directory stays next to the code, exactly as it always has;
- * moving it into ~/.colloq is worth it only for an installed application,
+ * moving it into ~/.aulalab is worth it only for an installed application,
  * where it would not survive next to the code.
  */
 function isWorkingTree(dir: string): boolean {
@@ -75,7 +75,7 @@ function isWorkingTree(dir: string): boolean {
 
 /**
  * The marker "this is a ready distribution, not the sources":
- * <app>/.colloq-dist.json.
+ * <app>/.aulalab-dist.json.
  *
  * The package builder puts the file there. Everything decided by it is decided
  * the same way: do not compute the fingerprint of the sources, do not call npm
@@ -83,7 +83,7 @@ function isWorkingTree(dir: string): boolean {
  * will.
  */
 export function isDistribution(dir = appDir()): boolean {
-  return fs.existsSync(path.join(dir, '.colloq-dist.json'))
+  return fs.existsSync(path.join(dir, '.aulalab-dist.json'))
 }
 
 /**
@@ -97,7 +97,7 @@ export function isDistribution(dir = appDir()): boolean {
  * layouts and would miss the root in the other, and silently at that.
  */
 function looksLikeApp(dir: string): boolean {
-  if (isRepository(dir) || fs.existsSync(path.join(dir, '.colloq-dist.json'))) return true
+  if (isRepository(dir) || fs.existsSync(path.join(dir, '.aulalab-dist.json'))) return true
   return (
     fs.existsSync(path.join(dir, 'server/dist/server.js')) &&
     fs.existsSync(path.join(dir, 'web/dist'))
@@ -108,7 +108,7 @@ let appCache: string | undefined
 /** The application directory. */
 export function appDir(): string {
   if (appCache) return appCache
-  const explicit = process.env.COLLOQ_APP_DIR
+  const explicit = process.env.AULALAB_APP_DIR
   if (explicit) return (appCache = path.resolve(expandHome(explicit)))
   for (let dir = selfDir, step = 0; step < 12; step++) {
     if (looksLikeApp(dir)) return (appCache = dir)
@@ -123,14 +123,14 @@ export function appDir(): string {
 /** The user's directory for the state, when it has no place next to the code. */
 function userStateDir(): string {
   const xdg = process.env.XDG_DATA_HOME
-  return xdg && path.isAbsolute(xdg) ? path.join(xdg, 'colloq') : path.join(os.homedir(), '.colloq')
+  return xdg && path.isAbsolute(xdg) ? path.join(xdg, 'aulalab') : path.join(os.homedir(), '.aulalab')
 }
 
 function resolveHome(): string {
-  // A relative COLLOQ_HOME is resolved from the person's current directory;
+  // A relative AULALAB_HOME is resolved from the person's current directory;
   // children (a background start) get it already absolute: launch.ts ·
   // detached.
-  const explicit = process.env.COLLOQ_HOME
+  const explicit = process.env.AULALAB_HOME
   if (explicit) return path.resolve(expandHome(explicit))
   const app = appDir()
   if (isRepository(app)) return app
@@ -156,11 +156,11 @@ export function homeDir(): string {
  * commands/tools.ts) and the framework read it. While the name was written out
  * in each place as its own string, the sides drifted apart silently: the
  * commands looked for the receipt in the APPLICATION directory, the supervisor
- * wrote to the STATE directory, and for an installed colloq `colloq stop`
+ * wrote to the STATE directory, and for an installed aulalab `aulalab stop`
  * answered "no class is running" while a class was running. The name here is
  * one, and which root it is resolved against is decided by the caller.
  */
-export const SESSION_FILE = '.colloq/local-session.json'
+export const SESSION_FILE = '.aulalab/local-session.json'
 
 export interface LaunchReceipt {
   pid: number
@@ -253,7 +253,7 @@ export function acquireLock(file: string, pid: number, runId: string, isAlive = 
       const prior = readJson<{ pid: number; runId: string }>(file)
       if (!prior || isAlive(prior.pid))
         throw new Error(
-          'A local session is already starting or running. Use colloq status / colloq stop.',
+          'A local session is already starting or running. Use aulalab status / aulalab stop.',
         )
       fs.unlinkSync(file)
       create()

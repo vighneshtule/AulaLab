@@ -1,7 +1,7 @@
 /**
  * This server's address as the machines are told to reach it: an http(s)
  * origin and nothing else, the shape the agent keeps (shared/remote-runner.ts
- * · remoteJoinTarget) and colloq-host checks (check_home). A PUBLIC_URL with
+ * · remoteJoinTarget) and aulalab-host checks (check_home). A PUBLIC_URL with
  * a path, a query or credentials in it is no origin; `null` then.
  */
 export function homeOrigin(text: string): string | null {
@@ -20,7 +20,7 @@ export function homeOrigin(text: string): string | null {
  * name under it, RFC 6761), 127.0.0.0/8, ::1 — which nothing on another
  * machine can reach: the default PUBLIC_URL of an instance nobody gave an
  * address yet (config.ts, http://localhost:PORT). A join command naming it
- * enrolls no machine, so the panel warns as `colloq-host runner-code` does;
+ * enrolls no machine, so the panel warns as `aulalab-host runner-code` does;
  * and a probe of it never leaves this machine, so it says nothing of the
  * relay and the tunnel the machines come through (liveness.ts · probeOwnPath).
  */

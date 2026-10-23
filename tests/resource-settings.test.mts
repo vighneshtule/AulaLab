@@ -371,7 +371,7 @@ test('the personal-notebook container: the class rule, then the instance default
 
   // And `docker run` is built from exactly these numbers.
   const args = runArgs({
-    sessionId: id, env: 'base', mount: '/m', network: 'colloq-rooms', publish: true, gpu: null,
+    sessionId: id, env: 'base', mount: '/m', network: 'aulalab-rooms', publish: true, gpu: null,
     role: 'own', ...kernelLimits(id, 'base', 'own'),
   })
   assert.ok(args.includes('--memory=3072m') && args.includes('--cpus=1'), JSON.stringify(args))
@@ -387,14 +387,14 @@ test("a rules change gives a GPU class's personal-notebook container what docker
   })
   await withEnv({ KERNEL_MEM: '4g' }, async () => {
     const created = runArgs({
-      sessionId: id, env: 'base-gpu', mount: '/m', network: 'colloq-rooms', publish: true, gpu: null,
+      sessionId: id, env: 'base-gpu', mount: '/m', network: 'aulalab-rooms', publish: true, gpu: null,
       role: 'own', ...kernelLimits(id, 'base-gpu', 'own'),
     })
     assert.ok(created.includes('--memory=16384m'), JSON.stringify(created))
     // The update used to fall back to KERNEL_MEM (or 4g) here, whatever the environment.
     assert.equal(await applyOwnLimits(id), 'applied')
     assert.equal(calls.length, 1, JSON.stringify(calls))
-    assert.equal(calls[0].at(-1), `colloq-room-${id}-own`)
+    assert.equal(calls[0].at(-1), `aulalab-room-${id}-own`)
     assert.ok(calls[0].includes('--memory=16384m'), JSON.stringify(calls[0]))
   })
   // One environment's own number reaches both paths the same way.
@@ -422,7 +422,7 @@ test('every consumer reads the saved value at the moment of use, without a resta
   assert.equal(defaultMemoryMb(true), 20480)
   assert.equal(memoryLimitMb('base'), 6144)
   assert.equal(memoryLimitMb('base-gpu'), 20480)
-  const room = { sessionId: 'res-live-args', env: 'base', mount: '/m', network: 'colloq-rooms', publish: true, gpu: null }
+  const room = { sessionId: 'res-live-args', env: 'base', mount: '/m', network: 'aulalab-rooms', publish: true, gpu: null }
   const args = runArgs(room)
   for (const flag of ['--pids-limit=1024', '--memory=6144m', '--memory-swap=6144m', '--cpus=3', 'OMP_NUM_THREADS=3']) {
     assert.ok(args.includes(flag), `${flag}: ${JSON.stringify(args)}`)
@@ -586,10 +586,10 @@ test('the budget counts running containers by the limits docker holds them to', 
   createSession('bud-a', 'Бюджет А', 'base')
   createSession('bud-b', 'Бюджет Б', 'base')
   const sizes: Record<string, string> = {
-    'colloq-room-bud-a': `${8192 * MB} 4000000000`,
-    'colloq-room-bud-a-own': `${2048 * MB} 1000000000`,
+    'aulalab-room-bud-a': `${8192 * MB} 4000000000`,
+    'aulalab-room-bud-a-own': `${2048 * MB} 1000000000`,
     // Docker says nothing useful: counted by the numbers it would be started with.
-    'colloq-room-bud-b': '0 0',
+    'aulalab-room-bud-b': '0 0',
   }
   const restore = fakeDocker((args) => {
     if (args[0] === 'version') return { code: 0, out: '28.0.0' }

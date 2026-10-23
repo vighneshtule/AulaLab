@@ -2,7 +2,7 @@
  * Environments: the packages a seminar's Python has.
  *
  * One environment is one file in `kernel/environments/`, installed on top of
- * the base every kernel carries, and built into the image `colloq-kernel:<name>`.
+ * the base every kernel carries, and built into the image `aulalab-kernel:<name>`.
  * The panel and the `make env-*` targets are two faces of the same directory
  * and the same `KERNEL_ENV` line, which is why the parsing rules live in one
  * place and are pinned here.
@@ -95,7 +95,7 @@ test('a package with a marker or an extra survives whole', () => {
  * first manual edit.
  */
 test('a directive in the header declares GPU, and pip does not see it', () => {
-  const source = '# нейросети\n# colloq: gpu\ntorch>=2.4\n'
+  const source = '# нейросети\n# aulalab: gpu\ntorch>=2.4\n'
   assert.equal(declaresGpu(source), true)
   // For pip it is a comment: neither an extra package in the count nor
   // "Needs rebuild" on a built image because of one line.
@@ -104,8 +104,8 @@ test('a directive in the header declares GPU, and pip does not see it', () => {
 })
 
 test('spaces and case do not break the directive', () => {
-  assert.equal(declaresGpu('  #   colloq:  gpu  \n'), true)
-  assert.equal(declaresGpu('# Colloq: GPU\n'), true)
+  assert.equal(declaresGpu('  #   aulalab:  gpu  \n'), true)
+  assert.equal(declaresGpu('# Aula Lab: GPU\n'), true)
 })
 
 test('an ordinary environment does not ask for a slice', () => {
@@ -114,7 +114,7 @@ test('an ordinary environment does not ask for a slice', () => {
   // A word in a sentence is not a directive: otherwise a phrase about GPU
   // inside an explanation would take the slice away from a seminar that
   // really needs it.
-  assert.equal(declaresGpu('# colloq: gpu тут не нужен\n'), false)
+  assert.equal(declaresGpu('# aulalab: gpu тут не нужен\n'), false)
 })
 
 test('the shipped gpu environment does declare the slice, and the base ones do not', () => {
@@ -136,7 +136,7 @@ test('a child of base-gpu gets the slice by inheritance', async () => {
   assert.equal(needsGpu('kaggle-gpu'), true)
   await withHome(async () => {
     // A course's own environment on top of base-gpu gets it the same way.
-    writeSource('own-gpu', '# colloq: from base-gpu\ntransformers>=4.44\n')
+    writeSource('own-gpu', '# aulalab: from base-gpu\ntransformers>=4.44\n')
     assert.equal(needsGpu('own-gpu'), true)
   })
 })
@@ -146,13 +146,13 @@ test('a child of base-gpu gets the slice by inheritance', async () => {
 /*
  * An environment has one layer, and any edit of the list installs it all
  * over again: for an environment with torch that is three gigabytes of
- * wheels and nine minutes per added timm. `# colloq: from base-gpu` moves
+ * wheels and nine minutes per added timm. `# aulalab: from base-gpu` moves
  * the heavy part into a shared layer — the parent is built once, the
- * children in seconds. It is written in the same form as `# colloq: gpu`,
+ * children in seconds. It is written in the same form as `# aulalab: gpu`,
  * and it stays a comment for pip in the same way.
  */
 test('a directive in the header names the parent, and pip does not see it', () => {
-  const source = '# нейросети\n# colloq: from base-gpu\ntransformers>=4.44\n'
+  const source = '# нейросети\n# aulalab: from base-gpu\ntransformers>=4.44\n'
   assert.equal(declaresParent(source), 'base-gpu')
   assert.deepEqual(parsePackages(source), ['transformers>=4.44'])
   // Neither an extra package in the count nor "Needs rebuild" on a built
@@ -161,9 +161,9 @@ test('a directive in the header names the parent, and pip does not see it', () =
 })
 
 test('spaces and case do not break the directive, and a phrase about it is not a directive', () => {
-  assert.equal(declaresParent('  #   colloq:  from   base-gpu  \n'), 'base-gpu')
-  assert.equal(declaresParent('# Colloq: FROM base-gpu\n'), 'base-gpu')
-  assert.equal(declaresParent('# colloq: from base-gpu и дальше своё\n'), null)
+  assert.equal(declaresParent('  #   aulalab:  from   base-gpu  \n'), 'base-gpu')
+  assert.equal(declaresParent('# Aula Lab: FROM base-gpu\n'), 'base-gpu')
+  assert.equal(declaresParent('# aulalab: from base-gpu и дальше своё\n'), null)
   assert.equal(declaresParent('# строится from base-gpu\n'), null)
 })
 
@@ -204,46 +204,46 @@ function reader(files: Record<string, string>) {
 
 test('a chain is built from the root to the leaf', () => {
   const read = reader({
-    'base-gpu': '# colloq: gpu\ntorch>=2.4\n',
-    gpu: '# colloq: from base-gpu\ntransformers>=4.44\n',
-    vlm: '# colloq: from gpu\nqwen-vl\n',
+    'base-gpu': '# aulalab: gpu\ntorch>=2.4\n',
+    gpu: '# aulalab: from base-gpu\ntransformers>=4.44\n',
+    vlm: '# aulalab: from gpu\nqwen-vl\n',
   })
   assert.deepEqual(buildChain('vlm', read), ['base-gpu', 'gpu', 'vlm'])
   assert.deepEqual(buildChain('base-gpu', read), ['base-gpu'])
 })
 
 test('a loop is a refusal, not an endless build', () => {
-  const read = reader({ a: '# colloq: from b\n', b: '# colloq: from a\n' })
+  const read = reader({ a: '# aulalab: from b\n', b: '# aulalab: from a\n' })
   assert.throws(() => buildChain('a', read), /по кругу/)
   // And the shortest loop too: a file that named itself as its parent.
-  assert.throws(() => buildChain('s', reader({ s: '# colloq: from s\n' })), /по кругу/)
+  assert.throws(() => buildChain('s', reader({ s: '# aulalab: from s\n' })), /по кругу/)
 })
 
 test('a chain that is too long is a refusal, not a build of nine layers', () => {
   const files: Record<string, string> = {}
   const last = MAX_INHERITANCE + 1
-  for (let i = 0; i <= last; i += 1) files[`e${i}`] = i === 0 ? '' : `# colloq: from e${i - 1}\n`
+  for (let i = 0; i <= last; i += 1) files[`e${i}`] = i === 0 ? '' : `# aulalab: from e${i - 1}\n`
   assert.equal(buildChain(`e${MAX_INHERITANCE - 1}`, reader(files)).length, MAX_INHERITANCE)
   assert.throws(() => buildChain(`e${last}`, reader(files)), /длиннее/)
 })
 
 test('an unknown parent is named out loud, and before docker', () => {
-  const read = reader({ gpu: '# colloq: from base-gpu\n' })
+  const read = reader({ gpu: '# aulalab: from base-gpu\n' })
   // Nine minutes to fail on `COPY environments/base-gpu.txt` is the same
   // error, only more expensive.
   assert.throws(() => buildChain('gpu', read), /«base-gpu»/)
   assert.throws(() => buildChain('missing', read), /нет окружения/)
   // The name goes both into the path and into the image tag: not a name —
   // not a parent.
-  assert.throws(() => buildChain('x', reader({ x: '# colloq: from ../etc\n' })), /не может быть/)
+  assert.throws(() => buildChain('x', reader({ x: '# aulalab: from ../etc\n' })), /не может быть/)
 })
 
 test('the gpu flag is inherited together with the CUDA wheels', () => {
   const read = reader({
-    'base-gpu': '# colloq: gpu\ntorch>=2.4\n',
-    gpu: '# colloq: from base-gpu\ntransformers>=4.44\n',
-    vlm: '# colloq: from gpu\nqwen-vl\n',
-    cpu: '# colloq: from base\npillow\n',
+    'base-gpu': '# aulalab: gpu\ntorch>=2.4\n',
+    gpu: '# aulalab: from base-gpu\ntransformers>=4.44\n',
+    vlm: '# aulalab: from gpu\nqwen-vl\n',
+    cpu: '# aulalab: from base\npillow\n',
     base: '',
   })
   // Otherwise the room gets an image with CUDA wheels and no device — that
@@ -254,14 +254,14 @@ test('the gpu flag is inherited together with the CUDA wheels', () => {
 })
 
 test('a child\'s own directive counts too', () => {
-  const read = reader({ base: '', own: '# colloq: from base\n# colloq: gpu\n' })
+  const read = reader({ base: '', own: '# aulalab: from base\n# aulalab: gpu\n' })
   assert.equal(needsGpu('own', read), true)
 })
 
 test('a broken chain does not take the slice away from whoever asks for it', () => {
   // The build will say so. Staying silent here means bringing up a room
   // without a device and finding out in the middle of a class.
-  assert.equal(needsGpu('gpu', reader({ gpu: '# colloq: gpu\n# colloq: from нет\n' })), true)
+  assert.equal(needsGpu('gpu', reader({ gpu: '# aulalab: gpu\n# aulalab: from нет\n' })), true)
 })
 
 /* ------------------------------------------------------- what builds it */
@@ -279,19 +279,19 @@ test('a broken chain does not take the slice away from whoever asks for it', () 
  */
 
 /** The path to the kernel directory in these checks: it does not have to exist. */
-const KERNEL = '/srv/colloq/kernel'
+const KERNEL = '/srv/aulalab/kernel'
 
 test('a direct build makes do with the kernel directory — neither compose nor the repository', () => {
   const { args, env } = buildCommand({ via: 'direct' }, 'cv', null, KERNEL)
   assert.deepEqual(args, [
     'build',
     '-f',
-    '/srv/colloq/kernel/Dockerfile',
+    '/srv/aulalab/kernel/Dockerfile',
     '--build-arg',
     'KERNEL_ENV=cv',
     '-t',
-    'colloq-kernel:cv',
-    '/srv/colloq/kernel',
+    'aulalab-kernel:cv',
+    '/srv/aulalab/kernel',
   ])
   // The context is read by the client and handed to the daemon, so a daemon
   // on the host is no obstacle. While `docker compose` would fail from here
@@ -310,16 +310,16 @@ test('without a parent the PARENT argument is not passed at all', () => {
 
 test('via compose, variables rather than flags: it substitutes the arguments itself', () => {
   const files = ['-f', 'docker-compose.yml', '-f', 'docker-compose.dev.yml']
-  const { args, env } = buildCommand({ via: 'compose', files }, 'gpu', 'colloq-kernel:base-gpu')
+  const { args, env } = buildCommand({ via: 'compose', files }, 'gpu', 'aulalab-kernel:base-gpu')
   assert.deepEqual(args, ['compose', ...files, 'build', 'kernel'])
   assert.equal(env.KERNEL_ENV, 'gpu')
-  assert.equal(env.KERNEL_PARENT, 'colloq-kernel:base-gpu')
+  assert.equal(env.KERNEL_PARENT, 'aulalab-kernel:base-gpu')
 })
 
 test('on the direct path every layer stands on top of the previous one\'s image', () => {
   const read = reader({
-    'base-gpu': '# colloq: gpu\ntorch>=2.4\n',
-    gpu: '# colloq: from base-gpu\ntransformers>=4.44\n',
+    'base-gpu': '# aulalab: gpu\ntorch>=2.4\n',
+    gpu: '# aulalab: from base-gpu\ntransformers>=4.44\n',
   })
   const chain = buildChain('gpu', read)
   const commands = chain.map((step, i) => {
@@ -327,17 +327,17 @@ test('on the direct path every layer stands on top of the previous one\'s image'
     return buildCommand(
       { via: 'direct' },
       step,
-      before === undefined ? null : `colloq-kernel:${before}`,
+      before === undefined ? null : `aulalab-kernel:${before}`,
       KERNEL,
     ).args.join(' ')
   })
   assert.ok(commands[0]?.includes('--build-arg KERNEL_ENV=base-gpu'))
-  assert.ok(commands[0]?.includes('-t colloq-kernel:base-gpu'))
+  assert.ok(commands[0]?.includes('-t aulalab-kernel:base-gpu'))
   assert.ok(!commands[0]?.includes('PARENT='))
   // This is what inheritance exists for: torch stays in the parent, and
   // editing a leaf costs seconds, not nine minutes.
-  assert.ok(commands[1]?.includes('--build-arg PARENT=colloq-kernel:base-gpu'))
-  assert.ok(commands[1]?.includes('-t colloq-kernel:gpu'))
+  assert.ok(commands[1]?.includes('--build-arg PARENT=aulalab-kernel:base-gpu'))
+  assert.ok(commands[1]?.includes('-t aulalab-kernel:gpu'))
 })
 
 /* ------------------------------------------- what can be done here at all */
@@ -631,10 +631,10 @@ test('a variable promised in .env.example reaches the container', () => {
  * Environments live in two places, and this is not symmetry but necessity.
  *
  * The ones shipped with the product (base, kaggle-base, base-gpu,
- * kaggle-gpu) lie next to the application; for colloq installed via pip
+ * kaggle-gpu) lie next to the application; for aulalab installed via pip
  * that is site-packages — a directory the next `pip install -U`
  * overwrites, and on many machines it is not writable at all. One's own a
- * person creates with `colloq env new`, and they go into the state
+ * person creates with `aulalab env new`, and they go into the state
  * directory, next to .env and data/.
  *
  * The panel knew about one directory of the two, and on one screen
@@ -650,14 +650,14 @@ test('a variable promised in .env.example reaches the container', () => {
 
 /** A state directory for one test: the variable is what the supervisor calls it. */
 async function withHome<T>(run: (home: string) => Promise<T> | T): Promise<T> {
-  const home = mkdtempSync(path.join(tmpdir(), 'colloq-home-'))
-  const before = process.env.COLLOQ_HOME
-  process.env.COLLOQ_HOME = home
+  const home = mkdtempSync(path.join(tmpdir(), 'aulalab-home-'))
+  const before = process.env.AULALAB_HOME
+  process.env.AULALAB_HOME = home
   try {
     return await run(home)
   } finally {
-    if (before === undefined) delete process.env.COLLOQ_HOME
-    else process.env.COLLOQ_HOME = before
+    if (before === undefined) delete process.env.AULALAB_HOME
+    else process.env.AULALAB_HOME = before
     rmSync(home, { recursive: true, force: true })
   }
 }
@@ -671,8 +671,8 @@ test('one\'s own directory is derived from the state, and in the repository it c
   // from under make env-list and from under the build.
   assert.equal(ownEnvDirOf('/app', '/app'), path.join('/app', 'kernel', 'environments'))
   assert.equal(
-    ownEnvDirOf('/app', '/home/ada/.colloq'),
-    path.join('/home/ada/.colloq', 'environments'),
+    ownEnvDirOf('/app', '/home/ada/.aulalab'),
+    path.join('/home/ada/.aulalab', 'environments'),
   )
 })
 
@@ -709,7 +709,7 @@ test('writing goes into one\'s own directory, and the shipped file stays untouch
 test('a shipped environment is not deleted, and the refusal says what to do instead', async () => {
   await withHome(async () => {
     assert.equal(isShipped('kaggle-base'), true)
-    assert.throws(() => removeEnvironment('kaggle-base'), /colloq/)
+    assert.throws(() => removeEnvironment('kaggle-base'), /aulalab/)
     assert.equal(existsSync(path.join(ENV_DIR, 'kaggle-base.txt')), true)
     // One's own copy is no longer shipped: that is what gets deleted.
     writeSource('kaggle-base', 'timm\n')
@@ -723,7 +723,7 @@ test('a shipped environment is not deleted, and the refusal says what to do inst
 
 test('the docker build context sees both directories, and one\'s own is stronger in it', async () => {
   await withHome(async (home) => {
-    writeSource('own-nlp', '# colloq: from base\ntransformers\n')
+    writeSource('own-nlp', '# aulalab: from base\ntransformers\n')
     writeSource('kaggle-base', '# мой курс\ntimm\n')
     const context = buildContext('own-nlp')
     // The merge lies in the state: there is no way to write into the
@@ -736,7 +736,7 @@ test('the docker build context sees both directories, and one\'s own is stronger
     assert.equal(existsSync(path.join(context, 'environments', 'base.txt')), true)
     assert.equal(
       readFileSync(path.join(context, 'environments', 'own-nlp.txt'), 'utf8'),
-      '# colloq: from base\ntransformers\n',
+      '# aulalab: from base\ntransformers\n',
     )
     assert.equal(
       readFileSync(path.join(context, 'environments', 'kaggle-base.txt'), 'utf8'),
@@ -752,9 +752,9 @@ test('the default is read and written in the state directory\'s .env', async () 
   await withHome(async (home) => {
     const file = path.join(home, '.env')
     writeFileSync(file, 'PORT=3000\nKERNEL_ENV=own-nlp\n')
-    // The same file is edited by `colloq env use` and reread by the next
+    // The same file is edited by `aulalab env use` and reread by the next
     // start. A panel that looked into the application directory's .env named
-    // base as active for installed colloq whatever the person chose.
+    // base as active for installed aulalab whatever the person chose.
     assert.equal(activeName(), 'own-nlp')
     setActiveName('base')
     const written = readFileSync(file, 'utf8')
@@ -764,11 +764,11 @@ test('the default is read and written in the state directory\'s .env', async () 
   })
 })
 
-test('for installed colloq the default can be set even though there is no compose nearby', () => {
+test('for installed aulalab the default can be set even though there is no compose nearby', () => {
   // The ban was about the container: there KERNEL_ENV is read by compose
   // from the HOST, and writing inside is a lie that lives until the first
-  // rebuild. Installed colloq has no host outside: .env lies in the state
-  // directory, and the same file is read by the next colloq run. Dimming the
+  // rebuild. Installed aulalab has no host outside: .env lies in the state
+  // directory, and the same file is read by the next aulalab run. Dimming the
   // button meant sending the teacher to make, which they do not have either.
   const can = abilities({ docker: true, context: true, repository: false, home: true })
   assert.equal(can.canSetDefault, true)
@@ -795,7 +795,7 @@ test('the panel refuses to delete a shipped environment and deletes one\'s own c
     assert.equal(body.reason, 'protected')
     // A refusal, not a quiet "nothing happened" and not a bare "internal
     // error" from EACCES in site-packages.
-    assert.match(body.error ?? '', /colloq/)
+    assert.match(body.error ?? '', /aulalab/)
     assert.equal(readSource('kaggle-base'), shipped)
 
     writeSource('kaggle-base', '# мой курс\ntimm\n')

@@ -55,7 +55,7 @@ export function retryJoinIn(cause: unknown, tried: number): number | null {
   if (!(cause instanceof ApiError) || tried >= KNOCKS) return null
   if (cause.status === 429) return CROWD_WAIT_MS
   // The relay can briefly answer with its own 404 before a request reaches
-  // Colloq. This is different from the application's definitive missing room.
+  // Aula Lab. This is different from the application's definitive missing room.
   // Do not retry ambiguous network/5xx failures: a join may already have created
   // a participant before its response was lost.
   if (cause.status === 404 && !saysSessionMissing(cause)) return 500

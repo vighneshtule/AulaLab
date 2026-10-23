@@ -619,7 +619,7 @@
   /**
    * The server's own release for an outdated machine's «на ней 0.23.0, на
    * сервере 0.24.0»: what the server's group says, never this bundle's
-   * __COLLOQ_VERSION__, which a browser holding an old panel would name.
+   * __AULALAB_VERSION__, which a browser holding an old panel would name.
    * `null` — not said, and the line names no versions.
    */
   const homeVersion = $derived(machineGroups?.find((group) => group.machineId === null)?.version ?? null)

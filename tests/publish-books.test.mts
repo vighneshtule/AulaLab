@@ -77,9 +77,9 @@ test('the lecture and the seminar both go out, in the order the teacher put them
   // Offered lecture first, then the seminar, then the rest — not in the order
   // the files happened to be opened in the room.
   assert.deepEqual(offered, [
-    ['lecture.ipynb', 'Лекция', true, null],
-    ['seminar.ipynb', 'Семинар', true, null],
-    ['Тетрадь.ipynb', 'Тетрадь', false, 'empty'],
+    ['lecture.ipynb', 'Lecture', true, null],
+    ['seminar.ipynb', 'Seminar', true, null],
+    ['Notebook.ipynb', 'Notebook', false, 'empty'],
   ])
 
   const built = ok(

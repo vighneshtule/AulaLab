@@ -5,9 +5,9 @@ import { db, createSession, getSession } from '../server/src/db.ts'
 import { retireDatabaseKernels, stopsLocalKernelsOnExit } from '../server/src/local/kernel-cleanup.ts'
 
 test('foreground session ends kernels while development reload and deployments preserve them', () => {
-  assert.equal(stopsLocalKernelsOnExit({COLLOQ_LOCAL_SESSION:'1',COLLOQ_STOP_KERNELS_ON_EXIT:'1'}),true)
-  assert.equal(stopsLocalKernelsOnExit({COLLOQ_LOCAL_SESSION:'1',COLLOQ_STOP_KERNELS_ON_EXIT:'0'}),false)
-  assert.equal(stopsLocalKernelsOnExit({COLLOQ_STOP_KERNELS_ON_EXIT:'1'}),false)
+  assert.equal(stopsLocalKernelsOnExit({AULALAB_LOCAL_SESSION:'1',AULALAB_STOP_KERNELS_ON_EXIT:'1'}),true)
+  assert.equal(stopsLocalKernelsOnExit({AULALAB_LOCAL_SESSION:'1',AULALAB_STOP_KERNELS_ON_EXIT:'0'}),false)
+  assert.equal(stopsLocalKernelsOnExit({AULALAB_STOP_KERNELS_ON_EXIT:'1'}),false)
   assert.equal(stopsLocalKernelsOnExit({}),false)
 })
 
@@ -27,7 +27,7 @@ test('cleanup only retires sessions in its database, continues after failure and
 test('final cleanup removes only database-owned Docker containers and keeps files',async()=>{
  const fs=await import('node:fs'),os=await import('node:os'),path=await import('node:path')
  const {spawnSync}=await import('node:child_process')
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-cleanup-docker-'))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-cleanup-docker-'))
  try {
   const bin=path.join(dir,'bin');fs.mkdirSync(bin)
   const log=path.join(dir,'docker-calls.jsonl')
@@ -42,10 +42,10 @@ test('final cleanup removes only database-owned Docker containers and keeps file
   // students' personal notebooks. Stopping the instance must take the second
   // one too, otherwise it lives on until `make down` with no server left that
   // would know about it.
-  assert.deepEqual(fs.readFileSync(log,'utf8').trim().split('\n').map(l=>JSON.parse(l)),[['rm','-f','colloq-room-my-room'],['rm','-f','colloq-room-my-room-own']])
+  assert.deepEqual(fs.readFileSync(log,'utf8').trim().split('\n').map(l=>JSON.parse(l)),[['rm','-f','aulalab-room-my-room'],['rm','-f','aulalab-room-my-room-own']])
   const late=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',"import assert from 'node:assert/strict';import {dropLocalRoomKernel,endpointForSession} from './server/src/kernel/pool.ts';import {closeDatabase} from './server/src/db.ts';await dropLocalRoomKernel('my-room');await assert.rejects(endpointForSession('my-room',null),/stopping|останов/);closeDatabase()"],{env:{...env,KERNEL_ISOLATION:'on'},encoding:'utf8',timeout:10000})
   assert.equal(late.status,0,late.stderr)
   assert.equal(fs.readFileSync(path.join(workspace,'notebook.ipynb'),'utf8'),'preserved')
-  assert.ok(fs.existsSync(path.join(dir,'data','colloq.db')))
+  assert.ok(fs.existsSync(path.join(dir,'data','aulalab.db')))
  } finally {fs.rmSync(dir,{recursive:true,force:true})}
 })

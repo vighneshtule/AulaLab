@@ -103,8 +103,8 @@
    * the sheet, means nothing in a column half a screen wide.
    */
   const STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3]
-  let scale = $state(read(`colloq.zoom.${session.session.id}`, 1))
-  let railOpen = $state(read(`colloq.rail.${session.session.id}`, 0) === 1)
+  let scale = $state(read(`aulalab.zoom.${session.session.id}`, 1))
+  let railOpen = $state(read(`aulalab.rail.${session.session.id}`, 0) === 1)
 
   function read(key: string, fallback: number): number {
     try {
@@ -137,7 +137,7 @@
     if (wanted === scale) return
     const was = place()
     scale = wanted
-    remember(`colloq.zoom.${session.session.id}`, wanted)
+    remember(`aulalab.zoom.${session.session.id}`, wanted)
     // A frame: the canvases get to rebuild, and only then can heights be
     // measured.
     requestAnimationFrame(() => requestAnimationFrame(() => goTo(was)))
@@ -506,7 +506,7 @@
   function toggleRail(): void {
     const was = place()
     railOpen = !railOpen
-    remember(`colloq.rail.${session.session.id}`, railOpen ? 1 : 0)
+    remember(`aulalab.rail.${session.session.id}`, railOpen ? 1 : 0)
     requestAnimationFrame(() => requestAnimationFrame(() => goTo(was)))
   }
 

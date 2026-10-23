@@ -1288,7 +1288,7 @@ export type ControlServerMessage =
    * It comes to one person, and right after it the socket closes. Without the
    * frame the banned person would see exactly what the room sees on a network
    * drop: the connection silently vanished and does not come back — that is,
-   * they would decide Colloq broke and go complain about it instead of
+   * they would decide Aula Lab broke and go complain about it instead of
    * understanding what happened.
    *
    * `until` is the moment the ban ends; the browser shows it in words by its

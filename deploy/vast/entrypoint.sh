@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 #
-# colloq-vast: the entry point of the deploy/vast/Dockerfile image.
+# aulalab-vast: the entry point of the deploy/vast/Dockerfile image.
 #
-#   colloq-vast serve          (default) server + tunnel + kernels on demand
-#   colloq-vast status         is the instance ready for a class: /api/health and kernel images
-#   colloq-vast link           the address for the audience and, while nobody owns it, the setup link
-#   colloq-vast backup         a class backup into <state>/backups/ (database + files)
-#   colloq-vast restore …      restore a backup; only while the server is STOPPED
-#   colloq-vast install-host D put the host-side manager (colloq-host) into directory D on the host
-#   colloq-vast runner [CMD …] a machine for another instance's submissions: no server, no tunnel, no
-#                              database (no CMD runs the agent, its join in COLLOQ_RUNNER_JOIN; join URL
+#   aulalab-vast serve          (default) server + tunnel + kernels on demand
+#   aulalab-vast status         is the instance ready for a class: /api/health and kernel images
+#   aulalab-vast link           the address for the audience and, while nobody owns it, the setup link
+#   aulalab-vast backup         a class backup into <state>/backups/ (database + files)
+#   aulalab-vast restore …      restore a backup; only while the server is STOPPED
+#   aulalab-vast install-host D put the host-side manager (aulalab-host) into directory D on the host
+#   aulalab-vast runner [CMD …] a machine for another instance's submissions: no server, no tunnel, no
+#                              database (no CMD runs the agent, its join in AULALAB_RUNNER_JOIN; join URL
 #                              CODE runs it with the join as words; status, drain, leave ask the agent)
-#   colloq-vast runner-code …  on an instance: an enrollment code for such machines (colloq-host runner-code)
-#   colloq-vast health         the image's health check, in whichever of the two modes it runs
-#   colloq-vast version
+#   aulalab-vast runner-code …  on an instance: an enrollment code for such machines (aulalab-host runner-code)
+#   aulalab-vast health         the image's health check, in whichever of the two modes it runs
+#   aulalab-vast version
 #
 # WHAT HAPPENS HERE AND WHY IT IS DONE THIS WAY.
 #
@@ -24,7 +24,7 @@
 #
 #   1. the path of the state directory as the host sees it. The `-v` of a room
 #      container is resolved by the daemon, not by us: the server writes the
-#      room files to /workspace/colloq/workspace/<id> INSIDE this container,
+#      room files to /workspace/aulalab/workspace/<id> INSIDE this container,
 #      while the daemon has to be given the same place on the host. We learn it
 #      from the daemon itself, from our own mounts, instead of asking the
 #      operator to repeat the path a second time;
@@ -45,9 +45,9 @@
 # NODE_ENV=development is neither a typo nor debugging. The server allows the
 # docker kernel backend only outside production (runtime-client.ts ·
 # selectKernelBackend): in production it expects the k3s broker. The old path
-# on a rented machine (deploy/colloq-legacy.service) does exactly the same, for
+# on a rented machine (deploy/aulalab-legacy.service) does exactly the same, for
 # the same reason. NODE_ENV decides nothing else in the server: the unsafe file
-# bypass is enabled only together with COLLOQ_UNSAFE_DEV_FILES=1, and that is
+# bypass is enabled only together with AULALAB_UNSAFE_DEV_FILES=1, and that is
 # not set here.
 #
 # THE SAME IMAGE AS A MACHINE FOR SUBMISSIONS («машина для посылок»,
@@ -55,7 +55,7 @@
 # and no database: it runs dist/runner.js, the agent that takes notebook steps
 # from a home instance and runs them with the very DockerCompetitionRunner the
 # home uses, so the sandbox's argv, the harness and the verdicts are the
-# home's by construction. Its tree lives in one directory, /var/lib/colloq-runner
+# home's by construction. Its tree lives in one directory, /var/lib/aulalab-runner
 # by default, mounted from the host at the SAME path: a submission's container
 # is started by the host's daemon, which resolves `-v` on the host, and on a
 # machine nothing translates paths the way DATA_HOST_DIR does at home. The
@@ -67,18 +67,18 @@
 # server cannot open).
 set -euo pipefail
 
-APP=/opt/colloq
-STATE="${COLLOQ_HOME:-/workspace/colloq}"
-export COLLOQ_HOME="$STATE"
+APP=/opt/aulalab
+STATE="${AULALAB_HOME:-/workspace/aulalab}"
+export AULALAB_HOME="$STATE"
 PORT="${PORT:-3000}"
 APP_UID=1000
 APP_GID=1000
 SOCK="${DOCKER_SOCK:-/var/run/docker.sock}"
-VERSION="${COLLOQ_VERSION:-0.0.0-dev}"
-# The agent's tree in runner mode, the same path on the host (colloq-host
-# mounts it so; the agent reads it back from COLLOQ_RUNNER_STATE). Without a
+VERSION="${AULALAB_VERSION:-0.0.0-dev}"
+# The agent's tree in runner mode, the same path on the host (aulalab-host
+# mounts it so; the agent reads it back from AULALAB_RUNNER_STATE). Without a
 # trailing slash: the mounts it is matched against have none.
-RUNNER_STATE="${COLLOQ_RUNNER_STATE:-/var/lib/colloq-runner}"
+RUNNER_STATE="${AULALAB_RUNNER_STATE:-/var/lib/aulalab-runner}"
 [ "$RUNNER_STATE" = / ] || RUNNER_STATE="${RUNNER_STATE%/}"
 # The command line of this container's first process (container_mode).
 PID1_CMDLINE=/proc/1/cmdline
@@ -87,7 +87,7 @@ MOUNTINFO=/proc/self/mountinfo
 # The tunnel protocol the agent in this image speaks to its home for classes
 # on machines (shared/remote-tunnel.ts · TUNNEL_PROTOCOL, which
 # tests/vast-runner-host.test.mts holds this equal to). Nothing here reads
-# it: colloq-host runner update reads this line out of an image it is about
+# it: aulalab-host runner update reads this line out of an image it is about
 # to run, with a throwaway `cat`, as it reads the runner build, and refuses
 # an agent its home would not let back onto the tunnel while classes run
 # (tunnel_follows_home).
@@ -106,7 +106,7 @@ die()  { printf '[vast] ERROR: %s\n' "$1" >&2; exit "${2:-1}"; }
 # group. Everything else (the server, tunnels, builds, backups) runs as node,
 # uid 1000: that is the same uid as the kernel user in kernel/Dockerfile, and
 # both sides read and write the room files without groups and umask (see UMask
-# in deploy/colloq-legacy.service: that match was missing there, and it had to
+# in deploy/aulalab-legacy.service: that match was missing there, and it had to
 # be created by hand).
 #
 # An honest caveat: access to the docker socket is root on the host. The
@@ -115,7 +115,7 @@ die()  { printf '[vast] ERROR: %s\n' "$1" >&2; exit "${2:-1}"; }
 # the host.
 prepare_as_root() {
   local walk="${1:-}"
-  mkdir -p "$STATE"/data "$STATE"/workspace "$STATE"/environments "$STATE"/backups "$STATE"/.colloq
+  mkdir -p "$STATE"/data "$STATE"/workspace "$STATE"/environments "$STATE"/backups "$STATE"/.aulalab
   if [ "$walk" = full ]; then
     # Our files back to our user. Backups brought by scp as root, and files laid
     # out by hand, otherwise turn into "Permission denied" for the server in the
@@ -128,13 +128,13 @@ prepare_as_root() {
     # there is no reason to walk the whole workspace (the rooms' datasets) for
     # them: serve has already sorted it out. The top directories are enough, in
     # case mkdir above has just created them.
-    chown "$APP_UID:$APP_GID" "$STATE" "$STATE"/data "$STATE"/workspace "$STATE"/environments "$STATE"/backups "$STATE"/.colloq
+    chown "$APP_UID:$APP_GID" "$STATE" "$STATE"/data "$STATE"/workspace "$STATE"/environments "$STATE"/backups "$STATE"/.aulalab
   fi
   chmod 0700 "$STATE/data"
   touch "$STATE/.env"
   chown "$APP_UID:$APP_GID" "$STATE/.env"
   chmod 0600 "$STATE/.env"
-  # The .env link in the image leads to /workspace/colloq, the COLLOQ_HOME
+  # The .env link in the image leads to /workspace/aulalab, the AULALAB_HOME
   # default. Another state directory would leave it dangling: the server reads
   # PUBLIC_URL from the APPLICATION's .env (config.ts · readPublicUrl), and the
   # links would say localhost instead of the tunnel address, while the panel
@@ -146,14 +146,14 @@ prepare_as_root() {
   install_registry_config
 }
 
-# The credentials of the private registry (colloq-host mounts them read-only):
+# The credentials of the private registry (aulalab-host mounts them read-only):
 # as a copy into the ~/.docker of the node user. A file mounted straight there
 # would create ~/.docker as root, and buildx could not write its own directory
 # next to it.
 install_registry_config() {
-  if [ -s /run/colloq/docker-config.json ]; then
+  if [ -s /run/aulalab/docker-config.json ]; then
     install -d -o "$APP_UID" -g "$APP_GID" -m 0700 /home/node/.docker
-    install -o "$APP_UID" -g "$APP_GID" -m 0600 /run/colloq/docker-config.json /home/node/.docker/config.json
+    install -o "$APP_UID" -g "$APP_GID" -m 0600 /run/aulalab/docker-config.json /home/node/.docker/config.json
   fi
 }
 
@@ -163,12 +163,12 @@ install_registry_config() {
 # evict or an attempt tree it cannot delete fills the disk in the middle of a
 # competition; and the registry credentials, which the agent's docker pulls
 # kernels with. Its other commands (status, drain, leave, and the health check
-# colloq-host gives the container every half minute) are a `docker exec` into
+# aulalab-host gives the container every half minute) are a `docker exec` into
 # a running agent: the top directory is enough, and the credentials file the
 # agent's own pulls read is left alone rather than rewritten under them.
 #
 # The tree is checked before any of it: the walk hands every file under it to
-# uid 1000, and COLLOQ_RUNNER_STATE=/var with -v /var:/var would hand over the
+# uid 1000, and AULALAB_RUNNER_STATE=/var with -v /var:/var would hand over the
 # host's /var. runner_state_problem says which directories are refused.
 #
 # Save one kind of folder: a council's scratch space (council/<id>/scratch),
@@ -180,7 +180,7 @@ install_registry_config() {
 prepare_runner_as_root() {
   local walk="${1:-}" problem
   problem="$(runner_state_problem "$RUNNER_STATE" "${STATE:-}")"
-  [ -z "$problem" ] || die "COLLOQ_RUNNER_STATE=$problem. Nothing under it was touched." 78
+  [ -z "$problem" ] || die "AULALAB_RUNNER_STATE=$problem. Nothing under it was touched." 78
   mkdir -p "$RUNNER_STATE"
   if [ "$walk" = full ]; then
     find "$RUNNER_STATE" -xdev -path "$RUNNER_STATE/council/*/scratch" -prune -o \( ! -user "$APP_UID" -o ! -group "$APP_GID" \) \
@@ -193,17 +193,17 @@ prepare_runner_as_root() {
   chmod 0700 "$RUNNER_STATE"
 }
 
-# Which trees the agent may be given: a copy of colloq-host's
+# Which trees the agent may be given: a copy of aulalab-host's
 # runner_state_problem, word for word (tests/vast-runner-host.test.mts holds
-# the two the same), because this is where the chown happens and colloq-host is
+# the two the same), because this is where the chown happens and aulalab-host is
 # not always the one that started the container. The tree is the agent's
 # alone, chowned whole and evicted from: never a system root, a directory
 # every Linux keeps its own files in, Docker's own store, a person's home
-# itself, the application here (/opt/colloq), or the instance's state
+# itself, the application here (/opt/aulalab), or the instance's state
 # directory (the second argument). Prints what is wrong, nothing when the
 # path will do.
 runner_state_problem() {
-  local p="$1" home="${2:-}" own="a system directory: give the machine's tree a directory of its own, like /var/lib/colloq-runner, /srv/colloq-runner or /data/colloq-runner"
+  local p="$1" home="${2:-}" own="a system directory: give the machine's tree a directory of its own, like /var/lib/aulalab-runner, /srv/aulalab-runner or /data/aulalab-runner"
   case "$p" in
     /*) ;;
     *) printf '%s is not an absolute path' "$p"; return 0 ;;
@@ -219,7 +219,7 @@ runner_state_problem() {
     |/var/backups|/var/cache|/var/lib|/var/local|/var/lock|/var/log|/var/mail|/var/opt|/var/run|/var/spool|/var/tmp \
     |/bin/*|/boot/*|/dev/*|/etc/*|/lib/*|/lib32/*|/lib64/*|/libx32/*|/proc/*|/run/*|/sbin/*|/snap/*|/sys/*|/usr/* \
     |/var/lock/*|/var/log/*|/var/run/*|/var/lib/docker|/var/lib/docker/*|/var/lib/containerd|/var/lib/containerd/* \
-    |/opt/colloq|/opt/colloq/*)
+    |/opt/aulalab|/opt/aulalab/*)
       printf '%s is %s' "$p" "$own"; return 0 ;;
   esac
   [ -n "$home" ] || return 0
@@ -239,7 +239,7 @@ drop_to_app() {
   # HOME is required: buildx writes ~/.docker/buildx, and under HOME=/root an
   # environment build fails on permissions before the first layer.
   exec setpriv --reuid="$APP_UID" --regid="$APP_GID" "${groups[@]}" --inh-caps=-all \
-    env HOME=/home/node USER=node LOGNAME=node COLLOQ_VAST_DROPPED=1 "$0" "$@"
+    env HOME=/home/node USER=node LOGNAME=node AULALAB_VAST_DROPPED=1 "$0" "$@"
 }
 
 # ------------------------------------------------------------- host docker
@@ -253,16 +253,16 @@ require_docker() {
   started on the HOST's Docker daemon through the mounted socket:
 
       docker run ... -v /var/run/docker.sock:/var/run/docker.sock \
-        -v /var/lib/colloq-runner:/var/lib/colloq-runner ... runner
+        -v /var/lib/aulalab-runner:/var/lib/aulalab-runner ... runner
 
-  colloq-host runner up does exactly that (deploy/vast/colloq-host).
+  aulalab-host runner up does exactly that (deploy/vast/aulalab-host).
 MSG
     exit 78
   fi
   cat >&2 <<'MSG'
 [vast] ERROR: no Docker daemon is reachable at /var/run/docker.sock.
 
-  Colloq gives every room its own kernel container, and this image starts those
+  Aula Lab gives every room its own kernel container, and this image starts those
   containers on the HOST's Docker daemon. That needs the host socket:
 
       docker run ... -v /var/run/docker.sock:/var/run/docker.sock ...
@@ -276,7 +276,7 @@ MSG
 
 # Our own container: to ask the daemon about our own mounts and networks.
 #
-# By the name we are told (COLLOQ_CONTAINER), else by our id from the files
+# By the name we are told (AULALAB_CONTAINER), else by our id from the files
 # Docker mounts into every container out of its own directory, else by the
 # hostname, which is the container's short id unless --hostname said
 # otherwise. Not by the hostname first: under --network host, as a machine
@@ -286,15 +286,15 @@ MSG
 SELF=""
 locate_self() {
   local id
-  if [ -n "${COLLOQ_CONTAINER:-}" ]; then
-    SELF="$COLLOQ_CONTAINER"
+  if [ -n "${AULALAB_CONTAINER:-}" ]; then
+    SELF="$AULALAB_CONTAINER"
   else
     id="$(own_container_id)"
     if [ -n "$id" ] && docker inspect "$id" >/dev/null 2>&1; then SELF="$id"; return 0; fi
     SELF="$(hostname)"
   fi
   docker inspect "$SELF" >/dev/null 2>&1 \
-    || die "cannot inspect this container as \"$SELF\". Start it without --hostname, or set COLLOQ_CONTAINER=<its name>."
+    || die "cannot inspect this container as \"$SELF\". Start it without --hostname, or set AULALAB_CONTAINER=<its name>."
 }
 
 # This container's own id (64 hex digits), from the files Docker bind-mounts
@@ -307,11 +307,11 @@ own_container_id() {
 
 # The image this instance runs, for the panel's join commands of the machines
 # for submissions (competitions/remote/commands.ts · ownImage): a machine
-# joined from the panel must run the build its home runs. colloq-host passes
-# it as COLLOQ_SERVER_IMAGE, and what it passes wins; without it the daemon
+# joined from the panel must run the build its home runs. aulalab-host passes
+# it as AULALAB_SERVER_IMAGE, and what it passes wins; without it the daemon
 # says, for the container locate_self found, as the runner mode learns its
-# own image. Without it is no rare case: the first `colloq-host update` to a
-# release with machines for submissions is run by the colloq-host of the
+# own image. Without it is no rare case: the first `aulalab-host update` to a
+# release with machines for submissions is run by the aulalab-host of the
 # release before, whose `docker run` knows no such variable, and the
 # settings' fingerprint does not count it either, so the container it
 # started was never made again with it (field notes, 14 Oct 2026). An
@@ -320,14 +320,14 @@ own_container_id() {
 # a fork's. A bare image id is no name a machine can pull: then nothing, and
 # the panel names the published image of its release, as before.
 locate_server_image() {
-  [ -z "${COLLOQ_SERVER_IMAGE:-}" ] || return 0
+  [ -z "${AULALAB_SERVER_IMAGE:-}" ] || return 0
   local named
   named="$(docker inspect -f '{{.Config.Image}}' "$SELF" 2>/dev/null || true)"
   case "$named" in
     ''|sha256:*) return 0 ;;
   esac
   [[ "$named" =~ ^[a-f0-9]{12,64}$ ]] && return 0
-  export COLLOQ_SERVER_IMAGE="$named"
+  export AULALAB_SERVER_IMAGE="$named"
 }
 
 # The path of the state directory as the host sees it: the longest mount that
@@ -337,10 +337,10 @@ locate_server_image() {
 # refusal, not a warning.
 HOST_STATE=""
 locate_host_state() {
-  if [ -n "${COLLOQ_HOST_STATE:-}" ]; then HOST_STATE="$COLLOQ_HOST_STATE"; return; fi
+  if [ -n "${AULALAB_HOST_STATE:-}" ]; then HOST_STATE="$AULALAB_HOST_STATE"; return; fi
   HOST_STATE="$(host_path_of "$STATE")"
   [ -n "$HOST_STATE" ] || die "$STATE is not a mounted directory. Mount one from the host at the same path:
-      -v /workspace/colloq:/workspace/colloq
+      -v /workspace/aulalab:/workspace/aulalab
   Room kernels are sibling containers; they can only see files that live on the host."
 }
 
@@ -376,7 +376,7 @@ require_same_path() {
 
 NET=""
 ensure_network() {
-  NET="${KERNEL_NETWORK:-colloq}"
+  NET="${KERNEL_NETWORK:-aulalab}"
   if ! docker network inspect "$NET" >/dev/null 2>&1; then
     docker network create "$NET" >/dev/null || die "could not create the docker network $NET"
     say "created docker network $NET for room kernels"
@@ -410,11 +410,11 @@ read_state_env() {
 
 # ------------------------------------------------------------- tunnels
 #
-# Four ways, chosen by COLLOQ_TUNNEL (auto by default):
+# Four ways, chosen by AULALAB_TUNNEL (auto by default):
 #
 #   relay       frpc → your own relay (RELAY_*), address https://<name>.<domain>.
 #               The path for Russia: Cloudflare addresses do not open from there.
-#   cloudflare  CLOUDFLARE_TUNNEL_TOKEN + COLLOQ_HOSTNAME: a named tunnel,
+#   cloudflare  CLOUDFLARE_TUNNEL_TOKEN + AULALAB_HOSTNAME: a named tunnel,
 #               otherwise a quick *.trycloudflare.com with a random address.
 #   direct      http://$PUBLIC_IPADDR:$VAST_TCP_PORT_<PORT>: vast port forwarding,
 #               no TLS and no intermediary.
@@ -430,7 +430,7 @@ read_state_env() {
 # proxy, a firewall that is there on purpose. Opening a public
 # *.trycloudflare.com door into it because one variable was forgotten would
 # route the class, the owner's setup link included, around exactly that.
-# COLLOQ_TUNNEL=cloudflare still asks for it anywhere, in so many words.
+# AULALAB_TUNNEL=cloudflare still asks for it anywhere, in so many words.
 MODE=""
 PUBLIC=""
 TUNNEL_PID=""
@@ -438,7 +438,7 @@ TUNNEL_LOG=""
 RUN_DIR=""
 
 relay_hostname() {
-  local host="${COLLOQ_HOSTNAME:-}"
+  local host="${AULALAB_HOSTNAME:-}"
   # A short name is completed to the relay zone: HOST=demo → demo.<domain>.
   case "$host" in
     *.*) printf '%s' "$host" ;;
@@ -447,19 +447,19 @@ relay_hostname() {
   esac
 }
 
-# On Vast: the flag deploy/vast/onstart.sh sets and colloq-host passes on, or
+# On Vast: the flag deploy/vast/onstart.sh sets and aulalab-host passes on, or
 # the variable Vast puts into the instances it runs itself. Nothing of Vast
 # reaches a VM's container by itself, so there the flag is what counts.
 on_vast() {
-  [ "${COLLOQ_ON_VAST:-}" = 1 ] || [ -n "${VAST_CONTAINERLABEL:-}" ]
+  [ "${AULALAB_ON_VAST:-}" = 1 ] || [ -n "${VAST_CONTAINERLABEL:-}" ]
 }
 
 pick_mode() {
-  MODE="${COLLOQ_TUNNEL:-auto}"
+  MODE="${AULALAB_TUNNEL:-auto}"
   if [ "$MODE" = auto ]; then
-    if [ -n "${COLLOQ_HOSTNAME:-}" ] && [ -n "${RELAY_ADDR:-}" ] && [ -n "${RELAY_TOKEN:-}" ] && [ -n "${RELAY_DOMAIN:-}" ]; then
+    if [ -n "${AULALAB_HOSTNAME:-}" ] && [ -n "${RELAY_ADDR:-}" ] && [ -n "${RELAY_TOKEN:-}" ] && [ -n "${RELAY_DOMAIN:-}" ]; then
       MODE=relay
-    elif [ -n "${CLOUDFLARE_TUNNEL_TOKEN:-}" ] && [ -n "${COLLOQ_HOSTNAME:-}" ]; then
+    elif [ -n "${CLOUDFLARE_TUNNEL_TOKEN:-}" ] && [ -n "${AULALAB_HOSTNAME:-}" ]; then
       MODE=cloudflare
     elif [ -n "${PUBLIC_URL:-}" ]; then
       MODE=none
@@ -471,22 +471,22 @@ pick_mode() {
   fi
   case "$MODE" in
     relay)
-      [ -n "${RELAY_ADDR:-}" ] && [ -n "${RELAY_TOKEN:-}" ] && [ -n "${RELAY_DOMAIN:-}" ] && [ -n "${COLLOQ_HOSTNAME:-}" ] \
-        || die "COLLOQ_TUNNEL=relay needs COLLOQ_HOSTNAME, RELAY_ADDR, RELAY_TOKEN and RELAY_DOMAIN."
+      [ -n "${RELAY_ADDR:-}" ] && [ -n "${RELAY_TOKEN:-}" ] && [ -n "${RELAY_DOMAIN:-}" ] && [ -n "${AULALAB_HOSTNAME:-}" ] \
+        || die "AULALAB_TUNNEL=relay needs AULALAB_HOSTNAME, RELAY_ADDR, RELAY_TOKEN and RELAY_DOMAIN."
       local host; host="$(relay_hostname)"
       # The name goes as a string into frpc.toml (start_relay): a quote or a
       # space in it would break the config so that frpc would blame a line of
       # the file, not the variable.
       case "$host" in
-        *[!A-Za-z0-9.-]*) die "COLLOQ_HOSTNAME=$COLLOQ_HOSTNAME: a hostname has only letters, digits, dots and hyphens." ;;
+        *[!A-Za-z0-9.-]*) die "AULALAB_HOSTNAME=$AULALAB_HOSTNAME: a hostname has only letters, digits, dots and hyphens." ;;
       esac
       [ "${host%".$RELAY_DOMAIN"}" != "$host" ] \
         || die "$host is not under RELAY_DOMAIN=$RELAY_DOMAIN: the relay only serves names in its own zone."
       PUBLIC="https://$host" ;;
     cloudflare)
       if [ -n "${CLOUDFLARE_TUNNEL_TOKEN:-}" ]; then
-        [ -n "${COLLOQ_HOSTNAME:-}" ] || die "a named Cloudflare tunnel needs COLLOQ_HOSTNAME (the hostname routed to it)."
-        PUBLIC="https://${COLLOQ_HOSTNAME}"
+        [ -n "${AULALAB_HOSTNAME:-}" ] || die "a named Cloudflare tunnel needs AULALAB_HOSTNAME (the hostname routed to it)."
+        PUBLIC="https://${AULALAB_HOSTNAME}"
       fi ;;
     direct)
       # On a Docker instance vast itself puts the address and the external port
@@ -496,12 +496,12 @@ pick_mode() {
       local mapped="${!mapped_var:-}"
       if [ -z "${PUBLIC_URL:-}" ]; then
         [ -n "${PUBLIC_IPADDR:-}" ] && [ -n "$mapped" ] \
-          || die "COLLOQ_TUNNEL=direct needs PUBLIC_URL=http://<ip>:<port>, or PUBLIC_IPADDR and $mapped_var (Vast sets both for -p ${PORT}:${PORT})."
+          || die "AULALAB_TUNNEL=direct needs PUBLIC_URL=http://<ip>:<port>, or PUBLIC_IPADDR and $mapped_var (Vast sets both for -p ${PORT}:${PORT})."
         PUBLIC="http://${PUBLIC_IPADDR}:${mapped}"
       fi ;;
     none)
       PUBLIC="${PUBLIC_URL:-http://localhost:${PORT}}" ;;
-    *) die "unknown COLLOQ_TUNNEL=$MODE (auto, relay, cloudflare, direct, none)" ;;
+    *) die "unknown AULALAB_TUNNEL=$MODE (auto, relay, cloudflare, direct, none)" ;;
   esac
   # An explicit PUBLIC_URL beats the computed one: the operator knows more
   # about their proxy than we know about the vast variables.
@@ -517,11 +517,11 @@ warn_no_address() {
   [ "$MODE" = none ] && [ -z "${PUBLIC_URL:-}" ] || return 0
   warn "------------------------------------------------------------------------"
   warn "no public address: PUBLIC_URL is not set, and no tunnel is configured."
-  warn "Colloq answers only on its port, and every link it hands out says"
+  warn "Aula Lab answers only on its port, and every link it hands out says"
   warn "http://localhost:${PORT}. Behind your own HTTPS proxy, set"
   warn "PUBLIC_URL=https://<the address students open> and start again."
   warn "A quick public *.trycloudflare.com tunnel opens only on Vast, or with"
-  warn "COLLOQ_TUNNEL=cloudflare."
+  warn "AULALAB_TUNNEL=cloudflare."
   warn "------------------------------------------------------------------------"
 }
 
@@ -664,23 +664,23 @@ upload_relay_assets() {
 # before the first class, not on the first Run. The order of sources:
 #
 #   1. already in the host docker: do nothing (re-creating the machine from the
-#      image does not touch the images, let alone a colloq-vast update; and an
-#      offline server gets its images from colloq-host load);
+#      image does not touch the images, let alone a aulalab-vast update; and an
+#      offline server gets its images from aulalab-host load);
 #   2. the published image of this very version, <repo>:v<version>-<environment>
 #      (publish.yml pushes base and kaggle-base, `make kernel-publish` base-gpu
 #      and kaggle-gpu at release time; scripts/release-build.py names the k3s
-#      ones the same way), named colloq-kernel:<environment>, as
+#      ones the same way), named aulalab-kernel:<environment>, as
 #      pool.ts expects. The repo is KERNEL_IMAGE_REPO, else the one this image
-#      was built with (COLLOQ_KERNEL_REPO, ghcr.io/colloq-edu/colloq-kernel);
+#      was built with (AULALAB_KERNEL_REPO, ghcr.io/vighneshtule/aulalab-kernel);
 #   3. build from the context that lies in the image, with the same docker call
 #      as the panel (environments.ts · buildCommand) and the CLI
 #      (launch-prepare.ts).
 #
-# With COLLOQ_OFFLINE=1 only the first: a pull or a build would need the
+# With AULALAB_OFFLINE=1 only the first: a pull or a build would need the
 # network (the registry, the python base image, PyPI), and what is missing is
 # said by name instead of failing on a download.
 #
-# The `# colloq: from <parent>` chain is walked from the root to the leaf, as
+# The `# aulalab: from <parent>` chain is walked from the root to the leaf, as
 # in the panel: an environment made from the panel on top of base-gpu reuses
 # its torch with CUDA instead of installing it again.
 env_file_for() {
@@ -696,7 +696,7 @@ chain_of() {
     file="$(env_file_for "$name")"
     [ -n "$file" ] || { warn "no environment called \"$name\""; return 1; }
     chain=("$name" "${chain[@]}")
-    parent="$(sed -nE 's/^[[:space:]]*#[[:space:]]*colloq:[[:space:]]*from[[:space:]]+([^[:space:]]+)[[:space:]]*$/\1/p' "$file" | head -1)"
+    parent="$(sed -nE 's/^[[:space:]]*#[[:space:]]*aulalab:[[:space:]]*from[[:space:]]+([^[:space:]]+)[[:space:]]*$/\1/p' "$file" | head -1)"
     name="$parent"; i=$((i + 1))
   done
   printf '%s\n' "${chain[@]}"
@@ -707,7 +707,7 @@ kernel_context() {
   # server does it (environments.ts · buildContext): the docker context is one
   # directory.
   if compgen -G "$STATE/environments/*.txt" >/dev/null; then
-    local staged="$STATE/.colloq/kernel-context/_boot"
+    local staged="$STATE/.aulalab/kernel-context/_boot"
     rm -rf "$staged"; mkdir -p "$(dirname "$staged")"
     cp -a "$APP/kernel" "$staged"
     cp -p "$STATE"/environments/*.txt "$staged/environments/"
@@ -717,7 +717,7 @@ kernel_context() {
   fi
 }
 
-offline() { [ "${COLLOQ_OFFLINE:-}" = 1 ]; }
+offline() { [ "${AULALAB_OFFLINE:-}" = 1 ]; }
 
 # The list this image shipped, not one of the same name in the state
 # directory: an operator may redefine base for a course.
@@ -738,7 +738,7 @@ kernel_pull_ref() {
   if [ -z "$repo" ]; then
     [ "$edited" = 0 ] || return 0
     case "$VERSION" in 0.0.0*|*-dev) return 0 ;; esac
-    repo="${COLLOQ_KERNEL_REPO:-ghcr.io/colloq-edu/colloq-kernel}"
+    repo="${AULALAB_KERNEL_REPO:-ghcr.io/vighneshtule/aulalab-kernel}"
   fi
   [ "$repo" != none ] || return 0
   printf '%s:%s-%s' "$repo" "${KERNEL_IMAGE_TAG:-v${VERSION}}" "$link"
@@ -753,12 +753,12 @@ prepare_kernels() {
     name="$(printf '%s' "$name" | tr -d '[:space:]')"
     [ -n "$name" ] || continue
     # The leaf is what rooms run; its parents matter only for building it.
-    if docker image inspect "colloq-kernel:$name" >/dev/null 2>&1; then
+    if docker image inspect "aulalab-kernel:$name" >/dev/null 2>&1; then
       stamp_if_published "$name"
       continue
     fi
     if offline; then
-      warn "[kernels] colloq-kernel:$name is not on this machine, and COLLOQ_OFFLINE=1 allows neither a pull nor a build: rooms on \"$name\" will not start. Bring it with colloq-host bundle (on a connected machine) and colloq-host load (here)."
+      warn "[kernels] aulalab-kernel:$name is not on this machine, and AULALAB_OFFLINE=1 allows neither a pull nor a build: rooms on \"$name\" will not start. Bring it with aulalab-host bundle (on a connected machine) and aulalab-host load (here)."
       missing="$missing $name"
       continue
     fi
@@ -769,16 +769,16 @@ prepare_kernels() {
     for link in "${chain[@]}"; do
       [ -n "$link" ] || continue
       shipped_list "$link" || edited=1
-      if docker image inspect "colloq-kernel:$link" >/dev/null 2>&1; then
+      if docker image inspect "aulalab-kernel:$link" >/dev/null 2>&1; then
         stamp_if_published "$link"
-        parent="colloq-kernel:$link"; continue
+        parent="aulalab-kernel:$link"; continue
       fi
       ref="$(kernel_pull_ref "$link" "$edited")"
       if [ -n "$ref" ]; then
         say "[kernels] pulling $ref"
         if docker pull -q "$ref" </dev/null >/dev/null \
-            && docker tag "$ref" "colloq-kernel:$link"; then
-          stamp_environment "$link"; parent="colloq-kernel:$link"; continue
+            && docker tag "$ref" "aulalab-kernel:$link"; then
+          stamp_environment "$link"; parent="aulalab-kernel:$link"; continue
         fi
         warn "[kernels] could not pull $ref; building \"$link\" here instead"
       fi
@@ -797,14 +797,14 @@ prepare_kernels() {
         # in its file; no directive means the default of kernel/Dockerfile
         # itself, and we keep no second copy of the base image name here.
         file="$(env_file_for "$link")"
-        py="$(sed -nE 's/^[[:space:]]*#[[:space:]]*colloq:[[:space:]]*python[[:space:]]+(3\.[0-9]+)[[:space:]]*$/\1/p' "$file" | head -1)"
+        py="$(sed -nE 's/^[[:space:]]*#[[:space:]]*aulalab:[[:space:]]*python[[:space:]]+(3\.[0-9]+)[[:space:]]*$/\1/p' "$file" | head -1)"
         [ -z "$py" ] || args+=(--build-arg "PARENT=python:${py}-slim-bookworm")
       fi
-      args+=(-t "colloq-kernel:$link" "$ctx")
+      args+=(-t "aulalab-kernel:$link" "$ctx")
       say "[kernels] building \"$link\" (the first build takes minutes; the panel works meanwhile)"
       if DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=plain docker "${args[@]}" </dev/null 2>&1 \
           | sed -u "s/^/[kernels:$link] /"; then
-        stamp_environment "$link"; parent="colloq-kernel:$link"
+        stamp_environment "$link"; parent="aulalab-kernel:$link"
       else
         warn "[kernels] building \"$link\" failed; rooms on it will not start. Retry from the panel (Environments → Build)."
         break
@@ -828,7 +828,7 @@ stamp_environment() {
 }
 
 # An image that is already here and says it is the published one for this
-# version and this environment (publish.yml labels them; colloq-host load
+# version and this environment (publish.yml labels them; aulalab-host load
 # brings them) gets the stamp too, over an older one: otherwise the panel
 # would judge it by file times, show "Needs rebuild", and on an offline server
 # offer a build that cannot succeed. A child built here on a published parent
@@ -836,7 +836,7 @@ stamp_environment() {
 stamp_if_published() {
   shipped_list "$1" || return 0
   local labels
-  labels="$(docker image inspect -f '{{index .Config.Labels "org.opencontainers.image.version"}} {{index .Config.Labels "colloq.environment"}}' "colloq-kernel:$1" 2>/dev/null || true)"
+  labels="$(docker image inspect -f '{{index .Config.Labels "org.opencontainers.image.version"}} {{index .Config.Labels "aulalab.environment"}}' "aulalab-kernel:$1" 2>/dev/null || true)"
   [ "$labels" = "$VERSION $1" ] || return 0
   stamp_environment "$1"
 }
@@ -911,13 +911,13 @@ on_term() {
 }
 
 serve() {
-  say "Colloq ${VERSION} (${COLLOQ_REVISION:-unknown}) — image colloq-vast"
+  say "Aula Lab ${VERSION} (${AULALAB_REVISION:-unknown}) — image aulalab-vast"
   require_docker
   locate_self
   locate_server_image
   locate_host_state
   ensure_network
-  RUN_DIR="$(mktemp -d /tmp/colloq-vast.XXXXXX)"
+  RUN_DIR="$(mktemp -d /tmp/aulalab-vast.XXXXXX)"
   TUNNEL_LOG="$RUN_DIR/tunnel.log"
   trap on_term TERM INT
 
@@ -934,7 +934,7 @@ serve() {
   say "  state   $STATE (host: $HOST_STATE)"
   say "  kernels one container per room on docker network $NET; GPUs: $gpus"
   say "  owner   the setup link is in the box above while nobody owns this instance;"
-  say "          print it again with: docker exec <container> colloq-vast link"
+  say "          print it again with: docker exec <container> aulalab-vast link"
   upload_relay_assets
 
   # No errexit: a command that fails in the middle of the preparation must
@@ -955,7 +955,7 @@ serve() {
     [ -n "$done_pid" ] || continue
     if [ "$done_pid" = "$SERVER_PID" ]; then
       # The server died: exit with its code, and docker takes care of the
-      # restart (--restart unless-stopped in colloq-host): bringing the process
+      # restart (--restart unless-stopped in aulalab-host): bringing the process
       # back up in a live container with a half-broken tunnel would be no more
       # honest.
       warn "the server exited with code $code"
@@ -986,9 +986,9 @@ status() {
   if [ -z "$body" ]; then say "the server does not answer on :${PORT}"; exit 1; fi
   printf '%s\n' "$body"
   say "kernel images on the host:"
-  docker image ls colloq-kernel --format '  {{.Repository}}:{{.Tag}}  {{.Size}}  {{.CreatedSince}}' 2>/dev/null || true
+  docker image ls aulalab-kernel --format '  {{.Repository}}:{{.Tag}}  {{.Size}}  {{.CreatedSince}}' 2>/dev/null || true
   say "room containers:"
-  docker ps -a --filter label=colloq.kind=room-kernel --format '  {{.Names}}  {{.Status}}' 2>/dev/null || true
+  docker ps -a --filter label=aulalab.kind=room-kernel --format '  {{.Names}}  {{.Status}}' 2>/dev/null || true
   case "$body" in *'"ok":true'*) exit 0 ;; *) exit 1 ;; esac
 }
 
@@ -1010,15 +1010,15 @@ link() {
 backup() {
   cd "$APP"
   # The script's own hint names the command of the pip wheel
-  # (`colloq restore --legacy`), which does not exist here; on a machine
-  # running this image the way back is colloq-host.
-  COLLOQ_RESTORE_HINT="REPLACE=1 colloq-host restore" bash scripts/backup-local.sh
+  # (`aulalab restore --legacy`), which does not exist here; on a machine
+  # running this image the way back is aulalab-host.
+  AULALAB_RESTORE_HINT="REPLACE=1 aulalab-host restore" bash scripts/backup-local.sh
 }
 
 restore() {
   # restore.sh refuses by itself under a live server, but it asks the
   # localhost of THIS container. A one-off `docker run … restore` lives in its
-  # own network namespace and will not see a running neighbor, so colloq-host
+  # own network namespace and will not see a running neighbor, so aulalab-host
   # stops the main container before calling this.
   cd "$APP"
   exec bash scripts/restore.sh "$@"
@@ -1026,9 +1026,9 @@ restore() {
 
 install_host() {
   local into="${1:-}"
-  [ -n "$into" ] && [ -d "$into" ] || die "usage: colloq-vast install-host <host directory mounted into this container>"
-  install -m 0755 "$APP/deploy/vast/colloq-host" "$into/colloq-host"
-  say "installed $into/colloq-host"
+  [ -n "$into" ] && [ -d "$into" ] || die "usage: aulalab-vast install-host <host directory mounted into this container>"
+  install -m 0755 "$APP/deploy/vast/aulalab-host" "$into/aulalab-host"
+  say "installed $into/aulalab-host"
 }
 
 # ------------------------------------------------- a machine for submissions
@@ -1051,14 +1051,14 @@ install_host() {
 # all the same, as in start_server, should an operator's env file carry them.
 #
 # Two words about itself go to the agent when it starts, whoever started the
-# container: COLLOQ_RUNNER_CONTAINER, the container whose restart policy it
+# container: AULALAB_RUNNER_CONTAINER, the container whose restart policy it
 # turns off before it stops for good on a 401 (or Docker's unless-stopped
-# would start a revoked machine again and again), and COLLOQ_RUNNER_IMAGE,
+# would start a revoked machine again and again), and AULALAB_RUNNER_IMAGE,
 # the image it probes the cards with (`--gpus all` puts nvidia-smi into any
-# container, and this image is on the machine for certain). colloq-host
+# container, and this image is on the machine for certain). aulalab-host
 # passes both; for the panel's plain `docker run` they come from the daemon,
 # which knows this container by the name locate_self found it under. And
-# COLLOQ_CONTAINER, the same container, under the name the server's own code
+# AULALAB_CONTAINER, the same container, under the name the server's own code
 # finds its container by when the hostname will not do (perimeter.ts ·
 # helperImage): under --network host the agent's hostname is the host's.
 runner() {
@@ -1068,18 +1068,18 @@ runner() {
   if [ "${1:-}" = join ]; then runner_join_args "$@"; set --; fi
   case "${1:-}" in
     '')
-      say "Colloq ${VERSION} (${COLLOQ_REVISION:-unknown}): a machine for submissions"
+      say "Aula Lab ${VERSION} (${AULALAB_REVISION:-unknown}): a machine for submissions"
       problem="$(runner_state_problem "$RUNNER_STATE" "${STATE:-}")"
-      [ -z "$problem" ] || die "COLLOQ_RUNNER_STATE=$problem" 78
+      [ -z "$problem" ] || die "AULALAB_RUNNER_STATE=$problem" 78
       require_docker runner
       locate_self
       require_same_path "$RUNNER_STATE"
-      export COLLOQ_RUNNER_CONTAINER="${COLLOQ_RUNNER_CONTAINER:-$SELF}"
-      export COLLOQ_CONTAINER="${COLLOQ_CONTAINER:-$SELF}"
-      if [ -z "${COLLOQ_RUNNER_IMAGE:-}" ]; then
-        COLLOQ_RUNNER_IMAGE="$(docker inspect -f '{{.Config.Image}}' "$SELF" 2>/dev/null || true)"
+      export AULALAB_RUNNER_CONTAINER="${AULALAB_RUNNER_CONTAINER:-$SELF}"
+      export AULALAB_CONTAINER="${AULALAB_CONTAINER:-$SELF}"
+      if [ -z "${AULALAB_RUNNER_IMAGE:-}" ]; then
+        AULALAB_RUNNER_IMAGE="$(docker inspect -f '{{.Config.Image}}' "$SELF" 2>/dev/null || true)"
       fi
-      export COLLOQ_RUNNER_IMAGE
+      export AULALAB_RUNNER_IMAGE
       ;;
   esac
   cd "$APP"
@@ -1088,33 +1088,33 @@ runner() {
     NODE_ENV=development \
     KERNEL_BACKEND=docker \
     COMPETITION_BACKEND=docker \
-    COLLOQ_RUNNER_STATE="$RUNNER_STATE" \
+    AULALAB_RUNNER_STATE="$RUNNER_STATE" \
     DATA_DIR="$RUNNER_STATE/data" \
     node server/dist/runner.js "$@"
 }
 
 # `runner join URL CODE`: the agent's start, with the join given as words. The
 # code is a key, and a command line is public on the host (ps, /proc, docker
-# top). So the join moves into COLLOQ_RUNNER_JOIN, the agent's one way to be
+# top). So the join moves into AULALAB_RUNNER_JOIN, the agent's one way to be
 # told it, and the caller drops the words (`set --`) before anything is
 # started with them: the re-exec under uid 1000 and the agent's node never see
 # the code. What no process here can take back is the container's own command
 # (docker inspect, and tini's command line for the container's life): that is
-# why every command the panel and colloq-host print gives the join as
-# -e COLLOQ_RUNNER_JOIN.
+# why every command the panel and aulalab-host print gives the join as
+# -e AULALAB_RUNNER_JOIN.
 runner_join_args() {
   [ "$#" -eq 3 ] && [ -n "$2" ] && [ -n "$3" ] \
-    || die "usage: colloq-vast runner join https://<home> <code>, or the join in the environment: -e COLLOQ_RUNNER_JOIN='https://<home>#<code>'" 64
-  export COLLOQ_RUNNER_JOIN="${2%/}#$3"
+    || die "usage: aulalab-vast runner join https://<home> <code>, or the join in the environment: -e AULALAB_RUNNER_JOIN='https://<home>#<code>'" 64
+  export AULALAB_RUNNER_JOIN="${2%/}#$3"
 }
 
 # The enrollment code, minted on the instance into the database the running
-# server holds open (colloq-host runner-code runs this through docker exec). As
+# server holds open (aulalab-host runner-code runs this through docker exec). As
 # uid 1000, which the main block below sees to: SQLite creates its -wal and
 # -shm files as whoever writes first, and the server could not open root's.
 # One JSON line on stdout, {"code","expiresAt","machines","trusted","classes"}:
 # the code is the key to the instance's submissions (and its classes, with
-# --classes) for N machines within at most a day, and colloq-host prints it
+# --classes) for N machines within at most a day, and aulalab-host prints it
 # once, inside the join commands.
 runner_code() {
   cd "$APP"
@@ -1137,7 +1137,7 @@ runner_code() {
 # answers "joined and syncing" from the agent's own state; a curl of the port
 # kept a machine joined with the panel's plain `docker run` (unhealthy) for as
 # long as it ran. The mode is the word the container was started with, after
-# colloq-vast on its first process's command line (tini's, or docker's own
+# aulalab-vast on its first process's command line (tini's, or docker's own
 # init's in front of tini under --init); no word is the image's CMD, serve.
 # Anything but 0 is 1 for Docker, which keeps 2 for itself.
 container_mode() {
@@ -1148,19 +1148,19 @@ container_mode() {
       case "$arg" in runner) printf runner ;; *) printf serve ;; esac
       return 0
     fi
-    case "$arg" in colloq-vast|*/colloq-vast) next=1 ;; esac
+    case "$arg" in aulalab-vast|*/aulalab-vast) next=1 ;; esac
   done < "$PID1_CMDLINE"
   printf serve
 }
 
 health() {
   case "$(container_mode)" in
-    # Through the entry point again, as `docker exec … colloq-vast runner
+    # Through the entry point again, as `docker exec … aulalab-vast runner
     # status` goes: root's small preparation of the tree, then the agent's
     # answer as uid 1000.
     runner) "$0" runner status >/dev/null || exit 1 ;;
     # --noproxy: an http_proxy given for the internet (HTTPS_PROXY and friends
-    # in colloq.env) must not catch our own loopback.
+    # in aulalab.env) must not catch our own loopback.
     *) curl -fsS --noproxy '*' -o /dev/null --max-time 8 "http://127.0.0.1:${PORT}/api/livez" || exit 1 ;;
   esac
   exit 0
@@ -1168,25 +1168,25 @@ health() {
 
 usage() {
   cat <<'USAGE'
-colloq-vast — Colloq on one machine with Docker: a rented VM or a server of your own
+aulalab-vast — Aula Lab on one machine with Docker: a rented VM or a server of your own
 
-  colloq-vast serve            (default) server, tunnel, kernel images
-  colloq-vast status           is this instance ready for a class
-  colloq-vast link             the class address and, while unclaimed, the owner link
-  colloq-vast backup           a backup into <state>/backups/ (database + files)
-  colloq-vast restore [FILES]  restore a backup; only while the server is stopped
-  colloq-vast install-host DIR put the host-side manager (colloq-host) into DIR
-  colloq-vast runner           a machine for another instance's submissions (COLLOQ_RUNNER_JOIN=https://<home>#<code>)
-  colloq-vast runner status | drain | leave   ask the agent running here
-  colloq-vast runner join URL CODE   the agent, the join given as words (they stay in the container's
-                               own command: -e COLLOQ_RUNNER_JOIN keeps the code out of it)
-  colloq-vast runner-code --machines N --hours H [--trusted | --classes] [--slots S] [--prefix NAME]
-  colloq-vast health           the image's health check: the agent's status, or the server's /api/livez
-  colloq-vast version
+  aulalab-vast serve            (default) server, tunnel, kernel images
+  aulalab-vast status           is this instance ready for a class
+  aulalab-vast link             the class address and, while unclaimed, the owner link
+  aulalab-vast backup           a backup into <state>/backups/ (database + files)
+  aulalab-vast restore [FILES]  restore a backup; only while the server is stopped
+  aulalab-vast install-host DIR put the host-side manager (aulalab-host) into DIR
+  aulalab-vast runner           a machine for another instance's submissions (AULALAB_RUNNER_JOIN=https://<home>#<code>)
+  aulalab-vast runner status | drain | leave   ask the agent running here
+  aulalab-vast runner join URL CODE   the agent, the join given as words (they stay in the container's
+                               own command: -e AULALAB_RUNNER_JOIN keeps the code out of it)
+  aulalab-vast runner-code --machines N --hours H [--trusted | --classes] [--slots S] [--prefix NAME]
+  aulalab-vast health           the image's health check: the agent's status, or the server's /api/livez
+  aulalab-vast version
 
 Settings are environment variables; see deploy/vast/README.md and, for a server
-of your own, docs/pages/en/server.html. A machine for submissions: colloq-host
-runner up (deploy/vast/colloq-host).
+of your own, docs/pages/en/server.html. A machine for submissions: aulalab-host
+runner up (deploy/vast/aulalab-host).
 USAGE
 }
 
@@ -1195,7 +1195,7 @@ cmd="${1:-serve}"
 [ "$#" -eq 0 ] || shift
 
 case "$cmd" in
-  version) printf '%s %s\n' "$VERSION" "${COLLOQ_REVISION:-unknown}"; exit 0 ;;
+  version) printf '%s %s\n' "$VERSION" "${AULALAB_REVISION:-unknown}"; exit 0 ;;
   help|-h|--help) usage; exit 0 ;;
   install-host) install_host "$@"; exit 0 ;;
   health) health ;;
@@ -1208,7 +1208,7 @@ if [ "$cmd" = runner ] && [ "${1:-}" = join ]; then
   set --
 fi
 
-if [ "$(id -u)" = 0 ] && [ -z "${COLLOQ_VAST_DROPPED:-}" ]; then
+if [ "$(id -u)" = 0 ] && [ -z "${AULALAB_VAST_DROPPED:-}" ]; then
   case "$cmd" in
     serve|restore) prepare_as_root full ;;
     runner)

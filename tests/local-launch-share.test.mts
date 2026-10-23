@@ -1,5 +1,5 @@
 /**
- * `colloq start --share`: the isolation lock, the link block, the host.sh
+ * `aulalab start --share`: the isolation lock, the link block, the host.sh
  * marker, the flags.
  *
  * Everything here is pure functions of the supervisor (cli/src/launch-share.ts
@@ -80,21 +80,21 @@ test('gate: the refusal says why it matters and where the class is now', () => {
 /* ------------------------------------------------------------ marker */
 
 test('marker: only the exact line from host.sh is taken', () => {
-  assert.deepEqual(parseShareMarker('@colloq-share ok https://a-b-c.trycloudflare.com'), {
+  assert.deepEqual(parseShareMarker('@aulalab-share ok https://a-b-c.trycloudflare.com'), {
     url: 'https://a-b-c.trycloudflare.com',
     verified: true,
   })
-  assert.deepEqual(parseShareMarker('@colloq-share unverified https://x.trycloudflare.com/'), {
+  assert.deepEqual(parseShareMarker('@aulalab-share unverified https://x.trycloudflare.com/'), {
     url: 'https://x.trycloudflare.com',
     verified: false,
   })
   for (const line of [
     '',
     'https://a.trycloudflare.com',
-    '@colloq-share ok http://a.trycloudflare.com',
-    '@colloq-share maybe https://a.trycloudflare.com',
-    '@colloq-share ok https://a.trycloudflare.com/admin/t/secret',
-    '  @colloq-share ok https://a.trycloudflare.com',
+    '@aulalab-share ok http://a.trycloudflare.com',
+    '@aulalab-share maybe https://a.trycloudflare.com',
+    '@aulalab-share ok https://a.trycloudflare.com/admin/t/secret',
+    '  @aulalab-share ok https://a.trycloudflare.com',
   ])
     assert.equal(parseShareMarker(line), null, line)
 })
@@ -116,7 +116,7 @@ const text = (block: Partial<ShareBlock>): string => renderShareBlock({ ...BASE,
 
 test('block: no class yet — the panel on the public address and what to do there', () => {
   const out = text({})
-  assert.match(out, /Colloq is online at https:\/\/orange-bird\.trycloudflare\.com/)
+  assert.match(out, /AulaLab is online at https:\/\/orange-bird\.trycloudflare\.com/)
   assert.match(out, /There is no class yet\. Create one in the panel above and copy its link/)
   assert.doesNotMatch(out, /\/s\/[a-z0-9]/)
 })
@@ -163,7 +163,7 @@ test('block: always the /admin/ warning, the lifetime, the new address and Russi
     assert.match(out, /lives while this terminal is open: Ctrl\+C closes it/)
     assert.match(out, /new address on every start: send the new link each time/)
     assert.match(out, /Cloudflare addresses do not open from Russia/)
-    assert.match(out, /colloq start --host <name> with RELAY_\* in \.env/)
+    assert.match(out, /aulalab start --host <name> with RELAY_\* in \.env/)
     assert.doesNotMatch(out, /\u001b\[/, 'the block goes to the log too: no colours')
   }
 })
@@ -172,17 +172,17 @@ test('block: an unverified check, a detached run and a relay each change their l
   assert.match(text({ verified: false }), /did not get through — usually the DNS/)
   assert.doesNotMatch(text({ verified: true }), /did not get through/)
   assert.doesNotMatch(text({ verified: null }), /did not get through/)
-  assert.match(text({ detached: true }), /lives until colloq stop/)
+  assert.match(text({ detached: true }), /lives until aulalab stop/)
   assert.doesNotMatch(text({ detached: true }), /Ctrl\+C/)
-  assert.match(text({ relayDomain: 'colloq.ru' }), /colloq start --host <name>\.colloq\.ru$/m)
+  assert.match(text({ relayDomain: 'example.edu' }), /aulalab start --host <name>\.aulalab\.ru$/m)
 })
 
 /* ------------------------------------------------------------ database */
 
 test('classes come from the database: newest first, archived ones left out', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-share-db-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-share-db-'))
   try {
-    const db = new Database(path.join(dir, 'colloq.db'))
+    const db = new Database(path.join(dir, 'aulalab.db'))
     db.exec(
       'CREATE TABLE sessions (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at INTEGER NOT NULL, archived_at INTEGER)',
     )
@@ -210,10 +210,10 @@ test('classes come from the database: newest first, archived ones left out', asy
 })
 
 test('no database or a foreign one reads as "no class yet", never as a failure', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-share-db-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-share-db-'))
   try {
     assert.deepEqual(await readClasses(dir), { classes: [], total: 0 })
-    fs.writeFileSync(path.join(dir, 'colloq.db'), 'not a database')
+    fs.writeFileSync(path.join(dir, 'aulalab.db'), 'not a database')
     assert.deepEqual(await readClasses(dir), { classes: [], total: 0 })
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })

@@ -107,7 +107,7 @@ test('a run here and a run on a machine, both under way when the queue is paused
   // Here: the notebook keeps its metric under its own lease.
   reset({ homeNotebooks: true })
   const here = competition()
-  const local = send(here, { cells: ['# colloq-test: {"hold": 300}', 'x = 1'] })
+  const local = send(here, { cells: ['# aulalab-test: {"hold": 300}', 'x = 1'] })
   try {
     assert.equal(await pumpOnce(), 1)
     await sleep(50)

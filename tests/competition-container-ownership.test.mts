@@ -23,7 +23,7 @@ test('both execution steps bound raw stdout/stderr retention and carry the canon
     assert.ok(command.includes('--log-driver=local'))
     assert.ok(command.includes('--log-opt=max-size=8m'))
     assert.ok(command.includes('--log-opt=max-file=2'))
-    assert.ok(command.includes(`ru.colloq.competition-instance=${scope(hostPathOf(config.dataDir))}`))
+    assert.ok(command.includes(`ru.aulalab.competition-instance=${scope(hostPathOf(config.dataDir))}`))
   }
 })
 
@@ -35,7 +35,7 @@ process.env.DATA_DIR = process.argv[1]
 process.env.DATA_HOST_DIR = process.argv[2]
 const {runArgs} = await import('./server/src/competitions/docker-runner.ts')
 const command = runArgs({container:'c',image:'base',dataDir:process.argv[1],inputDir:process.argv[1],resultDir:process.argv[1],target:'submission.csv',limits:{memoryMb:4096,cpus:2,pids:256,tmpfsMb:128,targetBytes:1024,outputBytes:1024,outputKillBytes:2048,wallSeconds:10,fsizeBytes:4096}})
-console.log(command.find(value=>value.startsWith('ru.colloq.competition-instance=')))
+console.log(command.find(value=>value.startsWith('ru.aulalab.competition-instance=')))
 `
   const labels = ['/srv/instance-one', '/srv/instance-two'].map((root) => {
     const child = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', source, internal, root], { cwd: process.cwd(), encoding: 'utf8' })
@@ -43,7 +43,7 @@ console.log(command.find(value=>value.startsWith('ru.colloq.competition-instance
     return child.stdout.trim()
   })
   assert.notEqual(labels[0], labels[1])
-  assert.deepEqual(labels, ['/srv/instance-one', '/srv/instance-two'].map((root) => `ru.colloq.competition-instance=${scope(root)}`))
+  assert.deepEqual(labels, ['/srv/instance-one', '/srv/instance-two'].map((root) => `ru.aulalab.competition-instance=${scope(root)}`))
 })
 
 test('startup sweep removes this instance jobs and verified legacy mounts, preserving other instances', async () => {
@@ -52,13 +52,13 @@ test('startup sweep removes this instance jobs and verified legacy mounts, prese
   const root = path.resolve(hostPathOf(config.dataDir)), foreign = `${root}-another`
   const ownScope = scope(root), foreignScope = scope(foreign)
   const inventory = new Map([
-    ['our-run', { labels: { 'colloq.kind': 'competition-run', 'ru.colloq.competition-instance': ownScope }, mounts: [{ Type: 'bind', Source: path.join(root, 'data') }] }],
-    ['their-run', { labels: { 'colloq.kind': 'competition-run', 'ru.colloq.competition-instance': foreignScope }, mounts: [{ Type: 'bind', Source: path.join(foreign, 'data') }] }],
-    ['our-score', { labels: { 'colloq.kind': 'competition-score', 'ru.colloq.competition-instance': ownScope }, mounts: [{ Type: 'bind', Source: path.join(root, 'secret') }] }],
-    ['their-score', { labels: { 'colloq.kind': 'competition-score', 'ru.colloq.competition-instance': foreignScope }, mounts: [{ Type: 'bind', Source: path.join(foreign, 'secret') }] }],
-    ['legacy-ours', { labels: { 'colloq.kind': 'competition-run' }, mounts: [{ Type: 'bind', Source: path.join(root, 'old-result') }] }],
-    ['legacy-foreign', { labels: { 'colloq.kind': 'competition-run' }, mounts: [{ Type: 'bind', Source: path.join(foreign, 'old-result') }] }],
-    ['legacy-mixed', { labels: { 'colloq.kind': 'competition-run' }, mounts: [{ Type: 'bind', Source: path.join(root, 'data') }, { Type: 'bind', Source: path.join(foreign, 'old-result') }] }],
+    ['our-run', { labels: { 'aulalab.kind': 'competition-run', 'ru.aulalab.competition-instance': ownScope }, mounts: [{ Type: 'bind', Source: path.join(root, 'data') }] }],
+    ['their-run', { labels: { 'aulalab.kind': 'competition-run', 'ru.aulalab.competition-instance': foreignScope }, mounts: [{ Type: 'bind', Source: path.join(foreign, 'data') }] }],
+    ['our-score', { labels: { 'aulalab.kind': 'competition-score', 'ru.aulalab.competition-instance': ownScope }, mounts: [{ Type: 'bind', Source: path.join(root, 'secret') }] }],
+    ['their-score', { labels: { 'aulalab.kind': 'competition-score', 'ru.aulalab.competition-instance': foreignScope }, mounts: [{ Type: 'bind', Source: path.join(foreign, 'secret') }] }],
+    ['legacy-ours', { labels: { 'aulalab.kind': 'competition-run' }, mounts: [{ Type: 'bind', Source: path.join(root, 'old-result') }] }],
+    ['legacy-foreign', { labels: { 'aulalab.kind': 'competition-run' }, mounts: [{ Type: 'bind', Source: path.join(foreign, 'old-result') }] }],
+    ['legacy-mixed', { labels: { 'aulalab.kind': 'competition-run' }, mounts: [{ Type: 'bind', Source: path.join(root, 'data') }, { Type: 'bind', Source: path.join(foreign, 'old-result') }] }],
   ] as Array<[string, { labels: Record<string, string>; mounts: Array<{ Type: string; Source: string }> }]>)
   useDockerForCompetitions(async (command) => {
     if (command[0] === 'ps') {

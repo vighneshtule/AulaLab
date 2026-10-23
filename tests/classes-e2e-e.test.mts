@@ -12,9 +12,9 @@
  * container is one fake whose sessions are the pool's workers: each loads
  * its epoch from the epochs folder the agent fills (`--epochs-dir`), every
  * file of it checked against its sha256, and runs each attempt in a folder of
- * its own under /colloq/scratch (`--scratch-dir`), the class folder seen
+ * its own under /aulalab/scratch (`--scratch-dir`), the class folder seen
  * read-only. An epoch's export is the fake's: the notebook kernel's bindings,
- * its files written into its container's /tmp/colloq-epoch/<seq> — a room
+ * its files written into its container's /tmp/aulalab-epoch/<seq> — a room
  * container's on the machine, which the agent copies out with `docker cp`;
  * home's own fake, whose folder the e2e home copies out as `docker cp`
  * would, its files then fetched by the machine from home's store.
@@ -447,7 +447,7 @@ let shared: Agent | null = null
  */
 async function classMachine(): Promise<Agent> {
   if (shared) return shared
-  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'vast', createdBy: 'colloq-host' }).code
+  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'vast', createdBy: 'aulalab-host' }).code
   const agent = new Agent(fleet, `e-${randomBytes(2).toString('hex')}`, { join: home.joinTarget(code), classes: true, timings: FAST, keepCalls: true, cpus: 12 })
   agent.start()
   const runnerId = await until('the machine to join', () => agent.identity()?.runnerId, 30_000, () => agent.log())
@@ -566,7 +566,7 @@ test('E25 · open → epoch → 12 attempts on 4 workers at once; ✓/✗; show;
   // epoch's stream it unpickled; the epoch's files once and 512 MB beside them (§9.5); no card.
   const mounts = Object.fromEntries(box.mounts.map((mount) => [mount.target, mount.readOnly]))
   assert.deepEqual(mounts, {
-    [`/workspace/${id}`]: true, '/colloq/epochs': true, '/colloq/scratch': false, '/colloq/gate': true, '/etc/ipython/ipython_kernel_config.py': true,
+    [`/workspace/${id}`]: true, '/aulalab/epochs': true, '/aulalab/scratch': false, '/aulalab/gate': true, '/etc/ipython/ipython_kernel_config.py': true,
   })
   const epoch = newestEpoch(id)
   const buffersMb = Math.ceil(epoch.bytes / (1024 * 1024))
@@ -594,8 +594,8 @@ test('E25 · open → epoch → 12 attempts on 4 workers at once; ✓/✗; show;
   const relayed = home.requestsOf(machine.runnerId).filter((one) => files.some((sha) => one.path.includes(sha)))
   assert.deepEqual(relayed, [], 'no file of the epoch went over the relay, either way')
   for (const sha of files) assert.ok(fs.existsSync(path.join(councilFolder(machine, id), 'epochs', sha)), `${sha.slice(0, 12)} in the class's epochs folder`)
-  assert.ok(machine.dockerCalls().some((one) => one.args[0] === 'cp' && one.args[1] === `${roomBox.id}:/tmp/colloq-epoch/1`), 'docker cp of the export')
-  await until('the export\'s folder gone from the room container', () => !fs.existsSync(path.join(machine.dockerState, 'containers', `${encodeURIComponent(roomBox.name)}.fs`, 'tmp', 'colloq-epoch', '1')), 10_000, () => machine.log())
+  assert.ok(machine.dockerCalls().some((one) => one.args[0] === 'cp' && one.args[1] === `${roomBox.id}:/tmp/aulalab-epoch/1`), 'docker cp of the export')
+  await until('the export\'s folder gone from the room container', () => !fs.existsSync(path.join(machine.dockerState, 'containers', `${encodeURIComponent(roomBox.name)}.fs`, 'tmp', 'aulalab-epoch', '1')), 10_000, () => machine.log())
 
   // Twelve students press at once: four attempts compute side by side, one on each worker; eight wait in the pool's queue, and
   // the notebook's own queue never holds one.
@@ -715,7 +715,7 @@ test('E26 · a teacher cell after the epoch: the next attempt waits for the refr
     const second = lead.notebook.add('x = 2')
     lead.control.send({ t: 'run', cellId: second })
     assert.equal((await lead.notebook.settled(second)).state, 'ok')
-    here.holdSilent = [{ match: '"/tmp/colloq-epoch/2"', name: 'e26b' }]
+    here.holdSilent = [{ match: '"/tmp/aulalab-epoch/2"', name: 'e26b' }]
     const b = await student(id, 'Студент B')
     attempt(b, council, 'print(x)')
     await until('the refreeze held in the notebook\'s kernel', () => here.holding('e26b') === 1)
@@ -733,7 +733,7 @@ test('E26 · a teacher cell after the epoch: the next attempt waits for the refr
     const third = lead.notebook.add('x = 3')
     lead.control.send({ t: 'run', cellId: third })
     assert.equal((await lead.notebook.settled(third)).state, 'ok')
-    here.holdSilent = [{ match: '"/tmp/colloq-epoch/3"', name: 'e26c' }]
+    here.holdSilent = [{ match: '"/tmp/aulalab-epoch/3"', name: 'e26c' }]
     const c = await student(id, 'Студентка C')
     attempt(c, council, 'print(x)')
     await until('the slow refreeze held in the notebook\'s kernel', () => here.holding('e26c') === 1)
@@ -812,7 +812,7 @@ test('E27 · an attempt reading a left name is refused by the worker\'s entry an
     await until('the later cell queued', () => lead.notebook.state(later) === 'queued')
     await door.knobs({ holdSilent: [] })
     assert.equal(await door.release('e27in'), 1)
-    // The entry refused it (`_colloq_needs`): it goes to the notebook's kernel, its card saying why, never having ended.
+    // The entry refused it (`_aulalab_needs`): it goes to the notebook's kernel, its card saying why, never having ended.
     const words = tr('server.runInTheSharedKernelItUses.eaf141', { name: 'conn' })
     const handed = await until('it handed to the notebook\'s kernel', () => runsOf(reader, council).find((run) => run.placed === 'shared'))
     assert.deepEqual([handed.state, handed.note], ['queued', words])
@@ -924,7 +924,7 @@ test('E30 · an attempt writes out.csv into its scratch folder: listed on the ca
   openCouncil(lead, council)
   await poolReady(lead, council, 1)
 
-  // The attempt reads the class's file where it works and writes its own beside it: into its own folder, /colloq/scratch/<run>.
+  // The attempt reads the class's file where it works and writes its own beside it: into its own folder, /aulalab/scratch/<run>.
   const writer = await student(id, 'Студентка с файлом')
   attempt(writer, council, 'READ data.csv\nWRITE out.csv id,pred\\n1,0.7\\n\nFILL big.bin 1100000\nprint("записано")')
   const run = await ended(writer, council)

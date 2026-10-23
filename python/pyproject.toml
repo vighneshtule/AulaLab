@@ -1,13 +1,13 @@
-# The Colloq wheel: `pip install colloq`, and the machine has the `colloq`
+# The Aula Lab wheel: `pip install aulalab`, and the machine has the `aulalab`
 # command.
 #
-# Inside the wheel lies the built application (colloq/_app): the server, the
+# Inside the wheel lies the built application (aulalab/_app): the server, the
 # frontend, the CLI and the kernel Dockerfile. scripts/pack.mts puts it there,
-# and it also writes colloq/_version.py. Python here is packaging and nothing
+# and it also writes aulalab/_version.py. Python here is packaging and nothing
 # more: all the class logic lives in the CLI, the shim only finds Node and
 # hands control over to it.
 #
-#   make pack    build the application into colloq/_app
+#   make pack    build the application into aulalab/_app
 #   make wheel   build the wheel (pack runs by itself)
 #
 # The backend is hatchling: of the common ones, it is the only one that puts
@@ -19,12 +19,11 @@ requires = ["hatchling>=1.21"]
 build-backend = "hatchling.build"
 
 [project]
-name = "colloq"
+name = "aulalab"
 dynamic = ["version"]
-description = "Colloq — a shared workspace for teaching: one link, one live notebook, one assistant"
+description = "Aula Lab — a shared workspace for teaching: one link, one live notebook, one assistant"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Aleksandr Kalashnikov" }]
 keywords = ["jupyter", "notebook", "teaching", "seminar", "collaborative", "classroom", "education"]
 # 3.9 is not a whim: it is the stock python3 in macOS 12–13 and in Debian 11.
 # The shim asks for nothing beyond it, and requiring more would mean sending
@@ -54,31 +53,31 @@ classifiers = [
 ]
 
 [project.scripts]
-colloq = "colloq.__main__:main"
+aulalab = "aulalab.__main__:main"
 
 # PyPI shows these in the project sidebar, and they are the only way from the
 # package page to the source, the tracker and the changelog: the wheel's README
 # (python/README.md) says nothing about the repository.
 [project.urls]
-Homepage = "https://colloq.ru"
-Documentation = "https://colloq.ru/docs/en/"
-Source = "https://github.com/colloq-edu/colloq"
-Issues = "https://github.com/colloq-edu/colloq/issues"
-Changelog = "https://github.com/colloq-edu/colloq/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/vighneshtule/AulaLab"
+Documentation = "https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/"
+Source = "https://github.com/vighneshtule/AulaLab"
+Issues = "https://github.com/vighneshtule/AulaLab/issues"
+Changelog = "https://github.com/vighneshtule/AulaLab/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
-path = "colloq/_version.py"
+path = "aulalab/_version.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["colloq"]
+packages = ["aulalab"]
 # _app is built, not written, and so it is in .gitignore. By default Hatchling
 # drops from the wheel everything git ignores, and the wheel would come out
 # empty, with the shim alone and no application. `artifacts` is exactly the
 # list of exceptions to that rule.
-artifacts = ["colloq/_app/**"]
+artifacts = ["aulalab/_app/**"]
 
 [tool.hatch.build.targets.sdist]
 # The package source is the shim; the application is not put into it. There
 # is nothing to build a wheel from an sdist with anyway: that takes the whole
 # repository with npm and esbuild.
-include = ["colloq/*.py", "pyproject.toml", "README.md"]
+include = ["aulalab/*.py", "pyproject.toml", "README.md"]

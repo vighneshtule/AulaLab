@@ -273,7 +273,7 @@ export const COUNCIL_ARTIFACTS = { files: 20, fileBytes: 1024 * 1024, totalBytes
 /** Home's own store of epochs, least recently used first out. */
 export const COUNCIL_EPOCH_STORE_MB = 4096
 /** Where a notebook's kernel writes an export inside its own container: `<dir>/<seq>/`, which personal kernels and attempts cannot reach (§9.2). */
-export const COUNCIL_EPOCH_DIR = '/tmp/colloq-epoch'
+export const COUNCIL_EPOCH_DIR = '/tmp/aulalab-epoch'
 /** Files of one epoch besides its manifest: the stream and the out-of-band buffers. An export with more keeps its smaller buffers in band. */
 export const COUNCIL_EPOCH_BUFFERS_MAX = 4096
 /** An epoch's manifest: modules, left names, buffer shas in order, process-state keys. */
@@ -296,9 +296,9 @@ export const COUNCIL_EPOCH_MANIFEST_BYTES = 4 * 1024 * 1024
  * COUNCIL_GATE_CONFIG_MOUNT, a path the image lacks. No other folder of the
  * agent's is ever mounted, and no card or docker socket.
  */
-export const COUNCIL_EPOCHS_MOUNT = '/colloq/epochs'
-export const COUNCIL_SCRATCH_MOUNT = '/colloq/scratch'
-export const COUNCIL_GATE_MOUNT = '/colloq/gate'
+export const COUNCIL_EPOCHS_MOUNT = '/aulalab/epochs'
+export const COUNCIL_SCRATCH_MOUNT = '/aulalab/scratch'
+export const COUNCIL_GATE_MOUNT = '/aulalab/gate'
 export const COUNCIL_GATE_CONFIG_MOUNT = '/etc/ipython/ipython_kernel_config.py'
 
 /**
@@ -311,12 +311,12 @@ export const COUNCIL_GATE_CONFIG_MOUNT = '/etc/ipython/ipython_kernel_config.py'
  */
 export const COUNCIL_SCRATCH_ENTRIES = 2000
 
-/** Where a worker finds one file of an epoch: `/colloq/epochs/<sha256>`. */
+/** Where a worker finds one file of an epoch: `/aulalab/epochs/<sha256>`. */
 export function councilEpochPath(sha256: string): string {
   return `${COUNCIL_EPOCHS_MOUNT}/${part(sha256, REMOTE_SHA256)}`
 }
 
-/** An attempt's working folder inside the council container: `/colloq/scratch/<runId>`. */
+/** An attempt's working folder inside the council container: `/aulalab/scratch/<runId>`. */
 export function councilScratchPath(runId: string): string {
   return `${COUNCIL_SCRATCH_MOUNT}/${part(runId, REMOTE_RUN_ID)}`
 }
@@ -393,7 +393,7 @@ export const REMOTE_SHM = /^(?=[^1-9]*[1-9])\d{1,12}(?:\.\d{1,6})? ?[kKmMgGtTpP]
  * no place for a `../`. The tunnel's own is remote-tunnel.ts's.
  */
 export const remoteClassPaths = {
-  /** PUT a kernel's file home (gzip, X-Colloq-Sha256, X-Colloq-Bytes), at most machineFileMb, or the room limit for «Привезти». */
+  /** PUT a kernel's file home (gzip, X-AulaLab-Sha256, X-AulaLab-Bytes), at most machineFileMb, or the room limit for «Привезти». */
   roomFile: (sessionId: string, path: string, gen: number): string =>
     `rooms/${part(sessionId, REMOTE_SESSION_ID)}/files?path=${encodeURIComponent(filePart(path))}&gen=${genPart(gen)}`,
   /** PUT one epoch file home, raw: accepted only for an epoch home asked that placement for. */
@@ -434,7 +434,7 @@ export interface RemotePlacementIntent {
   key: string
   gen: number
   environment: string
-  /** The pinned image, as a lease pins it: the container runs `colloq-revision:<id>`, tagged after its layers matched. */
+  /** The pinned image, as a lease pins it: the container runs `aulalab-revision:<id>`, tagged after its layers matched. */
   revision: { id: string; ref: string; layers: string }
   memoryMb: number
   cpus: number
@@ -644,7 +644,7 @@ export interface RemoteEpochIntent {
    * The files home lacks, of an export read here (`from` a container): each
    * sent home once the machine holds it, by `PUT epochs/<sha256>?session=&gen=`
    * (remoteClassPaths.epoch), the gen of the placement whose container `from`
-   * names, raw, with X-Colloq-Sha256 and X-Colloq-Bytes, at the class rate.
+   * names, raw, with X-AulaLab-Sha256 and X-AulaLab-Bytes, at the class rate.
    * The pool on another machine then fetches them from home (§9.2: «Main
    * kernel on another machine»). Level-triggered: the latest reply naming the
    * epoch says what is still to send, and a reply that no longer names it
@@ -701,7 +701,7 @@ export interface RemoteClassFacts {
   /** Only `failing` (the perimeter failed closed, §7.6) moves classes away; any other word but `ok` keeps the machine from new ones. */
   perimeter: RemotePerimeterState
   /**
-   * The machine's own floor (its COLLOQ_ROOM_NETWORK): every class there runs
+   * The machine's own floor (its AULALAB_ROOM_NETWORK): every class there runs
    * at least this strict. Home's mode rides each intent and the stricter of
    * the two is what runs, so home never needs this to reach its own floor
    * for a machine to be eligible. `open` is never said (D21).
@@ -709,7 +709,7 @@ export interface RemoteClassFacts {
   mode: 'blocked' | 'none' | 'open'
   /** The admission canary: `ok`, or what failed, in the agent's words. */
   canary: string
-  /** A Colloq home's containers are on the same daemon (D20); true while the agent does not know yet. */
+  /** A Aula Lab home's containers are on the same daemon (D20); true while the agent does not know yet. */
   sameDaemon: boolean
 }
 
@@ -763,7 +763,7 @@ export interface RemoteKernelsReply {
    * Files home wants sent (PUT rooms/…/files), by the hash the report named:
    * the agent sends that version or none. Without a hash, «Привезти» of a
    * file that stays on the machine (§8.5): the file as it is now, its PUT
-   * saying what it is (X-Colloq-Sha256).
+   * saying what it is (X-AulaLab-Sha256).
    */
   pulls: { sessionId: string; gen: number; paths: { path: string; sha256?: string }[] }[]
   /**
@@ -797,7 +797,7 @@ export interface RemoteKernelsReply {
    * folder — a regular file of the named length and hash, read through no
    * link — by `PUT council/<id>/runs/<runId>/files/<name>?gen=`
    * (remoteClassPaths.artifact, the gen of the class's council placement
-   * here), gzipped, with X-Colloq-Sha256 and X-Colloq-Bytes, at the class
+   * here), gzipped, with X-AulaLab-Sha256 and X-AulaLab-Bytes, at the class
    * rate; then removes the folder and says the attempt `collected`. Home
    * names an attempt until it hears that. While home does not answer the PUTs
    * (restarting, the relay cut), the folder stays and the files not yet sent

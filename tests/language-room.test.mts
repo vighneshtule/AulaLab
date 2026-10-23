@@ -115,11 +115,11 @@ test('external file drag detection keeps the native Files token in both language
  const declaration = ast.instance!.content.body.find((node: any) => node.type === 'FunctionDeclaration' && node.id?.name === 'carriedKind')!
  const body = source.slice(declaration.start!, declaration.end!)
  const compiled = ts.transpileModule(body, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
- const carriedKind = runInNewContext(`const PATH_TYPE = 'application/x-colloq-path'; ${compiled}; carriedKind`, { tr }) as (event: { dataTransfer: { types: string[] } | null }) => string | null
+ const carriedKind = runInNewContext(`const PATH_TYPE = 'application/x-aulalab-path'; ${compiled}; carriedKind`, { tr }) as (event: { dataTransfer: { types: string[] } | null }) => string | null
  for (const language of ['ru', 'en'] as const) {
   setLocaleResolver(() => language)
   assert.equal(carriedKind({ dataTransfer: { types: ['Files'] } }), 'files')
-  assert.equal(carriedKind({ dataTransfer: { types: ['application/x-colloq-path', 'Files'] } }), 'row')
+  assert.equal(carriedKind({ dataTransfer: { types: ['application/x-aulalab-path', 'Files'] } }), 'row')
   assert.equal(carriedKind({ dataTransfer: { types: ['text/plain'] } }), null)
   assert.equal(carriedKind({ dataTransfer: null }), null)
  }

@@ -1,5 +1,5 @@
 /**
- * Which cloudflared colloq downloads on its own: the version and checksums.
+ * Which cloudflared aulalab downloads on its own: the version and checksums.
  *
  * Only one file from the internet that then runs on the teacher's computer is
  * acceptable: exactly the one whose bytes somebody has already checked. So
@@ -15,7 +15,7 @@
  * file (checked before unpacking), binarySha256 is of what will become the
  * executable; for Linux they coincide. The second one is needed also because
  * our own copy in <home>/bin is checked on every start: this way both a
- * swapped file and a copy from an earlier colloq version are recognized the
+ * swapped file and a copy from an earlier aulalab version are recognized the
  * same way, and downloaded again.
  *
  * The sums were obtained on 18 Sep 2026: the four files were downloaded with
@@ -36,7 +36,7 @@
  *   4. check against GitHub: gh api repos/cloudflare/cloudflared/releases/tags/$v
  *      --jq '.assets[] | [.name, .digest] | @tsv';
  *   5. update CLOUDFLARED_VERSION and the table, run
- *      tests/cli-cloudflared.test.mts and `colloq start --share` on a live machine.
+ *      tests/cli-cloudflared.test.mts and `aulalab start --share` on a live machine.
  *
  * The file name starts with launch: the test rig tests/local-launch-process.test.mts
  * copies into itself exactly cli/src/launch*.ts, and a module with another

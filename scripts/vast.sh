@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Vast VM rental and release deployment. Example:
-# RELEASE=/path/release.json NAME=hse HOST=hse.colloq.ru scripts/vast.sh up
+# RELEASE=/path/release.json NAME=hse HOST=hse.example.edu scripts/vast.sh up
 #
 # Only VM-capable on-demand offers are selected. An explicit release manifest
 # determines immutable application images and the exact committed deployment
@@ -51,14 +51,14 @@ done
 # The label on the instance. By it — and only by it — the script later finds
 # the rented machine: a variable in memory survives neither a closed terminal
 # nor a second laptop, while the label lives on vast's side. The deployment
-# name is appended to it: "colloq-hse" and "colloq-demo" are two different
-# machines, and they cannot be mixed up even by accident. A bare "colloq" is
+# name is appended to it: "aulalab-hse" and "aulalab-demo" are two different
+# machines, and they cannot be mixed up even by accident. A bare "aulalab" is
 # the unnamed deployment, that very first machine.
-LABEL_BASE="$(read_env VAST_LABEL)";    LABEL_BASE="${LABEL_BASE:-colloq}"
+LABEL_BASE="$(read_env VAST_LABEL)";    LABEL_BASE="${LABEL_BASE:-aulalab}"
 
 # The label of the machines for submissions (scripts/vast-runner.sh ·
-# BASE_LABEL: make vast-runner rents them as colloq-runner and
-# colloq-runner-<NAME>). Such a machine is no deployment: no class, no
+# BASE_LABEL: make vast-runner rents them as aulalab-runner and
+# aulalab-runner-<NAME>). Such a machine is no deployment: no class, no
 # database, no backup, nothing here to deploy or to sync, and make
 # runners-update and runners-down own it, the leave of its home before the
 # destroy included. Read as one, a single such machine was "the one
@@ -66,11 +66,11 @@ LABEL_BASE="$(read_env VAST_LABEL)";    LABEL_BASE="${LABEL_BASE:-colloq}"
 # without the leave, and vast-up deployed a class over it with this
 # checkout's .env, relay token and all (review, 14 Oct 2026). So none is
 # listed here, and no deployment may take that label.
-RUNNER_LABEL=colloq-runner
+RUNNER_LABEL=aulalab-runner
 
 # The deployment name. It is given in three ways, and all three are the same
 # word: NAME=demo, the second argument (scripts/vast.sh sync demo) or the first
-# part of the address (HOST=demo.colloq.ru). Requiring NAME where HOST is
+# part of the address (HOST=demo.example.edu). Requiring NAME where HOST is
 # already given would be a redundant word: the address and the deployment are
 # one name, and that is checked below.
 ENV_NAME="${NAME:-$POSITION_NAME}"
@@ -122,7 +122,7 @@ use_env
 # hints here used to be a bare "make vast-sync NAME=hse", and without RELEASE
 # such a line led a k3s machine into the old path: legacy-sync calls `make
 # backup-legacy` there, but under a release the machine has neither a Makefile
-# nor data/colloq.db, and no backup is taken at all; legacy-up rolls the
+# nor data/aulalab.db, and no backup is taken at all; legacy-up rolls the
 # working tree and a systemd service out onto a machine that runs a release.
 # Hence: RELEASE is known — make with it, the same way we came here; it is not
 # known — the script itself, past the switch. `up` does not work without a
@@ -190,7 +190,7 @@ RELAY_TOKEN="$(read_env RELAY_TOKEN)"
 # PORT=4000.
 PORT=30080 # k3s application NodePort, bound to loopback only
 
-REMOTE_DIR=/opt/colloq
+REMOTE_DIR=/opt/aulalab
 # The same frp that relay-setup.sh installs on the relay: frps there, frpc here.
 FRP_VERSION="${FRP_VERSION:-0.71.0}"
 
@@ -218,7 +218,7 @@ auth() {
   # visible to the whole machine through `ps`, and this key spends money. mktemp
   # creates the file with mode 0600 right away, so there is not a moment when it
   # is readable by everyone and already full.
-  CURLRC="$(mktemp -t colloq-vast.XXXXXX)"
+  CURLRC="$(mktemp -t aulalab-vast.XXXXXX)"
   printf 'header = "Authorization: Bearer %s"\n' "$token" > "$CURLRC"
   unset token
 }
@@ -226,7 +226,7 @@ auth() {
 # api METHOD PATH [BODY] — prints the response body, fails on any refusal.
 api() {
   local method="$1" path="$2" body="${3:-}" out code text err
-  out="$(mktemp -t colloq-vast-out.XXXXXX)"
+  out="$(mktemp -t aulalab-vast-out.XXXXXX)"
   if [ -n "$body" ]; then
     code="$(curl -s -o "$out" -w '%{http_code}' --max-time 90 -K "$CURLRC" \
       -X "$method" -H 'content-type: application/json' -d "$body" "$API/$path" || true)"
@@ -332,7 +332,7 @@ for i in (json.load(sys.stdin).get("instances") or []):
     if label == runners or label.startswith(runners + "-"):
         continue
     # Other instances of this account are none of our business, and ours differ by
-    # the tail of the label: "colloq" is the unnamed deployment, "colloq-hse" the
+    # the tail of the label: "aulalab" is the unnamed deployment, "aulalab-hse" the
     # deployment hse.
     if label == base:
         name = ""
@@ -409,7 +409,7 @@ clear_instance() {
 }
 
 # What the deployment is called out loud. The unnamed one is that very first
-# machine with the label "colloq": it has no name, and pretending it has one is
+# machine with the label "aulalab": it has no name, and pretending it has one is
 # not allowed.
 env_title() { printf '%s' "${1:-unnamed}"; }
 
@@ -448,7 +448,7 @@ print_envs() {
       printf '               %sunnamed — to name it: make vast-adopt NAME=<name>%s\n' "$DIM" "$OFF"
     fi
     dir="backups${name:+/$name}"
-    db="$(ls -1t "$dir"/colloq-*.db "$dir"/colloq-*-live.tar.gz "$dir"/colloq-*-consistent.tar.gz 2>/dev/null | head -1 || true)"
+    db="$(ls -1t "$dir"/aulalab-*.db "$dir"/aulalab-*-live.tar.gz "$dir"/aulalab-*-consistent.tar.gz 2>/dev/null | head -1 || true)"
     if [ -n "$db" ]; then
       printf '               %sbackup here: %s%s\n' "$DIM" "$(backup_age "$db")" "$OFF"
     else
@@ -538,7 +538,7 @@ except Exception:
 # and `down` show its date: "destroy" without this line is a blind decision. We
 # look only in our own subdirectory: a neighbour's backup is worse than none
 # here — it would be restored as if it were ours.
-last_backup() { ls -1t "$BACKUP_DIR"/colloq-*.db "$BACKUP_DIR"/colloq-*-live.tar.gz "$BACKUP_DIR"/colloq-*-consistent.tar.gz 2>/dev/null | head -1 || true; }
+last_backup() { ls -1t "$BACKUP_DIR"/aulalab-*.db "$BACKUP_DIR"/aulalab-*-live.tar.gz "$BACKUP_DIR"/aulalab-*-consistent.tar.gz 2>/dev/null | head -1 || true; }
 
 backup_age() {
   local f="$1" when
@@ -552,7 +552,7 @@ backup_age() {
 # not exposed at all: that is the old behaviour of `vast.sh up`, and it must not
 # break.
 WANT_HOST="${HOST:-}"
-# A name without a dot is a subdomain of our zone: "demo" means demo.colloq.ru.
+# A name without a dot is a subdomain of our zone: "demo" means demo.example.edu.
 # With a dot it is a full name, exactly as host.sh understands it: it picks the
 # transport by whether the name ends in RELAY_DOMAIN, not by a separate flag.
 case "$WANT_HOST" in
@@ -566,19 +566,19 @@ esac
 # there. Anything other than letters, digits, dots and hyphens would no longer
 # be a name there but a second command.
 case "$WANT_HOST" in
-  *[!A-Za-z0-9.-]*) die "the name \"${WANT_HOST}\" has stray characters. Expected a name like demo.colloq.ru." ;;
+  *[!A-Za-z0-9.-]*) die "the name \"${WANT_HOST}\" has stray characters. Expected a name like demo.example.edu." ;;
 esac
 # The deployment and the address are one name, and they must not diverge. The
 # deployment name is used to find the label on vast, the backup directory and
 # the address that is later checked from outside; a deployment "hse" living at
-# demo.colloq.ru is exactly the confusion deployments were separated to avoid.
+# demo.example.edu is exactly the confusion deployments were separated to avoid.
 # The refusal here is cheap: it comes before renting and before a single byte
 # of data.
 if [ -n "$WANT_HOST" ] && [ -n "$ENV_NAME" ] && [ "${WANT_HOST%%.*}" != "$ENV_NAME" ]; then
   die "the deployment \"${ENV_NAME}\" and the address \"${WANT_HOST}\" are different names.
   The deployment name and the first part of the address are one word. Either this:
       $(again up "NAME=${WANT_HOST%%.*}" "HOST=${WANT_HOST}")
-  or an address under the deployment name: HOST=${ENV_NAME}.${RELAY_DOMAIN:-colloq.ru}"
+  or an address under the deployment name: HOST=${ENV_NAME}.${RELAY_DOMAIN:-example.edu}"
 fi
 
 # Six steps, seven with an address. Counted in advance: "6/7" with no seventh
@@ -586,7 +586,7 @@ fi
 STEPS=6
 if [ -n "$WANT_HOST" ]; then STEPS=7; fi
 
-TMUX_SESSION=colloq-host
+TMUX_SESSION=aulalab-host
 HOST_IP=""
 
 # The address is asked of public resolvers, not the system one. This was
@@ -631,7 +631,7 @@ check_host_ready() {
     die "\"${WANT_HOST}\" is not under the relay's zone${RELAY_DOMAIN:+ (\"${RELAY_DOMAIN}\")}.
   The rented machine reaches the outside only through it: cloudflared is not
   installed there, and Cloudflare's addresses do not open from Russia anyway.
-  Take a name like <something>.${RELAY_DOMAIN:-colloq.ru} — or bring up the
+  Take a name like <something>.${RELAY_DOMAIN:-example.edu} — or bring up the
   relay: make relay-setup."
   fi
   [ -n "$RELAY_ADDR" ]  || die "no RELAY_ADDR in .env — the address of the relay.
@@ -684,10 +684,10 @@ remote_host_name() {
   esac
 }
 
-# An unnamed machine for a named deployment. The label "colloq" is left over
+# An unnamed machine for a named deployment. The label "aulalab" is left over
 # from the days of a single rental, and a production deployment runs on such a
 # machine right now: it must not be orphaned, and `make vast-up
-# HOST=demo.colloq.ru` has to lead to it rather than rent a second one next to
+# HOST=demo.example.edu` has to lead to it rather than rent a second one next to
 # it.
 #
 # But it can be taken as ours only by proving that it is ours, and there is one
@@ -765,7 +765,7 @@ cmd_adopt() {
   say "${DIM}Backups of this deployment now go to backups/${ENV_NAME}/. Those already${OFF}"
   say "${DIM}lying loose in backups/ count as backups of the unnamed deployment and will${OFF}"
   say "${DIM}not go to this machine any more. If they are its own, move them by hand:${OFF}"
-  say "${DIM}    mkdir -p backups/${ENV_NAME} && mv backups/colloq-<date>* backups/${ENV_NAME}/${OFF}"
+  say "${DIM}    mkdir -p backups/${ENV_NAME} && mv backups/aulalab-<date>* backups/${ENV_NAME}/${OFF}"
 }
 
 # ------------------------------------------------------------------- up
@@ -779,7 +779,7 @@ cmd_up() {
     [ "${VAST_REGISTRY_READ_ONLY:-$(read_env VAST_REGISTRY_READ_ONLY)}" = 1 ] \
       || die 'VAST_REGISTRY_READ_ONLY=1 must explicitly confirm a dedicated read-only pull credential; never use a general GitHub/Vast credential.'
     [ -f "$registry_file" ] || die 'registry config file is missing'
-    registry_snapshot="$(mktemp -t colloq-registry.XXXXXX)"; TMPS+=("$registry_snapshot")
+    registry_snapshot="$(mktemp -t aulalab-registry.XXXXXX)"; TMPS+=("$registry_snapshot")
     # Snapshot only auths; credential helpers and unrelated Docker config cannot
     # run on the rental. Diagnostics must never contain credential values.
     python3 - "$registry_file" "$registry_snapshot" <<'REGISTRY'
@@ -830,7 +830,7 @@ COVERAGE
   commit="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sourceCommit"])' "$RELEASE")"
   [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || die "sourceCommit must be a full commit SHA."
   git cat-file -e "$commit^{commit}" || die "the release commit is not here; fetch it from a trusted repository first."
-  artifact="$(mktemp -t colloq-release.XXXXXX)"; TMPS+=("$artifact")
+  artifact="$(mktemp -t aulalab-release.XXXXXX)"; TMPS+=("$artifact")
   git archive --format=tar "$commit" scripts/cluster.sh scripts/release.py scripts/state-lock.py scripts/host.sh scripts/lib.sh scripts/backup.sh scripts/runtime-backup.py scripts/restore.sh > "$artifact" \
     || die "the release commit does not contain the full set of deployment tools."
   need_tools
@@ -1032,7 +1032,7 @@ print(json.dumps({
     "disk": float(os.environ["DISK"]),
     # This very line is what tells a VM from an ordinary instance.
     "vm": True,
-    # For VMs vast supports only ssh, and nothing more is needed: Colloq reaches the
+    # For VMs vast supports only ssh, and nothing more is needed: Aula Lab reaches the
     # outside with an outgoing connection through the relay, so we ask for no
     # incoming port other than ssh.
     "runtype": "ssh",
@@ -1075,7 +1075,7 @@ print(json.load(sys.stdin).get("new_contract") or "")')"
   # Refuse unsupported in-place migration before overwriting any legacy tools/data.
   rssh "REMOTE_DIR='$REMOTE_DIR' FRP_VERSION='$FRP_VERSION' bash -s" <<'REMOTE'
 set -euo pipefail
-if [ -s "$REMOTE_DIR/data/colloq.db" ] || systemctl is-active --quiet colloq 2>/dev/null; then
+if [ -s "$REMOTE_DIR/data/aulalab.db" ] || systemctl is-active --quiet aulalab 2>/dev/null; then
   echo 'Legacy service/compose data detected. Export and migrate it explicitly; automatic overlay is refused.' >&2
   exit 1
 fi
@@ -1101,11 +1101,11 @@ REMOTE
   # RUNTIME_KERNEL_MEMORY[_MAX] — a room's default memory and ceiling for the
   # broker: cluster.sh puts them into the broker's Deployment from the same file.
   local tmpenv
-  tmpenv="$(mktemp -t colloq-vast-env.XXXXXX)"; TMPS+=("$tmpenv")
+  tmpenv="$(mktemp -t aulalab-vast-env.XXXXXX)"; TMPS+=("$tmpenv")
   grep -E '^(UI_LANGUAGE|RELAY_(ADDR|PORT|TOKEN|DOMAIN)|INSTITUTION|SESSION_SECRET|ORACLE_[A-Z_]+|OPENAI_[A-Z_]+|ANTHROPIC_[A-Z_]+|RUNTIME_KERNEL_MEMORY(_MAX)?)=' .env > "$tmpenv" || true
   local public_url="http://127.0.0.1:30080"
   [ -z "$WANT_HOST" ] || public_url="https://$WANT_HOST"
-  printf 'PORT=30080\nCOLLOQ_CLUSTER=1\nPUBLIC_URL=%s\n' "$public_url" >> "$tmpenv"
+  printf 'PORT=30080\nAULALAB_CLUSTER=1\nPUBLIC_URL=%s\n' "$public_url" >> "$tmpenv"
   rsync -a -e "$(ssh_cmd)" "$tmpenv" "root@$INST_SSH_HOST:$REMOTE_DIR/.env.incoming"
   local db want_backup=""
   db="$(last_backup)"
@@ -1131,13 +1131,13 @@ if [ "$REGISTRY_CONFIG" = 1 ]; then
   chmod 600 "$REMOTE_DIR/registry-pull.json"
   registry_args=(--registry-config "$REMOTE_DIR/registry-pull.json")
 fi
-if [ -f /var/lib/colloq/releases/current.json ] && [ -s /var/lib/colloq/data/colloq.db ]; then
+if [ -f /var/lib/aulalab/releases/current.json ] && [ -s /var/lib/aulalab/data/aulalab.db ]; then
   bash scripts/cluster.sh update --release "$REMOTE_DIR/release.json" "${registry_args[@]}"
 else
   python3 - <<'EMPTY'
 from pathlib import Path
 for name in ('data', 'workspace'):
-    p = Path('/var/lib/colloq') / name
+    p = Path('/var/lib/aulalab') / name
     if p.is_symlink() or (p.exists() and any(p.iterdir())):
         raise SystemExit('Unmanaged nonempty application data: explicit recovery is required')
 EMPTY
@@ -1168,7 +1168,7 @@ REMOTE
       say "${DIM}    $WANT_HOST already answers — leaving the tunnel and the session alone${OFF}"
       hosted=1
     # A failure of this step does not undo the previous ones: the machine is
-    # rented, Colloq runs on it. So a branch, not die — otherwise a person who has
+    # rented, Aula Lab runs on it. So a branch, not die — otherwise a person who has
     # already paid for the machine would not even see the ssh line to get into it.
     elif rssh "REMOTE_DIR='$REMOTE_DIR' WANT_HOST='$WANT_HOST' TMUX_SESSION='$TMUX_SESSION' PORT='$PORT' bash -s" <<'REMOTE'
 set -euo pipefail
@@ -1217,7 +1217,7 @@ for _ in $(seq 1 40); do
   sleep 3
 done
 [ -n "$ok" ] || {
-  echo "colloq on this machine does not answer on localhost:$PORT — nothing to open a tunnel to" >&2
+  echo "aulalab on this machine does not answer on localhost:$PORT — nothing to open a tunnel to" >&2
   exit 1
 }
 
@@ -1231,7 +1231,7 @@ done
 # wrote into the void, and neither the window nor host.log kept a trace of
 # whether the address had been taken off.
 tmux new-session -d -s "$TMUX_SESSION" \
-  "cd '$REMOTE_DIR' && COLLOQ_CLUSTER=1 COLLOQ_HOSTNAME='$WANT_HOST' bash scripts/host.sh 2>&1 | tee -i -a host.log"
+  "cd '$REMOTE_DIR' && AULALAB_CLUSTER=1 AULALAB_HOSTNAME='$WANT_HOST' bash scripts/host.sh 2>&1 | tee -i -a host.log"
 sleep 2
 tmux has-session -t "$TMUX_SESSION" 2>/dev/null || {
   echo "tmux session $TMUX_SESSION did not start" >&2
@@ -1270,12 +1270,12 @@ REMOTE
       say "${DIM}      same, on disk     ssh … 'tail -40 $REMOTE_DIR/host.log'${OFF}"
       say "${DIM}      RELAY_* there     ssh … 'grep RELAY_ $REMOTE_DIR/.env'${OFF}"
       say "${DIM}      name resolves?    dig +short $WANT_HOST @1.1.1.1${OFF}"
-      say "${DIM}    Colloq itself is running — it is the outside address that does not answer.${OFF}"
+      say "${DIM}    Aula Lab itself is running — it is the outside address that does not answer.${OFF}"
     fi
   fi
 
   printf '\n'
-  say "${BOLD}Colloq is up on the rented machine${ENV_NAME:+ — deployment \"${ENV_NAME}\"}${OFF}"
+  say "${BOLD}Aula Lab is up on the rented machine${ENV_NAME:+ — deployment \"${ENV_NAME}\"}${OFF}"
   say "  ${CYAN}ssh -i $SSH_KEY -p $INST_SSH_PORT root@$INST_SSH_HOST${OFF}"
   printf '\n'
   if [ -n "$hosted" ]; then
@@ -1299,9 +1299,9 @@ REMOTE
     say "${BOLD}Go outside from there, not from here${OFF} ${DIM}(the seminar is computed where the kernel runs)${OFF}"
     if [ -n "$RELAY_DOMAIN" ]; then
       say "  ${CYAN}$(again up "HOST=<name>.$RELAY_DOMAIN")${OFF} ${DIM}— from here, with one command${OFF}"
-      say "  ${DIM}or by hand on the machine: cd $REMOTE_DIR && COLLOQ_CLUSTER=1 COLLOQ_HOSTNAME=<name>.$RELAY_DOMAIN bash scripts/host.sh${OFF}"
+      say "  ${DIM}or by hand on the machine: cd $REMOTE_DIR && AULALAB_CLUSTER=1 AULALAB_HOSTNAME=<name>.$RELAY_DOMAIN bash scripts/host.sh${OFF}"
     else
-      say "  ${CYAN}cd $REMOTE_DIR && COLLOQ_CLUSTER=1 bash scripts/host.sh${OFF}"
+      say "  ${CYAN}cd $REMOTE_DIR && AULALAB_CLUSTER=1 bash scripts/host.sh${OFF}"
       say "  ${DIM}without RELAY_* in .env this is Cloudflare, and its addresses do not${OFF}"
       say "  ${DIM}open from Russia — see make relay-setup and the README section on the relay${OFF}"
     fi
@@ -1310,7 +1310,7 @@ REMOTE
   fi
   printf '\n'
   say "${DIM}The server and the room kernels run in k3s:${OFF}"
-  say "${DIM}  logs        ssh … 'cd /opt/colloq && bash scripts/cluster.sh logs'${OFF}"
+  say "${DIM}  logs        ssh … 'cd /opt/aulalab && bash scripts/cluster.sh logs'${OFF}"
   say "${DIM}  restart     ssh … 'cd $REMOTE_DIR && bash scripts/cluster.sh start'${OFF}"
   say "${DIM}  update      make vast-up$NAME_ARG RELEASE=/path/release.json${OFF}"
   say "${DIM}Environments are built in advance and recorded by digest in the release catalog.${OFF}"
@@ -1365,13 +1365,13 @@ cmd_status() {
   # come up, and the difference is visible only from here.
   if [ "$INST_STATUS" = running ] && [ -n "$INST_SSH_HOST" ]; then
     if rssh "curl -sf -m 5 http://localhost:$PORT/api/health >/dev/null" </dev/null 2>/dev/null; then
-      say "  ${CYAN}colloq on that machine answers${OFF}"
+      say "  ${CYAN}aulalab on that machine answers${OFF}"
     else
-      say "  ${RED}colloq on that machine does not answer${OFF} ${DIM}(logs: ssh … 'cd /opt/colloq && bash scripts/cluster.sh logs')${OFF}"
+      say "  ${RED}aulalab on that machine does not answer${OFF} ${DIM}(logs: ssh … 'cd /opt/aulalab && bash scripts/cluster.sh logs')${OFF}"
     fi
 
     # The outside address is a separate question, and it has to be asked
-    # separately: "colloq answers" holds even when the tunnel died long ago, and
+    # separately: "aulalab answers" holds even when the tunnel died long ago, and
     # that is visible only from outside. We ask the machine about two things at
     # once (whether the session is alive and which address it has managed to write
     # into .env) and check that address from here.
@@ -1443,8 +1443,8 @@ cmd_sync() {
   say "${BOLD}2/2${OFF} fetching and validating the deployment backup"
   mkdir -p "$BACKUP_DIR"
   local newest
-  newest="$(rssh "ls -1t $REMOTE_DIR/backups${ENV_NAME:+/$ENV_NAME}/colloq-*-$mode.tar.gz 2>/dev/null | head -1" </dev/null)"
-  case "$newest" in "$REMOTE_DIR/backups"*/colloq-*.tar.gz) ;; *) die "portable backup not found";; esac
+  newest="$(rssh "ls -1t $REMOTE_DIR/backups${ENV_NAME:+/$ENV_NAME}/aulalab-*-$mode.tar.gz 2>/dev/null | head -1" </dev/null)"
+  case "$newest" in "$REMOTE_DIR/backups"*/aulalab-*.tar.gz) ;; *) die "portable backup not found";; esac
   rsync -a -e "$(ssh_cmd)" "root@$INST_SSH_HOST:$newest" "$BACKUP_DIR/" || die "the backup did not arrive"
   python3 scripts/runtime-backup.py validate --archive "$BACKUP_DIR/$(basename "$newest")" --name "$ENV_NAME" \
     || die "the backup did not pass validation — do not destroy the machine"
@@ -1486,7 +1486,7 @@ RULES = [
     (r"(?i)\bBearer\s+[A-Za-z0-9._\-]+", "Bearer <redacted>"),
     # Cookies — whole: they carry both the staff session and the way into the panel.
     (r"(?i)((?:set-)?cookie:\s*).*", r"\1<redacted>"),
-    (r"(?i)\b(colloq_staff|connect\.sid)=[^;\s]+", r"\1=<redacted>"),
+    (r"(?i)\b(aulalab_staff|connect\.sid)=[^;\s]+", r"\1=<redacted>"),
     # A participant token: body.signature, both in base64url. The body is JSON, so
     # it starts with eyJ and cannot be mistaken for an ordinary word.
     (r"\beyJ[A-Za-z0-9_\-]{6,}\.[A-Za-z0-9_\-]{10,}", "<redacted>"),
@@ -1521,9 +1521,9 @@ cmd_logs() {
   [[ "$since" =~ ^[0-9]+[smh]$ ]] || die "SINCE must be a duration: 30m, 2h, 86400s"
   dir="logs${ENV_NAME:+/$ENV_NAME}/$(date +%F)"
   mkdir -p "$dir"
-  rssh "k3s kubectl -n colloq logs -l 'colloq.dev/role in (app,runtime)' --all-containers=true --prefix --since='$since' --tail=2000" </dev/null \
-    | scrub > "$dir/colloq.log" || die "the app log could not be fetched"
-  rssh "k3s kubectl -n colloq logs -l colloq.kind=room-kernel --all-containers=true --prefix --since='$since' --tail=2000" </dev/null \
+  rssh "k3s kubectl -n aulalab logs -l 'aulalab.dev/role in (app,runtime)' --all-containers=true --prefix --since='$since' --tail=2000" </dev/null \
+    | scrub > "$dir/aulalab.log" || die "the app log could not be fetched"
+  rssh "k3s kubectl -n aulalab logs -l aulalab.kind=room-kernel --all-containers=true --prefix --since='$since' --tail=2000" </dev/null \
     | scrub > "$dir/kernels.log" || die "the kernel log could not be fetched"
   say "${BOLD}logs saved to $dir/${OFF}"
   say "${DIM}Once a Pod is deleted, Kubernetes no longer has its log. Tokens are cut out; user data may remain.${OFF}"
@@ -1571,7 +1571,7 @@ cmd_down() {
   # second step.
   local archive="<backup from $BACKUP_DIR/>"
   case "$db" in *-live.tar.gz|*-consistent.tar.gz) archive="$db" ;; esac
-  say "${DIM}restore this data again: $(again up "$NAME_ARG" "${ENV_NAME:+HOST=$ENV_NAME.${RELAY_DOMAIN:-colloq.ru}}")${OFF}"
+  say "${DIM}restore this data again: $(again up "$NAME_ARG" "${ENV_NAME:+HOST=$ENV_NAME.${RELAY_DOMAIN:-example.edu}}")${OFF}"
   say "${DIM}or on your own Linux machine with k3s: make restore$NAME_ARG ARCHIVE=${archive} RELEASE=${RELEASE:-/path/release.json}${OFF}"
 }
 
@@ -1583,10 +1583,10 @@ case "$CMD" in
   down)   cmd_down ;;
   adopt)  cmd_adopt ;;
   *)
-    say "${BOLD}Colloq on a rented machine${OFF}"
+    say "${BOLD}Aula Lab on a rented machine${OFF}"
     say "  scripts/vast.sh up      ${DIM}RELEASE=/path/release.json — rent a VM and install the release${OFF}"
     say "  ${DIM}NAME=demo             ... a deployment: its own machine, its own backups, its own bill${OFF}"
-    say "  ${DIM}HOST=demo.colloq.ru    ... and expose it at this address right away${OFF}"
+    say "  ${DIM}HOST=demo.example.edu    ... and expose it at this address right away${OFF}"
     say "  ${DIM}                        (the deployment name can then be left out — it is here)${OFF}"
     say "  ${DIM}GPU=\"RTX 5070\"         ... on the GPU named out loud${OFF}"
     say "  scripts/vast.sh status  ${DIM}without a name — all deployments; with a name — details of one${OFF}"

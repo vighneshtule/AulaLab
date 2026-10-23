@@ -13,14 +13,14 @@ function shellFunction(name: string) {
 }
 
 function plugin(readyAfter: number) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-gpu-poll-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-gpu-poll-'))
   try {
     const result = spawnSync('bash', ['-c', `set -euo pipefail
 die() { echo "$*" >&2; exit 1; }
 release() { if [ "$1" = field ]; then echo true; else echo '{}'; fi; }
 kube() { if [ "$1" = apply ]; then cat >/dev/null; fi; }
 k() {
-  if [ "$2" = secret ]; then echo '{"metadata":{"name":"colloq-registry"}}'; return; fi
+  if [ "$2" = secret ]; then echo '{"metadata":{"name":"aulalab-registry"}}'; return; fi
   local count=0
   [ ! -f "$POLL_FILE" ] || read -r count < "$POLL_FILE"
   count=$((count + 1)); echo "$count" > "$POLL_FILE"
@@ -69,7 +69,7 @@ gpu_toolkit
 })
 
 function waitForNode(mode: 'ready' | 'missing' | 'multiple') {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-node-poll-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-node-poll-'))
   try {
     const node = (name: string, ready: string) => ({ metadata: { labels: { 'kubernetes.io/hostname': name } },
       status: { conditions: [{ type: 'Ready', status: ready }] } })

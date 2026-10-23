@@ -203,7 +203,7 @@
    * not a setting: nothing on the server depends on it, so it lives in this
    * browser and a blocked storage just means the default.
    */
-  const CLASS_SIZE_KEY = 'colloq.admin.resources.classSize'
+  const CLASS_SIZE_KEY = 'aulalab.admin.resources.classSize'
   let classSizeText = $state(readClassSize())
 
   const isOwner = $derived(adminAuth.isOwner)

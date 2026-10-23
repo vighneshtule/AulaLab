@@ -1497,15 +1497,15 @@
     fit === 'roomy' ? 'h-full w-16' : fit === 'compact' ? 'h-full w-14' : 'h-full w-[60px]',
   )
 
-  const HAND_KEY = 'colloq.pult.hand'
-  const NOTES_KEY = 'colloq.pult.notes'
-  const LAMP_KEY = 'colloq.pult.lamp'
-  const FINGER_KEY = 'colloq.pult.finger'
-  const VIEW_KEY = 'colloq.pult.view'
-  const SPLIT_KEY = 'colloq.pult.split'
+  const HAND_KEY = 'aulalab.pult.hand'
+  const NOTES_KEY = 'aulalab.pult.notes'
+  const LAMP_KEY = 'aulalab.pult.lamp'
+  const FINGER_KEY = 'aulalab.pult.finger'
+  const VIEW_KEY = 'aulalab.pult.view'
+  const SPLIT_KEY = 'aulalab.pult.split'
   /* The same key as the laptop editor's size: one choice per device. */
-  const SIZE_KEY = 'colloq.pult.notesSize'
-  const TELE_SIZE_KEY = 'colloq.pult.teleSize'
+  const SIZE_KEY = 'aulalab.pult.notesSize'
+  const TELE_SIZE_KEY = 'aulalab.pult.teleSize'
 
   function remembered(key: string): string | null {
     try {

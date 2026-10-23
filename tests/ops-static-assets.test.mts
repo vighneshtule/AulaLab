@@ -64,7 +64,7 @@ test('only what really should be compressed counts as uncompressed', () => {
   // The one-kilobyte threshold is the same as in web/scripts/precompress.mjs:
   // smaller files have no .br by design, and complaining about them would mean
   // complaining always.
-  const fake = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-dist-'))
+  const fake = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-dist-'))
   const assets = path.join(fake, 'web/dist/assets')
   fs.mkdirSync(assets, { recursive: true })
   const счёт = (): string => {
@@ -143,9 +143,9 @@ test('the relay serves the mirror itself, and a miss goes to the tunnel', () => 
   assert.match(relay, /reverse_proxy 127\.0\.0\.1:9182/)
   // One user writes the mirror, another reads it; without setgid caddy would
   // get a 403 on every file, that is, the mirror would not work at all.
-  assert.match(relay, /install -d -o assets -g caddy -m 2750 \/var\/lib\/colloq-assets/)
-  assert.match(relay, /systemctl enable --now frps caddy colloq-capy colloq-assets/)
-  assert.match(relay, /colloq-assets-prune\.timer/)
+  assert.match(relay, /install -d -o assets -g caddy -m 2750 \/var\/lib\/aulalab-assets/)
+  assert.match(relay, /systemctl enable --now frps caddy aulalab-capy aulalab-assets/)
+  assert.match(relay, /aulalab-assets-prune\.timer/)
 })
 
 test('the relay daemons have room to breathe: swap, limits, descriptors', () => {

@@ -62,7 +62,7 @@ export function portableRevision(environment = 'base', tag = String(++seq)) {
     environmentName: environment, imageDigest: `sha256:${hex(`image ${environment} ${tag}`)}`, pythonVersion: '3.11.16', pythonAbi: 'cp311',
     platform: 'linux/amd64', packages: [{ name: 'numpy', version: '2.4.6' }], baseConstraintsHash: 'hash',
   })
-  noteRevisionImage(revision.id, { registryRef: `ghcr.io/colloq-edu/colloq-kernel@sha256:${hex(`ref ${revision.id}`)}`, layers: hex(`layers ${revision.id}`) })
+  noteRevisionImage(revision.id, { registryRef: `ghcr.io/vighneshtule/aulalab-kernel@sha256:${hex(`ref ${revision.id}`)}`, layers: hex(`layers ${revision.id}`) })
   return revision
 }
 

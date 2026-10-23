@@ -51,7 +51,7 @@
    * visible and one click away. Remembered per room in this browser; blocked
    * storage just means "all".
    */
-  const FILTER_KEY = `colloq.oracle.filter.${session.session.id}`
+  const FILTER_KEY = `aulalab.oracle.filter.${session.session.id}`
   let filter = $state<'all' | 'mine'>(readFilter())
 
   function readFilter(): 'all' | 'mine' {
@@ -340,8 +340,8 @@
         cellId: detail.cellId ?? session.selectedCellId,
       })
     }
-    window.addEventListener('colloq:ask-ai', onAsk)
-    return () => window.removeEventListener('colloq:ask-ai', onAsk)
+    window.addEventListener('aulalab:ask-ai', onAsk)
+    return () => window.removeEventListener('aulalab:ask-ai', onAsk)
   })
 
   $effect(() => () => {
@@ -804,7 +804,7 @@
    * The reasoning effort — next to "Ask/Act" and by the same logic: a choice,
    * not a guess, remembered between questions, living in this browser.
    *
-   * `null` means "as this Colloq is set": then not a single new field goes out
+   * `null` means "as this Aula Lab is set": then not a single new field goes out
    * in the request, and other instances behave exactly as before the control
    * appeared.
    *
@@ -966,7 +966,7 @@
     <span class="ml-auto min-w-0 truncate font-mono text-2xs text-muted">
       <!--
         Only when there is something to name. A header reading "gpt-4o-mini"
-        above a panel saying "no model is set up on this Colloq yet" is the
+        above a panel saying "no model is set up on this Aula Lab yet" is the
         screen contradicting itself: the model is what the server WOULD use, and
         until it can, saying it is a claim the room cannot act on.
       -->

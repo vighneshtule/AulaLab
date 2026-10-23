@@ -36,7 +36,7 @@ const IMAGE_ID=/^sha256:[a-f0-9]{64}$/
 export async function captureRevision(environmentName:string):Promise<EnvironmentRevision>{
   if(!ENVIRONMENT_NAME.test(environmentName))throw new Error('Invalid environment name')
   if(competitionBackend()==='broker')return captureBrokerRevision(environmentName)
-  const info=JSON.parse(await docker(['image','inspect',`colloq-kernel:${environmentName}`]))[0] as {Id:string;Os:string;Architecture:string}
+  const info=JSON.parse(await docker(['image','inspect',`aulalab-kernel:${environmentName}`]))[0] as {Id:string;Os:string;Architecture:string}
   if(!IMAGE_ID.test(info.Id))throw new Error('Environment image is not available')
   // What the image is beyond this machine comes with the same inspect, at no
   // extra call: an image pushed since its revision was captured gains its
@@ -46,12 +46,12 @@ export async function captureRevision(environmentName:string):Promise<Environmen
   const inFlight=snapshots.get(key);if(inFlight)return inFlight
   const existing=revisions().find(r=>r.environmentName===environmentName&&r.imageDigest===info.Id)
   if(existing){
-    await docker(['tag',info.Id,`colloq-revision:${existing.id}`])
+    await docker(['tag',info.Id,`aulalab-revision:${existing.id}`])
     noteRevisionImage(existing.id,identity)
     return getRevision(existing.id)??existing
   }
   const pending=(async()=>{
-    const name='colloq-revision-probe-'+createHash('sha256').update(key).digest('hex').slice(0,20)
+    const name='aulalab-revision-probe-'+createHash('sha256').update(key).digest('hex').slice(0,20)
     let raw:string
     try {raw=await docker(['run','--rm','--pull=never','--name',name,'--network=none','--read-only','--user=1000:1000','--cap-drop=ALL','--security-opt=no-new-privileges','--pids-limit=64','--memory=256m','--cpus=0.5','--entrypoint','python',info.Id,'-c',PROBE])}
     finally{await docker(['rm','-f',name],5000).catch(()=>undefined)}
@@ -63,7 +63,7 @@ export async function captureRevision(environmentName:string):Promise<Environmen
     }).sort((a,b)=>a.name.toLowerCase().localeCompare(b.name.toLowerCase(),'en'))
     const result=putRevision({environmentName,imageDigest:info.Id,pythonVersion:data.python,pythonAbi:data.abi,platform:`${info.Os}/${info.Architecture}`,packages,baseConstraintsHash:createHash('sha256').update(JSON.stringify(packages)).digest('hex')})
     // Preserve a reference independently of the mutable environment alias.
-    await docker(['tag',info.Id,`colloq-revision:${result.id}`])
+    await docker(['tag',info.Id,`aulalab-revision:${result.id}`])
     noteRevisionImage(result.id,identity)
     return getRevision(result.id)??result
   })()
@@ -137,7 +137,7 @@ export async function ensureCompetitionRevision(c:Competition,refresh=false):Pro
  * differently. Called at startup, in the background: nothing at home waits on
  * it, and a revision that is still unknown simply stays at home.
  *
- * Each image is asked by the tag that pins it, `colloq-revision:<id>`
+ * Each image is asked by the tag that pins it, `aulalab-revision:<id>`
  * (captureRevision puts it there), falling back to the image id itself where
  * the tag is gone. Either answer counts only when its id is the revision's
  * own: a tag moved onto another image must not lend that image's registry
@@ -153,7 +153,7 @@ export async function backfillRevisionImages():Promise<number>{
     // A fingerprint never changes; only a reference can still appear (a push since).
     if(revision.layers&&revision.registryRef)continue
     let info:Record<string,unknown>|null=null
-    for(const reference of [`colloq-revision:${revision.id}`,revision.imageDigest]){
+    for(const reference of [`aulalab-revision:${revision.id}`,revision.imageDigest]){
       try{
         const found=(JSON.parse(await docker(['image','inspect',reference])) as Record<string,unknown>[])[0]
         if(found?.Id===revision.imageDigest){info=found;break}

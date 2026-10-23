@@ -1,15 +1,15 @@
 # Single-node deployment on k3s (preview)
 
 > **Preview.** This path has not been published as a release yet: no GitHub
-> Release carries its `release.json`, `colloq-deploy.tar.gz` and `SHA256SUMS`,
+> Release carries its `release.json`, `aulalab-deploy.tar.gz` and `SHA256SUMS`,
 > and nothing tests `cluster.sh` on a real VM automatically. Production installs
-> use the server image (`ghcr.io/colloq-edu/colloq-vast`) run by
-> `deploy/vast/colloq-host` on a dedicated Linux VM; see `deploy/vast/README.md`.
+> use the server image (`ghcr.io/vighneshtule/aulalab-vast`) run by
+> `deploy/vast/aulalab-host` on a dedicated Linux VM; see `deploy/vast/README.md`.
 > Try k3s on a disposable VM, following *Before teaching* below.
 
 This path uses one Linux amd64 VM, k3s/containerd, one non-root app Pod, and one
 private runtime broker. Docker Compose is an explicit workstation development
-path. `deploy/colloq.service` no longer installs a root web process.
+path. `deploy/aulalab.service` no longer installs a root web process.
 
 ## Publish and select a release
 
@@ -21,7 +21,7 @@ workflow for that tag and an exact k3s patch release that has passed your
 deployment smoke test. The tag must equal `v` + the root `package.json` version at
 that commit; the workflow and `release-build.py` refuse anything else. The
 workflow builds app, broker and selected kernel environments, captures actual OCI
-digests, and attaches `release.json`, `colloq-deploy.tar.gz` and `SHA256SUMS` to
+digests, and attaches `release.json`, `aulalab-deploy.tar.gz` and `SHA256SUMS` to
 the tag's GitHub Release (the one release-please created; without it the workflow
 refuses).
 It does not guess a k3s version or fabricate image digests. Publication does not
@@ -32,7 +32,7 @@ it defaults to `v` + the `package.json` version at `--source-commit`.
 
 ```sh
 python3 scripts/release-build.py --version v0.2.0 \
-  --registry ghcr.io/your-org/colloq --source-commit FULL_COMMIT_SHA \
+  --registry ghcr.io/your-org/aulalab --source-commit FULL_COMMIT_SHA \
   --k3s-version EXACT_TESTED_K3S_VERSION --environments base,kaggle-base,base-gpu \
   --gpu-toolkit-version EXACT_NVIDIA_APT_VERSION \
   --gpu-device-plugin-image NVIDIA_PLUGIN_IMAGE_AT_SHA256
@@ -42,7 +42,7 @@ Without `base-gpu`, the two GPU options are not needed; `base,kaggle-base` is
 the default. Every name must be a file in `kernel/environments/`.
 
 Replace the uppercase placeholders deliberately. Login to the image registry on
-the build machine first. Environment requirements and `# colloq: from NAME`
+the build machine first. Environment requirements and `# aulalab: from NAME`
 inheritance remain in `kernel/environments/`. The builder resolves parent/base
 digests and emits a catalog after all pushes succeed. A custom environment is
 published in a new release/catalog; it is never built by a web request. Package
@@ -79,9 +79,9 @@ network; the app and room Pods do not receive service-account tokens.
 Environment settings are read as data, never sourced as shell commands. Only the
 app variable allowlist becomes a Kubernetes Secret; the broker keys below (room
 memory, competition GPU) go into the broker Deployment. The original configuration
-is retained at `/var/lib/colloq/config.env` with mode 0600 for recovery. Runtime
+is retained at `/var/lib/aulalab/config.env` with mode 0600 for recovery. Runtime
 auth and room-token derivation secrets are distinct and persistent under
-`/var/lib/colloq/secrets/`; only the broker receives the latter.
+`/var/lib/aulalab/secrets/`; only the broker receives the latter.
 
 ## Room memory
 
@@ -98,7 +98,7 @@ RUNTIME_KERNEL_MEMORY_MAX=24Gi
 Values are whole `Mi` or `Gi` from `64Mi` to `256Gi`; an explicit ceiling must
 not be below the default (`2Gi` when unset); an empty value means the broker
 default. `install`, `prepare` and `update` check them before stopping anything
-and render them into the broker Deployment from `/var/lib/colloq/config.env`, so
+and render them into the broker Deployment from `/var/lib/aulalab/config.env`, so
 every later update keeps them. `cluster.sh render` shows the result (it reads
 `--env-file`, otherwise a readable `config.env`). To change them on an installed
 server, run an update with the installed release and the edited file — the same
@@ -166,11 +166,11 @@ Static local PVs use `Retain` and these host paths:
 
 | Resource | Host path | Mounted by |
 |---|---|---|
-| `colloq-data` PVC | `/var/lib/colloq/data` | App (read-write); broker at `/data` (read-write); competition job Pods, per-job subPaths |
-| `colloq-workspace` PVC | `/var/lib/colloq/workspace` | App and room-specific subPaths |
+| `aulalab-data` PVC | `/var/lib/aulalab/data` | App (read-write); broker at `/data` (read-write); competition job Pods, per-job subPaths |
+| `aulalab-workspace` PVC | `/var/lib/aulalab/workspace` | App and room-specific subPaths |
 
 The root provisioner creates directories owned by UID/GID 1000. Restricted Pods
-do not need a root init container. The broker mounts `colloq-data` because it
+do not need a root init container. The broker mounts `aulalab-data` because it
 starts the competition job Pods that read and write subPaths of that claim
 (`competitions/<id>/…`, `dependencies/…`); it never mounts the workspace. These
 PV size fields are scheduling metadata, **not enforced filesystem disk quotas**.
@@ -202,7 +202,7 @@ itself before the disk that also holds the database drops below 1 GiB free.
 
 | Setting (environment or `config.env`) | Default | Effect |
 |---|---|---|
-| `BACKUP_KEEP` | `14` | archives kept after a successful backup; the oldest `colloq-*-live/consistent.tar.gz[.age]` go, never the new one; `0` keeps all |
+| `BACKUP_KEEP` | `14` | archives kept after a successful backup; the oldest `aulalab-*-live/consistent.tar.gz[.age]` go, never the new one; `0` keeps all |
 | `BACKUP_AGE_RECIPIENT` | unset | encrypt the archive with [age](https://age-encryption.org) (`.tar.gz.age`); the backup refuses to start if `age` is missing |
 | `BACKUP_AGE_IDENTITY` | unset | the age identity file `restore.sh --archive X.tar.gz.age` decrypts with |
 
@@ -246,7 +246,7 @@ and whether the NodePort receives traffic.
 
 k3s upgrades are deliberately separate: back up its datastore **and server token**,
 follow its upgrade documentation, then deploy a release requiring that exact
-version. This cluster backup is separate from Colloq application/PVC backup.
+version. This cluster backup is separate from Aula Lab application/PVC backup.
 [K3s backup and restore](https://docs.k3s.io/datastore/backup-restore)
 
 ## Isolation limits and GPU hosts

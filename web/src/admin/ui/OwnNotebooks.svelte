@@ -115,7 +115,7 @@
   }
 
   /* The same class size the Resources tab remembers: one guess per browser. */
-  const CLASS_SIZE_KEY = 'colloq.admin.resources.classSize'
+  const CLASS_SIZE_KEY = 'aulalab.admin.resources.classSize'
   let classSizeText = $state(readClassSize())
   const classSize = $derived(Math.min(Math.max(Math.round(Number(classSizeText) || 0), 1), 500))
   const perMemory = $derived(effectiveMb / MB_IN_GB / classSize)

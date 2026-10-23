@@ -113,7 +113,7 @@ test('the probe asks the docker it is given, whatever backend this process runs'
   const asked: string[][] = []
   const docker: cardProbe.DockerRead = async (args) => {
     asked.push(args)
-    if (args[0] === 'image') return { code: 0, out: 'colloq-kernel:<none>\ncolloq-kernel:base\ncolloq-kernel:base-gpu\n' }
+    if (args[0] === 'image') return { code: 0, out: 'aulalab-kernel:<none>\naulalab-kernel:base\naulalab-kernel:base-gpu\n' }
     if (args[0] === 'run' && gpusOf(args) === 'all') return { code: 0, out: '0, GPU-aa, NVIDIA GeForce RTX 4090, 24564\n1, GPU-bb, NVIDIA GeForce RTX 4090, [N/A]\n' }
     if (args[0] === 'run') return { code: 0, out: 'docker: a warning first\nNVIDIA A100 80GB PCIe, 81920\n' }
     return { code: 1, out: '' }
@@ -131,13 +131,13 @@ test('the probe asks the docker it is given, whatever backend this process runs'
       '7': { name: 'NVIDIA A100 80GB PCIe', memoryMb: 81_920 },
     })
     assert.deepEqual(asked.filter((args) => args[0] === 'run').map(gpusOf), ['all', 'device=7'])
-    assert.ok(asked.filter((args) => args[0] === 'run').every((args) => args.includes('colloq-kernel:base-gpu') && args.includes('--pull=never')))
+    assert.ok(asked.filter((args) => args[0] === 'run').every((args) => args.includes('aulalab-kernel:base-gpu') && args.includes('--pull=never')))
 
     // A machine starts the probe from an image of its own choosing, and no `image ls` is asked then.
     asked.length = 0
-    await cardProbe.probeCards(['0'], { docker, image: async () => 'colloq-revision:abc123' })
+    await cardProbe.probeCards(['0'], { docker, image: async () => 'aulalab-revision:abc123' })
     assert.deepEqual(asked.map((args) => args[0]), ['run'])
-    assert.ok(asked[0]!.includes('colloq-revision:abc123'))
+    assert.ok(asked[0]!.includes('aulalab-revision:abc123'))
     // No image on the machine: no container, and the cards stay unknown.
     asked.length = 0
     assert.equal((await cardProbe.probeCards(['0'], { docker, image: async () => null })).size, 0)
@@ -146,7 +146,7 @@ test('the probe asks the docker it is given, whatever backend this process runs'
     // Every card from one container, or nothing when it failed: a line cut short is not a smaller card.
     assert.deepEqual((await cardProbe.cardsInContainer(docker, 'img'))!.map((row) => row.index), ['0', '1'])
     assert.equal(await cardProbe.cardsInContainer(async () => ({ code: 125, out: '0, GPU-aa, NVIDIA GeForce RTX 4090, 245' }), 'img'), null)
-    assert.equal(await cardProbe.kernelProbeImage(docker), 'colloq-kernel:base-gpu')
+    assert.equal(await cardProbe.kernelProbeImage(docker), 'aulalab-kernel:base-gpu')
     assert.equal(await cardProbe.kernelProbeImage(async () => ({ code: 1, out: 'daemon down' })), null)
   } finally {
     restore()
@@ -231,26 +231,26 @@ test('the data root is one value for config.ts, the competitions\' storage and t
 
 /* ------------------------------------------------------- the agent's version */
 
-test('the agent\'s version: the nearest package.json above it, then COLLOQ_VERSION, then plainly no release', () => {
+test('the agent\'s version: the nearest package.json above it, then AULALAB_VERSION, then plainly no release', () => {
   const root = path.join(TEST_ROOT, 'versions')
   const write = (dir: string, body: unknown): void => {
     fs.mkdirSync(dir, { recursive: true })
     fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(body))
   }
   // As in the image: server/package.json one level above dist/, two above src/runner-agent/.
-  write(path.join(root, 'image/server'), { name: '@colloq/server', version: '0.24.0', type: 'module' })
+  write(path.join(root, 'image/server'), { name: '@aulalab/server', version: '0.24.0', type: 'module' })
   fs.mkdirSync(path.join(root, 'image/server/dist'), { recursive: true })
   fs.mkdirSync(path.join(root, 'image/server/src/runner-agent'), { recursive: true })
   const none = { env: {} }
   assert.equal(runnerVersion({ from: path.join(root, 'image/server/dist'), ...none }), '0.24.0')
-  assert.equal(runnerVersion({ from: path.join(root, 'image/server/src/runner-agent'), env: { COLLOQ_VERSION: '9.9.9' } }), '0.24.0')
+  assert.equal(runnerVersion({ from: path.join(root, 'image/server/src/runner-agent'), env: { AULALAB_VERSION: '9.9.9' } }), '0.24.0')
 
   // A package.json with no version the contract accepts is passed over, and so is such an environment.
-  write(path.join(root, 'odd/server'), { name: '@colloq/server', version: 'next' })
+  write(path.join(root, 'odd/server'), { name: '@aulalab/server', version: 'next' })
   fs.mkdirSync(path.join(root, 'odd/server/dist'), { recursive: true })
   const odd = path.join(root, 'odd/server/dist')
-  assert.equal(runnerVersion({ from: odd, env: { COLLOQ_VERSION: ' 0.24.1-rc.1 ' } }), '0.24.1-rc.1')
-  assert.equal(runnerVersion({ from: odd, env: { COLLOQ_VERSION: 'latest' } }), UNKNOWN_RUNNER_VERSION)
+  assert.equal(runnerVersion({ from: odd, env: { AULALAB_VERSION: ' 0.24.1-rc.1 ' } }), '0.24.1-rc.1')
+  assert.equal(runnerVersion({ from: odd, env: { AULALAB_VERSION: 'latest' } }), UNKNOWN_RUNNER_VERSION)
   assert.equal(runnerVersion({ from: odd, ...none }), UNKNOWN_RUNNER_VERSION)
 
   // In this checkout: server/package.json, which scripts/version.mts keeps equal to the root's.

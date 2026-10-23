@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Комната ещё не открыта — Colloq</title>
+    <title>Комната ещё не открыта — Aula Lab</title>
 
     <!--
-      The relay's error pages (*.colloq.ru). One file for every case, and
+      The relay's error pages (*.example.edu). One file for every case, and
       that is not about saving bytes: the room polling, the game and the
       high-score table are shared by all of them, only the text differs. It is
       installed on the machine by scripts/relay-setup.sh (or make relay-page:
@@ -24,7 +24,7 @@
                          usual case: the teacher has not started yet);
         no such room   — the relay has never seen the name, that is, a typo
                          in the link;
-        not answering  — there is a connection, but Colloq on the other side
+        not answering  — there is a connection, but Aula Lab on the other side
                          is silent (the teacher's machine) or the relay cannot
                          reach its own tunnel service;
         broken         — any other answer: the code and the request number in
@@ -43,7 +43,7 @@
       the game below at the most exciting moment; without JS it remains the
       fallback inside <noscript>.
     -->
-    <meta name="colloq-page" content="offline" />
+    <meta name="aulalab-page" content="offline" />
     <noscript><meta http-equiv="refresh" content="20" /><style>.game { display: none; }</style></noscript>
 
     <!--
@@ -570,7 +570,7 @@
     <main id="page" data-state="waiting">
       <header>
         <div class="top">
-          <!-- The Colloq mark: the same grid as in the product favicon. -->
+          <!-- The Aula Lab mark: the same grid as in the product favicon. -->
           <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="2" y="2" width="6" height="6" rx="1.6" />
             <rect x="9" y="2" width="6" height="6" rx="1.6" />
@@ -582,7 +582,7 @@
             <rect x="9" y="16" width="6" height="6" rx="1.6" />
             <rect x="16" y="16" width="6" height="6" rx="1.6" />
           </svg>
-          <p class="label" id="where">Colloq</p>
+          <p class="label" id="where">Aula Lab</p>
           <!-- The page language: Russian by default, English by the browser. -->
           <button class="lang" id="lang" type="button" aria-label="Switch to English">EN</button>
         </div>
@@ -712,7 +712,7 @@
          * button. The choice is remembered on this device.
          */
         function pickLang() {
-          const saved = store.get('colloq.lang');
+          const saved = store.get('aulalab.lang');
           if (saved === 'ru' || saved === 'en') return saved;
           const list = navigator.languages && navigator.languages.length
             ? navigator.languages
@@ -750,17 +750,17 @@
                 head: 'Такой комнаты нет',
                 lede: (f) => 'Имя ' + f.host + ' ретранслятору незнакомо: комнату с таким адресом здесь не открывали ни разу. Чаще всего это опечатка в ссылке.',
                 wait: () => 'Сверьте адрес с тем, который дал преподаватель, — особенно часть до первой точки. Сама страница ждать не будет: пока комнату не открыли ни разу, ждать нечего.',
-                foot: () => 'Если адрес точно верный, спросите у преподавателя, запущен ли Colloq: имя появляется на ретрансляторе в ту минуту, когда комнату открывают впервые.',
+                foot: () => 'Если адрес точно верный, спросите у преподавателя, запущен ли Aula Lab: имя появляется на ретрансляторе в ту минуту, когда комнату открывают впервые.',
               },
               down: {
-                head: 'Colloq не отвечает',
+                head: 'Aula Lab не отвечает',
                 lede: (f) => f.reason === 'relay'
                   ? 'Ретранслятор не смог соединиться со своей же службой туннелей. Это поломка на нашей стороне; машина преподавателя тут ни при чём.'
-                  : 'Машина преподавателя на связи с ретранслятором, но Colloq на ней не отвечает. Похоже, сервер занятия перезапускается.',
+                  : 'Машина преподавателя на связи с ретранслятором, но Aula Lab на ней не отвечает. Похоже, сервер занятия перезапускается.',
                 wait: () => 'Страница пробует адрес заново каждые 20 секунд и откроет комнату, как только та ответит. Обычно это проходит само за минуту-другую.',
                 foot: (f) => f.reason === 'relay'
                   ? 'Если тянется дольше пары минут — напишите тому, кто держит ретранслятор: занятие тут ни при чём.'
-                  : 'Если не отвечает дольше пары минут — скажите преподавателю: связь до его машины есть, а Colloq на ней молчит.',
+                  : 'Если не отвечает дольше пары минут — скажите преподавателю: связь до его машины есть, а Aula Lab на ней молчит.',
               },
               fault: {
                 head: 'Что-то пошло не так',
@@ -855,17 +855,17 @@
                 head: 'No such room',
                 lede: (f) => 'The relay does not know the name ' + f.host + ': a room at this address has never been opened here. Most often this is a typo in the link.',
                 wait: () => 'Check the address against the one your teacher gave you — especially the part before the first dot. This page will not wait: while the room has never been opened, there is nothing to wait for.',
-                foot: () => 'If the address is definitely right, ask your teacher whether Colloq is running: the name appears on the relay the minute the room is opened for the first time.',
+                foot: () => 'If the address is definitely right, ask your teacher whether Aula Lab is running: the name appears on the relay the minute the room is opened for the first time.',
               },
               down: {
-                head: 'Colloq is not answering',
+                head: 'Aula Lab is not answering',
                 lede: (f) => f.reason === 'relay'
                   ? 'The relay could not reach its own tunnel service. This is a fault on our side; the teacher’s machine has nothing to do with it.'
-                  : 'The teacher’s machine is connected to the relay, but Colloq on it is not answering. It looks like the class server is restarting.',
+                  : 'The teacher’s machine is connected to the relay, but Aula Lab on it is not answering. It looks like the class server is restarting.',
                 wait: () => 'The page retries this address every 20 seconds and opens the room as soon as it answers. Usually this clears up by itself within a minute or two.',
                 foot: (f) => f.reason === 'relay'
                   ? 'If it lasts longer than a couple of minutes, write to whoever keeps the relay: the class is not at fault here.'
-                  : 'If it does not answer for longer than a couple of minutes, tell your teacher: the link to their machine is up, but Colloq on it is silent.',
+                  : 'If it does not answer for longer than a couple of minutes, tell your teacher: the link to their machine is up, but Aula Lab on it is silent.',
               },
               fault: {
                 head: 'Something went wrong',
@@ -961,7 +961,7 @@
         function switchLang() {
           lang = lang === 'ru' ? 'en' : 'ru';
           T = TEXT[lang];
-          store.set('colloq.lang', lang);
+          store.set('aulalab.lang', lang);
           live.forEach((make, el) => { el.textContent = make(); });
           redress.forEach((f) => f());
         }
@@ -1014,7 +1014,7 @@
           const code = /^[1-9][0-9][0-9]$/.test(String(raw.code)) ? Number(raw.code) : 0;
           const text = code && /^[\x20-\x7e]{1,48}$/.test(String(raw.text || '')) ? String(raw.text) : '';
           const id = code && /^[0-9a-z]{4,32}$/.test(String(raw.id || '')) ? String(raw.id) : '';
-          return { host: location.hostname || 'colloq.ru', code, text, id, reason: '' };
+          return { host: location.hostname || 'example.edu', code, text, id, reason: '' };
         })();
 
         /** The state by caddy's response code: 502–504 is silence, the rest is a breakage. */
@@ -1034,7 +1034,7 @@
           const s = T.states[page.state];
           document.documentElement.lang = T.html;
           pageEl.dataset.state = page.state;
-          document.title = s.head + ' — Colloq';
+          document.title = s.head + ' — Aula Lab';
           waitEl.setAttribute('aria-label', T.waitLabel);
           langBtn.setAttribute('aria-label', T.switchLabel);
           say(langBtn, () => T.switch);
@@ -1048,7 +1048,7 @@
           if (!polls()) say(waitLine, () => (fact.code ? T.fact(fact) : ''));
         }
         if (location.hostname && location.hostname !== 'localhost') {
-          say(whereEl, () => 'Colloq · ' + fact.host);
+          say(whereEl, () => 'Aula Lab · ' + fact.host);
         }
         show();
         // On a language switch the state itself is assembled again: the tab
@@ -1097,7 +1097,7 @@
          * every check is reread, and the state on the page changes without
          * waiting for the person to press reload.
          */
-        const MARK = 'name="colloq-page" content="offline"';
+        const MARK = 'name="aulalab-page" content="offline"';
         const EVERY = 20;
         // The deadline goes by the clock, not by ticks: in a background tab
         // timers are throttled to once a minute or freeze entirely, and the
@@ -2265,7 +2265,7 @@
         // language it speaks. The state is changed from here only in checks: it
         // cannot be forged by a link, otherwise someone else's link would lie
         // "no such room".
-        window.colloqPage = {
+        window.aulalabPage = {
           fact,
           get state() { return page.state; },
           get reason() { return page.reason; },

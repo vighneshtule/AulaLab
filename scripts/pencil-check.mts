@@ -87,7 +87,7 @@ const SIZES: [number, number][] = (() => {
   return m ? [[+m[1], +m[2]]] : ALL_SIZES
 })()
 
-const root = mkdtempSync(path.join(tmpdir(), 'colloq-pencil-'))
+const root = mkdtempSync(path.join(tmpdir(), 'aulalab-pencil-'))
 const ROOM = 'pencil1'
 
 /* ------------------------------------------------------- a small PDF */
@@ -1717,11 +1717,11 @@ for (const [index, [W, H]] of (RAZBOR ? [] : SIZES).entries()) {
   )
   check(warm, 'the warm-up stroke is visible at the student', warm ? 'yes' : 'no')
   await wait(300)
-  const fingerKey = await pult.js(`return localStorage.getItem('colloq.pult.finger')`)
+  const fingerKey = await pult.js(`return localStorage.getItem('aulalab.pult.finger')`)
   check(
     fingerKey === 'off',
     'the first pen turns off finger drawing',
-    `colloq.pult.finger=${fingerKey}`,
+    `aulalab.pult.finger=${fingerKey}`,
   )
   await clean()
 
@@ -3581,7 +3581,7 @@ if (!RAZBOR && !sizeArg) {
     await tablet(W, H)
     await pult.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/s/${ROOM}/pult` })
     await until(pult, `!!document.querySelector('.pult-root')`, 'the console root')
-    await pult.js(`localStorage.setItem('colloq.pult.view','tele'); return 1`)
+    await pult.js(`localStorage.setItem('aulalab.pult.view','tele'); return 1`)
     await pult.send('Page.reload')
     const drawn = await until(pult, `!!document.querySelector('.pult-reader')`, 'the prompter drew the notes', 15000)
     await wait(600)
@@ -3599,7 +3599,7 @@ if (!RAZBOR && !sizeArg) {
       const shot = await pult.send('Page.captureScreenshot', { format: 'png' })
       writeFileSync(path.resolve(`pencil-check-prompter-${W}x${H}.png`), Buffer.from(shot.result.data as string, 'base64'))
     }
-    await pult.js(`localStorage.setItem('colloq.pult.view','slide'); return 1`)
+    await pult.js(`localStorage.setItem('aulalab.pult.view','slide'); return 1`)
   }
   where = ''
 }

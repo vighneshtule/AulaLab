@@ -21,11 +21,11 @@ export function auditActionLabel(action: string): string {
 
 /**
  * Whether the server's console did it: nobody signed in, and the event says
- * it came from there (`colloq-host runner-code` records its codes with
- * `source: 'colloq-host'`, server/src/ops/runner-code.ts).
+ * it came from there (`aulalab-host runner-code` records its codes with
+ * `source: 'aulalab-host'`, server/src/ops/runner-code.ts).
  */
 function byConsole(event: AdminAuditEvent): boolean {
-  return !event.actor && event.detail?.source === 'colloq-host'
+  return !event.actor && event.detail?.source === 'aulalab-host'
 }
 
 /**
@@ -126,7 +126,7 @@ export function auditDetail(event: AdminAuditEvent): string {
 /**
  * `field: value` pairs, for a detail that is a setting's name and what it
  * became — all but the console's `source`, which the Who column has already
- * read out (byConsole): a code minted there read «source: colloq-host» under
+ * read out (byConsole): a code minted there read «source: aulalab-host» under
  * «Консоль сервера», a pair the panel's own code never has.
  */
 function pairs(event: AdminAuditEvent): string {

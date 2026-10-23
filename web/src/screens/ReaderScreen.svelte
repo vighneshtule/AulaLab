@@ -154,12 +154,12 @@
   })
 
   /**
-   * The page name in the tab title: «МЛ | сильная группа · Colloq»,
-   * «04 · Лики и хаки данных · Colloq».
+   * The page name in the tab title: «МЛ | сильная группа · Aula Lab»,
+   * «04 · Лики и хаки данных · Aula Lab».
    *
    * The course page is bookmarked, and a class page is sent around in chats:
    * in bookmarks, the history and the tab switcher all of them used to be
-   * called "Colloq". The number goes first on a class page, because that is
+   * called "Aula Lab". The number goes first on a class page, because that is
    * how a timetable names a class.
    */
   const named = $derived(
@@ -167,9 +167,9 @@
       (page ? (page.n !== null ? `${ordinal(page.n)} · ${page.title}` : page.title) : null),
   )
   $effect(() => {
-    document.title = named === null ? 'Colloq' : `${named} · Colloq`
+    document.title = named === null ? 'Aula Lab' : `${named} · Aula Lab`
     return () => {
-      document.title = 'Colloq'
+      document.title = 'Aula Lab'
     }
   })
 </script>

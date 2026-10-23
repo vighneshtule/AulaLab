@@ -134,13 +134,13 @@ import json, sys, zipfile
 z = zipfile.ZipFile(sys.argv[1])
 assert z.testzip() is None
 infos = z.infolist()
-readme = [i for i in infos if i.filename.endswith('/README-colloq.md') or i.filename.endswith('/README.md')]
+readme = [i for i in infos if i.filename.endswith('/README-aulalab.md') or i.filename.endswith('/README.md')]
 print(json.dumps({
   'names': [i.filename for i in infos],
   'utf8': [bool(i.flag_bits & 0x800) for i in infos],
   'dates': [list(i.date_time) for i in infos],
   'sizes': {i.filename: i.file_size for i in infos},
-  'readme': z.read('zip-ml-02/README-colloq.md').decode('utf-8'),
+  'readme': z.read('zip-ml-02/README-aulalab.md').decode('utf-8'),
 }))
 `
   const run = spawnSync('python3', ['-c', code, file], { encoding: 'utf8' })
@@ -164,7 +164,7 @@ test('the archive is valid, laid out like the room, and its length is exact', { 
   const seen = inspect(file)
   // The room's own README keeps its name; ours steps aside.
   assert.deepEqual(new Set(seen.names), new Set([
-    'zip-ml-02/README-colloq.md',
+    'zip-ml-02/README-aulalab.md',
     'zip-ml-02/семинар.ipynb',
     'zip-ml-02/Слайды лекции.pdf',
     'zip-ml-02/данные/цены.csv',

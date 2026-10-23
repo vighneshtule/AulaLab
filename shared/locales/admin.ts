@@ -422,9 +422,9 @@ export const adminMessages: MessageCatalog = {
     "ru": "Вернуть страницу",
     "en": "Restore page"
   },
-  "admin.permanently.delete.page.p.it.cannot.be.restored.through.colloq": {
-    "ru": "Удалить страницу /p/{p0} навсегда? Восстановить её через Colloq нельзя.",
-    "en": "Permanently delete page /p/{p0}? It cannot be restored through Colloq."
+  "admin.permanently.delete.page.p.it.cannot.be.restored.through.aulalab": {
+    "ru": "Удалить страницу /p/{p0} навсегда? Восстановить её через Aula Lab нельзя.",
+    "en": "Permanently delete page /p/{p0}? It cannot be restored through Aula Lab."
   },
   "admin.delete.permanently": {
     "ru": "Удалить навсегда",
@@ -631,8 +631,8 @@ export const adminMessages: MessageCatalog = {
     "en": "Python version"
   },
   "admin.env.pythonHint": {
-    "ru": "Соберётся из официального образа python:{version}-slim-bookworm; кнопка пишет это строкой «# colloq: python» в шапку, а про умолчание не пишет ничего.",
-    "en": "Built from the official python:{version}-slim-bookworm image; the button writes a “# colloq: python” line into the header, and writes nothing for the default."
+    "ru": "Соберётся из официального образа python:{version}-slim-bookworm; кнопка пишет это строкой «# aulalab: python» в шапку, а про умолчание не пишет ничего.",
+    "en": "Built from the official python:{version}-slim-bookworm image; the button writes a “# aulalab: python” line into the header, and writes nothing for the default."
   },
   "admin.env.pythonFromParent": {
     "ru": "Версию задаёт «{parent}» — Python {version}: слой поверх готового образа интерпретатор не меняет.",
@@ -2134,9 +2134,9 @@ export const adminMessages: MessageCatalog = {
     "ru": "в её рабочем пространстве.",
     "en": "in its workspace."
   },
-  "admin.you.cannot.restore.the.seminar.through.colloq.after.deletion": {
-    "ru": "После удаления занятие нельзя восстановить через Colloq.",
-    "en": "You cannot restore the class through Colloq after deletion."
+  "admin.you.cannot.restore.the.seminar.through.aulalab.after.deletion": {
+    "ru": "После удаления занятие нельзя восстановить через Aula Lab.",
+    "en": "You cannot restore the class through Aula Lab after deletion."
   },
   "admin.delete.the.public.page.as.well": {
     "ru": "Также удалить опубликованную страницу —",
@@ -6121,8 +6121,8 @@ export const adminMessages: MessageCatalog = {
     "en": "Your organisation's sign-in knows you as {email}, but that address is not on the staff list. Ask an owner to add it under Who can teach, then reload this page."
   },
   "admin.sso.noEmail": {
-    "ru": "Корпоративный вход не передал адрес почты, поэтому Colloq не может узнать в вас преподавателя. Войдите по личной ссылке или попросите администратора проверить AUTH_JWT_EMAIL_CLAIM.",
-    "en": "Your organisation's sign-in sent no email address, so Colloq cannot tell whether you are on the staff. Use your personal link, or ask the administrator to check AUTH_JWT_EMAIL_CLAIM."
+    "ru": "Корпоративный вход не передал адрес почты, поэтому Aula Lab не может узнать в вас преподавателя. Войдите по личной ссылке или попросите администратора проверить AUTH_JWT_EMAIL_CLAIM.",
+    "en": "Your organisation's sign-in sent no email address, so Aula Lab cannot tell whether you are on the staff. Use your personal link, or ask the administrator to check AUTH_JWT_EMAIL_CLAIM."
   },
   "admin.page.title": {
     "ru": "Страница занятия",
@@ -8153,8 +8153,8 @@ export const adminMessages: MessageCatalog = {
     "en": "Rent on vast and connect (from the repository)"
   },
   "admin.runners.connect.vastLeftOut": {
-    "ru": "Команды make vast-runner здесь нет: машины из репозитория берут опубликованный образ colloq-server этого релиза, а этот сервер работает на своём образе.",
-    "en": "There is no make vast-runner command here: machines from the repository take the published colloq-server image of this release, and this server runs an image of its own."
+    "ru": "Команды make vast-runner здесь нет: машины из репозитория берут опубликованный образ aulalab-server этого релиза, а этот сервер работает на своём образе.",
+    "en": "There is no make vast-runner command here: machines from the repository take the published aulalab-server image of this release, and this server runs an image of its own."
   },
   "admin.runners.connect.copy": {
     "ru": "Копировать",
@@ -8669,8 +8669,8 @@ export const adminMessages: MessageCatalog = {
     "en": "Problem"
   },
   "admin.runners.event.left": {
-    "ru": "Ушла сама: colloq-host runner leave",
-    "en": "Left on its own: colloq-host runner leave"
+    "ru": "Ушла сама: aulalab-host runner leave",
+    "en": "Left on its own: aulalab-host runner leave"
   },
   "admin.competitions.fleet.where": {
     "ru": {
@@ -9381,8 +9381,8 @@ export const adminMessages: MessageCatalog = {
     "en": "the admission check runs once a class image is on the machine"
   },
   "admin.runners.classes.sameDaemon": {
-    "ru": "на этой машине стоит сервер Colloq — занятия нельзя",
-    "en": "this machine runs the Colloq server — no classes"
+    "ru": "на этой машине стоит сервер Aula Lab — занятия нельзя",
+    "en": "this machine runs the Aula Lab server — no classes"
   },
   "admin.runners.classes.quarantined": {
     "ru": "на карантине с {time} — дважды пропадала за 30 минут; посылки берёт как обычно. Вернуть — в меню ⋯",
@@ -10117,8 +10117,8 @@ export const adminMessages: MessageCatalog = {
     "en": "failed the check"
   },
   "admin.placement.why.sameDaemon": {
-    "ru": "на ней сервер Colloq",
-    "en": "runs the Colloq server"
+    "ru": "на ней сервер Aula Lab",
+    "en": "runs the Aula Lab server"
   },
   "admin.placement.why.avoided": {
     "ru": "недавно пропадала",
@@ -10137,8 +10137,8 @@ export const adminMessages: MessageCatalog = {
     "en": "The environment was built on this server — machines do not have it"
   },
   "admin.placement.refusal.notPortableNote": {
-    "ru": "Среда {env} собрана преподавателем, её образа нет в реестре. Все три части считаются здесь. Чтобы уехать на машины, выберите среду colloq: base, base-gpu, kaggle-base или kaggle-gpu.",
-    "en": "The {env} environment was built by a teacher and its image is not in the registry. All three parts run here. To use machines, pick a colloq environment: base, base-gpu, kaggle-base or kaggle-gpu."
+    "ru": "Среда {env} собрана преподавателем, её образа нет в реестре. Все три части считаются здесь. Чтобы уехать на машины, выберите среду aulalab: base, base-gpu, kaggle-base или kaggle-gpu.",
+    "en": "The {env} environment was built by a teacher and its image is not in the registry. All three parts run here. To use machines, pick a aulalab environment: base, base-gpu, kaggle-base or kaggle-gpu."
   },
   "admin.placement.refusal.changeEnvironment": {
     "ru": "Сменить среду",

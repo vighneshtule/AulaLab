@@ -18,8 +18,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const scratch = path.join(root, 'scratchpad/k3d')
 const id = randomBytes(6).toString('hex')
 const fixture = path.join(scratch, `fixture-${id}`)
-const cluster = `colloq-smoke-${id}`
-const registry = `colloq-smoke-reg-${id}`
+const cluster = `aulalab-smoke-${id}`
+const registry = `aulalab-smoke-reg-${id}`
 const kubeconfig = path.join(fixture, 'kubeconfig')
 const inputArgs = process.argv.slice(2)
 const profileFlag = inputArgs.indexOf('--colima-profile')
@@ -74,7 +74,7 @@ async function command(bin: string, argv: string[], options: { input?: string | 
 }
 const k3dBin = fs.existsSync(path.join(scratch, `k3d-${process.platform === 'darwin' ? 'darwin' : 'linux'}-${process.arch === 'arm64' ? 'arm64' : 'amd64'}`))
   ? path.join(scratch, `k3d-${process.platform === 'darwin' ? 'darwin' : 'linux'}-${process.arch === 'arm64' ? 'arm64' : 'amd64'}`) : 'k3d'
-let kubectlBin = process.env.COLLOQ_KUBECTL_BIN || ''
+let kubectlBin = process.env.AULALAB_KUBECTL_BIN || ''
 const kube = (argv: string[], input?: string | Buffer, timeout?: number, quiet = false) => command(kubectlBin, ['--kubeconfig', kubeconfig, ...argv], { input, timeout, quiet })
 const k3d = (argv: string[], timeout?: number) => command(k3dBin, argv, { env: { ...childEnv, KUBECONFIG: kubeconfig }, timeout })
 const GiB = 1024 ** 3
@@ -118,7 +118,7 @@ function defaultKubeconfigHash(): string | null {
 }
 async function ensureKubectl(): Promise<string | null> {
   if (kubectlBin) {
-    if (!fs.statSync(kubectlBin).isFile()) throw new Error('COLLOQ_KUBECTL_BIN is not a regular file')
+    if (!fs.statSync(kubectlBin).isFile()) throw new Error('AULALAB_KUBECTL_BIN is not a regular file')
     return null
   }
   const architecture = process.arch === 'arm64' ? 'arm64' : 'amd64'
@@ -152,8 +152,8 @@ async function run() {
   for (const name of ['data', 'workspace']) fs.mkdirSync(path.join(fixture, name), { mode: 0o777 })
   fs.chmodSync(path.join(fixture, 'data'), 0o777)
   fs.chmodSync(path.join(fixture, 'workspace'), 0o777)
-  fs.writeFileSync(path.join(fixture, '.colloq-k3s-smoke-root'), 'colloq-k3s-smoke-v1', { mode: 0o600 })
-  fs.writeFileSync(path.join(fixture, 'data/.colloq-k3s-smoke-fixture'), 'colloq-k3s-smoke-v1', { mode: 0o644 })
+  fs.writeFileSync(path.join(fixture, '.aulalab-k3s-smoke-root'), 'aulalab-k3s-smoke-v1', { mode: 0o600 })
+  fs.writeFileSync(path.join(fixture, 'data/.aulalab-k3s-smoke-fixture'), 'aulalab-k3s-smoke-v1', { mode: 0o644 })
   const report: Record<string, unknown> = { ...capacity, status: 'started', created: [] as string[] }
   const created: string[] = []
   const tags: string[] = []
@@ -173,7 +173,7 @@ async function run() {
     clusterAttempted = true
     await k3d(['cluster', 'create', cluster, '--image', plan.k3sImage, '--servers', '1', '--agents', '0', '--no-lb',
       '--api-port', `127.0.0.1:${apiPort}`, '--registry-use', `k3d-${registry}:5000`,
-      '--volume', `${fixture}:/var/lib/colloq@server:0`, '--kubeconfig-update-default=false', '--kubeconfig-switch-context=false',
+      '--volume', `${fixture}:/var/lib/aulalab@server:0`, '--kubeconfig-update-default=false', '--kubeconfig-switch-context=false',
       '--k3s-arg', '--disable=traefik@server:0', '--k3s-arg', '--disable=servicelb@server:0',
       '--k3s-arg', '--kubelet-arg=pod-max-pids=256@server:0', '--timeout', '180s'], 240_000)
     created.push(`cluster:${cluster}`)
@@ -188,11 +188,11 @@ async function run() {
       await command('docker', ['push', tag], { timeout: 600_000 })
       return `${internalRegistry}/${repository}@${await digest(registryPort, repository, id)}`
     }
-    const appImage = await build('colloq-app', 'Dockerfile', '.', ['--target', 'production'])
-    const runtimeImage = await build('colloq-runtime', 'Dockerfile', '.', ['--target', 'broker'])
-    const baseImage = await build('colloq-kernel-base', 'kernel/Dockerfile', 'kernel', ['--build-arg', 'KERNEL_ENV=base'])
-    const kaggleImage = includeKaggle ? await build('colloq-kernel-kaggle-base', 'kernel/Dockerfile', 'kernel',
-      ['--build-arg', `PARENT=${hostRegistry}/colloq-kernel-base:${id}`, '--build-arg', 'KERNEL_ENV=kaggle-base']) : null
+    const appImage = await build('aulalab-app', 'Dockerfile', '.', ['--target', 'production'])
+    const runtimeImage = await build('aulalab-runtime', 'Dockerfile', '.', ['--target', 'broker'])
+    const baseImage = await build('aulalab-kernel-base', 'kernel/Dockerfile', 'kernel', ['--build-arg', 'KERNEL_ENV=base'])
+    const kaggleImage = includeKaggle ? await build('aulalab-kernel-kaggle-base', 'kernel/Dockerfile', 'kernel',
+      ['--build-arg', `PARENT=${hostRegistry}/aulalab-kernel-base:${id}`, '--build-arg', 'KERNEL_ENV=kaggle-base']) : null
     const release = { schemaVersion: 1, version: `smoke-${id}`, sourceCommit: (await command('git', ['rev-parse', 'HEAD'], { quiet: true })).stdout.trim(),
       k3sVersion: 'v1.36.4+k3s1', appImage, runtimeImage, dataSchemaVersion: 1, compatibleDataSchemaVersions: [1],
       catalog: { schemaVersion: 1, release: `smoke-${id}`, defaultEnvironment: 'base',
@@ -202,78 +202,78 @@ async function run() {
     const nodeName = nodes.items?.[0]?.metadata?.name
     if (!/^[a-z0-9][a-z0-9.-]*$/.test(nodeName ?? '')) throw new Error('Missing isolated k3d node')
     const rendered = await command('python3', ['scripts/release.py', 'render', '--release', path.join(fixture, 'release.json'),
-      '--node-name', nodeName, '--state-dir', '/var/lib/colloq'])
+      '--node-name', nodeName, '--state-dir', '/var/lib/aulalab'])
     fs.writeFileSync(path.join(fixture, 'manifest.json'), rendered.stdout, { mode: 0o600 })
     await kube(['apply', '-f', '-'], rendered.stdout, 120_000)
     const authToken = key(), roomSecret = key()
     const secrets = { apiVersion: 'v1', kind: 'List', items: [
-      { apiVersion: 'v1', kind: 'Secret', metadata: { namespace: 'colloq', name: 'colloq-runtime-auth' }, stringData: { 'runtime-token': authToken } },
-      { apiVersion: 'v1', kind: 'Secret', metadata: { namespace: 'colloq', name: 'colloq-room-secret' }, stringData: { 'room-secret': roomSecret } },
-      { apiVersion: 'v1', kind: 'Secret', metadata: { namespace: 'colloq', name: 'colloq-registry' }, type: 'kubernetes.io/dockerconfigjson',
+      { apiVersion: 'v1', kind: 'Secret', metadata: { namespace: 'aulalab', name: 'aulalab-runtime-auth' }, stringData: { 'runtime-token': authToken } },
+      { apiVersion: 'v1', kind: 'Secret', metadata: { namespace: 'aulalab', name: 'aulalab-room-secret' }, stringData: { 'room-secret': roomSecret } },
+      { apiVersion: 'v1', kind: 'Secret', metadata: { namespace: 'aulalab', name: 'aulalab-registry' }, type: 'kubernetes.io/dockerconfigjson',
         stringData: { '.dockerconfigjson': '{"auths":{}}' } },
     ] }
     await kube(['apply', '-f', '-'], JSON.stringify(secrets))
-    await kube(['scale', '-n', 'colloq', 'deployment/colloq-runtime', '--replicas=1'])
-    await kube(['rollout', 'status', '-n', 'colloq', 'deployment/colloq-runtime', '--timeout=120s'], undefined, 150_000)
-    const pod = { apiVersion: 'v1', kind: 'Pod', metadata: { namespace: 'colloq', name: `smoke-app-${id}`, labels: { 'colloq.dev/role': 'app' } },
+    await kube(['scale', '-n', 'aulalab', 'deployment/aulalab-runtime', '--replicas=1'])
+    await kube(['rollout', 'status', '-n', 'aulalab', 'deployment/aulalab-runtime', '--timeout=120s'], undefined, 150_000)
+    const pod = { apiVersion: 'v1', kind: 'Pod', metadata: { namespace: 'aulalab', name: `smoke-app-${id}`, labels: { 'aulalab.dev/role': 'app' } },
       spec: { restartPolicy: 'Never', automountServiceAccountToken: false, securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000, seccompProfile: { type: 'RuntimeDefault' } },
         containers: [{ name: 'fixture', image: appImage, command: ['sleep', '3600'], imagePullPolicy: 'IfNotPresent',
           securityContext: { readOnlyRootFilesystem: true, allowPrivilegeEscalation: false, capabilities: { drop: ['ALL'] } },
           resources: { requests: { cpu: '100m', memory: '256Mi' }, limits: { cpu: '1', memory: '1Gi' } },
           env: [{ name: 'NODE_ENV', value: 'production' }, { name: 'KERNEL_BACKEND', value: 'broker' },
             { name: 'DATA_DIR', value: '/data' }, { name: 'WORKSPACE_DIR', value: '/workspace' },
-            { name: 'KERNEL_RUNTIME_URL', value: 'http://colloq-runtime:8787' },
+            { name: 'KERNEL_RUNTIME_URL', value: 'http://aulalab-runtime:8787' },
             { name: 'KERNEL_RUNTIME_TOKEN_FILE', value: '/run/secrets/runtime-token' },
-            { name: 'KERNEL_CATALOG_FILE', value: '/etc/colloq/catalog.json' },
-            { name: 'COLLOQ_K3S_SMOKE_PREPARE', value: prepare ? '1' : '0' }],
+            { name: 'KERNEL_CATALOG_FILE', value: '/etc/aulalab/catalog.json' },
+            { name: 'AULALAB_K3S_SMOKE_PREPARE', value: prepare ? '1' : '0' }],
           volumeMounts: [{ name: 'data', mountPath: '/data' }, { name: 'workspace', mountPath: '/workspace' },
-            { name: 'catalog', mountPath: '/etc/colloq', readOnly: true },
+            { name: 'catalog', mountPath: '/etc/aulalab', readOnly: true },
             { name: 'token', mountPath: '/run/secrets', readOnly: true },
             { name: 'smoke', mountPath: '/app/smoke' }, { name: 'tmp', mountPath: '/tmp' }] }],
-        volumes: [{ name: 'data', persistentVolumeClaim: { claimName: 'colloq-data' } },
-          { name: 'workspace', persistentVolumeClaim: { claimName: 'colloq-workspace' } },
-          { name: 'catalog', configMap: { name: 'colloq-catalog' } },
-          { name: 'token', secret: { secretName: 'colloq-runtime-auth' } },
+        volumes: [{ name: 'data', persistentVolumeClaim: { claimName: 'aulalab-data' } },
+          { name: 'workspace', persistentVolumeClaim: { claimName: 'aulalab-workspace' } },
+          { name: 'catalog', configMap: { name: 'aulalab-catalog' } },
+          { name: 'token', secret: { secretName: 'aulalab-runtime-auth' } },
           { name: 'smoke', emptyDir: { sizeLimit: '8Mi' } }, { name: 'tmp', emptyDir: { sizeLimit: '64Mi' } }] } }
     await kube(['apply', '-f', '-'], JSON.stringify(pod))
-    await kube(['wait', '-n', 'colloq', '--for=condition=Ready', `pod/${pod.metadata.name}`, '--timeout=120s'], undefined, 150_000)
+    await kube(['wait', '-n', 'aulalab', '--for=condition=Ready', `pod/${pod.metadata.name}`, '--timeout=120s'], undefined, 150_000)
     // A newly started kube-router controller may not have installed its first
     // NetworkPolicy chain yet. Prove enforcement before accepting a job; the
     // broker's own init probe then independently fails closed on any regression.
     const probeName = `smoke-netpol-probe-${id}`
-    const probe = { apiVersion: 'v1', kind: 'Pod', metadata: { namespace: 'colloq', name: probeName,
-      labels: { 'colloq.dev/role': 'competition-job' } }, spec: { restartPolicy: 'Never', automountServiceAccountToken: false,
+    const probe = { apiVersion: 'v1', kind: 'Pod', metadata: { namespace: 'aulalab', name: probeName,
+      labels: { 'aulalab.dev/role': 'competition-job' } }, spec: { restartPolicy: 'Never', automountServiceAccountToken: false,
       securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, seccompProfile: { type: 'RuntimeDefault' } },
       containers: [{ name: 'probe', image: baseImage, command: ['python', '-I', '-c', 'import time;time.sleep(120)'],
         securityContext: { readOnlyRootFilesystem: true, allowPrivilegeEscalation: false, capabilities: { drop: ['ALL'] } },
         resources: { requests: { cpu: '50m', memory: '64Mi' }, limits: { cpu: '250m', memory: '128Mi' } } }] } }
     await kube(['apply', '-f', '-'], JSON.stringify(probe))
     try {
-      await kube(['wait', '-n', 'colloq', '--for=condition=Ready', `pod/${probeName}`, '--timeout=90s'], undefined, 120_000)
+      await kube(['wait', '-n', 'aulalab', '--for=condition=Ready', `pod/${probeName}`, '--timeout=90s'], undefined, 120_000)
       let blocked = 0
       for (let attempt = 0; attempt < 30 && blocked < 3; attempt++) {
-        const result = await kube(['exec', '-n', 'colloq', probeName, '--', 'python', '-I', '-c',
+        const result = await kube(['exec', '-n', 'aulalab', probeName, '--', 'python', '-I', '-c',
           'import socket;s=socket.socket();s.settimeout(1);print(s.connect_ex(("1.1.1.1",443)));s.close()'], undefined, 5000, true)
         blocked = Number(result.stdout.trim()) === 0 ? 0 : blocked + 1
         if (blocked < 3) await new Promise(resolve => setTimeout(resolve, 1000))
       }
       if (blocked < 3) throw new Error('k3s did not enforce competition egress NetworkPolicy')
       report.networkPolicyEgress = 'three consecutive external TCP connection refusals from a selected Pod'
-    } finally { await kube(['delete', '-n', 'colloq', `pod/${probeName}`, '--wait=true'], undefined, 30_000).catch(() => {}) }
+    } finally { await kube(['delete', '-n', 'aulalab', `pod/${probeName}`, '--wait=true'], undefined, 30_000).catch(() => {}) }
     const bundle = path.join(fixture, 'smoke.mjs')
     await command(path.join(root, 'node_modules/.bin/esbuild'), ['scripts/competition-k3s-app-fixture.mts', '--bundle', '--platform=node',
       '--format=esm', '--target=node22', '--external:better-sqlite3',
       '--banner:js=import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
       `--outfile=${bundle}`])
-    await kube(['exec', '-n', 'colloq', '-i', pod.metadata.name, '--', 'sh', '-c', 'cat > /app/smoke/smoke.mjs'], fs.readFileSync(bundle), 30_000)
+    await kube(['exec', '-n', 'aulalab', '-i', pod.metadata.name, '--', 'sh', '-c', 'cat > /app/smoke/smoke.mjs'], fs.readFileSync(bundle), 30_000)
     const observed: any[] = []
     let done = false
-    const invocation = kube(['exec', '-n', 'colloq', pod.metadata.name, '--', 'node', '/app/smoke/smoke.mjs'], undefined, prepare ? 420_000 : 240_000)
+    const invocation = kube(['exec', '-n', 'aulalab', pod.metadata.name, '--', 'node', '/app/smoke/smoke.mjs'], undefined, prepare ? 420_000 : 240_000)
       .then(value => ({ value, error: null as Error | null }), error => ({ value: null as Result | null, error: error as Error }))
       .finally(() => { done = true })
     while (!done) {
       try {
-        const listed = JSON.parse((await kube(['get', 'pods', '-n', 'colloq', '-l', 'app.kubernetes.io/managed-by=colloq-runtime', '-o', 'json'], undefined, 10_000, true)).stdout)
+        const listed = JSON.parse((await kube(['get', 'pods', '-n', 'aulalab', '-l', 'app.kubernetes.io/managed-by=aulalab-runtime', '-o', 'json'], undefined, 10_000, true)).stdout)
         for (const item of listed.items ?? []) if (!observed.some(row => row.metadata.uid === item.metadata.uid)) observed.push(item)
       } catch { /* The command result will surface a real failure. */ }
       await new Promise(resolve => setTimeout(resolve, 250))
@@ -281,12 +281,12 @@ async function run() {
     const invocationResult = await invocation
     if (invocationResult.error) throw invocationResult.error
     const output = invocationResult.value!.stdout
-    const match = output.match(/COLLOQ_K3S_SMOKE_RESULT=(\{[^\n]+\})/)
+    const match = output.match(/AULALAB_K3S_SMOKE_RESULT=(\{[^\n]+\})/)
     if (!match) throw new Error(`Fixture did not report success: ${output.slice(-2000)}`)
     const result = JSON.parse(match[1]!)
-    const notebook = observed.find(item => item.metadata?.labels?.['colloq.dev/role'] === 'competition-job' &&
+    const notebook = observed.find(item => item.metadata?.labels?.['aulalab.dev/role'] === 'competition-job' &&
       item.spec?.containers?.[0]?.command?.some((arg: string) => arg.includes('run_notebook')))
-    const metric = observed.find(item => item.metadata?.labels?.['colloq.dev/role'] === 'competition-job' &&
+    const metric = observed.find(item => item.metadata?.labels?.['aulalab.dev/role'] === 'competition-job' &&
       item.spec?.containers?.[0]?.command?.some((arg: string) => arg.includes('broker_score')))
     if (!notebook || !metric) throw new Error('Did not capture both notebook and metric Pod specifications')
     for (const job of [notebook, metric]) {
@@ -299,8 +299,8 @@ async function run() {
     const metricMounts = metric.spec.containers[0].volumeMounts.map((entry: any) => entry.mountPath)
     if (notebookMounts.includes('/secret') || metricMounts.includes('/data') || metricMounts.includes('/deps')) throw new Error('Notebook/scorer mount separation failed')
     if (prepare) {
-      const resolver = observed.find(item => item.metadata?.labels?.['colloq.dev/role'] === 'competition-resolver')
-      const proxy = observed.find(item => item.metadata?.labels?.['colloq.dev/role'] === 'competition-proxy')
+      const resolver = observed.find(item => item.metadata?.labels?.['aulalab.dev/role'] === 'competition-resolver')
+      const proxy = observed.find(item => item.metadata?.labels?.['aulalab.dev/role'] === 'competition-proxy')
       if (!resolver || !proxy) throw new Error('Did not capture isolated resolver and proxy Pods')
       const resolverMounts = resolver.spec.containers[0].volumeMounts.map((entry: any) => entry.mountPath)
       if (resolverMounts.includes('/secret') || resolverMounts.includes('/data') || !resolverMounts.includes('/input') || !resolverMounts.includes('/wheels'))
@@ -310,7 +310,7 @@ async function run() {
         throw new Error('Proxy received a data PVC mount')
     }
     report.status = 'passed'; report.result = result
-    report.pods = observed.map(item => ({ name: item.metadata.name, role: item.metadata.labels?.['colloq.dev/role'],
+    report.pods = observed.map(item => ({ name: item.metadata.name, role: item.metadata.labels?.['aulalab.dev/role'],
       containers: item.spec.containers.map((container: any) => ({ name: container.name, image: container.image,
         readOnlyRootFilesystem: container.securityContext?.readOnlyRootFilesystem,
         mounts: (container.volumeMounts ?? []).map((mount: any) => ({ path: mount.mountPath, readOnly: mount.readOnly === true })) })) }))

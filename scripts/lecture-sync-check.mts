@@ -36,7 +36,7 @@ const PORT = Number(process.env.SYNC_CHECK_PORT ?? 3898)
 const CDP_PORT = Number(process.env.SYNC_CHECK_CDP ?? 9338)
 const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 
-const root = mkdtempSync(path.join(tmpdir(), 'colloq-sync-'))
+const root = mkdtempSync(path.join(tmpdir(), 'aulalab-sync-'))
 const ROOM = 'sync1'
 /** This many pages in the deck: the queue of presses must stay inside the document, not run into its end. */
 const PAGES = 24

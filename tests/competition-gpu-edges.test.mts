@@ -158,11 +158,11 @@ function send(competition: Competition, name: string, at: number, source: string
 }
 
 /** A run the stand-in holds until it is cancelled. */
-const HOLD = '# colloq-test: {"hold": 60000}\nmodel.fit()'
+const HOLD = '# aulalab-test: {"hold": 60000}\nmodel.fit()'
 /** torch's own out-of-memory in a participant's cell, as the harness reports it. */
-const TORCH_OOM = '# colloq-test: {"status": "cell_error", "hold": 100, "detail": "Traceback (most recent call last):\\n  Cell In[3], line 1\\nOutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 GiB."}\nmodel.fit()'
+const TORCH_OOM = '# aulalab-test: {"status": "cell_error", "hold": 100, "detail": "Traceback (most recent call last):\\n  Cell In[3], line 1\\nOutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 GiB."}\nmodel.fit()'
 /** A neighbour that runs a little longer; the stand-in then stops it for an unreadable card (Runner.unread). */
-const NEIGHBOUR = '# colloq-test: {"hold": 600}\nmodel.fit()'
+const NEIGHBOUR = '# aulalab-test: {"hold": 600}\nmodel.fit()'
 
 const RTX = { name: 'NVIDIA GeForce RTX 4090', memoryMb: 24_564 }
 

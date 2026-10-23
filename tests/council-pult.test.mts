@@ -505,7 +505,7 @@ test('"console open" lives by the heartbeat, not by a reference to the window', 
 })
 
 test('the window opens by the room\'s name, as a popup and at the given size', () => {
-  assert.equal(pultWindowName('kf3n8q2p'), 'colloq-council-pult-kf3n8q2p')
+  assert.equal(pultWindowName('kf3n8q2p'), 'aulalab-council-pult-kf3n8q2p')
   assert.equal(pultPath('kf3n8q2p', 'cell-04'), '/s/kf3n8q2p/council/cell-04')
   const fresh = windowFeatures(null)
   // popup=yes is required: without it Chrome opens a TAB and silently

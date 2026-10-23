@@ -119,9 +119,9 @@ test('the height comes from the figure, within reasonable limits', () => {
 })
 
 test('a frame message is recognised by its tag, not by guessing at its shape', () => {
-  assert.ok(isPlotlyMessage({ colloq: PLOTLY_MSG, kind: 'ready' }))
+  assert.ok(isPlotlyMessage({ aulalab: PLOTLY_MSG, kind: 'ready' }))
   assert.ok(!isPlotlyMessage({ kind: 'ready' }))
-  assert.ok(!isPlotlyMessage({ colloq: 'webpackHotUpdate', kind: 'ready' }))
+  assert.ok(!isPlotlyMessage({ aulalab: 'webpackHotUpdate', kind: 'ready' }))
   assert.ok(!isPlotlyMessage('ready'))
   assert.ok(!isPlotlyMessage(null))
 })

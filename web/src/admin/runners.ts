@@ -845,7 +845,7 @@ export interface MachineMenu {
  * machine is drained by home, and «Вернуть в работу» is how the owner says
  * the cause is fixed.
  *
- * A machine that drains by itself (RemoteMachine.selfDrain: `colloq-host
+ * A machine that drains by itself (RemoteMachine.selfDrain: `aulalab-host
  * runner update`, a stop, a leave) is not held by anyone's word here: the
  * resume door lifts only the owner's drain or home's quarantine, so it
  * answered 200 and the machine stayed «осушается». It offers «Осушить»
@@ -905,7 +905,7 @@ export const PLACES_BOUNDS = { min: 1, max: REMOTE_ATTEMPTS_MAX } as const
 export const PER_DEVICE_BOUNDS = { min: 1, max: REMOTE_PER_DEVICE_MAX } as const
 /**
  * A code joins 1–100 machines (MintRemoteCodeRequest.machines): the door's
- * bound and `colloq-host runner-code --machines`'s (server/src/competitions/
+ * bound and `aulalab-host runner-code --machines`'s (server/src/competitions/
  * remote/store.ts · REMOTE_CODE_MACHINES_MAX). A stricter one here refused
  * in the dialog what the shell on the same server allows.
  */
@@ -989,11 +989,11 @@ export interface JoinCommand {
  * the server filled in (MintRemoteCodeResponse.commands). It leaves `vast`
  * out ('') on purpose for an instance on an image of its own — a
  * university's registry, an official image pinned by digest with no release
- * label — since `make vast-runner` machines take the published colloq-server
+ * label — since `make vast-runner` machines take the published aulalab-server
  * of the release, which is not this instance's build (remote/commands.ts).
  * Drawn anyway, that was a label over an empty terminal box whose Copy
  * copied nothing and said «Скопировано»; the dialog says why it is missing
- * instead (`vastLeftOut`), as `colloq-host runner-code` does.
+ * instead (`vastLeftOut`), as `aulalab-host runner-code` does.
  */
 export function joinCommands(commands: MintRemoteCodeResponse['commands']): { commands: JoinCommand[]; vastLeftOut: boolean } {
   const all: JoinCommand[] = [
@@ -1293,7 +1293,7 @@ export function machineLede(machine: Pick<RemoteMachine, 'address' | 'version' |
     machine.address,
     machine.version === null
       ? null
-      : `colloq ${machine.version}, ${machine.compatible ? tr('admin.runners.page.codeSame') : tr('admin.runners.page.codeDiffers')}`,
+      : `aulalab ${machine.version}, ${machine.compatible ? tr('admin.runners.page.codeSame') : tr('admin.runners.page.codeDiffers')}`,
     tr('admin.runners.page.joined', { when: formatDate(machine.createdAt, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) }),
     machine.lastSeenAt === null
       ? tr('admin.runners.seen.never')
@@ -2009,7 +2009,7 @@ export function classesCount(count: number): string {
  * designer's tones): calm while it serves or is ready, accent while a class
  * image downloads, amber for what the owner must fix with a command or a
  * wait, red for a perimeter that is not there, and a dashed faint one where
- * classes are impossible (a Colloq server on its Docker). `null` — no chip:
+ * classes are impossible (a Aula Lab server on its Docker). `null` — no chip:
  * the machine was never opened to classes and holds none, or it is gone.
  */
 export function classesChip(machine: Pick<RemoteMachine, 'state' | 'classes'>): { word: string; tone: ChipTone; dashed: boolean } | null {

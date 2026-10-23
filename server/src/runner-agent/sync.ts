@@ -37,7 +37,7 @@
  * note 3), removes its containers and exits. A 401 is the owner's revocation:
  * the hidden test is purged, Docker's restart policy for this container is
  * turned off (or unless-stopped would start a revoked machine forever) and the
- * agent exits — unless COLLOQ_RUNNER_JOIN carries a new code, in which case the
+ * agent exits — unless AULALAB_RUNNER_JOIN carries a new code, in which case the
  * dead identity is put aside and the machine joins anew.
  *
  * NEVER MORE THAN ONE SYNC CAN LIST, AND NO CRASH OVER A FULL DISK. An offer
@@ -58,7 +58,7 @@
  * the first sync of a life therefore carries none, and with class containers
  * adopted it is held for no time, so home's block comes back at once. Class containers outlive the agent: SIGTERM
  * leaves them running, and the stop's last sync says why it is the last
- * (`bye`: `restart` when `colloq-host runner update` left its marker,
+ * (`bye`: `restart` when `aulalab-host runner update` left its marker,
  * `stopping` otherwise, `leaving` on a leave). A revocation, a leave and a
  * move to another home remove them with their folders. The class folders'
  * copies ride the same block (room-files.ts, §8): home's pushes and pulls in
@@ -195,7 +195,7 @@ const IDENTITY_RETRY_MS = 30_000
 /** A write the disk refused stays said this long after the last one (a disk that refuses writes does not say when it stops). */
 const DISK_FULL_KEEP_MS = 10 * 60_000
 /** The status's line for a machine whose build home does not take. */
-const OUTDATED = 'this machine\'s build is not its home\'s: it finishes what it holds and takes nothing new (colloq-host runner update)'
+const OUTDATED = 'this machine\'s build is not its home\'s: it finishes what it holds and takes nothing new (aulalab-host runner update)'
 /** What the CAS keeps for the councils before their host is built (Cache · pinned). */
 const NOTHING_PINNED: ReadonlySet<string> = new Set()
 
@@ -230,18 +230,18 @@ const agentTunnel: TunnelFactory = async (options) => new (await import('./tunne
 
 export interface AgentOptions {
   layout: StateLayout
-  /** COLLOQ_RUNNER_JOIN, parsed (remoteJoinTarget); null — none given. */
+  /** AULALAB_RUNNER_JOIN, parsed (remoteJoinTarget); null — none given. */
   join: { home: string; code: string } | null
   build: string
   version: string
   /**
-   * COLLOQ_RUNNER_CONTAINER: this agent's container, whose restart policy goes
+   * AULALAB_RUNNER_CONTAINER: this agent's container, whose restart policy goes
    * off when the machine is revoked or left; null — none of its own (make
    * runner-dev, §13c note 20), and then nothing is `docker update`d or
    * inspected by a name that could be anyone's container on that daemon.
    */
   container: string | null
-  /** COLLOQ_RUNNER_IMAGE: the image the cards (and Docker's disk) are probed with; null — the image of `container`, as docker says. */
+  /** AULALAB_RUNNER_IMAGE: the image the cards (and Docker's disk) are probed with; null — the image of `container`, as docker says. */
   image: string | null
   docker?: Docker
   runner?: RunSeam
@@ -258,7 +258,7 @@ export interface AgentOptions {
   holdMs?: { idle: number; busy: number }
   /** Tests: the most attempts held at once, below REMOTE_ATTEMPTS_MAX (never above it). */
   attemptsMax?: number
-  /** The machine's own COLLOQ_ROOM_NETWORK, KERNEL_BLOCKED_CIDRS and KERNEL_ROOM_SUBNET, for its classes' perimeter; by default the process's. */
+  /** The machine's own AULALAB_ROOM_NETWORK, KERNEL_BLOCKED_CIDRS and KERNEL_ROOM_SUBNET, for its classes' perimeter; by default the process's. */
   env?: NodeJS.ProcessEnv
   /** Tests: the class tunnel's end (AgentTunnel by default). */
   tunnel?: TunnelFactory
@@ -355,7 +355,7 @@ export class Agent extends EventEmitter {
   private perDevice = 1
   private homeVersion: string | null = null
   private probe: { info: Awaited<ReturnType<typeof dockerInfo>>['info']; cards: ProbedCard[]; driver: string | null } = { info: null, cards: [], driver: null }
-  /** The image check containers start from (COLLOQ_RUNNER_IMAGE, or this container's own), once asked. */
+  /** The image check containers start from (AULALAB_RUNNER_IMAGE, or this container's own), once asked. */
   private checkImage: Promise<string | null> | null = null
   /** Docker's own store, where pulls land: `same` as the tree's filesystem, its room when another, null — not measured (machine.ts · measureDockerDisk). */
   private dockerDisk: DiskSpace | 'same' | null = null
@@ -538,7 +538,7 @@ export class Agent extends EventEmitter {
     }, STATUS_EVERY_MS)
     this.statusTimer.unref?.()
     try {
-      // A marker an earlier stop did not take is no word about this life's (colloq-host writes it right before the stop it means).
+      // A marker an earlier stop did not take is no word about this life's (aulalab-host writes it right before the stop it means).
       clearRestartMarker(this.layout)
       await this.sweep()
       const stored = readLeases(this.layout)
@@ -917,7 +917,7 @@ export class Agent extends EventEmitter {
    * The identity to sync with: the one written down, a new join, or an exit.
    * Never another home's secret to this one: an identity of another home is
    * put aside. A revoked or left identity is put aside only for a new code in
-   * COLLOQ_RUNNER_JOIN; with the same code the machine stays gone.
+   * AULALAB_RUNNER_JOIN; with the same code the machine stays gone.
    */
   private async ensureJoined(): Promise<Joined | AgentExit> {
     const target = this.options.join
@@ -947,7 +947,7 @@ export class Agent extends EventEmitter {
       await this.removeClasses(`the ${why} identity's classes`)
       identity = null
     }
-    if (!target) return { reason: 'refused', code: 78, detail: 'COLLOQ_RUNNER_JOIN is not set and this machine has not joined a home: -e COLLOQ_RUNNER_JOIN=\'https://<home>#<code>\'' }
+    if (!target) return { reason: 'refused', code: 78, detail: 'AULALAB_RUNNER_JOIN is not set and this machine has not joined a home: -e AULALAB_RUNNER_JOIN=\'https://<home>#<code>\'' }
     if (!identity || identity.codeSha256 !== code) {
       // Written down before the first try: a join whose reply is lost is the same join next time.
       identity = { home: target.home, joinId: randomBytes(16).toString('hex'), joinIdAt: this.now(), codeSha256: code! }
@@ -1189,7 +1189,7 @@ export class Agent extends EventEmitter {
         // Another version of the contract: no lease is taken here until the machine runs home's release, which `compatible: false` tells the fleet's update.
         if (answer.error === 'protocol') this.compatible = false
         this.problemLine = answer.error === 'protocol'
-          ? `home runs another version of this machine's protocol (${answer.detail}): it needs the release home runs (colloq-host runner update)`
+          ? `home runs another version of this machine's protocol (${answer.detail}): it needs the release home runs (aulalab-host runner update)`
           : `home refused the sync: ${answer.error}${answer.detail ? ` (${answer.detail})` : ''}`
         this.log(`[runner] ${this.problemLine}`)
         this.writeStatus()
@@ -1243,7 +1243,7 @@ export class Agent extends EventEmitter {
       const words: Record<string, string> = {
         home_offline: 'home is offline (its relay has no tunnel to it)',
         home_silent: 'home does not answer, and whether its relay\'s tunnel to it is up is unknown (the relay says so, but sees a cut tunnel only a while later)',
-        home_unknown: 'the relay serves no home by this name (is the address in COLLOQ_RUNNER_JOIN right?)',
+        home_unknown: 'the relay serves no home by this name (is the address in AULALAB_RUNNER_JOIN right?)',
         unreachable: 'neither home nor its relay answers',
       }
       this.log(`[runner] ${answer.reason}: ${words[this.path ?? ''] ?? 'home did not answer'}; trying again`)
@@ -1254,14 +1254,14 @@ export class Agent extends EventEmitter {
 
   /**
    * A 401. While leaving with nothing held, it is home revoking the machine as
-   * asked. With a new code in COLLOQ_RUNNER_JOIN, the dead identity goes aside
+   * asked. With a new code in AULALAB_RUNNER_JOIN, the dead identity goes aside
    * and the machine joins anew (null: go on syncing). Otherwise the owner
    * revoked it (the header): an exit.
    *
    * A machine asked to leave that the owner revokes while it still drains has
    * got where the leave was going: it is gone from its home, and `runner
    * leave` hears that it left, and that it was revoked (control.ts), rather
-   * than a dropped connection colloq-host would read as "did not leave" and
+   * than a dropped connection aulalab-host would read as "did not leave" and
    * answer by turning the restart policy back on. And it joins nothing anew,
    * whatever code waits: it was asked to go.
    */
@@ -2063,7 +2063,7 @@ export class Agent extends EventEmitter {
 
   /**
    * The image the check containers start from (the card probe, the measure
-   * of Docker's disk): COLLOQ_RUNNER_IMAGE, or the image this container runs,
+   * of Docker's disk): AULALAB_RUNNER_IMAGE, or the image this container runs,
    * as docker says; null — neither (no container of its own and no image
    * named: make runner-dev), and then no check container is started at all.
    * A probe that found none asks again; one found is kept.
@@ -2078,7 +2078,7 @@ export class Agent extends EventEmitter {
     return this.checkImage
   }
 
-  /** The image this container runs, when COLLOQ_RUNNER_IMAGE did not say: what `--gpus all` probes the cards with. */
+  /** The image this container runs, when AULALAB_RUNNER_IMAGE did not say: what `--gpus all` probes the cards with. */
   private async ownImage(): Promise<string | null> {
     if (this.options.container === null) return null
     const asked = await this.docker(['inspect', '-f', '{{.Config.Image}}', this.options.container], { timeoutMs: 20_000 })

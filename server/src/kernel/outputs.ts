@@ -125,7 +125,7 @@ const MAX_ERROR_LINE_CHARS = 4 * 1024
 /** Cut a line, saying in the line itself that it was cut. */
 function clip(text: string, max: number): string {
   if (text.length <= max) return text
-  return tr("server.colloqMoreCharactersCutHere.cfc854", { p0: text.slice(0, max), p1: text.length - max })
+  return tr("server.aulalabMoreCharactersCutHere.cfc854", { p0: text.slice(0, max), p1: text.length - max })
 }
 
 /**
@@ -609,7 +609,7 @@ export class OutputWriter {
     this.noticed = true
     this.say(
       outputs,
-      tr("server.colloqOutputStoppedAfterCharactersSaveThe.cf6866", { p0: MAX_CELL_OUTPUT_CHARS }),
+      tr("server.aulalabOutputStoppedAfterCharactersSaveThe.cf6866", { p0: MAX_CELL_OUTPUT_CHARS }),
     )
   }
 
@@ -623,7 +623,7 @@ export class OutputWriter {
         : `${Math.round(this.dataBudget / 1024)} KB`
     this.say(
       outputs,
-      tr("server.colloqTheImageOutputLimitWasReached.a9f30a", { p0: shown }) +
+      tr("server.aulalabTheImageOutputLimitWasReached.a9f30a", { p0: shown }) +
         tr("server.saveTheFigureToAFileOr.961b0e") +
         tr("server.itsSizeFigsizeDpi.24640a"),
     )

@@ -200,7 +200,7 @@ test('a competition whose metrics ran before the pins keeps scoring where they r
   // Scored by 0.22: a metric run with no revision recorded, in the submission's own image.
   const g = competition(true)
   const scored = answered(g, gpuPin)
-  const legacy = startRun({ submissionId: scored.id, kind: 'metric', container: 'colloq-comp-legacy-score', at: 1 })
+  const legacy = startRun({ submissionId: scored.id, kind: 'metric', container: 'aulalab-comp-legacy-score', at: 1 })
   finishRun(legacy.id, { finishedAt: 2, verdict: 'ok', publicScore: 1, privateScore: 1 })
   await rescore(g)
   assert.deepEqual(metricPin(g.id), { revisionId: null })
@@ -209,7 +209,7 @@ test('a competition whose metrics ran before the pins keeps scoring where they r
   // Scored in an older kaggle-base before the pins: that one, not the newest.
   const k = competition(true)
   const before = answered(k, gpuPin)
-  const earlier = startRun({ submissionId: before.id, kind: 'metric', container: 'colloq-comp-earlier-score', at: 1, revisionId: older.id })
+  const earlier = startRun({ submissionId: before.id, kind: 'metric', container: 'aulalab-comp-earlier-score', at: 1, revisionId: older.id })
   finishRun(earlier.id, { finishedAt: 2, verdict: 'ok', publicScore: 1, privateScore: 1 })
   await rescore(k)
   assert.deepEqual(metricPin(k.id), { revisionId: older.id })
@@ -282,7 +282,7 @@ test('on a server with only GPU competitions kaggle-base is recorded the first t
   const built = digest('e')
   useCompetitionRunner(asDocker)
   // Built under «Окружения»: the image is here under its name, and no revision records it.
-  useCompetitionCapabilities(dockerWith(['colloq-kernel:kaggle-base', built]))
+  useCompetitionCapabilities(dockerWith(['aulalab-kernel:kaggle-base', built]))
   useDockerForRevisions(async (args) => {
     if (args[0] === 'image' && args[1] === 'inspect') return JSON.stringify([{ Id: built, Os: 'linux', Architecture: 'amd64', RootFS: { Layers: [] }, RepoDigests: [] }])
     if (args[0] === 'run') return JSON.stringify({ python: '3.11.16', abi: 'cpython-311-x86_64-linux-gnu', packages: [{ name: 'pandas', version: '3.0.6' }] })
@@ -471,17 +471,17 @@ test('a competition checked on the CPU and then given a card pins kaggle-base at
     const k = competition(true)
     const check = answered(k, gpuImage)
     updateCompetition(k.id, { baselineSubmissionId: check.id })
-    const checked = startRun({ submissionId: check.id, kind: 'metric', container: 'colloq-comp-check-score', at: 1 })
+    const checked = startRun({ submissionId: check.id, kind: 'metric', container: 'aulalab-comp-check-score', at: 1 })
     finishRun(checked.id, { finishedAt: 2, verdict: 'ok', publicScore: 1, privateScore: 1 })
     const broken = answered(k, gpuImage)
-    const failed = startRun({ submissionId: broken.id, kind: 'metric', container: 'colloq-comp-broken-score', at: 3 })
+    const failed = startRun({ submissionId: broken.id, kind: 'metric', container: 'aulalab-comp-broken-score', at: 3 })
     finishRun(failed.id, { finishedAt: 4, verdict: 'metric_error' })
     await rescore(k)
     assert.deepEqual(metricPin(k.id), { revisionId: light.id })
     // A score 0.22 put on its board does: that competition keeps scoring in each submission's own image.
     const scored = competition(true)
     const board = answered(scored, gpuImage)
-    const legacy = startRun({ submissionId: board.id, kind: 'metric', container: 'colloq-comp-board-score', at: 1 })
+    const legacy = startRun({ submissionId: board.id, kind: 'metric', container: 'aulalab-comp-board-score', at: 1 })
     finishRun(legacy.id, { finishedAt: 2, verdict: 'ok', publicScore: 1, privateScore: 1 })
     await rescore(scored)
     assert.deepEqual(metricPin(scored.id), { revisionId: null })

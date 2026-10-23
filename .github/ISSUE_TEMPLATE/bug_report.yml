@@ -1,12 +1,12 @@
 name: Bug report
-description: Something in Colloq does not work as documented.
+description: Something in Aula Lab does not work as documented.
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for taking the time. **Security problems do not belong here**: see
-        [SECURITY.md](https://github.com/colloq-edu/colloq/blob/main/SECURITY.md).
+        [SECURITY.md](https://github.com/vighneshtule/AulaLab/blob/main/SECURITY.md).
 
         Before posting, remove secrets from everything you paste: API keys,
         `SESSION_SECRET`, the setup token, teacher sign-in links, relay/cloud
@@ -14,9 +14,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: Colloq version
+      label: Aula Lab version
       description: |
-        Output of `colloq --version`. For a k3s release, the release version from
+        Output of `aulalab --version`. For a k3s release, the release version from
         `release.json`; for a container image, its tag or digest; for a source
         checkout, also `git rev-parse --short HEAD`.
       placeholder: "0.1.0"
@@ -25,9 +25,9 @@ body:
   - type: dropdown
     id: install
     attributes:
-      label: How is Colloq installed?
+      label: How is Aula Lab installed?
       options:
-        - pip package (colloq start)
+        - pip package (aulalab start)
         - Source checkout (make dev / make run)
         - Source checkout in Docker (make up)
         - k3s release (scripts/cluster.sh)
@@ -38,7 +38,7 @@ body:
   - type: input
     id: os
     attributes:
-      label: Operating system of the machine running Colloq
+      label: Operating system of the machine running Aula Lab
       description: Include the architecture and, if relevant, the Docker runtime (Docker Desktop, colima, Docker Engine).
       placeholder: "macOS 15.5 arm64, colima 0.8 · Ubuntu 24.04 amd64, Docker 27"
     validations:
@@ -72,9 +72,9 @@ body:
     attributes:
       label: Logs and diagnostics
       description: |
-        Where to find them: `colloq logs` or `.colloq.log` in the state directory
-        (`~/.colloq` for pip), `make logs-run` for `make run`, `make cluster-logs`
-        on k3s, the browser console for interface errors. `colloq doctor --json`
+        Where to find them: `aulalab logs` or `.aulalab.log` in the state directory
+        (`~/.aulalab` for pip), `make logs-run` for `make run`, `make cluster-logs`
+        on k3s, the browser console for interface errors. `aulalab doctor --json`
         and the output of `/api/health` help too. **Redact tokens and links.**
       render: shell
   - type: checkboxes

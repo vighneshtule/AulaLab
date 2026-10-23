@@ -140,15 +140,15 @@ export function oracleDoor(sessionId: string, who: Asker): DoorRefusal | null {
     return {
       error:
         settings.defaultMode === 'off'
-          ? tr('server.theOracleIsDisabledOnThisColloq.e47e9a')
+          ? tr('server.theOracleIsDisabledOnThisAulaLab.e47e9a')
           : tr('server.theOracleIsDisabledForThisSeminar.48f5c6'),
     }
   }
   if (settings.questionsPerHour === 0) {
-    return { error: tr('server.theOracleIsDisabledOnThisColloq.395e3a') }
+    return { error: tr('server.theOracleIsDisabledOnThisAulaLab.395e3a') }
   }
   if (!aiReady()) {
-    return { error: tr('server.noModelIsConfiguredForThisColloq.112833') }
+    return { error: tr('server.noModelIsConfiguredForThisAulaLab.112833') }
   }
   if (who.role === 'host') return null
 

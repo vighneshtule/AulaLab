@@ -54,7 +54,7 @@
  *    (RunRequest.gpu, competitions/gpu.ts), with what a room gets for it:
  *    `--gpus device=`, a /dev/shm big enough for DataLoader workers (docker's
  *    64 MB kills them with a bus error; it counts toward `--memory`), and the
- *    `colloq.gpu` label, by which a class is kept off the card while the run
+ *    `aulalab.gpu` label, by which a class is kept off the card while the run
  *    holds it (kernel/pool.ts · submissionGpuCards). Every hardening flag
  *    stays: the card was tried under `--read-only`, `--cap-drop=ALL`, uid
  *    1000 and `--network none` on the lab VM. A card shared by several runs
@@ -106,15 +106,15 @@ import {
 import type { RunVerdict } from '@shared/competitions'
 
 /** Label on both containers: cleanup finds them by it, and only them. */
-export const RUN_LABEL = 'colloq.kind=competition-run'
-export const SCORE_LABEL = 'colloq.kind=competition-score'
+export const RUN_LABEL = 'aulalab.kind=competition-run'
+export const SCORE_LABEL = 'aulalab.kind=competition-score'
 const HOST_DATA_ROOT = path.resolve(hostPathOf(dataDir))
-const INSTANCE_KEY = 'ru.colloq.competition-instance'
+const INSTANCE_KEY = 'ru.aulalab.competition-instance'
 const INSTANCE_SCOPE = createHash('sha256').update(HOST_DATA_ROOT).digest('hex').slice(0, 16)
 const INSTANCE_LABEL = `${INSTANCE_KEY}=${INSTANCE_SCOPE}`
 
 /** The image is the one the class runs in: one environment for task and solution. */
-const IMAGE_PREFIX = 'colloq-kernel'
+const IMAGE_PREFIX = 'aulalab-kernel'
 
 /**
  * How often to look at a running container: whether it is alive and whether
@@ -524,7 +524,7 @@ export function runArgs(opts: {
      * nvidia-smi said (gpuSliceMb rounds down).
      */
     ...(share !== null
-      ? ['-e', `COLLOQ_GPU_MEMORY_MB=${gpuAllocatorMb(share)}`, '-e', `COLLOQ_GPU_CARD_MB=${share * (opts.gpu?.perDevice ?? 1)}`]
+      ? ['-e', `AULALAB_GPU_MEMORY_MB=${gpuAllocatorMb(share)}`, '-e', `AULALAB_GPU_CARD_MB=${share * (opts.gpu?.perDevice ?? 1)}`]
       : []),
     ...pythonPath(share !== null ? [HARNESS_SITE] : []),
     ...(opts.dependenciesDir ? [...mount(opts.dependenciesDir, '/deps', true), '-e', 'COMP_DEPENDENCIES=/deps'] : []),
@@ -550,7 +550,7 @@ export function runArgs(opts: {
     '--label',
     RUN_LABEL,
     // The label rooms carry too: by it a new class is kept off the card while this run holds it.
-    ...(device ? ['--label', `colloq.gpu=${device}`] : []),
+    ...(device ? ['--label', `aulalab.gpu=${device}`] : []),
     '-w',
     '/out',
     '--entrypoint',
@@ -1435,7 +1435,7 @@ export class DockerCompetitionRunner implements CompetitionRunner {
    * live only for the duration of one submission, so any found after startup
    * is already orphaned.
    *
-   * Each is read with the card it holds (its `colloq.gpu` label): an orphan
+   * Each is read with the card it holds (its `aulalab.gpu` label): an orphan
    * whose removal fails keeps that card out of the queue's reach until the
    * retry gets it, exactly like a container of this life (capacity ·
    * heldGpus). The queue rows of the previous life gave their cards back
@@ -1444,7 +1444,7 @@ export class DockerCompetitionRunner implements CompetitionRunner {
   async sweep(legacyContainers: readonly string[] = []): Promise<number> {
     let dropped = 0
     for (const label of [RUN_LABEL, SCORE_LABEL]) {
-      const found = await docker(['ps', '-a', '--filter', `label=${label}`, '--filter', `label=${INSTANCE_LABEL}`, '--format', '{{.ID}}\t{{.Label "colloq.gpu"}}'], 20_000)
+      const found = await docker(['ps', '-a', '--filter', `label=${label}`, '--filter', `label=${INSTANCE_LABEL}`, '--format', '{{.ID}}\t{{.Label "aulalab.gpu"}}'], 20_000)
       if (found.code !== 0) continue
       for (const line of found.out.split('\n').map((entry) => entry.trim()).filter(Boolean)) {
         const [id, card = ''] = line.split('\t').map((part) => part.trim())
@@ -1461,7 +1461,7 @@ export class DockerCompetitionRunner implements CompetitionRunner {
       let owned = false
       try {
         const info = JSON.parse(inspected.out)
-        const kind = info.labels?.['colloq.kind']
+        const kind = info.labels?.['aulalab.kind']
         const instance = info.labels?.[INSTANCE_KEY]
         const binds = Array.isArray(info.mounts) ? info.mounts.filter((mount: any) => mount.Type === 'bind') : []
         owned = inspected.code === 0 && ['competition-run', 'competition-score'].includes(kind)

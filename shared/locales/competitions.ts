@@ -78,7 +78,7 @@ export const competitionsMessages: MessageCatalog = {
   /* Пометка выбранной посылки — строчными и с галочкой, так в макете. */
   'competitions.counted': { ru: 'в зачёт', en: 'counted' },
 
-  /* Заголовок публичных страниц: «COLLOQ | Соревнования» в верхней полосе (P1). */
+  /* Заголовок публичных страниц: «AULALAB | Соревнования» в верхней полосе (P1). */
   'competitions.title': { ru: 'Соревнования', en: 'Competitions' },
   'competitions.loading': { ru: 'Открываем соревнования…', en: 'Opening competitions…' },
 
@@ -287,8 +287,8 @@ export const competitionsMessages: MessageCatalog = {
     en: 'An address takes lowercase Latin letters, digits and dashes only: it gets dictated aloud and written on the board.',
   },
   'competitions.refusal.slug.reserved': {
-    ru: 'Этот адрес занят самим Colloq. Возьмите другой.',
-    en: 'That address belongs to Colloq itself. Pick another one.',
+    ru: 'Этот адрес занят самим Aula Lab. Возьмите другой.',
+    en: 'That address belongs to Aula Lab itself. Pick another one.',
   },
   'competitions.refusal.slug.taken': {
     ru: 'Этот адрес уже занят другим соревнованием.',

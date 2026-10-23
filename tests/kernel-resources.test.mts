@@ -356,8 +356,8 @@ test('resetting cores in the panel gives the live container the instance limit b
     // cgroup, and a reset that reached only one would leave the other on the
     // old number.
     assert.deepEqual(calls, [
-      ['update', '--cpus=1.5', `colloq-room-${id}`],
-      ['update', '--cpus=1.5', `colloq-room-${id}-own`],
+      ['update', '--cpus=1.5', `aulalab-room-${id}`],
+      ['update', '--cpus=1.5', `aulalab-room-${id}-own`],
     ])
   } finally {
     useDockerForLimits(null)
@@ -435,7 +435,7 @@ test('the scripting door does not let a guest hand out the machine memory', asyn
 /* ------------------------------------------------------ docker arguments */
 
 test("a room's own number beats the environment default", () => {
-  const room = { sessionId: 'res-args', mount: '/w/res-args', network: 'colloq-rooms', publish: true, gpu: null }
+  const room = { sessionId: 'res-args', mount: '/w/res-args', network: 'aulalab-rooms', publish: true, gpu: null }
   // The environment default is the same as before, in megabytes like every limit.
   assert.ok(runArgs({ ...room, env: 'base' }).includes('--memory=4096m'))
   const own = runArgs({ ...room, env: 'base', memoryMb: 6144 })
@@ -447,7 +447,7 @@ test("a room's own number beats the environment default", () => {
 })
 
 test("the room's own core count goes both into --cpus and into the threads of the numeric libraries", () => {
-  const room = { sessionId: 'res-cpu-args', mount: '/w/res-cpu-args', network: 'colloq-rooms', publish: true, gpu: null, env: 'base' }
+  const room = { sessionId: 'res-cpu-args', mount: '/w/res-cpu-args', network: 'aulalab-rooms', publish: true, gpu: null, env: 'base' }
   // The instance default is the same as before: two cores and two threads.
   const plain = runArgs(room)
   assert.ok(plain.includes('--cpus=2'), JSON.stringify(plain))
@@ -486,7 +486,7 @@ test('cores of a live room are changed with docker update --cpus', async () => {
    */
   assert.deepEqual(
     calls.map((args) => args.at(-1)),
-    ['colloq-room-res-live-cpu', 'colloq-room-res-live-cpu-own'],
+    ['aulalab-room-res-live-cpu', 'aulalab-room-res-live-cpu-own'],
   )
   for (const args of calls) {
     assert.equal(args[0], 'update')
@@ -581,7 +581,7 @@ test('the memory of a live room is changed with docker update, both flags at onc
   // To both of the room's containers — by the argument in the cores test above.
   assert.deepEqual(
     calls.map((args) => args.at(-1)),
-    ['colloq-room-res-live', 'colloq-room-res-live-own'],
+    ['aulalab-room-res-live', 'aulalab-room-res-live-own'],
   )
   for (const args of calls) {
     assert.equal(args[0], 'update')
@@ -598,7 +598,7 @@ test('the memory of a live room is changed with docker update, both flags at onc
 })
 
 test('rooms without a container are not an error: the next start will take the number', async () => {
-  useDockerForLimits(async () => ({ code: 1, out: 'Error: No such container: colloq-room-res-cold' }))
+  useDockerForLimits(async () => ({ code: 1, out: 'Error: No such container: aulalab-room-res-cold' }))
   // Not a single container — neither the room's nor the personal notebooks':
   // the number waits for a start.
   assert.equal(await applyMemoryLimit('res-cold', 4096), 'pending')
@@ -664,14 +664,14 @@ test("the personal notebooks' own number changes only their container", async ()
     assert.equal(await applyMemoryLimit(id, 8192), 'applied')
     assert.deepEqual(
       calls.map((args) => [args.at(-1), args.find((a) => a.startsWith('--memory='))]),
-      [[`colloq-room-${id}`, '--memory=8192m'], [`colloq-room-${id}-own`, '--memory=2048m']],
+      [[`aulalab-room-${id}`, '--memory=8192m'], [`aulalab-room-${id}-own`, '--memory=2048m']],
     )
 
     calls.length = 0
     assert.equal(await applyCpuLimit(id, 6), 'applied')
     assert.deepEqual(
       calls.map((args) => [args.at(-1), args.find((a) => a.startsWith('--cpus='))]),
-      [[`colloq-room-${id}`, '--cpus=6'], [`colloq-room-${id}-own`, '--cpus=1']],
+      [[`aulalab-room-${id}`, '--cpus=6'], [`aulalab-room-${id}-own`, '--cpus=1']],
     )
 
     /*
@@ -684,7 +684,7 @@ test("the personal notebooks' own number changes only their container", async ()
     setRules(id, { ...storedRules(id), ownMemoryMb: 4096, ownCpus: 2 })
     assert.equal(await applyOwnLimits(id), 'applied')
     assert.equal(calls.length, 1, JSON.stringify(calls))
-    assert.equal(calls[0].at(-1), `colloq-room-${id}-own`)
+    assert.equal(calls[0].at(-1), `aulalab-room-${id}-own`)
     assert.ok(calls[0].includes('--memory=4096m'), JSON.stringify(calls[0]))
     assert.ok(calls[0].includes('--cpus=2'), JSON.stringify(calls[0]))
   } finally {

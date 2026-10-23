@@ -65,7 +65,7 @@ const server = createRuntimeServer({
 })
 server.listen(config.port, '0.0.0.0', () =>
   console.log(
-    `Colloq runtime listening on ${config.port}; namespace ${config.namespace}` +
+    `Aula Lab runtime listening on ${config.port}; namespace ${config.namespace}` +
       `; colocation with the app ${config.colocateWithApp ? 'on' : 'off'}` +
       `; in-place resize ${config.inPlaceResize ? 'on' : 'off'}` +
       `; competition GPU ${config.competitionGpuResource

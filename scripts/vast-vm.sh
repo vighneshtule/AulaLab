@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rent a Vast VM that boots the prebuilt colloq-vast image (deploy/vast).
+# Rent a Vast VM that boots the prebuilt aulalab-vast image (deploy/vast).
 #
 #   make vast-vm                         the cheapest suitable VM offer
 #   make vast-vm GPU="RTX 3070"          only this card
@@ -22,7 +22,7 @@
 # The on-start is the filled copy of deploy/vast/onstart.sh, by default
 # backups/vast-onstart.sh (git-ignored: it holds the relay token). It goes into
 # the rent request, but Vast does not execute it on a VM, so it is also copied
-# over ssh to /etc/colloq/onstart.sh and started from here.
+# over ssh to /etc/aulalab/onstart.sh and started from here.
 #
 # Every Vast VM carries at least one GPU (no CPU-only VM offers, seen 29 Sep
 # 2026), and the price is mostly the card's. A class without GPUs (a
@@ -74,36 +74,36 @@ case "${OFFER:-}" in *[!0-9]*) die "OFFER= is an offer number from the list, not
 SSH_KEY="$(read_env VAST_SSH_KEY)";     SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
 # shellcheck disable=SC2088
 case "$SSH_KEY" in "~/"*) SSH_KEY="$HOME/${SSH_KEY#\~/}" ;; esac
-LABEL="colloq-vm${NAME:+-$NAME}"
+LABEL="aulalab-vm${NAME:+-$NAME}"
 
 # ROLE=runner: a machine for another instance's submissions («машина для
 # посылок»), which scripts/vast-runner.sh rents COUNT at a time, not an
 # instance of its own. Three things differ and nothing else: the label
-# (colloq-runner, by which make runners-update and runners-down find the
+# (aulalab-runner, by which make runners-update and runners-down find the
 # fleet), the on-start it checks (deploy/vast/onstart-runner.sh filled with the
 # home's address and an enrollment code; a machine opens no address, so it
-# has no HOST= and no relay token), and what "ready" means: `colloq-host runner
+# has no HOST= and no relay token), and what "ready" means: `aulalab-host runner
 # status`, joined and syncing, where an instance answers /api/health.
 ROLE="${ROLE:-app}"
 case "$ROLE" in app|runner) ;; *) die "ROLE= is app or runner, not \"$ROLE\"." ;; esac
-[ "$ROLE" != runner ] || LABEL="colloq-runner${NAME:+-$NAME}"
+[ "$ROLE" != runner ] || LABEL="aulalab-runner${NAME:+-$NAME}"
 
 [ -f "$ONSTART" ] || die "no on-start script at $ONSTART.
   Copy deploy/vast/onstart.sh there and fill in its settings block (image, relay)."
 if [ "$ROLE" = runner ]; then
-  grep -qE '^export COLLOQ_RUNNER_URL="https?://[^"]+"' "$ONSTART" && ! grep -q '^export COLLOQ_RUNNER_URL="https://HOME"' "$ONSTART" \
-    && grep -qE '^export COLLOQ_RUNNER_CODE="[a-f0-9]{32}"' "$ONSTART" \
-    || die "COLLOQ_RUNNER_URL and COLLOQ_RUNNER_CODE in $ONSTART are not filled in (scripts/vast-runner.sh fills deploy/vast/onstart-runner.sh)."
+  grep -qE '^export AULALAB_RUNNER_URL="https?://[^"]+"' "$ONSTART" && ! grep -q '^export AULALAB_RUNNER_URL="https://HOME"' "$ONSTART" \
+    && grep -qE '^export AULALAB_RUNNER_CODE="[a-f0-9]{32}"' "$ONSTART" \
+    || die "AULALAB_RUNNER_URL and AULALAB_RUNNER_CODE in $ONSTART are not filled in (scripts/vast-runner.sh fills deploy/vast/onstart-runner.sh)."
   [ -z "${HOST:-}" ] || die "HOST= names a class address, and a machine for submissions has none (ROLE=runner)."
 else
-  image_line="$(grep '^export COLLOQ_IMAGE=' "$ONSTART" || true)"
+  image_line="$(grep '^export AULALAB_IMAGE=' "$ONSTART" || true)"
   case "$image_line" in *OWNER*|*:VERSION*|*'=""') image_line="" ;; esac
-  [ -n "$image_line" ] || die "COLLOQ_IMAGE in $ONSTART is not filled in (ghcr.io/<owner>/colloq-vast:<version>)."
+  [ -n "$image_line" ] || die "AULALAB_IMAGE in $ONSTART is not filled in (ghcr.io/<owner>/aulalab-vast:<version>)."
 fi
 [ -f "$SSH_KEY" ] || die "no ssh key $SSH_KEY (VAST_SSH_KEY in .env)."
 
-CURLRC="$(mktemp -t colloq-vast.XXXXXX)"
-SCRIPT="$(mktemp -t colloq-onstart.XXXXXX)"
+CURLRC="$(mktemp -t aulalab-vast.XXXXXX)"
+SCRIPT="$(mktemp -t aulalab-onstart.XXXXXX)"
 trap 'rm -f "$CURLRC" "$SCRIPT"' EXIT INT TERM
 # HOST= picks the class address for this machine without editing the file: a
 # relay name ("vsos" becomes vsos.<RELAY_DOMAIN>) or a full hostname.
@@ -112,11 +112,11 @@ if [ -n "${HOST:-}" ]; then
   HOST="$HOST" SCRIPT="$SCRIPT" py '
 import os, re
 path = os.environ["SCRIPT"]; text = open(path).read()
-text, n = re.subn(r"^export COLLOQ_HOSTNAME=\"[^\"]*\"", "export COLLOQ_HOSTNAME=\"%s\"" % os.environ["HOST"], text, count=1, flags=re.M)
-if not n: raise SystemExit("no COLLOQ_HOSTNAME line in the on-start")
+text, n = re.subn(r"^export AULALAB_HOSTNAME=\"[^\"]*\"", "export AULALAB_HOSTNAME=\"%s\"" % os.environ["HOST"], text, count=1, flags=re.M)
+if not n: raise SystemExit("no AULALAB_HOSTNAME line in the on-start")
 open(path, "w").write(text)'
 fi
-ADDRESS="$(sed -n 's/^export COLLOQ_HOSTNAME="\(.*\)"/\1/p' "$SCRIPT")"
+ADDRESS="$(sed -n 's/^export AULALAB_HOSTNAME="\(.*\)"/\1/p' "$SCRIPT")"
 token="$(read_env VAST_TOKEN)"
 [ -n "$token" ] || die "no VAST_TOKEN in .env (https://cloud.vast.ai/manage-keys/)."
 printf 'header = "Authorization: Bearer %s"\n' "$token" > "$CURLRC"
@@ -195,9 +195,9 @@ for o in offers: print("%s\t%.3f\t%s x %s" % (o["id"], o.get("dph_total") or 0, 
 IFS=$'\t' read -r offer_id price what <<<"$(printf '%s\n' "$suitable" | head -n 1)"
 say ""
 if [ "$ROLE" = runner ]; then
-  say "${BOLD}VM offer $offer_id${OFF}: $what, \$$price/hr, a machine for $(sed -n 's/^export COLLOQ_RUNNER_URL="\(.*\)"/\1/p' "$SCRIPT")"
+  say "${BOLD}VM offer $offer_id${OFF}: $what, \$$price/hr, a machine for $(sed -n 's/^export AULALAB_RUNNER_URL="\(.*\)"/\1/p' "$SCRIPT")"
 else
-  say "${BOLD}VM offer $offer_id${OFF}: $what, \$$price/hr, image $(sed -n 's/^export COLLOQ_IMAGE="\(.*\)"/\1/p' "$SCRIPT")${ADDRESS:+, address $ADDRESS}"
+  say "${BOLD}VM offer $offer_id${OFF}: $what, \$$price/hr, image $(sed -n 's/^export AULALAB_IMAGE="\(.*\)"/\1/p' "$SCRIPT")${ADDRESS:+, address $ADDRESS}"
 fi
 if [ "${FORCE:-}" != 1 ]; then
   [ -t 0 ] || die "no terminal to ask in. FORCE=1 rents without asking."
@@ -286,40 +286,40 @@ fi
 
 # Vast does not run the on-start on a VM (the rent request carries it, but
 # nothing executes it; seen 28 Sep 2026). Upload it and start it detached. It
-# is idempotent: unchanged settings leave a running Colloq alone, changed ones
-# (HOST=) recreate the container; colloq-host keeps it across reboots.
-ssh_run 'umask 077; mkdir -p /etc/colloq; cat > /etc/colloq/onstart.sh' < "$SCRIPT"
-ssh_run 'setsid nohup bash /etc/colloq/onstart.sh >/dev/null 2>&1 < /dev/null &'
+# is idempotent: unchanged settings leave a running Aula Lab alone, changed ones
+# (HOST=) recreate the container; aulalab-host keeps it across reboots.
+ssh_run 'umask 077; mkdir -p /etc/aulalab; cat > /etc/aulalab/onstart.sh' < "$SCRIPT"
+ssh_run 'setsid nohup bash /etc/aulalab/onstart.sh >/dev/null 2>&1 < /dev/null &'
 
 # A machine for submissions is ready once it has joined its home and syncs:
 # the image pull and the join take a few minutes, the kernels and the data
 # come after, in the background. Its exit code is the answer, because
 # scripts/vast-runner.sh counts the machines that made it.
 if [ "$ROLE" = runner ]; then
-  say "waiting for the machine to join its home (colloq-host runner status)…"
+  say "waiting for the machine to join its home (aulalab-host runner status)…"
   for _ in $(seq 1 60); do
-    ssh_run 'colloq-host runner status >/dev/null 2>&1' 2>/dev/null && break
+    ssh_run 'aulalab-host runner status >/dev/null 2>&1' 2>/dev/null && break
     sleep 20
   done
-  if ! ssh_run 'colloq-host runner status' 2>/dev/null; then
+  if ! ssh_run 'aulalab-host runner status' 2>/dev/null; then
     say "${RED}the machine has not joined after 20 minutes; the on-start log follows.${OFF}"
-    ssh_run 'tail -30 /var/log/colloq-onstart.log' || true
+    ssh_run 'tail -30 /var/log/aulalab-onstart.log' || true
     exit 1
   fi
   say ""
-  say "on the VM: colloq-host runner status | logs | leave"
+  say "on the VM: aulalab-host runner status | logs | leave"
   exit 0
 fi
 
-# The on-start installs colloq-host and brings the container up on
+# The on-start installs aulalab-host and brings the container up on
 # 127.0.0.1:3000; /api/health turns 200 once the default environment exists.
-say "waiting for Colloq (the first boot builds the default Python environment)…"
+say "waiting for Aula Lab (the first boot builds the default Python environment)…"
 for _ in $(seq 1 90); do
   ssh_run 'curl -sf -o /dev/null --max-time 5 http://127.0.0.1:3000/api/health' 2>/dev/null && break
   sleep 20
 done
 ssh_run 'curl -sf -o /dev/null --max-time 5 http://127.0.0.1:3000/api/health' 2>/dev/null \
-  || say "${RED}Colloq is not healthy after 30 minutes; the log follows.${OFF}"
-ssh_run 'colloq-host link 2>/dev/null || tail -30 /var/log/colloq-onstart.log'
+  || say "${RED}Aula Lab is not healthy after 30 minutes; the log follows.${OFF}"
+ssh_run 'aulalab-host link 2>/dev/null || tail -30 /var/log/aulalab-onstart.log'
 say ""
-say "on the VM: colloq-host status | logs | link | backup"
+say "on the VM: aulalab-host status | logs | link | backup"

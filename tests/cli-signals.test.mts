@@ -9,23 +9,23 @@ import { fileURLToPath } from 'node:url'
 
 test('SIGINT sent to the CLI reaches its delegated process before the wrapper exits', { timeout: 10000 }, async () => {
   const root = fileURLToPath(new URL('..', import.meta.url))
-  const fixture = mkdtempSync(join(tmpdir(), 'colloq-signal-'))
+  const fixture = mkdtempSync(join(tmpdir(), 'aulalab-signal-'))
   cpSync(join(root, 'cli'), join(fixture, 'cli'), { recursive: true })
   cpSync(join(root, 'shared'), join(fixture, 'shared'), { recursive: true })
   // Signs of a repository checkout: with them both the app and the state are
-  // the fixture itself, and `colloq logs` looks for the log there, not in
-  // ~/.colloq.
-  writeFileSync(join(fixture, 'package.json'), '{"name":"colloq","type":"module"}')
+  // the fixture itself, and `aulalab logs` looks for the log there, not in
+  // ~/.aulalab.
+  writeFileSync(join(fixture, 'package.json'), '{"name":"aulalab","type":"module"}')
   writeFileSync(join(fixture, 'Makefile'), '')
-  writeFileSync(join(fixture, '.colloq.log'), '')
+  writeFileSync(join(fixture, '.aulalab.log'), '')
   mkdirSync(join(fixture, 'bin'))
   // A stand-in tail: prints its pid and waits, like `tail -f` on a live log.
   writeFileSync(join(fixture, 'bin', 'tail'),
-    '#!/bin/sh\nexec "$COLLOQ_TEST_NODE" -e \'console.log(process.pid); setInterval(() => {}, 1000)\'\n',
+    '#!/bin/sh\nexec "$AULALAB_TEST_NODE" -e \'console.log(process.pid); setInterval(() => {}, 1000)\'\n',
     { mode: 0o755 })
-  const env = { ...process.env, COLLOQ_TEST_NODE: process.execPath, PATH: join(fixture, 'bin') + ':' + process.env.PATH }
-  delete env.COLLOQ_HOME
-  delete env.COLLOQ_APP_DIR
+  const env = { ...process.env, AULALAB_TEST_NODE: process.execPath, PATH: join(fixture, 'bin') + ':' + process.env.PATH }
+  delete env.AULALAB_HOME
+  delete env.AULALAB_APP_DIR
   const cli = spawn(process.execPath, ['--import', 'tsx', join(fixture, 'cli/src/main.ts'), 'logs'], {
     cwd: root,
     env,

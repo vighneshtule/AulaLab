@@ -265,7 +265,7 @@
    * homes: the choice is stored once per device.
    */
   const DEFAULT_COMPACT_STEP = 0
-  const SIZE_KEY = 'colloq.pult.notesSize'
+  const SIZE_KEY = 'aulalab.pult.notesSize'
 
   const host = $derived(session.me.role === 'host')
   /** This document's notes have arrived. `false` is not "there are none" but "none yet". */

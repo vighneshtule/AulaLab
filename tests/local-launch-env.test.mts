@@ -6,7 +6,7 @@
  * .env.example is the production template with KERNEL_BACKEND=broker. The
  * next `make dev` (the cli/src/launch.ts supervisor) refused: "This is a
  * runtime broker installation". The target now writes the same file as
- * colloq itself (scripts/local-env.sh ↔ launch-config.ts · localClassEnv),
+ * aulalab itself (scripts/local-env.sh ↔ launch-config.ts · localClassEnv),
  * and the tests below hold three things: the copies of the text do not drift
  * apart; the order "make target, then make dev" and the reverse both work;
  * the refusal on a real production install is still there.
@@ -25,7 +25,7 @@ const repo = path.resolve(import.meta.dirname, '..')
 
 /** A clone in miniature: exactly what the `.env` and `up` targets touch (without docker). */
 function checkout(): string {
-  const dir = fs.mkdtempSync(path.join(tmpdir(), 'colloq-local-env-'))
+  const dir = fs.mkdtempSync(path.join(tmpdir(), 'aulalab-local-env-'))
   fs.mkdirSync(path.join(dir, 'scripts'))
   for (const file of ['Makefile', '.env.example', 'docker-compose.yml', 'scripts/local-env.sh'])
     fs.copyFileSync(path.join(repo, file), path.join(dir, file))
@@ -54,18 +54,18 @@ function stubDocker(dir: string): NodeJS.ProcessEnv {
 /** Each write gets its own token — we compare everything except its value. */
 const tokenless = (text: string) => text.replace(/^JUPYTER_TOKEN=.*$/m, 'JUPYTER_TOKEN=<token>')
 
-test('make .env writes the local class .env — the same one colloq writes, not the production template', () => {
+test('make .env writes the local class .env — the same one aulalab writes, not the production template', () => {
   const dir = checkout()
   try {
     const result = make(dir, '.env')
     assert.equal(result.code, 0, result.out)
     const written = fs.readFileSync(path.join(dir, '.env'), 'utf8')
-    // The copies of the text — shell for make and TS for colloq — match line
+    // The copies of the text — shell for make and TS for aulalab — match line
     // for line.
     assert.equal(tokenless(written), tokenless(localClassEnv(false)))
     assert.match(written, /^KERNEL_BACKEND=docker$/m)
-    assert.doesNotMatch(written, /broker|colloq-runtime|\/etc\/colloq/)
-    // Its own kernel token, the same length as colloq's randomBytes(24), and
+    assert.doesNotMatch(written, /broker|aulalab-runtime|\/etc\/aulalab/)
+    // Its own kernel token, the same length as aulalab's randomBytes(24), and
     // it does not repeat.
     const token = written.match(/^JUPYTER_TOKEN=(.*)$/m)?.[1] ?? ''
     assert.match(token, /^[0-9a-f]{48}$/)
@@ -110,10 +110,10 @@ test('a template copy from an old clone: the refusal names the line and the file
 })
 
 test('a real installation still does not start as a class on a laptop', () => {
-  // COLLOQ_CLUSTER=1 is written only by a deployment (scripts/vast.sh) — the
+  // AULALAB_CLUSTER=1 is written only by a deployment (scripts/vast.sh) — the
   // same refusal as before.
   assert.throws(
-    () => launchConfig('/vm', parseLaunchArgs(['run']), { ...localEnv(), COLLOQ_CLUSTER: '1' }),
+    () => launchConfig('/vm', parseLaunchArgs(['run']), { ...localEnv(), AULALAB_CLUSTER: '1' }),
     /runtime broker installation: use the service or cluster commands/,
   )
   // broker from the shell (the variable beats the file) is a refusal too, and
@@ -170,8 +170,8 @@ test('make .env, then launch.ts dev: it gets as far as the port check, not a ref
   const busy = (blocker.address() as net.AddressInfo).port
   try {
     assert.equal(make(dir, '.env').code, 0)
-    const env: NodeJS.ProcessEnv = { ...process.env, COLLOQ_HOME: dir, PORT: String(busy) }
-    for (const key of ['KERNEL_BACKEND', 'COLLOQ_CLUSTER', 'COLLOQ_APP_DIR', 'DATA_DIR', 'WORKSPACE_DIR'])
+    const env: NodeJS.ProcessEnv = { ...process.env, AULALAB_HOME: dir, PORT: String(busy) }
+    for (const key of ['KERNEL_BACKEND', 'AULALAB_CLUSTER', 'AULALAB_APP_DIR', 'DATA_DIR', 'WORKSPACE_DIR'])
       delete env[key]
     const child = spawn(
       process.execPath,
@@ -186,7 +186,7 @@ test('make .env, then launch.ts dev: it gets as far as the port check, not a ref
     assert.match(out, new RegExp(`Port ${busy} .*already taken`), out)
     assert.doesNotMatch(out, /broker/, out)
     // The refusal left nothing behind: no receipt, no pid file.
-    assert.equal(fs.existsSync(path.join(dir, '.colloq/local-session.json')), false)
+    assert.equal(fs.existsSync(path.join(dir, '.aulalab/local-session.json')), false)
   } finally {
     await new Promise<void>((resolve) => blocker.close(() => resolve()))
     fs.rmSync(dir, { recursive: true, force: true })
@@ -208,11 +208,11 @@ test('run: a busy default port moves to the nearest free one, a busy --port is r
   const launch = async (args: string[]): Promise<{ code: number | null; out: string }> => {
     const env: NodeJS.ProcessEnv = {
       ...process.env,
-      COLLOQ_HOME: dir,
+      AULALAB_HOME: dir,
       PORT: String(busy),
       PATH: path.dirname(process.execPath),
     }
-    for (const key of ['KERNEL_BACKEND', 'COLLOQ_CLUSTER', 'COLLOQ_APP_DIR', 'DATA_DIR', 'WORKSPACE_DIR'])
+    for (const key of ['KERNEL_BACKEND', 'AULALAB_CLUSTER', 'AULALAB_APP_DIR', 'DATA_DIR', 'WORKSPACE_DIR'])
       delete env[key]
     const child = spawn(process.execPath, ['--import', 'tsx', 'cli/src/launch.ts', 'run', '--no-open', ...args], {
       cwd: repo,
@@ -247,7 +247,7 @@ test('run: a busy default port moves to the nearest free one, a busy --port is r
  * appended KERNEL_ENV — and when there was no file yet, the result was a .env
  * of that one line. After that neither make up nor make dev wrote their own
  * (the file exists, after all), and the class ran with the defaults and a
- * publicly known kernel token. `colloq env use` (cli/src/commands/env.ts) had
+ * publicly known kernel token. `aulalab env use` (cli/src/commands/env.ts) had
  * the same bug; for make it was closed by the .env prerequisite.
  */
 test('make env-use on a fresh clone: a full class .env, not a single KERNEL_ENV line', () => {
@@ -275,9 +275,9 @@ test('make env-use on a fresh clone: a full class .env, not a single KERNEL_ENV 
 })
 
 /*
- * The class file has no PUBLIC_URL (colloq never had one either), and make
+ * The class file has no PUBLIC_URL (aulalab never had one either), and make
  * run and make status printed the line from .env as is: a server that was
- * ready was announced as an empty "colloq at". Without the line the server
+ * ready was announced as an empty "aulalab at". Without the line the server
  * takes localhost:PORT (config.ts · readPublicUrl) — and that is what must be
  * printed.
  */

@@ -153,8 +153,8 @@ function normalize(entries: readonly Logged[], base: ReadonlyMap<string, Record<
     if (typeof raw === 'number' && Math.abs(raw - NOW) < 1e9) return raw === NOW ? '<t>' : `<t${raw > NOW ? '+' : '-'}${Math.abs(raw - NOW)}>`
     if (typeof raw !== 'string') return raw
     if (column === 'container') {
-      const parts = /^colloq-comp-([A-Za-z0-9_-]+)-([a-f0-9]{8})-(run|score)$/.exec(raw)
-      return parts ? `colloq-comp-${nameOf('sub', parts[1])}-${nameOf('tok', parts[2])}-${parts[3]}` : raw
+      const parts = /^aulalab-comp-([A-Za-z0-9_-]+)-([a-f0-9]{8})-(run|score)$/.exec(raw)
+      return parts ? `aulalab-comp-${nameOf('sub', parts[1])}-${nameOf('tok', parts[2])}-${parts[3]}` : raw
     }
     const kind = column === 'id' ? (table === 'submissions' ? 'sub' : 'run') : ID_KIND[column]
     return kind ? nameOf(kind, raw) : raw
@@ -356,7 +356,7 @@ const drain = async () => {
 }
 
 /** Directives of the stand-in runner (fake-runner.ts), one per notebook. */
-const directive = (asked: Record<string, unknown>): string => `# colloq-test: ${JSON.stringify(asked)}`
+const directive = (asked: Record<string, unknown>): string => `# aulalab-test: ${JSON.stringify(asked)}`
 
 /* ------------------------------------------------------- on the CPU, open data */
 

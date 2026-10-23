@@ -110,8 +110,8 @@ class FakeKube implements KubernetesClient {
   }
 }
 const config = {
-  namespace: 'colloq',
-  workspaceClaim: 'colloq-workspace',
+  namespace: 'aulalab',
+  workspaceClaim: 'aulalab-workspace',
   memory: '2Gi',
   cpu: '2',
   ephemeral: '2Gi',
@@ -196,7 +196,7 @@ test('room CPU intent sets quota and threads and resets to the runtime default i
   const reset = await runtime.ensure('cpuRoom', { environment: 'base' })
   assert.equal(reset.instanceId, first.instanceId, 'a CPU reset must never replace Python')
   assert.equal(kube.deletes.length, 0)
-  const pod = kube.objects.get(`/api/v1/namespaces/colloq/pods/${roomName('cpuRoom')}`)!
+  const pod = kube.objects.get(`/api/v1/namespaces/aulalab/pods/${roomName('cpuRoom')}`)!
   assert.equal(pod.spec.containers[0].resources.limits.cpu, '2')
   assert.equal(pod.spec.containers[0].resources.requests.cpu, '2')
 })
@@ -232,7 +232,7 @@ test('Kubernetes authorization failure never becomes absence and mismatched obje
   await assert.rejects(runtime.ensure('roomA', { environment: 'base' }), /Forbidden/)
   assert.equal(kube.creates.length, 0)
   kube.failure = 0
-  kube.objects.set(`/api/v1/namespaces/colloq/pods/${roomName('roomA')}`, {
+  kube.objects.set(`/api/v1/namespaces/aulalab/pods/${roomName('roomA')}`, {
     kind: 'Pod',
     metadata: { name: roomName('roomA'), uid: 'foreign', labels: {} },
     spec: {},
@@ -259,7 +259,7 @@ test('deletion waits for Pod disappearance before a later ensure can replace it'
   )
   assert.equal(finished, false)
   assert.equal(kube.creates.filter((o) => o.kind === 'Pod').length, 1)
-  kube.objects.delete(`/api/v1/namespaces/colloq/pods/${roomName('roomA')}`)
+  kube.objects.delete(`/api/v1/namespaces/aulalab/pods/${roomName('roomA')}`)
   await deleting
   const second = await reopening
   assert.notEqual(second.instanceId, first.instanceId)
@@ -302,7 +302,7 @@ test('adoption rejects injected pod execution, credentials, mounts and host acce
       pod.spec.containers[0].args = ['evil']
     },
     (pod) => {
-      pod.spec.containers[0].envFrom = [{ secretRef: { name: 'colloq-room-secret' } }]
+      pod.spec.containers[0].envFrom = [{ secretRef: { name: 'aulalab-room-secret' } }]
     },
     (pod) => {
       pod.spec.containers[0].lifecycle = { postStart: { exec: { command: ['evil'] } } }
@@ -341,7 +341,7 @@ test('adoption rejects injected pod execution, credentials, mounts and host acce
   for (const attack of attacks) {
     const { kube, runtime } = setup()
     const before = await runtime.ensure('roomA', { environment: 'base' })
-    const pod = kube.objects.get(`/api/v1/namespaces/colloq/pods/${roomName('roomA')}`)!
+    const pod = kube.objects.get(`/api/v1/namespaces/aulalab/pods/${roomName('roomA')}`)!
     attack(pod)
     const after = await runtime.ensure('roomA', { environment: 'base' })
     assert.notEqual(
@@ -355,12 +355,12 @@ test('adoption rejects injected pod execution, credentials, mounts and host acce
 test('server-populated Kubernetes defaults and equivalent resource quantities preserve a healthy Pod incarnation', async () => {
   const { kube, runtime } = setup()
   const before = await runtime.ensure('roomA', { environment: 'gpu' })
-  const pod = kube.objects.get(`/api/v1/namespaces/colloq/pods/${roomName('roomA')}`)!
+  const pod = kube.objects.get(`/api/v1/namespaces/aulalab/pods/${roomName('roomA')}`)!
   Object.assign(pod.spec, {
     dnsPolicy: 'ClusterFirst',
     schedulerName: 'default-scheduler',
-    nodeName: 'colloq-node',
-    serviceAccount: 'colloq-kernel',
+    nodeName: 'aulalab-node',
+    serviceAccount: 'aulalab-kernel',
     priority: 0,
     preemptionPolicy: 'PreemptLowerPriority',
     tolerations: [
@@ -402,7 +402,7 @@ test('server-populated Kubernetes defaults and equivalent resource quantities pr
 test('Service adoption permits only allocation defaults and refuses extra policy fields', async () => {
   const { kube, runtime } = setup()
   const before = await runtime.ensure('roomA', { environment: 'base' })
-  const service = kube.objects.get(`/api/v1/namespaces/colloq/services/${roomName('roomA')}`)!
+  const service = kube.objects.get(`/api/v1/namespaces/aulalab/services/${roomName('roomA')}`)!
   Object.assign(service.spec, {
     clusterIP: '10.43.0.10',
     clusterIPs: ['10.43.0.10'],
@@ -428,10 +428,10 @@ test('permanent retirement persists before Pod deletion and survives ordinary st
   kube.request = async <T,>(method: string, path: string, body?: unknown): Promise<T> => {
     if (method === 'DELETE' && path.includes('/pods/')) {
       const marker = kube.objects.get(
-        `/api/v1/namespaces/colloq/services/${roomName('retired-room')}`,
+        `/api/v1/namespaces/aulalab/services/${roomName('retired-room')}`,
       )!
-      assert.equal(marker.metadata.annotations?.['colloq.dev/retired'], 'true')
-      assert.equal(marker.metadata.labels?.['colloq.dev/retired'], 'true')
+      assert.equal(marker.metadata.annotations?.['aulalab.dev/retired'], 'true')
+      assert.equal(marker.metadata.labels?.['aulalab.dev/retired'], 'true')
       assert.equal(marker.spec.clusterIP, 'None')
       assert.equal(marker.spec.selector, undefined)
       sawMarker = true
@@ -536,7 +536,7 @@ test('a persisted tombstone survives failed retirement verification and subseque
     const result = await original<T>(method, path, body)
     if (
       method === 'POST' &&
-      (body as KubeObject)?.metadata?.labels?.['colloq.dev/retired'] === 'true'
+      (body as KubeObject)?.metadata?.labels?.['aulalab.dev/retired'] === 'true'
     ) {
       ;(result as KubeObject).spec.publishNotReadyAddresses = true
       kube.objects.get(`${path}/${roomName('failed-retirement')}`)!.spec.publishNotReadyAddresses =
@@ -578,7 +578,7 @@ test('room census follows Kubernetes continuation pages so cleanup does not omit
 
 /* --------------------------------------------------------------- room memory */
 
-const podPath = (id: string) => `/api/v1/namespaces/colloq/pods/${roomName(id)}`
+const podPath = (id: string) => `/api/v1/namespaces/aulalab/pods/${roomName(id)}`
 const kernelOf = (pod: KubeObject) => pod.spec.containers.find((c: any) => c.name === 'kernel')
 
 test('room memory intent reaches the Pod as a Guaranteed request/limit and the census reports it', async () => {
@@ -676,7 +676,7 @@ test('memory and CPU together with any other change, or a tampered Pod, is still
   // The threads from the Downward API are part of the compared spec: a swapped
   // source (a secret instead of limits.cpu) is not laundered by a difference in cores.
   const omp = kernelOf(kube.objects.get(podPath('mixRoom'))!).env.find((e: any) => e.name === 'OMP_NUM_THREADS')
-  omp.valueFrom = { secretKeyRef: { name: 'colloq-runtime', key: 'token' } }
+  omp.valueFrom = { secretKeyRef: { name: 'aulalab-runtime', key: 'token' } }
   const fourth = await runtime.ensure('mixRoom', { environment: 'gpu', cpus: 6, memoryMb: 8192 })
   assert.notEqual(fourth.instanceId, third.instanceId, 'a CPU diff must not launder an injected env source')
   assert.equal(kube.patches.length, 0)
@@ -764,8 +764,8 @@ test('the Pod template hash does not depend on CPU, so a CPU change never makes 
   const [two, six] = kube.creates.filter((o) => o.kind === 'Pod')
   assert.notEqual(kernelOf(two).resources.limits.cpu, kernelOf(six).resources.limits.cpu)
   assert.equal(
-    two.metadata.annotations!['colloq.dev/template-hash'],
-    six.metadata.annotations!['colloq.dev/template-hash'],
+    two.metadata.annotations!['aulalab.dev/template-hash'],
+    six.metadata.annotations!['aulalab.dev/template-hash'],
   )
   assert.deepEqual(kernelOf(two).env, kernelOf(six).env, 'thread env must not carry the core count as text')
 })
@@ -921,7 +921,7 @@ test('an unschedulable room ends with the lacking resource and the Pod numbers, 
   // The Pod never stood on a node: it is deleted, and the next start creates a
   // new one with whatever the form says by then — rather than changing the
   // memory of a Pod that has no node.
-  assert.equal(kube.objects.has(`/api/v1/namespaces/colloq/pods/${roomName('fullNode')}`), false)
+  assert.equal(kube.objects.has(`/api/v1/namespaces/aulalab/pods/${roomName('fullNode')}`), false)
   assert.equal(kube.deletes.filter((d) => d.path.includes('/pods/')).length, 1)
 })
 
@@ -962,7 +962,7 @@ test('the census names an unscheduled Pod and the HTTP error carries the word wi
   const kube = new CrowdedKube(SCHEDULER('1 Insufficient memory'))
   const runtime = crowded(kube, { unschedulableGraceMs: 60000, startupTimeoutMs: 60000 })
   const pending = runtime.ensure('census', { environment: 'base', memoryMb: 4096 }).catch((err) => err)
-  while (!kube.objects.has(`/api/v1/namespaces/colloq/pods/${roomName('census')}`))
+  while (!kube.objects.has(`/api/v1/namespaces/aulalab/pods/${roomName('census')}`))
     await new Promise((r) => setTimeout(r, 1))
   const [room] = await runtime.list()
   assert.equal(room.phase, 'pending')

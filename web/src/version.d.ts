@@ -8,4 +8,4 @@
  * whole root manifest with its scripts into the bundle for the sake of one
  * string.
  */
-declare const __COLLOQ_VERSION__: string
+declare const __AULALAB_VERSION__: string

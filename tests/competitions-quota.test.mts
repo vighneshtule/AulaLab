@@ -140,9 +140,9 @@ async function thirdIsTaken(who: { cookie: string; id: string }) {
 
 test('an error in the first cell and a time-limit kill spend nothing; the third upload is taken', async () => {
   const p = await join('@first_cell_and_timeout')
-  const failed = await failFree(p, notebook('# colloq-test: {"status": "cell_error", "cell": 0}', 'x = 1'), 'notebookFailed')
+  const failed = await failFree(p, notebook('# aulalab-test: {"status": "cell_error", "cell": 0}', 'x = 1'), 'notebookFailed')
   assert.equal(failed.cellsDone, 1, 'the notebook did run: cell one raised')
-  await failFree(p, notebook('a = 1', 'b = 2', '# colloq-test: {"status": "timeout", "cell": 2}'), 'timedOut')
+  await failFree(p, notebook('a = 1', 'b = 2', '# aulalab-test: {"status": "timeout", "cell": 2}'), 'timedOut')
   assert.equal(submissionCounts(competitionId).get(p.id), undefined, 'failures are not in the board column')
   // The send box reads the same: two left, and two failures under the ceiling.
   const mine = (await (await call(`/api/k/competitions/${SLUG}/submissions`, { cookie: p.cookie })).json()) as EntrantSubmissions
@@ -153,15 +153,15 @@ test('an error in the first cell and a time-limit kill spend nothing; the third 
 
 test('out of memory and a notebook that wrote no answer spend nothing', async () => {
   const p = await join('@oom_and_no_file')
-  await failFree(p, notebook('# colloq-test: {"status": "oom", "cell": 1}', 'y = 2'), 'outOfMemory')
-  await failFree(p, notebook('# colloq-test: {"status": "no_submission", "cell": 0}'), 'rejected')
+  await failFree(p, notebook('# aulalab-test: {"status": "oom", "cell": 1}', 'y = 2'), 'outOfMemory')
+  await failFree(p, notebook('# aulalab-test: {"status": "no_submission", "cell": 0}'), 'rejected')
   await thirdIsTaken(p)
 })
 
 test("the metric's refusal of the answer and the teacher's crashed metric spend nothing", async () => {
   const p = await join('@metric_said_no')
-  await failFree(p, notebook('# colloq-test: {"metric": "participant_error"}'), 'rejected')
-  await failFree(p, notebook('# colloq-test: {"metric": "metric_error"}', 'z = 3'), 'metricFailed')
+  await failFree(p, notebook('# aulalab-test: {"metric": "participant_error"}'), 'rejected')
+  await failFree(p, notebook('# aulalab-test: {"metric": "metric_error"}', 'z = 3'), 'metricFailed')
   await thirdIsTaken(p)
 })
 
@@ -202,7 +202,7 @@ test('a day of failures meets its own ceiling, with its own reason and words, ne
   finished(p.id, 'notebookFailed', ceiling - 1)
   assert.equal(left(p.id), 2, 'nine failures and the limit is untouched')
   // One more is still allowed: the ceiling refuses only once it is reached.
-  const last = await submit(p.cookie, notebook('# colloq-test: {"status": "cell_error", "cell": 0}'))
+  const last = await submit(p.cookie, notebook('# aulalab-test: {"status": "cell_error", "cell": 0}'))
   assert.equal(last.status, 200)
   await drainCompetitionQueue()
   const refused = await submit(p.cookie, notebook('print(1)'))

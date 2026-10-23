@@ -96,10 +96,10 @@ let publicUrlCache: { at: number; value: string } | null = null
 
 function readPublicUrl(): string {
   const fallback = `http://localhost:${env('PORT', '3000')}`
-  if (process.env.COLLOQ_LOCAL_SESSION === '1') {
-    const local = (process.env.COLLOQ_LOCAL_URL || fallback).replace(/\/+$/, '')
-    const lease = process.env.COLLOQ_PUBLIC_URL_LEASE_FILE
-    const runId = process.env.COLLOQ_LOCAL_RUN_ID
+  if (process.env.AULALAB_LOCAL_SESSION === '1') {
+    const local = (process.env.AULALAB_LOCAL_URL || fallback).replace(/\/+$/, '')
+    const lease = process.env.AULALAB_PUBLIC_URL_LEASE_FILE
+    const runId = process.env.AULALAB_LOCAL_RUN_ID
     return (lease && runId ? readLeaseUrl(lease, runId) : null) || local
   }
   const now = Date.now()
@@ -147,7 +147,7 @@ function readPublicUrl(): string {
  * (`server/src/index.ts` · announceJupyterToken) the value is named here
  * rather than repeated as a second literal at the other end of the process.
  */
-export const DEV_JUPYTER_TOKEN = 'colloq-dev-token'
+export const DEV_JUPYTER_TOKEN = 'aulalab-dev-token'
 
 export const config = {
   uiLanguage: normalizeLocale(process.env.UI_LANGUAGE),

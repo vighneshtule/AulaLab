@@ -19,26 +19,26 @@ s=importlib.util.spec_from_file_location('builder',sys.argv[1]); m=importlib.uti
 class Accepted(Exception): pass
 def stop_archive(*args): raise Accepted()
 m.archive_source=stop_archive
-sys.argv=['release-build.py','--registry','127.0.0.1:5000/colloq','--version','v1','--k3s-version','v1.36.4+k3s1','--source-commit','a'*40]
+sys.argv=['release-build.py','--registry','127.0.0.1:5000/aulalab','--version','v1','--k3s-version','v1.36.4+k3s1','--source-commit','a'*40]
 try: m.main()
 except Accepted: pass
 else: raise AssertionError('source archive was not reached')
 with tempfile.TemporaryDirectory() as tmp:
  metadata=pathlib.Path(tmp)/'metadata.json'
  def pushed(cmd,**kwargs):
-  assert cmd[cmd.index('-t')+1]=='127.0.0.1:5000/colloq-app:v1'
+  assert cmd[cmd.index('-t')+1]=='127.0.0.1:5000/aulalab-app:v1'
   metadata.write_text(json.dumps({'containerimage.digest':'sha256:'+'b'*64}))
  m.published=lambda tag: None
  m.subprocess.run=pushed
- print(m.build('127.0.0.1:5000/colloq-app:v1','Dockerfile','.',{},metadata))
+ print(m.build('127.0.0.1:5000/aulalab-app:v1','Dockerfile','.',{},metadata))
 `
   const result = spawnSync('python3', ['-c', code, path.join(root, 'scripts/release-build.py')], { encoding: 'utf8' })
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout.trim(), '127.0.0.1:5000/colloq-app@sha256:' + 'b'.repeat(64))
+  assert.equal(result.stdout.trim(), '127.0.0.1:5000/aulalab-app@sha256:' + 'b'.repeat(64))
 })
 
 test('release builder takes a tag publish.yml already pushed as it is, and builds only what is missing', () => {
-  // publish.yml pushes colloq-app, colloq-runtime and the CPU kernels of every
+  // publish.yml pushes aulalab-app, aulalab-runtime and the CPU kernels of every
   // release under these tags, and its Helm chart pins those digests: a second
   // build here would move the tags away from what the chart installs.
   const code = `import importlib.util,sys,tempfile,pathlib,json,subprocess
@@ -47,7 +47,7 @@ calls=[]
 def run(cmd,**kwargs):
  calls.append(cmd)
  if cmd[:4]==['docker','buildx','imagetools','inspect']:
-  if cmd[4]=='ghcr.io/example/colloq-app:v1':
+  if cmd[4]=='ghcr.io/example/aulalab-app:v1':
    return subprocess.CompletedProcess(cmd,0,'sha256:'+'a'*64+'\\n','')
   return subprocess.CompletedProcess(cmd,1,'','ERROR: not found')
  pathlib.Path(cmd[cmd.index('--metadata-file')+1]).write_text(json.dumps({'containerimage.digest':'sha256:'+'b'*64}))
@@ -55,20 +55,20 @@ def run(cmd,**kwargs):
 m.subprocess.run=run
 with tempfile.TemporaryDirectory() as tmp:
  metadata=pathlib.Path(tmp)/'metadata.json'
- app=m.build('ghcr.io/example/colloq-app:v1','Dockerfile','.',{},metadata,'production')
- gpu=m.build('ghcr.io/example/colloq-kernel:v1-base-gpu','kernel/Dockerfile','kernel',{},metadata)
+ app=m.build('ghcr.io/example/aulalab-app:v1','Dockerfile','.',{},metadata,'production')
+ gpu=m.build('ghcr.io/example/aulalab-kernel:v1-base-gpu','kernel/Dockerfile','kernel',{},metadata)
 print(json.dumps({'app':app,'gpu':gpu,'builds':sum(1 for c in calls if c[:3]==['docker','buildx','build'])}))
 `
   const result = spawnSync('python3', ['-c', code, path.join(root, 'scripts/release-build.py')], { encoding: 'utf8' })
   assert.equal(result.status, 0, result.stderr)
   const said = JSON.parse(result.stdout.trim().split('\n').pop()!)
-  assert.equal(said.app, 'ghcr.io/example/colloq-app@sha256:' + 'a'.repeat(64))
-  assert.equal(said.gpu, 'ghcr.io/example/colloq-kernel@sha256:' + 'b'.repeat(64))
+  assert.equal(said.app, 'ghcr.io/example/aulalab-app@sha256:' + 'a'.repeat(64))
+  assert.equal(said.gpu, 'ghcr.io/example/aulalab-kernel@sha256:' + 'b'.repeat(64))
   assert.equal(said.builds, 1)
 })
 
 test('default release catalog publishes the lightweight CPU Kaggle environment', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-catalog-default-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-catalog-default-'))
   try {
     const output = path.join(dir, 'release.json')
     const code = `import importlib.util,sys,json,pathlib
@@ -78,7 +78,7 @@ m.pinned=lambda base: base+'@sha256:'+'0'*64
 m.release.tooling_hashes=lambda root: {f:'0'*64 for f in m.release.TOOLING_FILES}
 m.build=lambda tag,*args: tag.rsplit(':',1)[0]+'@sha256:'+'1'*64
 out=sys.argv[2]
-sys.argv=['release-build.py','--registry','ghcr.io/example/colloq','--k3s-version','v1.36.4+k3s1','--source-commit','a'*40,'--output',out]
+sys.argv=['release-build.py','--registry','ghcr.io/example/aulalab','--k3s-version','v1.36.4+k3s1','--source-commit','a'*40,'--output',out]
 m.main()
 print(json.dumps([e['name'] for e in json.load(open(out))['catalog']['environments']]))
 `
@@ -89,7 +89,7 @@ print(json.dumps([e['name'] for e in json.load(open(out))['catalog']['environmen
 })
 
 test('archived build context excludes untracked inputs and uses committed content despite working-tree edits', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-source-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-source-'))
   try {
     const repo = path.join(dir, 'repo'); fs.mkdirSync(repo)
     const git = (...args: string[]) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim()
@@ -108,12 +108,12 @@ test('archived build context excludes untracked inputs and uses committed conten
 })
 
 test('release version defaults to v<package.json version> at the source commit and refuses any other', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-release-version-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-release-version-'))
   try {
     const repo = path.join(dir, 'repo'); fs.mkdirSync(path.join(repo, 'kernel/environments'), { recursive: true })
     const git = (...args: string[]) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim()
     git('init', '-q')
-    fs.writeFileSync(path.join(repo, 'package.json'), JSON.stringify({ name: 'colloq', version: '0.3.0' }))
+    fs.writeFileSync(path.join(repo, 'package.json'), JSON.stringify({ name: 'aulalab', version: '0.3.0' }))
     fs.writeFileSync(path.join(repo, 'kernel/environments/base.txt'), '# base\n')
     fs.mkdirSync(path.join(repo, 'server/src'), { recursive: true })
     fs.writeFileSync(path.join(repo, 'server/src/data-schema.ts'), '/** doc */\nexport const DATA_SCHEMA_VERSION = 3\n')
@@ -133,7 +133,7 @@ def build(tag,*a,**k):
  tags.append(tag); return tag.rsplit(':',1)[0]+'@sha256:'+'1'*64
 m.build=build
 m.release.tooling_hashes=lambda root: {f: '0'*64 for f in m.release.TOOLING_FILES}
-sys.argv=['release-build.py','--registry','ghcr.io/example/colloq','--k3s-version','v1.36.4+k3s1','--source-commit',commit,'--environments','base','--output',out]+sys.argv[5:]
+sys.argv=['release-build.py','--registry','ghcr.io/example/aulalab','--k3s-version','v1.36.4+k3s1','--source-commit',commit,'--environments','base','--output',out]+sys.argv[5:]
 m.main()
 value=json.load(open(out))
 print(json.dumps({'tags':tags,'version':value['version'],'schema':value['dataSchemaVersion'],'compatible':value['compatibleDataSchemaVersions']}))
@@ -148,7 +148,7 @@ print(json.dumps({'tags':tags,'version':value['version'],'schema':value['dataSch
     // release opens its own schema and every earlier one.
     assert.equal(said.schema, 3)
     assert.deepEqual(said.compatible, [1, 2, 3])
-    assert.deepEqual(said.tags, ['ghcr.io/example/colloq-app:v0.3.0', 'ghcr.io/example/colloq-runtime:v0.3.0', 'ghcr.io/example/colloq-kernel:v0.3.0-base'])
+    assert.deepEqual(said.tags, ['ghcr.io/example/aulalab-app:v0.3.0', 'ghcr.io/example/aulalab-runtime:v0.3.0', 'ghcr.io/example/aulalab-kernel:v0.3.0-base'])
     assert.equal(run('--version', 'v0.3.0').status, 0)
     const mismatch = run('--version', 'v0.2.0')
     assert.notEqual(mismatch.status, 0)
@@ -157,7 +157,7 @@ print(json.dumps({'tags':tags,'version':value['version'],'schema':value['dataSch
 })
 
 test('Git-less deployment tooling must match every hash in the selected release', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-tools-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-tools-'))
   try {
     fs.mkdirSync(path.join(dir, 'scripts'))
     const hashes: Record<string, string> = {}

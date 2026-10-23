@@ -20,7 +20,7 @@
  *     trouble.
  *
  * Real Python is not run here: the parsing itself was checked on a live
- * `colloq-kernel:base` kernel (jedi 0.20, seaborn 0.13.2), and the suite has
+ * `aulalab-kernel:base` kernel (jedi 0.20, seaborn 0.13.2), and the suite has
  * to run on a machine without docker.
  */
 import './_env.mts'
@@ -311,7 +311,7 @@ function briefOf(setup: string, expr: string): ReturnType<typeof parseBrief> {
   const code = [
     setup,
     inspectBriefSource(expr),
-    "print(__import__('sys').modules['_colloq_inspect'].report)",
+    "print(__import__('sys').modules['_aulalab_inspect'].report)",
   ].join('\n')
   const run = spawnSync(PYTHON as string, ['-c', code], { encoding: 'utf8' })
   assert.equal(run.status, 0, run.stderr)

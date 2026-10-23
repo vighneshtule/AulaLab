@@ -56,8 +56,8 @@ function agentFor(home: FakeHome, options: Partial<AgentOptions> = {}) {
     join: { home: home.url, code: CODE },
     build: 'dev',
     version: '0.24.0',
-    container: 'colloq-runner',
-    image: 'ghcr.io/colloq-edu/colloq-server:0.24.0',
+    container: 'aulalab-runner',
+    image: 'ghcr.io/vighneshtule/aulalab-server:0.24.0',
     docker,
     runner: seam,
     machine: () => PICTURE,
@@ -170,7 +170,7 @@ test('a lease is written down before a sync lists it, runs, uploads its files gz
     const request = seam.runs[0]!
     assert.equal(request.container, lease.container)
     assert.equal(request.attemptId, lease.attemptId)
-    assert.equal(request.imageDigest, `colloq-revision:${REVISION.id}`)
+    assert.equal(request.imageDigest, `aulalab-revision:${REVISION.id}`)
     assert.deepEqual(request.limits, lease.limits)
     assert.equal(request.dataDir, path.join(competitionsDir, 'compabcd', 'inputs', set.manifest.slice(0, 12)))
     assert.deepEqual(fs.readdirSync(request.dataDir).sort(), ['test.csv', 'train.csv'])
@@ -417,7 +417,7 @@ test('a relay that goes down mid-run is no reason to drop the run: the status sa
   let down = false
   offerWhenReady(home, set, lease)
   const answer = home.onSync
-  home.onSync = (body, call) => (down ? { status: 404, text: '<html>Colloq is not answering</html>', marker: false } : answer(body, call))
+  home.onSync = (body, call) => (down ? { status: 404, text: '<html>Aula Lab is not answering</html>', marker: false } : answer(body, call))
   home.relay = { known: true, tunnel: false }
   const running = agent.run()
   try {
@@ -817,7 +817,7 @@ test('a relay that says its tunnel is up while home is silent is not taken at it
   const home = await fakeHome()
   const { agent, logs } = agentFor(home)
   let down = false
-  home.onSync = () => (down ? { status: 404, text: '<html>Colloq is not answering</html>', marker: false } : { json: syncReply(), delayMs: 20 })
+  home.onSync = () => (down ? { status: 404, text: '<html>Aula Lab is not answering</html>', marker: false } : { json: syncReply(), delayMs: 20 })
   // frps still lists the home's proxy: the tunnel under it was cut a moment ago.
   home.relay = { known: true, tunnel: true }
   const running = agent.run()
@@ -862,7 +862,7 @@ const CLASSES: AgentOptions['classes'] = { probe: async () => true, timings: { c
 /** A class container an earlier life left running, with its record: what this life adopts before its first sync. */
 function leftRunning(docker: FakeAgentDocker, intent = classIntent()): FakeClassContainer {
   const [sessionId, role] = intent.key.split(':') as [string, 'room' | 'own' | 'council']
-  const container = classContainer(docker, { name: machineRoomContainer(INSTANCE_LABEL, sessionId, role), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, `colloq.placement=${intent.key}:${intent.gen}`], memoryMb: intent.memoryMb, cpus: intent.cpus })
+  const container = classContainer(docker, { name: machineRoomContainer(INSTANCE_LABEL, sessionId, role), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, `aulalab.placement=${intent.key}:${intent.gen}`], memoryMb: intent.memoryMb, cpus: intent.cpus })
   writePlacement(layout, { intent, container: container.id, image: revisionImage(intent.revision.id), spec: specDigest(intent, 'blocked'), limits: { memoryMb: intent.memoryMb, cpus: intent.cpus }, card: null })
   return container
 }
@@ -1116,7 +1116,7 @@ test('a revoked machine removes its class containers and their folders, whatever
   const home = await fakeHome()
   const { agent, docker } = agentFor(home, { classes: CLASSES })
   const room = leftRunning(docker)
-  const stray = classContainer(docker, { name: machineRoomContainer(INSTANCE_LABEL, 'old', 'own'), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'colloq.placement=old:own:2'] })
+  const stray = classContainer(docker, { name: machineRoomContainer(INSTANCE_LABEL, 'old', 'own'), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'aulalab.placement=old:own:2'] })
   fs.mkdirSync(path.join(layout.roomsDir, 's1'), { recursive: true })
   let revoked = false
   home.onSync = () => (revoked ? { status: 401, json: { error: 'unauthorized' } } : { json: syncReply({ kernels: kernelsReply([classIntent()]) }), delayMs: 20 })
@@ -1146,7 +1146,7 @@ test('the agent\'s own sweep, at its start and on its way out, never touches a c
     await running
     await home.close()
   }
-  const sweeps = docker.calls.filter((args) => args[0] === 'ps' && args.includes('label=colloq.kind=runner-check'))
+  const sweeps = docker.calls.filter((args) => args[0] === 'ps' && args.includes('label=aulalab.kind=runner-check'))
   assert.ok(sweeps.length >= 2, 'no sweep at the start and on the way out')
   assert.equal(docker.classes.get(room.name), room)
   assert.ok(!docker.calls.some((args) => args[0] === 'rm' && (args.includes(room.id) || args.includes(room.name))))
@@ -1248,7 +1248,7 @@ test('a machine revoked while a new code waits joins anew, and the revoked ident
     await first.agent.stop()
     await running
     assert.ok(first.docker.classes.has(room.name))
-    // The owner revoked it; the host's operator has put a new code in COLLOQ_RUNNER_JOIN.
+    // The owner revoked it; the host's operator has put a new code in AULALAB_RUNNER_JOIN.
     let revoked = true
     home.onSync = () => (revoked ? { status: 401, json: { error: 'unauthorized' } } : { json: syncReply(), delayMs: 20 })
     home.onJoin = () => {

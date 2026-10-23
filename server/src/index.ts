@@ -2,7 +2,7 @@ import { tr } from '@shared/i18n'
 /**
  * Process entry point: one HTTP server, two WebSocket paths, one static bundle.
  *
- * Colloq is deliberately a single process behind a single origin. A seminar is
+ * Aula Lab is deliberately a single process behind a single origin. A seminar is
  * hosted by whoever runs `docker compose up` twenty minutes before class, so
  * everything a student touches — the page, the REST API, the CRDT socket and
  * the run-control socket — must arrive on the one URL that was written on the
@@ -43,7 +43,7 @@ import {
   stopCompetitionPump,
 } from './competitions/runner.js'
 import { app } from './app.js'
-import { COLLOQ_VERSION } from './version.js'
+import { AULALAB_VERSION } from './version.js'
 import { startDependencyPump, stopDependencyPump } from './dependencies/service.js'
 import { backfillRevisionImages, pinLegacySubmissions } from './dependencies/revisions.js'
 import { competitionBackend } from './competitions/runner-port.js'
@@ -94,7 +94,7 @@ server.on('upgrade', handleUpgrade)
  * `make up` compose publishes the port, and otherwise the server in the
  * container cannot be reached.
  *
- * On a dedicated machine this is unneeded and harmful: Colloq reaches the
+ * On a dedicated machine this is unneeded and harmful: Aula Lab reaches the
  * outside through an outgoing tunnel, and an open port on a public address is
  * a second door into the same room that nobody named. The systemd service
  * sets 127.0.0.1 here.
@@ -147,7 +147,7 @@ try {
 
 server.listen(config.port, ...(bindAddr ? ([bindAddr] as const) : ([] as const)), () => {
   const ai = aiEnabled() ? `on (${config.ai.model})` : 'off'
-  console.log(`colloq ${COLLOQ_VERSION} ready — open ${config.publicUrl} · ai ${ai} · jupyter ${config.jupyter.url}`)
+  console.log(`aulalab ${AULALAB_VERSION} ready — open ${config.publicUrl} · ai ${ai} · jupyter ${config.jupyter.url}`)
   announceSetupToken()
   announceBind()
   announceProxies()
@@ -241,7 +241,7 @@ function announceBind(): void {
     `[net] BIND_ADDR is not set: port ${config.port} is open on every interface of this machine — ` +
       `on a classroom network the room also answers at http://<this-machine-ip>:${config.port}, ` +
       'bypassing the link. On a laptop or a dedicated machine set BIND_ADDR=127.0.0.1 ' +
-      '(Colloq reaches the outside through a tunnel, see make host); under make up this is as it should be — ' +
+      '(Aula Lab reaches the outside through a tunnel, see make host); under make up this is as it should be — ' +
       'otherwise the server in the container cannot be reached, and compose decides the port publishing.',
   )
 }
@@ -307,13 +307,13 @@ let stopping = false
 async function shutdown(signal: string): Promise<void> {
   if (stopping) return
   stopping = true
-  console.log(`\ncolloq shutting down (${signal})`)
+  console.log(`\naulalab shutting down (${signal})`)
   // A summary for a cut-short minute means nothing, and a line about zero
   // rooms among the shutdown lines is just noise.
   stopJournal()
 
   const force = setTimeout(() => {
-    console.warn('colloq: shutdown timed out, exiting anyway')
+    console.warn('aulalab: shutdown timed out, exiting anyway')
     process.exit(1)
   }, SHUTDOWN_GRACE_MS)
 
@@ -349,7 +349,7 @@ async function shutdown(signal: string): Promise<void> {
     await stopDependencyPump()
     await stopCompetitionPump()
   } catch (err) {
-    console.error('colloq: could not stop the competition queue:', err instanceof Error ? err.message : err)
+    console.error('aulalab: could not stop the competition queue:', err instanceof Error ? err.message : err)
   }
 
   // Snapshots first: an unsaved notebook is the only thing here that cannot be
@@ -357,19 +357,19 @@ async function shutdown(signal: string): Promise<void> {
   try {
     shutdownCollab()
   } catch (err) {
-    console.error('colloq: could not flush notebooks:', err instanceof Error ? err.message : err)
+    console.error('aulalab: could not flush notebooks:', err instanceof Error ? err.message : err)
   }
   try {
     await shutdownKernels()
     if (stopsLocalKernelsOnExit()) await retireDatabaseKernels(db, dropLocalRoomKernel)
   } catch (err) {
-    console.error('colloq: could not stop kernels:', err instanceof Error ? err.message : err)
+    console.error('aulalab: could not stop kernels:', err instanceof Error ? err.message : err)
   }
   /*
    * Last: the database is closed for real.
    *
    * The process used to just leave through process.exit, and the WAL journal
-   * was left lying next to it: a stopped instance's `colloq.db` was
+   * was left lying next to it: a stopped instance's `aulalab.db` was
    * yesterday's, and the whole day sat in a file nobody copies. db.close()
    * folds the journal in and closes the file, which is exactly what one
    * expects from "stopped". A database snapshot still copying gives up first
@@ -379,7 +379,7 @@ async function shutdown(signal: string): Promise<void> {
     await stopDatabaseSnapshots()
     closeDatabase()
   } catch (err) {
-    console.error('colloq: could not close the database:', err instanceof Error ? err.message : err)
+    console.error('aulalab: could not close the database:', err instanceof Error ? err.message : err)
   }
 
   clearTimeout(force)
@@ -392,7 +392,7 @@ process.on('SIGTERM', () => void shutdown('SIGTERM'))
 // A stray rejection from a kernel or model call must not end the class.
 process.on('unhandledRejection', (err: unknown) => {
   console.error(
-    'colloq: unhandled rejection:',
+    'aulalab: unhandled rejection:',
     err instanceof Error ? (err.stack ?? err.message) : err,
   )
 })
@@ -409,7 +409,7 @@ process.on('unhandledRejection', (err: unknown) => {
  */
 process.on('uncaughtException', (err: unknown) => {
   console.error(
-    'colloq: uncaught exception:',
+    'aulalab: uncaught exception:',
     err instanceof Error ? (err.stack ?? err.message) : err,
   )
   try {

@@ -60,7 +60,7 @@ function sign(alg: string, key: crypto.KeyObject | string, claims: Record<string
   return `${head}.${body}.${signature.toString('base64url')}`
 }
 
-const AUDIENCE = 'https://colloq.corp.test'
+const AUDIENCE = 'https://aulalab.corp.test'
 const now = () => Math.floor(Date.now() / 1000)
 
 /** What Teleport application access forwards: roles, traits as lists, the user as `sub` and `username`. */
@@ -253,10 +253,10 @@ test('sign-in by proxy is on with a key source and an audience, and a setting it
 test('the claims name the person the way Teleport and an OIDC provider spell them', () => {
   const policy = parseSsoPolicy({ AUTH_JWT_JWKS_FILE: '/x' })
   const fromTeleport = identityFromClaims({
-    sub: 'ivan.petrov', username: 'ivan.petrov', roles: ['access', 'colloq-teacher'],
+    sub: 'ivan.petrov', username: 'ivan.petrov', roles: ['access', 'aulalab-teacher'],
     traits: { email: ['Ivan.Petrov@Corp.Test'], full_name: ['Иван  Петров'] },
   }, policy)
-  assert.deepEqual(fromTeleport, { subject: 'ivan.petrov', name: 'Иван Петров', email: 'ivan.petrov@corp.test', roles: ['access', 'colloq-teacher'] })
+  assert.deepEqual(fromTeleport, { subject: 'ivan.petrov', name: 'Иван Петров', email: 'ivan.petrov@corp.test', roles: ['access', 'aulalab-teacher'] })
   const fromOidc = identityFromClaims({ sub: '00u1', email: 'maria@corp.test', name: 'Мария', groups: ['students'] }, policy)
   assert.deepEqual(fromOidc, { subject: '00u1', name: 'Мария', email: 'maria@corp.test', roles: ['students'] })
   // A login only, and a domain to make an address of it.
@@ -278,8 +278,8 @@ before(async () => {
     AUTH_JWT_JWKS_FILE: file,
     AUTH_JWT_ISSUER: 'teleport.corp.test',
     AUTH_JWT_AUDIENCE: AUDIENCE,
-    AUTH_JWT_OWNER_ROLES: 'colloq-owner',
-    AUTH_JWT_TEACHER_ROLES: 'colloq-teacher',
+    AUTH_JWT_OWNER_ROLES: 'aulalab-owner',
+    AUTH_JWT_TEACHER_ROLES: 'aulalab-teacher',
   }))
   server = http.createServer(app)
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
@@ -314,11 +314,11 @@ let ownerCookie = ''
 test('an unclaimed instance is claimed by the first owner the proxy vouches for, and the printed token dies', async () => {
   const printed = readSetupToken()
   // A teacher role alone does not claim: an instance needs an owner first.
-  const early = await call('GET', '/api/admin/me', { token: teleport('early.teacher@corp.test', { roles: ['colloq-teacher'] }) })
+  const early = await call('GET', '/api/admin/me', { token: teleport('early.teacher@corp.test', { roles: ['aulalab-teacher'] }) })
   assert.equal(early.status, 401)
   assert.equal(getTeacherByEmail('early.teacher@corp.test'), null)
 
-  const response = await call('GET', '/api/admin/me', { token: teleport('dean@corp.test', { roles: ['colloq-owner'], traits: { email: ['dean@corp.test'], name: ['Декан'] } }) })
+  const response = await call('GET', '/api/admin/me', { token: teleport('dean@corp.test', { roles: ['aulalab-owner'], traits: { email: ['dean@corp.test'], name: ['Декан'] } }) })
   assert.equal(response.status, 200)
   const me = (await response.json()) as AdminMe
   assert.equal(me.teacher.role, 'owner')
@@ -340,7 +340,7 @@ test('the cookie the proxy sign-in issued is the one sockets and later requests 
 })
 
 test('a teacher role adds the person once; without one a person is matched by email or not at all', async () => {
-  const anna = teleport('anna@corp.test', { roles: ['access', 'colloq-teacher'] })
+  const anna = teleport('anna@corp.test', { roles: ['access', 'aulalab-teacher'] })
   const first = (await (await call('GET', '/api/admin/me', { token: anna })).json()) as AdminMe
   const second = (await (await call('GET', '/api/admin/me', { token: anna })).json()) as AdminMe
   assert.equal(first.teacher.role, 'teacher')
@@ -354,12 +354,12 @@ test('a teacher role adds the person once; without one a person is matched by em
   assert.ok(createTeacher({ name: 'Пётр', email: 'Petr@corp.test', role: 'teacher' }))
   assert.equal((await call('GET', '/api/admin/me', { token: petr })).status, 200)
   // A role never changes the role of someone already on the list.
-  const demoted = (await (await call('GET', '/api/admin/me', { token: teleport('anna@corp.test', { roles: ['colloq-owner'] }) })).json()) as AdminMe
+  const demoted = (await (await call('GET', '/api/admin/me', { token: teleport('anna@corp.test', { roles: ['aulalab-owner'] }) })).json()) as AdminMe
   assert.equal(demoted.teacher.role, 'teacher')
 })
 
 test('a token that does not verify is no identity: no cookie, no staff, no name', async () => {
-  const claims = teleportClaims('dean@corp.test', { roles: ['colloq-owner'] })
+  const claims = teleportClaims('dean@corp.test', { roles: ['aulalab-owner'] })
   const publicPem = rsa.publicKey.export({ type: 'spki', format: 'pem' }).toString()
   for (const token of [
     sign('RS256', stranger.privateKey, claims, { kid: 'rsa-1' }),
@@ -436,35 +436,35 @@ function postAs(host: string, origin: string): Promise<number> {
 }
 
 test('a write from the public address passes the origin check whatever Host the proxy writes', async () => {
-  const saved = { session: process.env.COLLOQ_LOCAL_SESSION, url: process.env.COLLOQ_LOCAL_URL }
-  process.env.COLLOQ_LOCAL_SESSION = '1'
-  process.env.COLLOQ_LOCAL_URL = 'https://colloq.corp.test'
+  const saved = { session: process.env.AULALAB_LOCAL_SESSION, url: process.env.AULALAB_LOCAL_URL }
+  process.env.AULALAB_LOCAL_SESSION = '1'
+  process.env.AULALAB_LOCAL_URL = 'https://aulalab.corp.test'
   try {
     // Teleport may forward to the Service under the Service's own name.
-    assert.notEqual(await postAs('colloq-app.colloq.svc:3000', 'https://colloq.corp.test'), 403)
-    assert.equal(await postAs('colloq-app.colloq.svc:3000', 'https://evil.example'), 403)
-    assert.equal(await postAs('colloq-app.colloq.svc:3000', 'https://colloq.corp.test.evil.example'), 403)
+    assert.notEqual(await postAs('aulalab-app.aulalab.svc:3000', 'https://aulalab.corp.test'), 403)
+    assert.equal(await postAs('aulalab-app.aulalab.svc:3000', 'https://evil.example'), 403)
+    assert.equal(await postAs('aulalab-app.aulalab.svc:3000', 'https://aulalab.corp.test.evil.example'), 403)
   } finally {
-    if (saved.session === undefined) delete process.env.COLLOQ_LOCAL_SESSION
-    else process.env.COLLOQ_LOCAL_SESSION = saved.session
-    if (saved.url === undefined) delete process.env.COLLOQ_LOCAL_URL
-    else process.env.COLLOQ_LOCAL_URL = saved.url
+    if (saved.session === undefined) delete process.env.AULALAB_LOCAL_SESSION
+    else process.env.AULALAB_LOCAL_SESSION = saved.session
+    if (saved.url === undefined) delete process.env.AULALAB_LOCAL_URL
+    else process.env.AULALAB_LOCAL_URL = saved.url
   }
 })
 
 test('behind a front that rewrites Host, Origin is compared with the host a trusted proxy reports', () => {
   const policy = parseInboundPolicy({ TRUSTED_PROXIES: 'private' })
-  const fromProxy = { headers: { 'x-forwarded-host': 'Colloq.Teleport.Corp.Test, inner.example' }, socket: { remoteAddress: '10.42.1.17' } }
-  assert.equal(forwardedHost(fromProxy, policy), 'colloq.teleport.corp.test')
+  const fromProxy = { headers: { 'x-forwarded-host': 'Aula Lab.Teleport.Corp.Test, inner.example' }, socket: { remoteAddress: '10.42.1.17' } }
+  assert.equal(forwardedHost(fromProxy, policy), 'aulalab.teleport.corp.test')
   // Anyone else's X-Forwarded-Host is the client's own word.
   assert.equal(forwardedHost({ ...fromProxy, socket: { remoteAddress: '203.0.113.9' } }, policy), null)
   assert.equal(forwardedHost({ headers: { 'x-forwarded-host': 'evil.example/path' }, socket: { remoteAddress: '10.42.1.17' } }, policy), null)
   assert.equal(forwardedHost({ headers: {}, socket: { remoteAddress: '10.42.1.17' } }, policy), null)
 
-  const service = 'colloq-app.colloq.svc:3000'
-  assert.equal(originAllowed('https://colloq.teleport.corp.test', service, 'colloq.teleport.corp.test'), true)
-  assert.equal(originAllowed('https://colloq.teleport.corp.test', service, null), false)
-  assert.equal(originAllowed('https://evil.example', service, 'colloq.teleport.corp.test'), false)
+  const service = 'aulalab-app.aulalab.svc:3000'
+  assert.equal(originAllowed('https://aulalab.teleport.corp.test', service, 'aulalab.teleport.corp.test'), true)
+  assert.equal(originAllowed('https://aulalab.teleport.corp.test', service, null), false)
+  assert.equal(originAllowed('https://evil.example', service, 'aulalab.teleport.corp.test'), false)
 })
 
 test('a cookie a shared browser kept from the previous teacher never outranks the person the proxy vouches for', async () => {

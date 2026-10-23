@@ -395,7 +395,7 @@ test('a frame either decodes into one that writes back to itself, or is refused 
 
 test('one tunnel protocol and its header, and the numbers of §15', () => {
   assert.equal(TUNNEL_PROTOCOL, 1)
-  assert.equal(TUNNEL_PROTOCOL_HEADER, 'X-Colloq-Tunnel-Protocol')
+  assert.equal(TUNNEL_PROTOCOL_HEADER, 'X-AulaLab-Tunnel-Protocol')
   assert.equal(TUNNEL_PATH, 'tunnel')
   // The tunnel's version is its own: the sync's stays where it was.
   assert.equal(REMOTE_PROTOCOL, 1)

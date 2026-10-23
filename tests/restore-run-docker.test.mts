@@ -7,7 +7,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 
-const enabled = process.env.COLLOQ_RESTORE_DOCKER_TEST === '1'
+const enabled = process.env.AULALAB_RESTORE_DOCKER_TEST === '1'
 const repo = fileURLToPath(new URL('..',import.meta.url))
 const fixtureDirs: string[] = []
 const execute = promisify(execFile)
@@ -30,7 +30,7 @@ test('Docker: prepared hashed packages and pinned offline notebook scoring survi
   const restored = fs.realpathSync(fs.mkdtempSync(path.join(repo,'.restore-test-target-')))
   fixtureDirs.push(source,restored)
   // Colima shares the repository; host OS temporary directories need not be mounted.
-  for (const root of [source,restored]) fs.writeFileSync(path.join(root,'.restore-smoke-root'),'colloq-restore-smoke-v1')
+  for (const root of [source,restored]) fs.writeFileSync(path.join(root,'.restore-smoke-root'),'aulalab-restore-smoke-v1')
   fs.mkdirSync(path.join(source,'workspace'))
   fs.mkdirSync(path.join(source,'secrets'))
   const fixture = path.join(repo,'scripts/restore-run-fixture.mts')

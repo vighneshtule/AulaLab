@@ -620,7 +620,7 @@ test('answer files live in DATA_DIR and never in WORKSPACE_DIR', () => {
   assert.ok(!secretDir(c.id).startsWith(openDir(c.id)))
   assert.equal(readSecretFile(c.id, 'solution.csv')?.toString(), 'id,orders\n1,5\n')
 
-  // The file name goes into a path, and the string "../../colloq.db" does not
+  // The file name goes into a path, and the string "../../aulalab.db" does not
   // become a path.
   assert.throws(() => putOpenFile(c.id, '../escape.csv', bytes('x')))
   assert.throws(() => putSecretFile(c.id, '/etc/passwd', bytes('x')))

@@ -276,7 +276,7 @@ test("the census reads docker's labels: a class on a runner card blocks it for s
     fake.add('lecture', 'room', { gpu: '0' })
     // And a submission still runs on card 1, which the owner has just given back to classes.
     fake.intercept = (args) =>
-      args[0] === 'ps' && args.includes('label=colloq.kind=competition-run') ? { code: 0, out: '1\n<no value>\n\n' } : undefined
+      args[0] === 'ps' && args.includes('label=aulalab.kind=competition-run') ? { code: 0, out: '1\n<no value>\n\n' } : undefined
     assert.deepEqual(await submissionGpuCards(), ['1'])
     // The rooms' own census stays the rooms' own: the panel counts classes there.
     assert.deepEqual(await gpuBusy(), ['0'])
@@ -305,7 +305,7 @@ test('the panel counts what the allocator does: a card a submission still runs o
     // back to classes while a submission still runs on it.
     fake.add('lecture', 'room', { gpu: '2' })
     fake.intercept = (args) =>
-      args[0] === 'ps' && args.includes('label=colloq.kind=competition-run') ? { code: 0, out: '1\n' } : undefined
+      args[0] === 'ps' && args.includes('label=aulalab.kind=competition-run') ? { code: 0, out: '1\n' } : undefined
     const environments = await call('/api/admin/environments', { cookie: owner })
     assert.equal(environments.status, 200)
     // The rooms' pool is cards 1 and 2, and neither is free to promise a seminar.
@@ -327,7 +327,7 @@ test("the owner's block says a card given back to classes is still the submissio
     // The same machine as above: a lecture on card 2, a submission still on card 1, which the owner gave back.
     fake.add('lecture', 'room', { gpu: '2' })
     fake.intercept = (args) =>
-      args[0] === 'ps' && args.includes('label=colloq.kind=competition-run') ? { code: 0, out: '1\n' } : undefined
+      args[0] === 'ps' && args.includes('label=aulalab.kind=competition-run') ? { code: 0, out: '1\n' } : undefined
     const view = await gpuSettingsView()
     assert.deepEqual(
       view.cards.map((card) => [card.id, card.holder, card.heldByRoom, card.heldBySubmission]),
@@ -384,7 +384,7 @@ test('inside the app container a card is asked from a throwaway container, never
   const asked: string[][] = []
   useDockerInfo(async (args) => {
     asked.push(args)
-    if (args[0] === 'image') return { code: 0, out: 'colloq-kernel:base\ncolloq-kernel:base-gpu\ncolloq-kernel:<none>\n' }
+    if (args[0] === 'image') return { code: 0, out: 'aulalab-kernel:base\naulalab-kernel:base-gpu\naulalab-kernel:<none>\n' }
     // One container is given every card and lists them as the local nvidia-smi would.
     if (args[0] === 'run' && args[args.indexOf('--gpus') + 1] === 'all') return { code: 0, out: '0, GPU-6a1e0000, NVIDIA GeForce RTX 4090, 24564\n' }
     if (args[0] === 'run') return { code: 0, out: 'NVIDIA GeForce RTX 4090, 24564\n' }
@@ -409,7 +409,7 @@ test('inside the app container a card is asked from a throwaway container, never
     assert.equal(value('--network'), 'none')
     assert.equal(value('--entrypoint'), 'nvidia-smi')
     // The image a GPU machine surely has.
-    assert.ok(run.includes('colloq-kernel:base-gpu'))
+    assert.ok(run.includes('aulalab-kernel:base-gpu'))
   } finally {
     useDockerInfo(null)
     useGpuCardProbe(null)

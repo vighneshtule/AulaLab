@@ -1371,7 +1371,7 @@
    * window it simply will not be there — then the hint will show once more, and
    * that is no trouble.
    */
-  const TIP_KEY = 'colloq.files.menuTip'
+  const TIP_KEY = 'aulalab.files.menuTip'
 
   function tipWasSeen(): boolean {
     try {
@@ -1407,7 +1407,7 @@
    * question "is this ours" is asked mid-drag, when the transfer's content
    * cannot be read yet.
    */
-  const PATH_TYPE = 'application/x-colloq-path'
+  const PATH_TYPE = 'application/x-aulalab-path'
 
   /** What is carried: our own row, files from disk, or nothing we accept. */
   function carriedKind(event: DragEvent): 'row' | 'files' | null {

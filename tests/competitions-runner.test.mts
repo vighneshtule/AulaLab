@@ -188,8 +188,8 @@ const LIMITS_SAMPLE = limitsFor(
 
 test('the notebook command: no network, read-only, with ceilings', () => {
   const args = runArgs({
-    container: 'colloq-comp-abc-run',
-    image: 'colloq-kernel:base',
+    container: 'aulalab-comp-abc-run',
+    image: 'aulalab-kernel:base',
     dataDir: '/data/competitions/c1/data',
     inputDir: '/data/competitions/c1/s/s1/in',
     resultDir: '/data/competitions/c1/s/s1/out',
@@ -218,14 +218,14 @@ test('the notebook command: no network, read-only, with ceilings', () => {
   // No `--rm` on purpose: the container is needed dead, to read OOMKilled.
   assert.ok(!args.includes('--rm'))
   assert.ok(args.includes('--restart=no'))
-  assert.ok(line.includes('colloq.kind=competition-run'))
+  assert.ok(line.includes('aulalab.kind=competition-run'))
   assert.equal(args[args.length - 1], '/harness/run_notebook.py')
 })
 
 test("neither the answers nor the metric code get into the entrant's container", () => {
   const args = runArgs({
     container: 'c',
-    image: 'colloq-kernel:base',
+    image: 'aulalab-kernel:base',
     dataDir: '/data/competitions/c1/data',
     inputDir: '/data/competitions/c1/s/s1/in',
     resultDir: '/data/competitions/c1/s/s1/out',
@@ -256,8 +256,8 @@ test('the metric command: the secrets inside, the open data and the notebook not
     'metric',
   )
   const args = scoreArgs({
-    container: 'colloq-comp-abc-score',
-    image: 'colloq-kernel:base',
+    container: 'aulalab-comp-abc-score',
+    image: 'aulalab-kernel:base',
     secretDir: '/data/competitions/c1/secret',
     submissionDir: '/data/competitions/c1/s/s1/score',
     outDir: '/data/competitions/c1/s/s1/score-out',
@@ -287,7 +287,7 @@ test('the metric command: the secrets inside, the open data and the notebook not
 
 test('every -v is translated into a host path', () => {
   const before = process.env.DATA_HOST_DIR
-  process.env.DATA_HOST_DIR = '/srv/colloq-data'
+  process.env.DATA_HOST_DIR = '/srv/aulalab-data'
   try {
     const args = runArgs({
       container: 'c',
@@ -303,7 +303,7 @@ test('every -v is translated into a host path', () => {
     // directory created by the daemon on the fly — silently, without a single
     // line in the log.
     for (const mount of mounts) {
-      assert.ok(mount.startsWith('/srv/colloq-data/'), mount)
+      assert.ok(mount.startsWith('/srv/aulalab-data/'), mount)
     }
   } finally {
     if (before === undefined) delete process.env.DATA_HOST_DIR
@@ -314,7 +314,7 @@ test('every -v is translated into a host path', () => {
 test('the harness is laid out by content hash and is not rewritten', () => {
   const dir = harnessDir()
   assert.ok(dir.includes('.harness'), 'the harness directory hides from the competition sweep')
-  for (const name of ['run_notebook.py', 'kernel_streams.py', 'score_metric.py', 'colloq_metric.py', 'colloq_split.py']) {
+  for (const name of ['run_notebook.py', 'kernel_streams.py', 'score_metric.py', 'aulalab_metric.py', 'aulalab_split.py']) {
     assert.ok(fs.existsSync(path.join(dir, name)), name)
   }
   assert.equal(harnessDir(), dir, 'a second call does not create a new directory')
@@ -440,7 +440,7 @@ test('the container name does not repeat on a rerun of the same submission', () 
   const first = containerName('s1', 'notebook', 'aaaa')
   const again = containerName('s1', 'notebook', 'bbbb')
   assert.notEqual(first, again)
-  assert.ok(first.startsWith('colloq-comp-s1-'))
+  assert.ok(first.startsWith('aulalab-comp-s1-'))
   assert.ok(containerName('s1', 'metric', 'cccc').endsWith('-score'))
 })
 
@@ -456,11 +456,11 @@ test('the execution path is chosen by a variable, as for kernels', () => {
 /* ------------------------------------------------------ stand-in runner */
 
 test('a directive is parsed as data and only as data', () => {
-  const asked = directiveOf(Buffer.from(notebook(['# colloq-test: {"status": "timeout", "cell": 3}\nprint(1)'])))
+  const asked = directiveOf(Buffer.from(notebook(['# aulalab-test: {"status": "timeout", "cell": 3}\nprint(1)'])))
   assert.deepEqual(asked, { status: 'timeout', cell: 3 })
   // Garbage in a directive does not crash the queue: the submission takes the
   // ordinary path.
-  assert.deepEqual(directiveOf(Buffer.from(notebook(['# colloq-test: {сломано}']))), {})
+  assert.deepEqual(directiveOf(Buffer.from(notebook(['# aulalab-test: {сломано}']))), {})
   assert.deepEqual(directiveOf(Buffer.from('не json')), {})
   assert.deepEqual(directiveOf(Buffer.from(notebook(['print(1)']))), {})
   assert.equal(cellsOf(Buffer.from(notebook(['a', 'b', 'c']))), 3)
@@ -569,7 +569,7 @@ test('every outcome names the culprit correctly', async () => {
   ]
 
   for (const item of cases) {
-    const submission = send(competition, entrant.id, [`# colloq-test: ${item.directive}`, 'x = 1'])
+    const submission = send(competition, entrant.id, [`# aulalab-test: ${item.directive}`, 'x = 1'])
     await drainCompetitionQueue()
     const done = getSubmission(submission.id)
     assert.equal(done?.state, item.state, item.directive)
@@ -583,7 +583,7 @@ test("a submission that failed before the first cell does not use the day's quot
   reset()
   const competition = makeCompetition({ limits: { wallSeconds: 600, memoryMb: 4096, cpus: 2, perDay: 3 } })
   const entrant = mint('Варя')
-  const submission = send(competition, entrant.id, ['# colloq-test: {"status": "kernel_died", "cell": -1}'])
+  const submission = send(competition, entrant.id, ['# aulalab-test: {"status": "kernel_died", "cell": -1}'])
   await drainCompetitionQueue()
   const done = getSubmission(submission.id)
   assert.equal(done?.state, 'notebookFailed')
@@ -739,7 +739,7 @@ test('through the queue: the hint lands in the submission row and follows the co
   })
   selectRevision(competition.id, revision.id)
   const entrant = mint('Лёня')
-  const failing = [`# colloq-test: ${JSON.stringify({ status: 'cell_error', cell: 3, detail: IMPORT_TRACE })}`, 'x = 1', 'y = 2', 'import lightgbm']
+  const failing = [`# aulalab-test: ${JSON.stringify({ status: 'cell_error', cell: 3, detail: IMPORT_TRACE })}`, 'x = 1', 'y = 2', 'import lightgbm']
   const run = async (prepare?: (submissionId: string) => void) => {
     const submission = send(competition, entrant.id, failing)
     prepare?.(submission.id)
@@ -847,7 +847,7 @@ test('both a waiting and a running one can be cancelled; a late cancellation say
 
   // The teacher kills a running one: the container is removed, and the
   // submission does not get "time is up" for someone else's press.
-  const running = send(competition, entrant.id, ['# colloq-test: {"hold": 5000}'])
+  const running = send(competition, entrant.id, ['# aulalab-test: {"hold": 5000}'])
   assert.equal(await pumpOnce(), 1)
   assert.ok(queueRow(running.id)?.container, 'the container name is recorded before the first wait')
   assert.equal(await cancelSubmission(running.id, 'teacher'), true)
@@ -960,7 +960,7 @@ test('there is nothing to rescore for a submission without an answer', async () 
   reset()
   const competition = makeCompetition()
   const entrant = mint('Клава')
-  const submission = send(competition, entrant.id, ['# colloq-test: {"status": "cell_error"}'])
+  const submission = send(competition, entrant.id, ['# aulalab-test: {"status": "cell_error"}'])
   await drainCompetitionQueue()
   assert.equal(getSubmission(submission.id)?.state, 'notebookFailed')
   assert.equal(rescoreCompetition(competition.id), 0, 'there is nothing to rescore a failed notebook with')
@@ -973,8 +973,8 @@ test('there are as many slots as configured, and no more', async () => {
   const competition = makeCompetition()
   const one = mint('Люда')
   const two = mint('Миша')
-  send(competition, one.id, ['# colloq-test: {"hold": 300}'])
-  send(competition, two.id, ['# colloq-test: {"hold": 300}'])
+  send(competition, one.id, ['# aulalab-test: {"hold": 300}'])
+  send(competition, two.id, ['# aulalab-test: {"hold": 300}'])
 
   assert.equal(queueSlots(), 1)
   assert.equal(await pumpOnce(), 1, 'one slot, one job')
@@ -996,7 +996,7 @@ test('the container splits rows exactly the way the page shows it', (t) => {
     return
   }
   const dir = fs.mkdtempSync(path.join(process.env.DATA_DIR as string, 'split-'))
-  fs.writeFileSync(path.join(dir, 'colloq_split.py'), SPLIT_SOURCE)
+  fs.writeFileSync(path.join(dir, 'aulalab_split.py'), SPLIT_SOURCE)
 
   const cases = [
     { ids: Array.from({ length: 397 }, (_, i) => String(i + 1)), percent: 30, seed: 'rohlik-2026' },
@@ -1015,7 +1015,7 @@ test('the container splits rows exactly the way the page shows it', (t) => {
       [
         'import json, sys',
         `sys.path.insert(0, ${JSON.stringify(dir)})`,
-        'from colloq_split import split_rows',
+        'from aulalab_split import split_rows',
         'cases = json.loads(sys.stdin.read())',
         'print(json.dumps([split_rows(c["ids"], c["percent"], c["seed"]) for c in cases]))',
       ].join('\n'),
@@ -1264,7 +1264,7 @@ test('the index column is named in the instance language, with the line that wri
 test('a notebook the harness stopped at its limit says it was stopped a few seconds early, to save its output', async () => {
   reset()
   const competition = makeCompetition({ limits: { wallSeconds: 120, memoryMb: 4096, cpus: 2, perDay: 0 } })
-  const submission = send(competition, mint('Лёня').id, ['# colloq-test: {"status": "cell_timeout", "cell": 0}', 'train()'])
+  const submission = send(competition, mint('Лёня').id, ['# aulalab-test: {"status": "cell_timeout", "cell": 0}', 'train()'])
   await drainCompetitionQueue()
   const done = getSubmission(submission.id)
   // The same timed-out state as ever: only the words say more.
@@ -1328,15 +1328,15 @@ with tempfile.TemporaryDirectory() as directory:
     deps = root / 'deps'
     wheels = deps / 'wheels'
     wheels.mkdir(parents=True)
-    wheel = wheels / 'colloq_runtime_probe-1.0-py3-none-any.whl'
+    wheel = wheels / 'aulalab_runtime_probe-1.0-py3-none-any.whl'
     with zipfile.ZipFile(wheel, 'w') as archive:
-        archive.writestr('colloq_runtime_probe/__init__.py', 'VALUE = 73\\n')
-        archive.writestr('colloq_runtime_probe-1.0.dist-info/METADATA', 'Metadata-Version: 2.1\\nName: colloq-runtime-probe\\nVersion: 1.0\\n')
-        archive.writestr('colloq_runtime_probe-1.0.dist-info/WHEEL', 'Wheel-Version: 1.0\\nGenerator: colloq-test\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n')
-        archive.writestr('colloq_runtime_probe-1.0.dist-info/RECORD', '')
+        archive.writestr('aulalab_runtime_probe/__init__.py', 'VALUE = 73\\n')
+        archive.writestr('aulalab_runtime_probe-1.0.dist-info/METADATA', 'Metadata-Version: 2.1\\nName: aulalab-runtime-probe\\nVersion: 1.0\\n')
+        archive.writestr('aulalab_runtime_probe-1.0.dist-info/WHEEL', 'Wheel-Version: 1.0\\nGenerator: aulalab-test\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n')
+        archive.writestr('aulalab_runtime_probe-1.0.dist-info/RECORD', '')
     digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
     lock = deps / 'requirements.lock'
-    lock.write_text('colloq-runtime-probe==1.0 --hash=sha256:' + digest + '\\n')
+    lock.write_text('aulalab-runtime-probe==1.0 --hash=sha256:' + digest + '\\n')
     os.environ['COMP_DEPENDENCIES'] = str(deps)
     os.environ['JUPYTER_DATA_DIR'] = str(root / 'jupyter')
     scope = dict(Path=Path, os=os, sys=sys, json=json, subprocess=subprocess, tempfile=tempfile, venv=venv, re=re, OUT=out)
@@ -1344,16 +1344,16 @@ with tempfile.TemporaryDirectory() as directory:
     kernel = scope['prepare_dependencies']()
     spec = json.loads((Path(os.environ['JUPYTER_DATA_DIR']) / 'kernels' / kernel / 'kernel.json').read_text())
     interpreter = Path(spec['argv'][0])
-    assert interpreter == out / '.colloq-venv' / 'bin' / 'python', spec
+    assert interpreter == out / '.aulalab-venv' / 'bin' / 'python', spec
     assert spec['argv'][1:] == ['-m', 'ipykernel_launcher', '-f', '{connection_file}']
-    probe = subprocess.run([str(interpreter), '-c', 'import colloq_runtime_probe, sys; print(colloq_runtime_probe.VALUE); print(sys.prefix)'], capture_output=True, text=True, check=True)
+    probe = subprocess.run([str(interpreter), '-c', 'import aulalab_runtime_probe, sys; print(aulalab_runtime_probe.VALUE); print(sys.prefix)'], capture_output=True, text=True, check=True)
     assert probe.stdout.splitlines()[0] == '73', probe.stdout
-    assert Path(probe.stdout.splitlines()[1]).resolve() == (out / '.colloq-venv').resolve(), probe.stdout
-    assert 'include-system-site-packages = true' in (out / '.colloq-venv' / 'pyvenv.cfg').read_text()
+    assert Path(probe.stdout.splitlines()[1]).resolve() == (out / '.aulalab-venv').resolve(), probe.stdout
+    assert 'include-system-site-packages = true' in (out / '.aulalab-venv' / 'pyvenv.cfg').read_text()
     # An altered hash cannot become a runnable environment.
     import shutil
-    shutil.rmtree(out / '.colloq-venv')
-    lock.write_text('colloq-runtime-probe==1.0 --hash=sha256:' + '0' * 64 + '\\n')
+    shutil.rmtree(out / '.aulalab-venv')
+    lock.write_text('aulalab-runtime-probe==1.0 --hash=sha256:' + '0' * 64 + '\\n')
     try:
         scope['prepare_dependencies']()
         raise AssertionError('bad hash was accepted')
@@ -1475,13 +1475,13 @@ with tempfile.TemporaryDirectory() as directory:
     packages.mkdir()
     wheels = root / 'deps' / 'wheels'
     wheels.mkdir(parents=True)
-    wheel = wheels / 'colloq_room_probe-1.0-py3-none-any.whl'
+    wheel = wheels / 'aulalab_room_probe-1.0-py3-none-any.whl'
     with zipfile.ZipFile(wheel, 'w') as archive:
-        archive.writestr('colloq_room_probe/__init__.py', 'VALUE = 11\\n')
-        archive.writestr('colloq_room_probe-1.0.dist-info/METADATA', 'Metadata-Version: 2.1\\nName: colloq-room-probe\\nVersion: 1.0\\n')
-        archive.writestr('colloq_room_probe-1.0.dist-info/WHEEL', 'Wheel-Version: 1.0\\nGenerator: colloq-test\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n')
-        archive.writestr('colloq_room_probe-1.0.dist-info/RECORD', '')
-    (root / 'deps' / 'requirements.lock').write_text('colloq-room-probe==1.0 --hash=sha256:' + hashlib.sha256(wheel.read_bytes()).hexdigest() + '\\n')
+        archive.writestr('aulalab_room_probe/__init__.py', 'VALUE = 11\\n')
+        archive.writestr('aulalab_room_probe-1.0.dist-info/METADATA', 'Metadata-Version: 2.1\\nName: aulalab-room-probe\\nVersion: 1.0\\n')
+        archive.writestr('aulalab_room_probe-1.0.dist-info/WHEEL', 'Wheel-Version: 1.0\\nGenerator: aulalab-test\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n')
+        archive.writestr('aulalab_room_probe-1.0.dist-info/RECORD', '')
+    (root / 'deps' / 'requirements.lock').write_text('aulalab-room-probe==1.0 --hash=sha256:' + hashlib.sha256(wheel.read_bytes()).hexdigest() + '\\n')
     os.environ['COMP_DEPENDENCIES'] = str(root / 'deps')
     os.environ['COMP_PACKAGES'] = str(packages)
     os.environ['JUPYTER_DATA_DIR'] = str(root / 'jupyter')
@@ -1489,9 +1489,9 @@ with tempfile.TemporaryDirectory() as directory:
     exec(compile(ast.Module(body=nodes, type_ignores=[]), '<packages>', 'exec'), scope)
     kernel = scope['prepare_dependencies']()
     spec = json.loads((root / 'jupyter' / 'kernels' / kernel / 'kernel.json').read_text())
-    assert Path(spec['argv'][0]) == packages / '.colloq-venv' / 'bin' / 'python', spec
-    assert not (out / '.colloq-venv').exists(), 'the set took the working folder after all'
-    probe = subprocess.run([spec['argv'][0], '-c', 'import colloq_room_probe; print(colloq_room_probe.VALUE)'], capture_output=True, text=True, check=True)
+    assert Path(spec['argv'][0]) == packages / '.aulalab-venv' / 'bin' / 'python', spec
+    assert not (out / '.aulalab-venv').exists(), 'the set took the working folder after all'
+    probe = subprocess.run([spec['argv'][0], '-c', 'import aulalab_room_probe; print(aulalab_room_probe.VALUE)'], capture_output=True, text=True, check=True)
     assert probe.stdout.strip() == '11', probe.stdout
 `
   const result = spawnSync('python3', ['-c', script], { encoding: 'utf8', timeout: 60_000 })

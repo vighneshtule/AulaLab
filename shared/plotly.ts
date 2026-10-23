@@ -208,31 +208,31 @@ export function figureShape(figure: PlotlyFigure): FigureShape {
  * from libraries, extensions and devtools that go through the same
  * `window.postMessage`.
  */
-export const PLOTLY_MSG = 'colloq.plotly.v1'
+export const PLOTLY_MSG = 'aulalab.plotly.v1'
 
 /** The frame is ready to take a figure: the bundle is loaded, the DOM is in place. */
 export interface PlotlyReady {
-  colloq: typeof PLOTLY_MSG
+  aulalab: typeof PLOTLY_MSG
   kind: 'ready'
 }
 
 /** The figure — the only thing that travels inside. */
 export interface PlotlyDraw {
-  colloq: typeof PLOTLY_MSG
+  aulalab: typeof PLOTLY_MSG
   kind: 'draw'
   figure: PlotlyFigure
 }
 
 /** How much space the chart actually took. */
 export interface PlotlyHeight {
-  colloq: typeof PLOTLY_MSG
+  aulalab: typeof PLOTLY_MSG
   kind: 'height'
   height: number
 }
 
 /** It did not draw — and why. An empty space here is worse than any line of text. */
 export interface PlotlyFailed {
-  colloq: typeof PLOTLY_MSG
+  aulalab: typeof PLOTLY_MSG
   kind: 'failed'
   reason: string
 }
@@ -241,8 +241,8 @@ export type PlotlyToFrame = PlotlyDraw
 export type PlotlyFromFrame = PlotlyReady | PlotlyHeight | PlotlyFailed
 
 /** Whether this looks like our message at all. Both sides check the shape. */
-export function isPlotlyMessage(value: unknown): value is { colloq: string; kind: string } {
+export function isPlotlyMessage(value: unknown): value is { aulalab: string; kind: string } {
   if (!value || typeof value !== 'object') return false
-  const msg = value as { colloq?: unknown; kind?: unknown }
-  return msg.colloq === PLOTLY_MSG && typeof msg.kind === 'string'
+  const msg = value as { aulalab?: unknown; kind?: unknown }
+  return msg.aulalab === PLOTLY_MSG && typeof msg.kind === 'string'
 }

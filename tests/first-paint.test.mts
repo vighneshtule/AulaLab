@@ -5,7 +5,7 @@ import config from '../web/vite.config.js'
 
 // Exercise the emitted head script: it decides which downloads start before
 // the app exists. A bare /s/ URL used to fetch the entire editor in incognito.
-const plugin = (config as any).plugins.find((plugin: any) => plugin.name === 'colloq-first-paint')
+const plugin = (config as any).plugins.find((plugin: any) => plugin.name === 'aulalab-first-paint')
 
 /** Chunks the way Rollup sees them: name, file and STATIC imports. */
 const bundle = {
@@ -50,7 +50,7 @@ function downloads(path: string, saved: string | null, denied = false, ready = f
     },
   }
   for (const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) runInNewContext(script[1], context)
-  if (ready) listeners.get('colloq:ready')?.()
+  if (ready) listeners.get('aulalab:ready')?.()
   return requested
 }
 
@@ -68,7 +68,7 @@ function links(path: string, saved: string | null, ready = false, lang = 'ru'): 
       head: { appendChild: (link: Record<string, unknown>) => made.push(link) },
     },
   })
-  if (ready) listeners.get('colloq:ready')?.()
+  if (ready) listeners.get('aulalab:ready')?.()
   return made
 
   function runAll(context: object) {
@@ -113,7 +113,7 @@ test('the form and its shared dependencies are requested from the initial docume
   const head = html.slice(0, html.indexOf('</head>'))
   const preloads = [...head.matchAll(/<link[^>]*rel="modulepreload"[^>]*href="([^"]+)"/g)].map((match) => match[1])
   assert.deepEqual(preloads, ['/assets/App-test.js', '/assets/index-test.js'])
-  assert.ok(head.indexOf('/assets/App-test.js') < head.indexOf('data-colloq-room-preload'),
+  assert.ok(head.indexOf('/assets/App-test.js') < head.indexOf('data-aulalab-room-preload'),
     'room bytes must not be queued ahead of the form')
 })
 
@@ -129,7 +129,7 @@ test("the entry chunk's own stylesheet is named in the head, the page's is not r
 
 // The app stylesheet goes at high priority and does not block the first frame.
 test('the app stylesheet is preloaded as a style and promoted on load', () => {
-  assert.match(html, /<link rel="preload" as="style" crossorigin href="\/assets\/index-test\.css" onload="this\.rel='stylesheet'" data-colloq-css>/)
+  assert.match(html, /<link rel="preload" as="style" crossorigin href="\/assets\/index-test\.css" onload="this\.rel='stylesheet'" data-aulalab-css>/)
   assert.match(html, /<noscript><link rel="stylesheet" crossorigin href="\/assets\/index-test\.css"><\/noscript>/)
 })
 

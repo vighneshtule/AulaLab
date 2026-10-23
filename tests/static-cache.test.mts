@@ -21,7 +21,7 @@ import zlib from 'node:zlib'
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
 
-const staticDir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-static-'))
+const staticDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-static-'))
 fs.mkdirSync(path.join(staticDir, 'assets'), { recursive: true })
 fs.mkdirSync(path.join(staticDir, 'fonts'), { recursive: true })
 fs.writeFileSync(path.join(staticDir, 'assets', 'index-UnEQhcxl.js'), 'export default 1\n')
@@ -36,10 +36,10 @@ fs.writeFileSync(path.join(staticDir, 'fonts', 'hse-sans-400.woff2'), 'not reall
  */
 fs.writeFileSync(
   path.join(staticDir, 'index.html'),
-  '<!doctype html><html lang="ru"><head><title>Colloq</title>' +
+  '<!doctype html><html lang="ru"><head><title>Aula Lab</title>' +
     '<script type="module" src="/assets/index-UnEQhcxl.js"></script>' +
     '<style>body{margin:0}</style></head><body><div id="app"></div>' +
-    '<script>window.__colloq_entry__=1;/* '.repeat(20) +
+    '<script>window.__aulalab_entry__=1;/* '.repeat(20) +
     '*/</script></body></html>',
 )
 process.env.STATIC_DIR = staticDir
@@ -100,13 +100,13 @@ test('navigation HTML supplies the saved language and revalidates when it change
   const { setInstanceLanguage } = await import('../server/src/admin/settings.js')
   setInstanceLanguage('en')
   const english = await fetch(`${base}/s/abc`)
-  assert.match(await english.text(), /name="colloq-language" content="en"/)
+  assert.match(await english.text(), /name="aulalab-language" content="en"/)
   assert.equal(english.headers.get('content-language'), 'en')
   const etag = english.headers.get('etag')!
   setInstanceLanguage('ru')
   const russian = await fetch(`${base}/s/abc`, { headers: { 'if-none-match': etag } })
   assert.equal(russian.status, 200)
-  assert.match(await russian.text(), /name="colloq-language" content="ru"/)
+  assert.match(await russian.text(), /name="aulalab-language" content="ru"/)
   assert.notEqual(russian.headers.get('etag'), etag)
 })
 
@@ -174,9 +174,9 @@ test('a deploy invalidates the ready bytes: the file changed — the page is bui
   const before = frontendPageBuilds()
   // Exactly what a deploy does: a new index.html in the same place. The key is
   // mtime and size, so both the contents and the length change.
-  fs.writeFileSync(path.join(staticDir, 'index.html'), '<!doctype html><title>Colloq снова</title>')
+  fs.writeFileSync(path.join(staticDir, 'index.html'), '<!doctype html><title>Aula Lab снова</title>')
   const now = await fetch(`${base}/s/abc`)
   assert.equal(frontendPageBuilds() - before, 1)
   assert.notEqual(now.headers.get('etag'), was)
-  assert.match(await now.text(), /Colloq снова/)
+  assert.match(await now.text(), /AulaLab снова/)
 })

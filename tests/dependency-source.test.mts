@@ -409,14 +409,14 @@ test('k3s: the broker hands the mirror settings to the proxy Pod as they are, an
     const posted: any[] = []
     const objects = new Map<string, any>()
     // What the broker checks before it starts a job: the data claim and the three policies.
-    objects.set('/api/v1/namespaces/colloq/persistentvolumeclaims/colloq-data', { metadata: { name: 'colloq-data' } })
+    objects.set('/api/v1/namespaces/aulalab/persistentvolumeclaims/aulalab-data', { metadata: { name: 'aulalab-data' } })
     for (const name of ['competition-job-isolation', 'competition-resolver-isolation', 'competition-proxy-isolation'])
-      objects.set(`/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/${name}`, { metadata: { name } })
+      objects.set(`/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/${name}`, { metadata: { name } })
     const kube = { async request<T>(method: string, path: string, body?: any): Promise<T> {
       const key = path.split('?')[0]!
       if (method === 'POST') {
         const object = { ...body, metadata: { ...body.metadata, uid: String(objects.size + 1) },
-          ...(body.metadata?.labels?.['colloq.dev/role'] === 'competition-proxy' ? { status: { phase: 'Running', conditions: [{ type: 'Ready', status: 'True' }] } } : {}) }
+          ...(body.metadata?.labels?.['aulalab.dev/role'] === 'competition-proxy' ? { status: { phase: 'Running', conditions: [{ type: 'Ready', status: 'True' }] } } : {}) }
         posted.push(object)
         objects.set(`${key}/${object.metadata.name}`, object)
         return object as T
@@ -426,12 +426,12 @@ test('k3s: the broker hands the mirror settings to the proxy Pod as they are, an
       if (method === 'DELETE') { objects.delete(key); return {} as T }
       throw Object.assign(new Error('missing'), { status: 404 })
     } }
-    const jobs = new CompetitionJobs({ kube, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage: `registry.example/runtime@sha256:${'d'.repeat(64)}`, instanceId: 'instance123', ...extra },
+    const jobs = new CompetitionJobs({ kube, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage: `registry.example/runtime@sha256:${'d'.repeat(64)}`, instanceId: 'instance123', ...extra },
       catalog: () => catalog, secret: () => 'x'.repeat(64), pollMs: 1 })
     const jobId = 'a'.repeat(32)
     await jobs.start(jobId, { schemaVersion: 1, jobId, kind: 'resolve', environment: 'kaggle-base', revision, preparationId: 'b'.repeat(32),
       limits: { wallSeconds: 120, memoryMb: 1024, cpus: 1, pids: 128, tmpfsMb: 256, targetBytes: 10_000_000 } })
-    const proxy = posted.find((object) => object.kind === 'Pod' && object.metadata.labels['colloq.dev/role'] === 'competition-proxy')
+    const proxy = posted.find((object) => object.kind === 'Pod' && object.metadata.labels['aulalab.dev/role'] === 'competition-proxy')
     return Object.fromEntries(proxy.spec.containers[0].env.map((entry: any) => [entry.name, entry.value]))
   }
   const configured = await proxyEnv({ dependencyIndexUrl: 'https://nexus.campus.edu/simple', dependencyFilesHosts: 'files.campus.edu' })

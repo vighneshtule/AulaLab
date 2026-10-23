@@ -24,9 +24,9 @@ import { PYTHON_VERSIONS } from '../shared/admin.js'
 const ROOT = '/repo'
 
 const FILES: Record<string, string> = {
-  '/repo/package.json': '{ "name": "colloq", "version": "0.1.0" }',
-  '/repo/cli/package.json': '{ "name": "@colloq/cli", "version": "0.1.0" }',
-  '/repo/.env': ['PORT=3000', 'KERNEL_ENV=cv', 'RELAY_DOMAIN=hse.colloq.ru'].join('\n'),
+  '/repo/package.json': '{ "name": "aulalab", "version": "0.1.0" }',
+  '/repo/cli/package.json': '{ "name": "@aulalab/cli", "version": "0.1.0" }',
+  '/repo/.env': ['PORT=3000', 'KERNEL_ENV=cv', 'RELAY_DOMAIN=hse.example.edu'].join('\n'),
   '/repo/kernel/Dockerfile': ['FROM scratch', 'ARG PARENT=python:3.11-slim-bookworm'].join('\n'),
   '/repo/kernel/requirements.txt': [
     'jupyter-server>=2.14,<3',
@@ -36,8 +36,8 @@ const FILES: Record<string, string> = {
   '/repo/kernel/environments/base.txt': '# Базовое окружение — здесь намеренно пусто.\n',
   '/repo/kernel/environments/base-gpu.txt': [
     '# Тяжёлая половина GPU-окружений.',
-    '# colloq: gpu',
-    '# colloq: python 3.12',
+    '# aulalab: gpu',
+    '# aulalab: python 3.12',
     'torch>=2.4',
     'torchvision>=0.19',
   ].join('\n'),
@@ -50,7 +50,7 @@ const FILES: Record<string, string> = {
   ].join('\n'),
   '/repo/kernel/environments/gpu.txt': [
     '# Нейросети на GPU.',
-    '# colloq: from base-gpu',
+    '# aulalab: from base-gpu',
     'transformers>=4.44',
     'accelerate>=0.33',
   ].join('\n'),
@@ -58,8 +58,8 @@ const FILES: Record<string, string> = {
 
 /** Two environments that refer to each other: a chain that cannot exist. */
 const RING: Record<string, string> = {
-  '/repo/kernel/environments/ring.txt': ['# Петля.', '# colloq: from ring2', 'timm'].join('\n'),
-  '/repo/kernel/environments/ring2.txt': ['# Вторая половина петли.', '# colloq: from ring'].join(
+  '/repo/kernel/environments/ring.txt': ['# Петля.', '# aulalab: from ring2', 'timm'].join('\n'),
+  '/repo/kernel/environments/ring2.txt': ['# Вторая половина петли.', '# aulalab: from ring'].join(
     '\n',
   ),
 }
@@ -80,7 +80,7 @@ async function run(
     answer?: string
     tty?: boolean
     /**
-     * An installed colloq. The commands' behaviour does not depend on it; it
+     * An installed aulalab. The commands' behaviour does not depend on it; it
      * only decides the defaults of a new .env — the same ones the launch would
      * write.
      */
@@ -159,31 +159,31 @@ function realFiles(): Record<string, string> {
 
 // ----------------------------------------------------------- two directories
 
-test('two environment directories: one path in the repository, different ones in an installed colloq', () => {
+test('two environment directories: one path in the repository, different ones in an installed aulalab', () => {
   const io = createMemoryIo({})
   const repo = createEnv({ io, root: '/repo' })
   assert.equal(repo.paths.ownEnvDir, '/repo/kernel/environments')
   assert.equal(repo.paths.ownEnvDir, repo.paths.envDir, 'in a clone there is nowhere to write but kernel/')
 
-  const installed = createEnv({ io, root: '/app', home: '/home/teacher/.colloq' })
+  const installed = createEnv({ io, root: '/app', home: '/home/teacher/.aulalab' })
   assert.equal(installed.paths.envDir, '/app/kernel/environments')
-  assert.equal(installed.paths.ownEnvDir, '/home/teacher/.colloq/environments')
+  assert.equal(installed.paths.ownEnvDir, '/home/teacher/.aulalab/environments')
 })
 
 test("the list is the union of two directories, and one's own name overrides the bundled one", () => {
-  const dirs = { app: '/app/kernel/environments', own: '/home/.colloq/environments' }
+  const dirs = { app: '/app/kernel/environments', own: '/home/.aulalab/environments' }
   const io = createMemoryIo({
     '/app/kernel/environments/base.txt': '',
     '/app/kernel/environments/cv.txt': 'torch',
-    '/home/.colloq/environments/cv.txt': 'timm',
-    '/home/.colloq/environments/ml.txt': 'transformers',
+    '/home/.aulalab/environments/cv.txt': 'timm',
+    '/home/.aulalab/environments/ml.txt': 'transformers',
     // Not a package list, so it does not get into the listing.
-    '/home/.colloq/environments/README.md': 'заметка',
+    '/home/.aulalab/environments/README.md': 'заметка',
   })
   assert.deepEqual(listEnvNames(io, dirs), ['base', 'cv', 'ml'])
   assert.equal(envFileIn(io, dirs, 'base'), '/app/kernel/environments/base.txt')
-  assert.equal(envFileIn(io, dirs, 'cv'), '/home/.colloq/environments/cv.txt', "one's own wins")
-  assert.equal(envFileIn(io, dirs, 'ml'), '/home/.colloq/environments/ml.txt')
+  assert.equal(envFileIn(io, dirs, 'cv'), '/home/.aulalab/environments/cv.txt', "one's own wins")
+  assert.equal(envFileIn(io, dirs, 'ml'), '/home/.aulalab/environments/ml.txt')
   // The name is nowhere, yet a path is still named, and it is the bundled one:
   // the "no such environment" refusal is built on it.
   assert.equal(envFileIn(io, dirs, 'нет'), '/app/kernel/environments/нет.txt')
@@ -200,7 +200,7 @@ test('coinciding directories do not double a name', () => {
 test('the group has four commands, and none of them builds an image', async () => {
   /*
    * env build and env freeze left together with the Makefile wrapper: the
-   * image is built by colloq start, and the env-build and env-freeze targets
+   * image is built by aulalab start, and the env-build and env-freeze targets
    * stayed in the workshop. An old name must not quietly do something else —
    * `env build cv` gets as far as `env` (the list alias) and refuses on the
    * extra word without starting anything.
@@ -238,7 +238,7 @@ test('env list: the name, a bare env and env ls print the list themselves, start
       // taking the default.
       row(' ', 'gpu', 'Python 3.12 · 2 packages on top of the base'),
       '',
-      '* — the default for new classes. Change it: colloq env use <name>',
+      '* — the default for new classes. Change it: aulalab env use <name>',
     ])
   }
 })
@@ -348,7 +348,7 @@ test('env list --json on the real files counts packages by the same rule as the 
     parsed.environments.map((item) => [item.name, item.packages]),
     expected,
   )
-  // Python comes from the root of the "# colloq: from" chain, and that is
+  // Python comes from the root of the "# aulalab: from" chain, and that is
   // separate arithmetic.
   assert.deepEqual(
     parsed.environments.map((item) => item.python),
@@ -390,7 +390,7 @@ test('env show of another environment reads the file itself: packages, the base,
   assert.match(text, /Base \(always there\):/)
   assert.match(text, /numpy>=1\.26/)
   // Comments and directives do not get into the package list.
-  assert.equal(/colloq: from/.test(text), false)
+  assert.equal(/aulalab: from/.test(text), false)
 })
 
 test('env show --dry-run on another environment prints one native line', async () => {
@@ -410,7 +410,7 @@ test('env show: no file means refusal 3 with a pointer to the list, nothing star
   assert.equal(missing.code, 3)
   assert.deepEqual(missing.calls, [])
   assert.match(missing.err.join('\n'), /kernel\/environments\/ml\.txt/)
-  assert.match(missing.err.join('\n'), /colloq env list/)
+  assert.match(missing.err.join('\n'), /aulalab env list/)
 })
 
 test('env show of an empty environment says there is nothing on top of the base', async () => {
@@ -452,12 +452,12 @@ test('env new writes a file with a header into its own directory and starts noth
   assert.match(text, /#   transformers>=4\.44/)
   // The default is not written into the header: tomorrow ARG PARENT gets
   // bumped, and the line turns into a lie nobody asked for.
-  assert.equal(/colloq: python/.test(text), false)
+  assert.equal(/aulalab: python/.test(text), false)
   // Not a single package on top of the base: the header is all comments.
   assert.match(result.out.join('\n'), /^created kernel\/environments\/ml\.txt/)
   assert.match(
     result.out.join('\n'),
-    /Python 3\.11 · write the packages in, then: colloq env use ml/,
+    /Python 3\.11 · write the packages in, then: aulalab env use ml/,
   )
 })
 
@@ -465,12 +465,12 @@ test('env new with a non-default --python writes a directive into the header', a
   const other = await run(['env', 'new', 'ml', '--python', '3.12'])
   assert.equal(other.code, 0)
   const text = other.io.readText('/repo/kernel/environments/ml.txt') as string
-  assert.match(text, /^# colloq: python 3\.12\n#\n# Environment "ml"/)
+  assert.match(text, /^# aulalab: python 3\.12\n#\n# Environment "ml"/)
   assert.match(other.out.join('\n'), /Python 3\.12/)
 
   const same = await run(['env', 'new', 'ml', '--python', '3.11'])
   const plain = same.io.readText('/repo/kernel/environments/ml.txt') as string
-  assert.equal(/colloq: python/.test(plain), false, 'the default was asked for, so there is nothing to write')
+  assert.equal(/aulalab: python/.test(plain), false, 'the default was asked for, so there is nothing to write')
 })
 
 test('env new without a name is a usage error, nothing started', async () => {
@@ -485,9 +485,9 @@ test('Python versions come with the code rather than being read from a file: the
    * There is no shared/ directory either in the file map or in the
    * distribution (scripts/pack.mts ships server/dist, web/dist, server/assets
    * and kernel/*). The list used to be read from there as text relative to the
-   * app root, came out empty in an installed colloq — and the check silently
+   * app root, came out empty in an installed aulalab — and the check silently
    * switched off along with it: an environment got created with
-   * "# colloq: python 3.99", and env list then showed the teacher that as the
+   * "# aulalab: python 3.99", and env list then showed the teacher that as the
    * version of an environment that will never build.
    */
   const wrong = await run(['env', 'new', 'ml', '--python', '3.99'], { dist: true })
@@ -503,7 +503,7 @@ test('Python versions come with the code rather than being read from a file: the
   const good = await run(['env', 'new', 'ml', '--python', latest], { dist: true })
   assert.equal(good.code, 0)
   const text = good.io.readText('/repo/kernel/environments/ml.txt') as string
-  assert.ok(text.startsWith('# colloq: python ' + latest + '\n'), text.slice(0, 40))
+  assert.ok(text.startsWith('# aulalab: python ' + latest + '\n'), text.slice(0, 40))
 })
 
 test('env new: an unknown Python version is refused with the list, a bad name is refused', async () => {
@@ -543,15 +543,15 @@ test('env use --yes rewrites KERNEL_ENV in .env and builds nothing itself', asyn
   const result = await run(['env', 'use', 'base', '--yes'], { answer: 'y' })
   assert.equal(result.code, 0)
   assert.deepEqual(result.asked, [])
-  assert.deepEqual(result.calls, [], 'the image is built by colloq start, not by this command')
+  assert.deepEqual(result.calls, [], 'the image is built by aulalab start, not by this command')
   assert.equal(
     result.io.readText('/repo/.env'),
-    ['PORT=3000', 'RELAY_DOMAIN=hse.colloq.ru', 'KERNEL_ENV=base', ''].join('\n'),
+    ['PORT=3000', 'RELAY_DOMAIN=hse.example.edu', 'KERNEL_ENV=base', ''].join('\n'),
     'the other lines are in place, exactly one KERNEL_ENV',
   )
   assert.deepEqual(result.out, [
     'Default environment for new classes: base',
-    'the image is built on your next colloq start: this can take minutes',
+    'the image is built on your next aulalab start: this can take minutes',
   ])
 })
 
@@ -585,7 +585,7 @@ test('env use: no environment means refusal 3 without a question; the env switch
   assert.equal(missing.code, 3)
   assert.deepEqual(missing.asked, [])
   assert.deepEqual(missing.calls, [])
-  assert.match(missing.err.join('\n'), /colloq env new ml/)
+  assert.match(missing.err.join('\n'), /aulalab env new ml/)
   assert.equal(missing.io.readText('/repo/.env'), FILES['/repo/.env'])
 
   const alias = await run(['env', 'switch', 'base', '--dry-run'])
@@ -626,25 +626,25 @@ test('help for a group command: usage, an example with a real environment, the d
   const result = await run(['env', 'use', '--help'])
   assert.equal(result.code, 0)
   const text = result.out.join('\n')
-  assert.match(text, /Usage: colloq env use <name>/)
-  assert.match(text, /colloq env use cv --yes/)
+  assert.match(text, /Usage: aulalab env use <name>/)
+  assert.match(text, /aulalab env use cv --yes/)
   assert.match(text, /delegates: native: KERNEL_ENV in \.env$/m)
   // Workshop targets have no place in the teacher's help: there is nothing to
   // call them with.
   assert.doesNotMatch(text, /env-build|NAME=/)
 })
 
-// ------------------------------------------ installed colloq and the repository
+// ------------------------------------------ installed aulalab and the repository
 
 /**
- * An installed colloq and the repository behave the same.
+ * An installed aulalab and the repository behave the same.
  *
  * Only one ctx.dist fork is left in the group — the defaults of a new .env
  * (launch-config.ts · localClassEnv), and it repeats the launch's own choice.
  * Everything else — the question, the write, the output — does not depend on
  * the flag, and that is checked directly: two roads, one result.
  */
-test('env use is the same in an installed colloq and in the repository', async () => {
+test('env use is the same in an installed aulalab and in the repository', async () => {
   const dist = await run(['env', 'use', 'gpu', '--yes'], { dist: true })
   const repo = await run(['env', 'use', 'gpu', '--yes'], { dist: false })
   for (const result of [dist, repo]) {
@@ -673,7 +673,7 @@ test('env use on a clean slate creates a whole .env, not one line', async () => 
   // one from the example.
   assert.match(written, /^JUPYTER_TOKEN=[0-9a-f]{48}$/m)
   assert.match(written, /^KERNEL_BACKEND=docker$/m)
-  assert.doesNotMatch(written, /colloq-dev-token/)
+  assert.doesNotMatch(written, /aulalab-dev-token/)
   // With the pip package the room and the panel open in English; in the
   // repository, ru.
   assert.match(written, /^UI_LANGUAGE=en$/m)
@@ -687,7 +687,7 @@ test('env use in an existing .env touches one line and leaves the rest', async (
   const written = result.io.readText('/repo/.env') ?? ''
   assert.match(written, /^KERNEL_ENV=gpu$/m)
   assert.match(written, /^PORT=3000$/m, 'the other lines are in place')
-  assert.match(written, /^RELAY_DOMAIN=hse\.colloq\.ru$/m)
+  assert.match(written, /^RELAY_DOMAIN=hse\.aulalab\.ru$/m)
   assert.doesNotMatch(written, /JUPYTER_TOKEN/, 'an existing file is not rewritten from scratch')
 })
 
@@ -696,17 +696,17 @@ test('env use in an existing .env touches one line and leaves the rest', async (
 /**
  * The state directory apart from the app directory.
  *
- * This is how an installed colloq lives, and so does a working tree started
- * with COLLOQ_HOME. Then .env lives in <home>, one's own environments in
+ * This is how an installed aulalab lives, and so does a working tree started
+ * with AULALAB_HOME. Then .env lives in <home>, one's own environments in
  * <home>/environments, and the bundled ones in <app>/kernel/environments, and
  * every command of the group must look into both directories and write only
  * into its own.
  */
-const HOME = '/home/teacher/.colloq'
+const HOME = '/home/teacher/.aulalab'
 
 const SPLIT: Record<string, string> = {
   [HOME + '/.env']: 'KERNEL_ENV=base\n',
-  [HOME + '/environments/mine.txt']: ['# colloq: from base', 'statsmodels'].join('\n'),
+  [HOME + '/environments/mine.txt']: ['# aulalab: from base', 'statsmodels'].join('\n'),
 }
 
 test("env list with two directories names both and marks one's own", async () => {
@@ -763,7 +763,7 @@ test("env use on one's own environment writes KERNEL_ENV into the state director
   assert.deepEqual(result.calls, [])
   assert.match(result.io.readText(HOME + '/.env') ?? '', /^KERNEL_ENV=mine$/m)
   assert.equal(result.io.readText('/repo/.env'), FILES['/repo/.env'], "the app's .env is not ours")
-  assert.match(result.out.join('\n'), /the image is built on your next colloq start/)
+  assert.match(result.out.join('\n'), /the image is built on your next aulalab start/)
 })
 
 test('env use on a bundled environment with two directories does the same', async () => {
@@ -778,7 +778,7 @@ test('env use: a chain goes through both directories, and a missing parent is a 
     home: HOME,
     files: {
       ...SPLIT,
-      [HOME + '/environments/kid.txt']: ['# colloq: from mine', 'seaborn'].join('\n'),
+      [HOME + '/environments/kid.txt']: ['# aulalab: from mine', 'seaborn'].join('\n'),
     },
   })
   assert.equal(kid.code, 0, "the parent mine comes from one's own directory, its parent base from the package")
@@ -789,7 +789,7 @@ test('env use: a chain goes through both directories, and a missing parent is a 
     home: HOME,
     files: {
       ...SPLIT,
-      [HOME + '/environments/orphan.txt']: ['# colloq: from gone', 'seaborn'].join('\n'),
+      [HOME + '/environments/orphan.txt']: ['# aulalab: from gone', 'seaborn'].join('\n'),
     },
   })
   assert.equal(orphan.code, 3)

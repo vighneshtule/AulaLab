@@ -169,7 +169,7 @@
 
   /* ---------------------------------------------------------------- height */
 
-  const HEIGHT_KEY = 'colloq.terminal.height.v1'
+  const HEIGHT_KEY = 'aulalab.terminal.height.v1'
   /*
    * The drawer is a drawer, not a second window: below 140px it holds fewer
    * lines than a prompt plus its answer, and above 460px it starts taking the

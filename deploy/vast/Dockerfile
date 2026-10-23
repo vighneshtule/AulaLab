@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 #
-# colloq-vast: Colloq as a single image for a rented machine.
+# aulalab-vast: Aula Lab as a single image for a rented machine.
 #
 # Built from the repository root (the context is the whole repository, as for
 # the root Dockerfile):
 #
-#     docker build -f deploy/vast/Dockerfile -t colloq-vast:dev .
+#     docker build -f deploy/vast/Dockerfile -t aulalab-vast:dev .
 #     make vast-image                       the same, with version and revision
 #
 # WHAT THIS IMAGE IS AND WHAT IT LACKS. Inside: the server, the built client,
@@ -63,8 +63,8 @@ COPY server/ server/
 COPY web/ web/
 
 # The kernel broker (runtime/) is not built here: only the k3s path needs it.
-RUN npm run build:optimized -w @colloq/web \
- && npm run build -w @colloq/server
+RUN npm run build:optimized -w @aulalab/web \
+ && npm run build -w @aulalab/server
 
 # The machines for submissions (docs/architecture/remote-runners.md): the
 # entry point's `runner` execs server/dist/runner.js and its `runner-code`
@@ -105,7 +105,7 @@ COPY server/package.json server/
 COPY web/package.json web/
 COPY runtime/package.json runtime/
 COPY cli/package.json cli/
-RUN npm ci --omit=dev --no-audit --no-fund --workspace=@colloq/server --include-workspace-root
+RUN npm ci --omit=dev --no-audit --no-fund --workspace=@aulalab/server --include-workspace-root
 
 # ------------------------------------------------------------ tunnels
 #
@@ -156,7 +156,7 @@ FROM ${NODE_IMAGE} AS vast
 # util-linux is in Debian's essential set and so already here; it is named
 # because two things depend on it: setpriv in the entry point, and nsenter in
 # the rooms' firewall helper (server/src/kernel/perimeter.ts), which the server
-# may start from this very image (COLLOQ_HELPER_IMAGE). The helper needs no
+# may start from this very image (AULALAB_HELPER_IMAGE). The helper needs no
 # iptables of its own: it enters the Docker daemon's mount namespace and runs
 # the daemon's iptables, so the rules always go through the backend the daemon
 # itself uses. An iptables here would be one that could pick the other backend.
@@ -180,7 +180,7 @@ COPY --from=tunnels /out/frpc /out/cloudflared /usr/local/bin/
 # and .env two levels above dist/server.js (config.ts · readPublicUrl). With
 # the repository paths all three find what they need without a single new
 # variable.
-WORKDIR /opt/colloq
+WORKDIR /opt/aulalab
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/server/dist ./server/dist
 # package.json next to dist for the sake of "type": "module": without it node
@@ -199,15 +199,15 @@ COPY kernel/environments/ ./kernel/environments/
 # Backup and restore of the class: the same scripts as in the pip wheel.
 COPY scripts/lib.sh scripts/backup-local.sh scripts/restore.sh ./scripts/
 
-COPY deploy/vast/entrypoint.sh /usr/local/bin/colloq-vast
+COPY deploy/vast/entrypoint.sh /usr/local/bin/aulalab-vast
 # The two Vast on-starts travel with the image of their version, the
-# instance's and the one of a machine for submissions, next to the colloq-host
-# they call: `docker run --rm IMAGE cat /opt/colloq/deploy/vast/onstart-runner.sh`
+# instance's and the one of a machine for submissions, next to the aulalab-host
+# they call: `docker run --rm IMAGE cat /opt/aulalab/deploy/vast/onstart-runner.sh`
 # gives a VM template the one that matches the image it will run.
-COPY deploy/vast/colloq-host deploy/vast/onstart.sh deploy/vast/onstart-runner.sh ./deploy/vast/
+COPY deploy/vast/aulalab-host deploy/vast/onstart.sh deploy/vast/onstart-runner.sh ./deploy/vast/
 
 # The image is a copy of the program, and MIT requires the license text to
-# travel with it. The licenses="MIT" label below is about the Colloq code; what
+# travel with it. The licenses="MIT" label below is about the Aula Lab code; what
 # in the image is under other licenses (frpc, cloudflared, docker CLI, bundles,
 # fonts) is listed in the notices.
 COPY LICENSE THIRD_PARTY_NOTICES.md ./
@@ -216,30 +216,30 @@ COPY LICENSE THIRD_PARTY_NOTICES.md ./
 # directory. The entry point (PUBLIC_URL) and the panel (KERNEL_ENV) write
 # there, the server re-reads them from there on the fly, and they survive an
 # image update.
-RUN chmod 0755 /usr/local/bin/colloq-vast ./deploy/vast/colloq-host ./deploy/vast/onstart.sh ./deploy/vast/onstart-runner.sh \
- && ln -s /workspace/colloq/.env /opt/colloq/.env \
- && mkdir -p /workspace/colloq \
- && chown node:node /workspace/colloq
+RUN chmod 0755 /usr/local/bin/aulalab-vast ./deploy/vast/aulalab-host ./deploy/vast/onstart.sh ./deploy/vast/onstart-runner.sh \
+ && ln -s /workspace/aulalab/.env /opt/aulalab/.env \
+ && mkdir -p /workspace/aulalab \
+ && chown node:node /workspace/aulalab
 
-ARG COLLOQ_VERSION=0.0.0-dev
+ARG AULALAB_VERSION=0.0.0-dev
 ARG GIT_SHA=unknown
-ARG SOURCE_URL=https://github.com/colloq-edu/colloq
+ARG SOURCE_URL=https://github.com/vighneshtule/AulaLab
 # Where the published room kernels of this version live
 # (<repo>:v<version>-<environment>): the entry point pulls them before it
-# builds anything, and colloq-host bundle packs them. publish.yml passes the
+# builds anything, and aulalab-host bundle packs them. publish.yml passes the
 # publisher's own registry, so that a fork's image looks for the fork's kernels.
-ARG COLLOQ_KERNEL_REPO=ghcr.io/colloq-edu/colloq-kernel
-LABEL org.opencontainers.image.title="colloq-vast" \
-      org.opencontainers.image.description="Colloq on one machine with Docker (a rented Vast VM or a server of your own; also published as colloq-server): server, tunnels and kernel build context; room kernels run as sibling containers on the host Docker daemon." \
+ARG AULALAB_KERNEL_REPO=ghcr.io/vighneshtule/aulalab-kernel
+LABEL org.opencontainers.image.title="aulalab-vast" \
+      org.opencontainers.image.description="Aula Lab on one machine with Docker (a rented Vast VM or a server of your own; also published as aulalab-server): server, tunnels and kernel build context; room kernels run as sibling containers on the host Docker daemon." \
       org.opencontainers.image.source="${SOURCE_URL}" \
-      org.opencontainers.image.version="${COLLOQ_VERSION}" \
+      org.opencontainers.image.version="${AULALAB_VERSION}" \
       org.opencontainers.image.revision="${GIT_SHA}" \
       org.opencontainers.image.licenses="MIT"
 
-ENV COLLOQ_VERSION=${COLLOQ_VERSION} \
-    COLLOQ_REVISION=${GIT_SHA} \
-    COLLOQ_KERNEL_REPO=${COLLOQ_KERNEL_REPO} \
-    COLLOQ_HOME=/workspace/colloq \
+ENV AULALAB_VERSION=${AULALAB_VERSION} \
+    AULALAB_REVISION=${GIT_SHA} \
+    AULALAB_KERNEL_REPO=${AULALAB_KERNEL_REPO} \
+    AULALAB_HOME=/workspace/aulalab \
     PORT=3000 \
     NODE_OPTIONS=--enable-source-maps
 
@@ -255,13 +255,13 @@ EXPOSE 3000
 # /api/livez: livez, not health, since health honestly answers 503 until the
 # environment is built, and the first build takes minutes; the container is
 # alive meanwhile and serves the panel, and readiness for the class is shown
-# by `colloq-vast status` and /api/health. A machine for submissions has no
+# by `aulalab-vast status` and /api/health. A machine for submissions has no
 # port to ask, and a curl of one kept the panel's plain `docker run` machine
 # (unhealthy) for good: there it is the agent's `runner status`. Ten seconds,
-# because that answer is a node process, not a curl; colloq-host gives a
+# because that answer is a node process, not a curl; aulalab-host gives a
 # machine's container a slower pace of its own.
 HEALTHCHECK --interval=15s --timeout=10s --start-period=60s --retries=4 \
-  CMD ["/usr/local/bin/colloq-vast", "health"]
+  CMD ["/usr/local/bin/aulalab-vast", "health"]
 STOPSIGNAL SIGTERM
-ENTRYPOINT ["/usr/bin/tini", "-g", "--", "/usr/local/bin/colloq-vast"]
+ENTRYPOINT ["/usr/bin/tini", "-g", "--", "/usr/local/bin/aulalab-vast"]
 CMD ["serve"]

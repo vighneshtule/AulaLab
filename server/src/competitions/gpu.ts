@@ -221,7 +221,7 @@ export function environmentNeedsGpu(name: string): boolean {
 /* -------------------------------------------------------- the queue's numbers */
 
 /**
- * The cards rooms' containers hold right now, by their `colloq.gpu` labels,
+ * The cards rooms' containers hold right now, by their `aulalab.gpu` labels,
  * stopped containers included (they come back with the same card); `null` —
  * docker did not answer. Without docker rooms there are no room containers at
  * all, so nothing is held.

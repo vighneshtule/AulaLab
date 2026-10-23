@@ -7,7 +7,7 @@ import express from 'express'
 import { createAnchoredFilesystem, downloadHeldFile } from '../server/src/secure-files.js'
 
 test('download serves the held inode with original MIME/name and byte ranges after a symlink swap', { skip: process.platform !== 'linux' }, async () => {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-fd-http-'))
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-fd-http-'))
   const root = path.join(base, 'workspace'); fs.mkdirSync(root)
   const file = path.join(root, 'table.csv'), secret = path.join(base, 'secret')
   fs.writeFileSync(file, 'abcdefghij'); fs.writeFileSync(secret, 'SECRET-OUTSIDE')

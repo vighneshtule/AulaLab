@@ -11,7 +11,7 @@
  * The code is shown ONCE, here, inside the three join commands
  * (remote/commands.ts) filled in with this server's address and its
  * release's image; the server keeps only its sha256 (remote/store.ts ·
- * mintRemoteCode). `colloq-host runner-code` mints through the same function
+ * mintRemoteCode). `aulalab-host runner-code` mints through the same function
  * on the instance's console (ops/runner-code.ts), when the panel is out of
  * reach.
  *
@@ -31,7 +31,7 @@ import { REMOTE_ATTEMPTS_MAX, REMOTE_PER_DEVICE_MAX } from '@shared/remote-runne
 import { currentStaff, ownerOnly } from '../admin/auth.js'
 import { recordAdminEvent } from '../admin/audit-log.js'
 import { config } from '../config.js'
-import { COLLOQ_VERSION } from '../version.js'
+import { AULALAB_VERSION } from '../version.js'
 import { ownImage, runnerImage, runnerJoinCommands } from '../competitions/remote/commands.js'
 import { loopbackAddress } from '../competitions/remote/origin.js'
 import { loadClassPort, remoteNow } from '../competitions/remote/heard.js'
@@ -132,13 +132,13 @@ export function adminRunnerRoutes(): Router {
       req,
     })
     /*
-     * The image this very server runs, as colloq-host names it to the
-     * container (COLLOQ_SERVER_IMAGE): a machine joined from the panel runs
-     * this instance's build, as one joined from `colloq-host runner-code`
+     * The image this very server runs, as aulalab-host names it to the
+     * container (AULALAB_SERVER_IMAGE): a machine joined from the panel runs
+     * this instance's build, as one joined from `aulalab-host runner-code`
      * does. Without the variable (a checkout, an old host script), the
      * published image of this release.
      */
-    const image = runnerImage(ownImage(), COLLOQ_VERSION)
+    const image = runnerImage(ownImage(), AULALAB_VERSION)
     const answer: MintRemoteCodeResponse = {
       id: minted.id,
       code: minted.code,
@@ -179,7 +179,7 @@ export function adminRunnerRoutes(): Router {
    * owner's disconnect of it — and every code still valid ended with them.
    * Disconnecting every machine while a code had uses left left the door it
    * came through open: whoever held the code (it sits in every machine's
-   * COLLOQ_RUNNER_JOIN) enrolled a fresh machine at once, trusted if the code
+   * AULALAB_RUNNER_JOIN) enrolled a fresh machine at once, trusted if the code
    * was. After «Отключить все» a machine comes back only with a new code.
    */
   router.post('/api/admin/runners/revoke-all', owner, (req, res, next) => {

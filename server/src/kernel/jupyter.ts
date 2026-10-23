@@ -180,7 +180,7 @@ const EVALUATE_MS = 10_000
 /** How many times settleRestart asks a kernel that keeps silent before giving up. */
 const RESTART_PROBES = 3
 /** The key a silent evaluation's answer travels under in `user_expressions`. */
-const EVALUATE_KEY = 'colloq'
+const EVALUATE_KEY = 'aulalab'
 
 /**
  * ANSI from the help's `text/plain`.
@@ -442,7 +442,7 @@ function frameText(data: RawData): string | null {
  *
  * `/api/health` said `ok: true` as long as the process itself was alive, and
  * `host.sh` and `make status` believed it. Docker is off, yesterday's node is
- * still up, and the script prints "Colloq is available at this link", after
+ * still up, and the script prints "Aula Lab is available at this link", after
  * which the room gets KERNEL DEAD seventy seconds later. The check answers the
  * real question: can Python start here.
  *
@@ -1637,7 +1637,7 @@ export class JupyterKernel {
       msg_id: crypto.randomUUID(),
       msg_type: msgType,
       session: this.jupyterSessionId,
-      username: 'colloq',
+      username: 'aulalab',
       version: '5.3',
       date: new Date().toISOString(),
     }

@@ -2,8 +2,8 @@ import type { MessageCatalog } from '../i18n-types.js'
 
 export const serverMessages: MessageCatalog = {
   "server.requestBlockedThisPageUsesADifferent.dd9b4b": {
-    "ru": "Запрос отклонён: эта страница использует другой адрес сервера. Откройте Colloq напрямую и повторите попытку.",
-    "en": "Request blocked: this page uses a different server address. Open Colloq directly and try again."
+    "ru": "Запрос отклонён: эта страница использует другой адрес сервера. Откройте Aula Lab напрямую и повторите попытку.",
+    "en": "Request blocked: this page uses a different server address. Open Aula Lab directly and try again."
   },
   "server.signInToUseTheAdminPanel.301d28": {
     "ru": "Войдите, чтобы открыть панель преподавателя",
@@ -625,9 +625,9 @@ export const serverMessages: MessageCatalog = {
     "ru": "Окружение base служит основой остальных окружений.",
     "en": "base is what every environment is built on top of."
   },
-  "server.shipsWithColloqAndCannotBeDeletedHere.06a8ea": {
-    "ru": "Окружение {p0} приехало вместе с colloq — удалить его нельзя. Правьте список пакетов: ваша копия ляжет рядом с настройками и переживёт обновление.",
-    "en": "{p0} ships with colloq and cannot be deleted here. Edit its package list instead: your copy is saved beside your settings and survives an update."
+  "server.shipsWithAulaLabAndCannotBeDeletedHere.06a8ea": {
+    "ru": "Окружение {p0} приехало вместе с aulalab — удалить его нельзя. Правьте список пакетов: ваша копия ляжет рядом с настройками и переживёт обновление.",
+    "en": "{p0} ships with aulalab and cannot be deleted here. Edit its package list instead: your copy is saved beside your settings and survives an update."
   },
   // An environment classes still stand on, refused deletion: who, and where they are moved (routes/admin-environments.ts).
   "server.environmentInUse.named": {
@@ -795,17 +795,17 @@ export const serverMessages: MessageCatalog = {
     "ru": "Оракул выключен на этом занятии.",
     "en": "The oracle is switched off for this class."
   },
-  "server.theOracleIsDisabledInThisColloq.e3d7f7": {
-    "ru": "Оракул отключён на этом сервере Colloq.",
-    "en": "The oracle is disabled in this Colloq instance."
+  "server.theOracleIsDisabledInThisAulaLab.e3d7f7": {
+    "ru": "Оракул отключён на этом сервере Aula Lab.",
+    "en": "The oracle is disabled in this Aula Lab instance."
   },
   "server.noModelIsSetUpOnThis.9957d2": {
-    "ru": "На этом Colloq ещё не настроена модель — проверьте раздел «Оракул» в панели преподавателя.",
-    "en": "No model is set up on this Colloq yet — add a key under Oracle in the teaching panel."
+    "ru": "На этом Aula Lab ещё не настроена модель — проверьте раздел «Оракул» в панели преподавателя.",
+    "en": "No model is set up on this Aula Lab yet — add a key under Oracle in the teaching panel."
   },
-  "server.noModelIsConfiguredForThisColloq.112833": {
-    "ru": "На этом сервере Colloq не настроена модель. Попросите преподавателя проверить настройки.",
-    "en": "No model is configured for this Colloq instance. Ask the teacher to check the settings."
+  "server.noModelIsConfiguredForThisAulaLab.112833": {
+    "ru": "На этом сервере Aula Lab не настроена модель. Попросите преподавателя проверить настройки.",
+    "en": "No model is configured for this Aula Lab instance. Ask the teacher to check the settings."
   },
   "server.thatQuestionIsLongerThanCharactersShorten.a8c280": {
     "ru": "Вопрос длиннее {p0} символов. Сократите его.",
@@ -891,21 +891,21 @@ export const serverMessages: MessageCatalog = {
     "ru": "Консилиум ведёт преподаватель",
     "en": "Only the teacher may lead Council"
   },
-  "server.theOracleIsDisabledOnThisColloq.e47e9a": {
-    "ru": "Оракул отключён на этом Colloq.",
-    "en": "The oracle is disabled on this Colloq instance."
+  "server.theOracleIsDisabledOnThisAulaLab.e47e9a": {
+    "ru": "Оракул отключён на этом Aula Lab.",
+    "en": "The oracle is disabled on this Aula Lab instance."
   },
   "server.theOracleIsDisabledForThisSeminar.48f5c6": {
     "ru": "Оракул выключен на этом занятии — включите его в правилах комнаты.",
     "en": "The oracle is disabled for this class."
   },
-  "server.theOracleIsDisabledOnThisColloq.395e3a": {
-    "ru": "Оракул выключен на этом Colloq: вопросов в час — ноль.",
-    "en": "The oracle is disabled on this Colloq instance: the hourly question limit is zero."
+  "server.theOracleIsDisabledOnThisAulaLab.395e3a": {
+    "ru": "Оракул выключен на этом Aula Lab: вопросов в час — ноль.",
+    "en": "The oracle is disabled on this Aula Lab instance: the hourly question limit is zero."
   },
-  "server.noModelIsConfiguredOnThisColloq.c1d63b": {
-    "ru": "На этом Colloq не настроена модель — добавьте ключ в разделе «Оракул» панели.",
-    "en": "No model is configured on this Colloq instance. Check the Oracle settings in the teaching panel."
+  "server.noModelIsConfiguredOnThisAulaLab.c1d63b": {
+    "ru": "На этом Aula Lab не настроена модель — добавьте ключ в разделе «Оракул» панели.",
+    "en": "No model is configured on this Aula Lab instance. Check the Oracle settings in the teaching panel."
   },
   "server.thisCellIsNotInTheRoom.b481d9": {
     "ru": "Такой ячейки в комнате нет",
@@ -1384,8 +1384,8 @@ export const serverMessages: MessageCatalog = {
     "en": "“{p0}” cannot be used as a name."
   },
   "server.noModelIsSetUpOnThis.7014ab": {
-    "ru": "На этом Colloq ещё не настроена модель. Владелец сервера может добавить её в разделе «Оракул» панели преподавателя.",
-    "en": "No model is set up on this Colloq yet. Whoever runs it can add one under Oracle in the teaching panel."
+    "ru": "На этом Aula Lab ещё не настроена модель. Владелец сервера может добавить её в разделе «Оракул» панели преподавателя.",
+    "en": "No model is set up on this Aula Lab yet. Whoever runs it can add one under Oracle in the teaching panel."
   },
   "server.theModelStoppedSendingItsResponseTry.3aa75a": {
     "ru": "Модель перестала отправлять ответ. Повторите попытку.",
@@ -1395,9 +1395,9 @@ export const serverMessages: MessageCatalog = {
     "ru": "Модель не ответила за отведённое время. Повторите попытку.",
     "en": "The model did not respond within the time limit. Try again."
   },
-  "server.askWhoeverRunsThisColloqToCheck.43c560": {
-    "ru": "Попросите владельца Colloq проверить модель.",
-    "en": "Ask whoever runs this Colloq to check the model."
+  "server.askWhoeverRunsThisAulaLabToCheck.43c560": {
+    "ru": "Попросите владельца Aula Lab проверить модель.",
+    "en": "Ask whoever runs this Aula Lab to check the model."
   },
   "server.theOracleIsUnavailableTryAgainOr.c900e7": {
     "ru": "Оракул недоступен. Повторите попытку или попросите преподавателя проверить соединение.",
@@ -1432,8 +1432,8 @@ export const serverMessages: MessageCatalog = {
     "en": "Help me with this"
   },
   "server.noModelIsSetUpOnThis.1152ef": {
-    "ru": "На этом Colloq ещё не настроена модель.",
-    "en": "No model is set up on this Colloq yet."
+    "ru": "На этом Aula Lab ещё не настроена модель.",
+    "en": "No model is set up on this Aula Lab yet."
   },
   "server.theModelRejectedTheRequestWithTools.c6fde5": {
     "ru": "Модель отклонила запрос с инструментами. ",
@@ -1464,12 +1464,12 @@ export const serverMessages: MessageCatalog = {
     "en": "The model declined this request."
   },
   "server.theAiProviderDeniedAccessAskThe.31dbd6": {
-    "ru": "Провайдер ИИ отказал в доступе. Попросите администратора Colloq проверить API-ключ и права аккаунта.",
-    "en": "The AI provider denied access. Ask the Colloq administrator to check the API key and account permissions."
+    "ru": "Провайдер ИИ отказал в доступе. Попросите администратора Aula Lab проверить API-ключ и права аккаунта.",
+    "en": "The AI provider denied access. Ask the Aula Lab administrator to check the API key and account permissions."
   },
   "server.theAiProviderReturnedHttpItsRequest.7a3832": {
     "ru": "Провайдер ИИ вернул HTTP 429. Возможно, достигнут лимит запросов или квота аккаунта. Повторите позже или попросите администратора проверить настройки.",
-    "en": "The AI provider returned HTTP 429. Its request limit or account quota may have been reached. Try later or ask the Colloq administrator to check."
+    "en": "The AI provider returned HTTP 429. Its request limit or account quota may have been reached. Try later or ask the Aula Lab administrator to check."
   },
   "server.theAiEndpointReturnedAServerError.c7d0c1": {
     "ru": "Сервер провайдера ИИ вернул ошибку.",
@@ -1480,8 +1480,8 @@ export const serverMessages: MessageCatalog = {
     "en": "The model response was interrupted. Try again."
   },
   "server.couldNotReachTheAiEndpointWhoever.5a0409": {
-    "ru": "Не удалось подключиться к провайдеру ИИ. Владелец Colloq может проверить адрес и ключ.",
-    "en": "Could not reach the AI endpoint. Whoever runs this Colloq can check its address and key."
+    "ru": "Не удалось подключиться к провайдеру ИИ. Владелец Aula Lab может проверить адрес и ключ.",
+    "en": "Could not reach the AI endpoint. Whoever runs this Aula Lab can check its address and key."
   },
   "server.environmentsReferToEachOtherInA.0d5bfa": {
     "ru": "окружения ссылаются друг на друга по кругу: {p0}",
@@ -1552,8 +1552,8 @@ export const serverMessages: MessageCatalog = {
     "en": "environment “{p0}” in this chain is already building. Wait for it to finish"
   },
   "server.environmentAsksForPythonButTheChain.7b21ac": {
-    "ru": "окружение «{p0}» просит Python {p1}, но версию выбирает корень цепочки — «{p2}» с Python {p3}. Уберите строку либо соберите «{p0}» отдельно, без `# colloq: from`",
-    "en": "environment “{p0}” asks for Python {p1}, but the chain root decides the version — “{p2}” with Python {p3}. Drop the line, or build “{p0}” on its own, without `# colloq: from`"
+    "ru": "окружение «{p0}» просит Python {p1}, но версию выбирает корень цепочки — «{p2}» с Python {p3}. Уберите строку либо соберите «{p0}» отдельно, без `# aulalab: from`",
+    "en": "environment “{p0}” asks for Python {p1}, but the chain root decides the version — “{p2}” with Python {p3}. Drop the line, or build “{p0}” on its own, without `# aulalab: from`"
   },
   "server.kernelParentIsSetInTheServers.4c1d90": {
     "ru": "— KERNEL_PARENT={p0} задан в окружении сервера и сильнее директивы: собираем на нём, а не на {p1}",
@@ -1744,20 +1744,20 @@ export const serverMessages: MessageCatalog = {
     "en": "the container predates the hardened profile (no privileges, no access to the local network) and is recreated with it"
   },
   "server.roomPerimeter.refused": {
-    "ru": "Комнату не запустить: не удалось закрыть ей доступ к локальным адресам этой машины ({p0}). Без этого запрета код студента дотянулся бы до роутера, до самого компьютера и до его сервисов, поэтому ядро не поднимается. Нужно, чтобы Docker мог запустить привилегированный служебный контейнер в сети хоста: в Docker Desktop выключите Enhanced Container Isolation, а rootless Docker и podman этого не умеют. Если машина и класс доверенные, допишите в .env строку COLLOQ_ROOM_NETWORK=open и перезапустите Colloq — комнаты пойдут без запрета.",
-    "en": "The room cannot start: blocking its access to this machine's local addresses failed ({p0}). Without that block, student code could reach the router, this computer and its services, so the kernel is not started. Docker has to be able to run a privileged helper container on the host network: turn off Enhanced Container Isolation in Docker Desktop; rootless Docker and podman cannot do this. If the machine and the class are trusted, add the line COLLOQ_ROOM_NETWORK=open to .env and restart Colloq — rooms then start without the block."
+    "ru": "Комнату не запустить: не удалось закрыть ей доступ к локальным адресам этой машины ({p0}). Без этого запрета код студента дотянулся бы до роутера, до самого компьютера и до его сервисов, поэтому ядро не поднимается. Нужно, чтобы Docker мог запустить привилегированный служебный контейнер в сети хоста: в Docker Desktop выключите Enhanced Container Isolation, а rootless Docker и podman этого не умеют. Если машина и класс доверенные, допишите в .env строку AULALAB_ROOM_NETWORK=open и перезапустите Aula Lab — комнаты пойдут без запрета.",
+    "en": "The room cannot start: blocking its access to this machine's local addresses failed ({p0}). Without that block, student code could reach the router, this computer and its services, so the kernel is not started. Docker has to be able to run a privileged helper container on the host network: turn off Enhanced Container Isolation in Docker Desktop; rootless Docker and podman cannot do this. If the machine and the class are trusted, add the line AULALAB_ROOM_NETWORK=open to .env and restart Aula Lab — rooms then start without the block."
   },
   "server.roomPerimeter.badBlockedCidrs": {
-    "ru": "Комнату не запустить: в KERNEL_BLOCKED_CIDRS есть записи, которые не похожи на IPv4-адрес или диапазон ({p0}). Список с опечаткой оставил бы открытым как раз тот диапазон, который хотели закрыть, поэтому комнаты не поднимаются, пока строку не исправят. Поправьте её в .env, например KERNEL_BLOCKED_CIDRS=203.0.113.0/24,198.51.100.7, и перезапустите Colloq.",
-    "en": "The room cannot start: KERNEL_BLOCKED_CIDRS has entries that are not IPv4 addresses or ranges ({p0}). A list with a typo would leave open exactly the range it was meant to close, so rooms do not start until the line is fixed. Correct it in .env, for example KERNEL_BLOCKED_CIDRS=203.0.113.0/24,198.51.100.7, and restart Colloq."
+    "ru": "Комнату не запустить: в KERNEL_BLOCKED_CIDRS есть записи, которые не похожи на IPv4-адрес или диапазон ({p0}). Список с опечаткой оставил бы открытым как раз тот диапазон, который хотели закрыть, поэтому комнаты не поднимаются, пока строку не исправят. Поправьте её в .env, например KERNEL_BLOCKED_CIDRS=203.0.113.0/24,198.51.100.7, и перезапустите Aula Lab.",
+    "en": "The room cannot start: KERNEL_BLOCKED_CIDRS has entries that are not IPv4 addresses or ranges ({p0}). A list with a typo would leave open exactly the range it was meant to close, so rooms do not start until the line is fixed. Correct it in .env, for example KERNEL_BLOCKED_CIDRS=203.0.113.0/24,198.51.100.7, and restart Aula Lab."
   },
   "server.roomPerimeter.noHelperImage": {
-    "ru": "Комнату не запустить: не из чего запустить служебный контейнер, который закрывает комнатам сеть ({p0}). Он работает с правами root на этой машине, поэтому запускается только из образа самого сервера или из образа, указанного в COLLOQ_HELPER_IMAGE, но не из окружения, которое преподаватели правят в панели. Скачайте образ из COLLOQ_HELPER_IMAGE (docker pull) или укажите в COLLOQ_CONTAINER имя контейнера сервера и перезапустите Colloq.",
-    "en": "The room cannot start: there is no image to run the helper that closes the rooms' network from ({p0}). The helper runs as root on this machine, so it runs only from the server's own image or the one named in COLLOQ_HELPER_IMAGE, never from an environment teachers edit in the panel. Pull the image named in COLLOQ_HELPER_IMAGE (docker pull), or set COLLOQ_CONTAINER to the server container's name, and restart Colloq."
+    "ru": "Комнату не запустить: не из чего запустить служебный контейнер, который закрывает комнатам сеть ({p0}). Он работает с правами root на этой машине, поэтому запускается только из образа самого сервера или из образа, указанного в AULALAB_HELPER_IMAGE, но не из окружения, которое преподаватели правят в панели. Скачайте образ из AULALAB_HELPER_IMAGE (docker pull) или укажите в AULALAB_CONTAINER имя контейнера сервера и перезапустите Aula Lab.",
+    "en": "The room cannot start: there is no image to run the helper that closes the rooms' network from ({p0}). The helper runs as root on this machine, so it runs only from the server's own image or the one named in AULALAB_HELPER_IMAGE, never from an environment teachers edit in the panel. Pull the image named in AULALAB_HELPER_IMAGE (docker pull), or set AULALAB_CONTAINER to the server container's name, and restart Aula Lab."
   },
   "server.roomPerimeter.networkChanged": {
-    "ru": "настройка сети комнат (COLLOQ_ROOM_NETWORK) изменилась, и контейнер пересоздаётся уже с ней",
-    "en": "the room network setting (COLLOQ_ROOM_NETWORK) changed, and the container is recreated with it"
+    "ru": "настройка сети комнат (AULALAB_ROOM_NETWORK) изменилась, и контейнер пересоздаётся уже с ней",
+    "en": "the room network setting (AULALAB_ROOM_NETWORK) changed, and the container is recreated with it"
   },
   "server.theContainerWasStartedWithADifferent.bc4d7d": {
     "ru": "контейнер поднят не с тем срезом GPU",
@@ -1871,13 +1871,13 @@ export const serverMessages: MessageCatalog = {
     "ru": "Сохранённое окружение ядра по умолчанию некорректно",
     "en": "The saved default kernel environment is invalid"
   },
-  "server.colloqTheCommandWasRemovedFromThe.7c25e4": {
-    "ru": "[colloq] {p0} — команда снята из очереди: {p1}.",
-    "en": "[colloq] {p0}: the command was removed from the queue: {p1}."
+  "server.aulalabTheCommandWasRemovedFromThe.7c25e4": {
+    "ru": "[aulalab] {p0} — команда снята из очереди: {p1}.",
+    "en": "[aulalab] {p0}: the command was removed from the queue: {p1}."
   },
-  "server.colloqRemovedFromTheQueue.649577": {
-    "ru": "[colloq] из очереди снято {p0} {p1}: {p2}.",
-    "en": "[colloq] removed {p0} {p1} from the queue: {p2}."
+  "server.aulalabRemovedFromTheQueue.649577": {
+    "ru": "[aulalab] из очереди снято {p0} {p1}: {p2}.",
+    "en": "[aulalab] removed {p0} {p1} from the queue: {p2}."
   },
   "server.jupyterRejectedTheServerCredentialsHttpCheck.9d96c8": {
     "ru": "Jupyter отверг учётные данные сервера (HTTP {p0}). JUPYTER_TOKEN должен совпадать с токеном, с которым поднят контейнер ядра.",
@@ -1915,9 +1915,9 @@ export const serverMessages: MessageCatalog = {
     "ru": "оболочка вышла",
     "en": "the shell exited"
   },
-  "server.colloqTheShellExitedSelectRestartShell.bc74b5": {
-    "ru": "[colloq] Оболочка завершила работу. Нажмите «Перезапустить оболочку», чтобы создать новую.",
-    "en": "[colloq] The shell exited. Select “Restart shell” to create a new one."
+  "server.aulalabTheShellExitedSelectRestartShell.bc74b5": {
+    "ru": "[aulalab] Оболочка завершила работу. Нажмите «Перезапустить оболочку», чтобы создать новую.",
+    "en": "[aulalab] The shell exited. Select “Restart shell” to create a new one."
   },
   "server.theTerminalNoLongerExists.fe4ae0": {
     "ru": "терминала больше нет",
@@ -1935,33 +1935,33 @@ export const serverMessages: MessageCatalog = {
     "ru": "Не удалось подключиться к общей оболочке. Создайте новую оболочку.",
     "en": "Could not connect to the shared shell. Create a new shell."
   },
-  "server.colloqTheCommandIsTooLongPut.50c546": {
-    "ru": "[colloq] команда слишком длинная — положите её в файл и запустите файл.",
-    "en": "[colloq] The command is too long. Put it in a file and run the file."
+  "server.aulalabTheCommandIsTooLongPut.50c546": {
+    "ru": "[aulalab] команда слишком длинная — положите её в файл и запустите файл.",
+    "en": "[aulalab] The command is too long. Put it in a file and run the file."
   },
-  "server.colloqTooManyCommandsAreQueuedTry.76db34": {
-    "ru": "[colloq] в очереди уже слишком много команд — повторите, когда оболочка освободится.",
-    "en": "[colloq] Too many commands are queued. Try again when the shell is free."
+  "server.aulalabTooManyCommandsAreQueuedTry.76db34": {
+    "ru": "[aulalab] в очереди уже слишком много команд — повторите, когда оболочка освободится.",
+    "en": "[aulalab] Too many commands are queued. Try again when the shell is free."
   },
-  "server.colloqTheCommandIsWaitingForThe.0e6b42": {
-    "ru": "[colloq] {p0} — команда ждёт свободной оболочки.",
-    "en": "[colloq] {p0}: the command is waiting for the shell."
+  "server.aulalabTheCommandIsWaitingForThe.0e6b42": {
+    "ru": "[aulalab] {p0} — команда ждёт свободной оболочки.",
+    "en": "[aulalab] {p0}: the command is waiting for the shell."
   },
-  "server.colloqTheCommandWasRemovedFromThe.1c9d79": {
-    "ru": "[colloq] {p0} — команда снята из очереди.",
-    "en": "[colloq] {p0}: the command was removed from the queue."
+  "server.aulalabTheCommandWasRemovedFromThe.1c9d79": {
+    "ru": "[aulalab] {p0} — команда снята из очереди.",
+    "en": "[aulalab] {p0}: the command was removed from the queue."
   },
-  "server.colloqRemovedFromTheQueue.9a6da6": {
-    "ru": "[colloq] из очереди снято {p0} {p1}.",
-    "en": "[colloq] removed {p0} {p1} from the queue."
+  "server.aulalabRemovedFromTheQueue.9a6da6": {
+    "ru": "[aulalab] из очереди снято {p0} {p1}.",
+    "en": "[aulalab] removed {p0} {p1} from the queue."
   },
-  "server.colloqCtrlCIsStoppingTheCommand.3aead4": {
-    "ru": "[colloq] Ctrl+C — команду останавливает {p0}.",
-    "en": "[colloq] Ctrl+C: {p0} is stopping the command."
+  "server.aulalabCtrlCIsStoppingTheCommand.3aead4": {
+    "ru": "[aulalab] Ctrl+C — команду останавливает {p0}.",
+    "en": "[aulalab] Ctrl+C: {p0} is stopping the command."
   },
-  "server.colloqTheShellIsDisconnectedSoCtrl.885614": {
-    "ru": "[colloq] связи с оболочкой сейчас нет, и Ctrl+C до неё ещё не дошёл — ",
-    "en": "[colloq] The shell is disconnected, so Ctrl+C has not reached it yet. "
+  "server.aulalabTheShellIsDisconnectedSoCtrl.885614": {
+    "ru": "[aulalab] связи с оболочкой сейчас нет, и Ctrl+C до неё ещё не дошёл — ",
+    "en": "[aulalab] The shell is disconnected, so Ctrl+C has not reached it yet. "
   },
   "server.itWillBeSentWhenTheTerminal.bdfcc3": {
     "ru": "он уйдёт, как только терминал переподключится.",
@@ -1971,9 +1971,9 @@ export const serverMessages: MessageCatalog = {
     "ru": "терминал закрыли",
     "en": "the terminal was closed"
   },
-  "server.colloqTheTerminalIsClosed.9cf9fb": {
-    "ru": "[colloq] терминал закрыт.",
-    "en": "[colloq] The terminal is closed."
+  "server.aulalabTheTerminalIsClosed.9cf9fb": {
+    "ru": "[aulalab] терминал закрыт.",
+    "en": "[aulalab] The terminal is closed."
   },
   "server.theServerIsShuttingDown.79c391": {
     "ru": "сервер останавливается",
@@ -2816,16 +2816,16 @@ export const serverMessages: MessageCatalog = {
     }
   },
   "server.terminal.flood": {
-    "ru": "[colloq] Превышена скорость обновления вывода. В общей расшифровке остаются только последние строки. Для полного вывода перенаправьте его в файл.",
-    "en": "[colloq] Output is arriving too quickly. The shared transcript keeps only the latest lines. Redirect output to a file to keep it all."
+    "ru": "[aulalab] Превышена скорость обновления вывода. В общей расшифровке остаются только последние строки. Для полного вывода перенаправьте его в файл.",
+    "en": "[aulalab] Output is arriving too quickly. The shared transcript keeps only the latest lines. Redirect output to a file to keep it all."
   },
   "server.terminal.screen": {
-    "ru": "[colloq] Полноэкранные программы (vim, top и другие) отображаются некорректно: терминал поддерживает только построчный вывод. Попробуйте прервать команду через Ctrl+C.",
-    "en": "[colloq] Full-screen programs such as vim and top are not supported: this terminal displays line-by-line output. Try interrupting the command with Ctrl+C."
+    "ru": "[aulalab] Полноэкранные программы (vim, top и другие) отображаются некорректно: терминал поддерживает только построчный вывод. Попробуйте прервать команду через Ctrl+C.",
+    "en": "[aulalab] Full-screen programs such as vim and top are not supported: this terminal displays line-by-line output. Try interrupting the command with Ctrl+C."
   },
   "server.terminal.clear": {
-    "ru": "[colloq] очистка экрана здесь ничего не меняет: расшифровка общая. Стереть её может преподаватель — кнопкой «Очистить».",
-    "en": "[colloq] Clearing the shell screen does not clear the shared transcript. The teacher can clear it with “Clear”."
+    "ru": "[aulalab] очистка экрана здесь ничего не меняет: расшифровка общая. Стереть её может преподаватель — кнопкой «Очистить».",
+    "en": "[aulalab] Clearing the shell screen does not clear the shared transcript. The teacher can clear it with “Clear”."
   },
   "server.ownerAction.0": {
     "ru": "менять список преподавателей",
@@ -2880,23 +2880,23 @@ export const serverMessages: MessageCatalog = {
     "en": "the kernel did not confirm them"
   },
   "server.council.copyTooBig": {
-    "ru": "[Colloq] Переменная `{p0}` ({p1}) слишком велика для личной копии — попытка работает с общей. Меняйте копию: {p0} = {p0}.copy()",
-    "en": "[Colloq] Variable `{p0}` ({p1}) is too large to copy for this attempt — it works on the shared one. Change a copy instead: {p0} = {p0}.copy()"
+    "ru": "[Aula Lab] Переменная `{p0}` ({p1}) слишком велика для личной копии — попытка работает с общей. Меняйте копию: {p0} = {p0}.copy()",
+    "en": "[Aula Lab] Variable `{p0}` ({p1}) is too large to copy for this attempt — it works on the shared one. Change a copy instead: {p0} = {p0}.copy()"
   },
   "server.council.copyShared": {
-    "ru": "[Colloq] Переменную `{p0}` не удалось скопировать — попытка работает с общей. Меняйте копию: {p0} = {p0}.copy()",
-    "en": "[Colloq] Variable `{p0}` could not be copied — this attempt works on the shared one. Change a copy instead: {p0} = {p0}.copy()"
+    "ru": "[Aula Lab] Переменную `{p0}` не удалось скопировать — попытка работает с общей. Меняйте копию: {p0} = {p0}.copy()",
+    "en": "[Aula Lab] Variable `{p0}` could not be copied — this attempt works on the shared one. Change a copy instead: {p0} = {p0}.copy()"
   },
   "server.council.copyMore": {
     "ru": {
-      "one": "[Colloq] …и ещё {count} такая переменная.",
-      "few": "[Colloq] …и ещё {count} такие переменные.",
-      "many": "[Colloq] …и ещё {count} таких переменных.",
-      "other": "[Colloq] …и ещё {count} такой переменной."
+      "one": "[Aula Lab] …и ещё {count} такая переменная.",
+      "few": "[Aula Lab] …и ещё {count} такие переменные.",
+      "many": "[Aula Lab] …и ещё {count} таких переменных.",
+      "other": "[Aula Lab] …и ещё {count} такой переменной."
     },
     "en": {
-      "one": "[Colloq] …and {count} more variable like it.",
-      "other": "[Colloq] …and {count} more variables like it."
+      "one": "[Aula Lab] …and {count} more variable like it.",
+      "other": "[Aula Lab] …and {count} more variables like it."
     }
   },
   "server.council.noExit": {
@@ -2964,35 +2964,35 @@ export const serverMessages: MessageCatalog = {
     "en": "The kernel did not confirm the dangerous-command guard — the cell did not run. Restart the notebook’s kernel."
   },
   "server.council.outOfMemory": {
-    "ru": "[Colloq] Попытке не хватило памяти: ей было отведено {p0}. Ядро и данные остальных целы — уменьшите объём или считайте по частям.",
-    "en": "[Colloq] The attempt ran out of memory: it was given {p0}. The kernel and everyone else's data are intact — use less or work in chunks."
+    "ru": "[Aula Lab] Попытке не хватило памяти: ей было отведено {p0}. Ядро и данные остальных целы — уменьшите объём или считайте по частям.",
+    "en": "[Aula Lab] The attempt ran out of memory: it was given {p0}. The kernel and everyone else's data are intact — use less or work in chunks."
   },
   "server.council.outOfMemoryPlain": {
-    "ru": "[Colloq] Попытке не хватило памяти. Ядро и данные остальных целы — уменьшите объём или считайте по частям.",
-    "en": "[Colloq] The attempt ran out of memory. The kernel and everyone else's data are intact — use less or work in chunks."
+    "ru": "[Aula Lab] Попытке не хватило памяти. Ядро и данные остальных целы — уменьшите объём или считайте по частям.",
+    "en": "[Aula Lab] The attempt ran out of memory. The kernel and everyone else's data are intact — use less or work in chunks."
   },
   "server.council.threadsLeft": {
     "ru": {
-      "one": "[Colloq] После попытки остался работать {count} поток — остановить его нечем, он продолжает считать в общем ядре.",
-      "few": "[Colloq] После попытки остались работать {count} потока — остановить их нечем, они продолжают считать в общем ядре.",
-      "many": "[Colloq] После попытки остались работать {count} потоков — остановить их нечем, они продолжают считать в общем ядре.",
-      "other": "[Colloq] После попытки остались работать {count} потока — остановить их нечем, они продолжают считать в общем ядре."
+      "one": "[Aula Lab] После попытки остался работать {count} поток — остановить его нечем, он продолжает считать в общем ядре.",
+      "few": "[Aula Lab] После попытки остались работать {count} потока — остановить их нечем, они продолжают считать в общем ядре.",
+      "many": "[Aula Lab] После попытки остались работать {count} потоков — остановить их нечем, они продолжают считать в общем ядре.",
+      "other": "[Aula Lab] После попытки остались работать {count} потока — остановить их нечем, они продолжают считать в общем ядре."
     },
     "en": {
-      "one": "[Colloq] {count} thread the attempt started is still running — nothing can stop it, and it keeps working in the shared kernel.",
-      "other": "[Colloq] {count} threads the attempt started are still running — nothing can stop them, and they keep working in the shared kernel."
+      "one": "[Aula Lab] {count} thread the attempt started is still running — nothing can stop it, and it keeps working in the shared kernel.",
+      "other": "[Aula Lab] {count} threads the attempt started are still running — nothing can stop them, and they keep working in the shared kernel."
     }
   },
   "server.council.processesKilled": {
     "ru": {
-      "one": "[Colloq] Дочерний процесс, оставшийся после попытки, остановлен.",
-      "few": "[Colloq] Дочерние процессы, оставшиеся после попытки ({count}), остановлены.",
-      "many": "[Colloq] Дочерние процессы, оставшиеся после попытки ({count}), остановлены.",
-      "other": "[Colloq] Дочерние процессы, оставшиеся после попытки ({count}), остановлены."
+      "one": "[Aula Lab] Дочерний процесс, оставшийся после попытки, остановлен.",
+      "few": "[Aula Lab] Дочерние процессы, оставшиеся после попытки ({count}), остановлены.",
+      "many": "[Aula Lab] Дочерние процессы, оставшиеся после попытки ({count}), остановлены.",
+      "other": "[Aula Lab] Дочерние процессы, оставшиеся после попытки ({count}), остановлены."
     },
     "en": {
-      "one": "[Colloq] A child process left over by the attempt was stopped.",
-      "other": "[Colloq] {count} child processes left over by the attempt were stopped."
+      "one": "[Aula Lab] A child process left over by the attempt was stopped.",
+      "other": "[Aula Lab] {count} child processes left over by the attempt were stopped."
     }
   },
   "server.council.sizeKb": {
@@ -3116,8 +3116,8 @@ export const serverMessages: MessageCatalog = {
     "en": "{p0} returned a model refusal for the test request."
   },
   "server.didNotAnswerWithinSecondsIsIt.dcedf5": {
-    "ru": "{p0} не ответил за {p1} с. Проверьте, запущен ли он и доступен ли из контейнера Colloq.",
-    "en": "{p0} did not answer within {p1} seconds. Is it running, and reachable from the Colloq container?"
+    "ru": "{p0} не ответил за {p1} с. Проверьте, запущен ли он и доступен ли из контейнера Aula Lab.",
+    "en": "{p0} did not answer within {p1} seconds. Is it running, and reachable from the Aula Lab container?"
   },
   "server.couldNotReachCheckTheAddressA.a531ef": {
     "ru": "Не удалось подключиться к {p0}{p1}. Проверьте адрес: локальный провайдер должен быть доступен серверу, localhost внутри контейнера обычно не подходит.",
@@ -3140,8 +3140,8 @@ export const serverMessages: MessageCatalog = {
     "en": "{p0} returned a model list but rejected the test request for \"{p1}\"{p2}. A successful model response has not been verified."
   },
   "server.theAiEndpointReturnedHttpForAsk.56675a": {
-    "ru": "Провайдер ИИ вернул HTTP 404 для «{p0}». Попросите администратора Colloq проверить адрес API и имя модели.",
-    "en": "The AI endpoint returned HTTP 404 for \"{p0}\". Ask the Colloq administrator to check the endpoint address and model name."
+    "ru": "Провайдер ИИ вернул HTTP 404 для «{p0}». Попросите администратора Aula Lab проверить адрес API и имя модели.",
+    "en": "The AI endpoint returned HTTP 404 for \"{p0}\". Ask the Aula Lab administrator to check the endpoint address and model name."
   },
   "server.theAiEndpointRejectedTheRequestFor.2dad2f": {
     "ru": "Провайдер ИИ отклонил запрос к модели «{p0}»: {p1}",
@@ -3199,17 +3199,17 @@ export const serverMessages: MessageCatalog = {
     "ru": "Размер файла превышает ограничение {p0} МБ.",
     "en": "That file is larger than the {p0} MB limit."
   },
-  "server.colloqMoreCharactersCutHere.cfc854": {
-    "ru": "{p0}… [colloq] здесь обрезано ещё {p1} символов",
-    "en": "{p0}… [colloq] {p1} more characters cut here"
+  "server.aulalabMoreCharactersCutHere.cfc854": {
+    "ru": "{p0}… [aulalab] здесь обрезано ещё {p1} символов",
+    "en": "{p0}… [aulalab] {p1} more characters cut here"
   },
-  "server.colloqAttemptOutputStoppedAfterCharactersSave.97282a": {
-    "ru": "\n[colloq] вывод попытки остановлен после {p0} знаков. Сохраните полный вывод в файл.\n",
-    "en": "\n[colloq] Attempt output stopped after {p0} characters. Save the full output to a file.\n"
+  "server.aulalabAttemptOutputStoppedAfterCharactersSave.97282a": {
+    "ru": "\n[aulalab] вывод попытки остановлен после {p0} знаков. Сохраните полный вывод в файл.\n",
+    "en": "\n[aulalab] Attempt output stopped after {p0} characters. Save the full output to a file.\n"
   },
-  "server.colloqTheAttemptImageLimitWasReached.3d579d": {
-    "ru": "\n[colloq] Достигнут лимит изображений для попытки. Остальные изображения не показаны.\n",
-    "en": "\n[colloq] The attempt image limit was reached. Additional images are not shown.\n"
+  "server.aulalabTheAttemptImageLimitWasReached.3d579d": {
+    "ru": "\n[aulalab] Достигнут лимит изображений для попытки. Остальные изображения не показаны.\n",
+    "en": "\n[aulalab] The attempt image limit was reached. Additional images are not shown.\n"
   },
   "server.moreFrames.6caf4c": {
     "ru": "... ещё {p0} кадров ...",
@@ -3243,9 +3243,9 @@ export const serverMessages: MessageCatalog = {
     "ru": "В ячейке возникла ошибка. Не запущены следующие ячейки из очереди: {p0}.",
     "en": "A cell failed, so the {p0} cells queued behind it were not run."
   },
-  "server.colloqInputIsNotSupportedInCouncil.fd07fb": {
-    "ru": "[colloq] Ввод через input() в попытке консилиума не поддерживается. Подставлена пустая строка.\n",
-    "en": "[colloq] input() is not supported in Council attempts. An empty string was supplied.\n"
+  "server.aulalabInputIsNotSupportedInCouncil.fd07fb": {
+    "ru": "[aulalab] Ввод через input() в попытке консилиума не поддерживается. Подставлена пустая строка.\n",
+    "en": "[aulalab] input() is not supported in Council attempts. An empty string was supplied.\n"
   },
   "server.theCellRunningAtTheTimeWas.11ac96": {
     "ru": "{p0} Выполнявшаяся ячейка прервана, все переменные потеряны.",
@@ -3295,13 +3295,13 @@ export const serverMessages: MessageCatalog = {
     "ru": "Канал не открылся за {p0} с",
     "en": "no channel after {p0}s"
   },
-  "server.colloqOutputStoppedAfterCharactersSaveThe.cf6866": {
-    "ru": "\n[colloq] Вывод остановлен после {p0} символов. Сохраните полный вывод в файл.\n",
-    "en": "\n[colloq] output stopped after {p0} characters. Save the full output to a file.\n"
+  "server.aulalabOutputStoppedAfterCharactersSaveThe.cf6866": {
+    "ru": "\n[aulalab] Вывод остановлен после {p0} символов. Сохраните полный вывод в файл.\n",
+    "en": "\n[aulalab] output stopped after {p0} characters. Save the full output to a file.\n"
   },
-  "server.colloqTheImageOutputLimitWasReached.a9f30a": {
-    "ru": "\n[colloq] Достигнут лимит изображений {p0}. Остальные изображения не показаны. ",
-    "en": "\n[colloq] The {p0} image output limit was reached. Additional images are not shown. "
+  "server.aulalabTheImageOutputLimitWasReached.a9f30a": {
+    "ru": "\n[aulalab] Достигнут лимит изображений {p0}. Остальные изображения не показаны. ",
+    "en": "\n[aulalab] The {p0} image output limit was reached. Additional images are not shown. "
   },
   "server.saveTheFigureToAFileOr.961b0e": {
     "ru": "Сохраните график в файл или уменьшите ",
@@ -3312,8 +3312,8 @@ export const serverMessages: MessageCatalog = {
     "en": "its size (figsize/dpi).\n"
   },
   "server.output.plotlyTooBig": {
-    "ru": "\n[colloq] График слишком большой для общей тетради ({p0} МБ): уменьшите число точек или сохраните его в файл — fig.write_html('plot.html')\n",
-    "en": "\n[colloq] This figure is too large for a shared notebook ({p0} MB): use fewer points, or save it to a file — fig.write_html('plot.html')\n"
+    "ru": "\n[aulalab] График слишком большой для общей тетради ({p0} МБ): уменьшите число точек или сохраните его в файл — fig.write_html('plot.html')\n",
+    "en": "\n[aulalab] This figure is too large for a shared notebook ({p0} MB): use fewer points, or save it to a file — fig.write_html('plot.html')\n"
   },
   "server.dockerStart.e0ac13": {
     "ru": "docker start: {p0}",
@@ -3862,8 +3862,8 @@ export const serverMessages: MessageCatalog = {
     "en": "The oracle is already carrying out a request in this room. Wait for it to finish, or stop it, and then send a new one."
   },
   "server.agent.prompt.role": {
-    "ru": "Вы — оракул Colloq, помощник на техническом занятии. Сейчас вас попросили не объяснить, а СДЕЛАТЬ.",
-    "en": "You are the Colloq oracle, an assistant in a technical class. You have been asked not to explain, but to DO."
+    "ru": "Вы — оракул Aula Lab, помощник на техническом занятии. Сейчас вас попросили не объяснить, а СДЕЛАТЬ.",
+    "en": "You are the Aula Lab oracle, an assistant in a technical class. You have been asked not to explain, but to DO."
   },
   "server.agent.prompt.workFull": {
     "ru": "У вас есть папка занятия и инструменты к ней. Порядок работы обычный: посмотрите, что есть, прочитайте то, что собираетесь менять, поменяйте и проверьте.",
@@ -3986,32 +3986,32 @@ export const serverMessages: MessageCatalog = {
     "en": "Too many questions from your address in the last minute. Wait a minute."
   },
   "server.linkPreview.title": {
-    "ru": "Colloq — одна ссылка на всё занятие",
-    "en": "Colloq — one link for the whole class"
+    "ru": "Aula Lab — одна ссылка на всё занятие",
+    "en": "Aula Lab — one link for the whole class"
   },
   "server.linkPreview.description": {
     "ru": "Проводите лекции, пишите код вместе и разбирайте решения студентов. Ноутбук, слайды и задания — по одной ссылке, без регистрации для студентов.",
     "en": "Run lectures, write code together and review student work. Notebook, slides and tasks behind one link, no sign-up for students."
   },
   "server.linkPreview.roomDescription": {
-    "ru": "Занятие в Colloq: общий ноутбук, слайды и задания по одной ссылке.",
-    "en": "A class in Colloq: shared notebook, slides and tasks behind one link."
+    "ru": "Занятие в Aula Lab: общий ноутбук, слайды и задания по одной ссылке.",
+    "en": "A class in Aula Lab: shared notebook, slides and tasks behind one link."
   },
   "server.linkPreview.competitionDescription": {
-    "ru": "Соревнование в Colloq: решение — тетрадь целиком, проверка в изолированном контейнере, рейтинг сразу.",
-    "en": "A competition in Colloq: the solution is a whole notebook, checked in an isolated container, ranked at once."
+    "ru": "Соревнование в Aula Lab: решение — тетрадь целиком, проверка в изолированном контейнере, рейтинг сразу.",
+    "en": "A competition in Aula Lab: the solution is a whole notebook, checked in an isolated container, ranked at once."
   },
   "server.linkPreview.competitionsTitle": {
-    "ru": "Соревнования · Colloq",
-    "en": "Competitions · Colloq"
+    "ru": "Соревнования · Aula Lab",
+    "en": "Competitions · Aula Lab"
   },
   "server.linkPreview.competitionsDescription": {
-    "ru": "Соревнования по анализу данных в Colloq: решение — тетрадь целиком, проверка в изолированном контейнере, рейтинг сразу.",
-    "en": "Data science competitions in Colloq: the solution is a whole notebook, checked in an isolated container, ranked at once."
+    "ru": "Соревнования по анализу данных в Aula Lab: решение — тетрадь целиком, проверка в изолированном контейнере, рейтинг сразу.",
+    "en": "Data science competitions in Aula Lab: the solution is a whole notebook, checked in an isolated container, ranked at once."
   },
   "server.linkPreview.courseDescription": {
-    "ru": "Курс в Colloq: занятия с кодом, графиками и разбором — по одной ссылке.",
-    "en": "A course in Colloq: classes with code, plots and walkthroughs behind one link."
+    "ru": "Курс в Aula Lab: занятия с кодом, графиками и разбором — по одной ссылке.",
+    "en": "A course in Aula Lab: classes with code, plots and walkthroughs behind one link."
   },
   "server.ogCard.competition": {
     "ru": "Соревнование",
@@ -4150,8 +4150,8 @@ export const serverMessages: MessageCatalog = {
     "en": "Only staff can set a room's memory."
   },
   "server.linkPreview.imageAlt": {
-    "ru": "Экран входа Colloq: «Вы входите в…», поле для имени и кнопка «Войти на занятие»",
-    "en": "Colloq join screen: “You are entering…”, a name field and a “Join the class” button"
+    "ru": "Экран входа Aula Lab: «Вы входите в…», поле для имени и кнопка «Войти на занятие»",
+    "en": "Aula Lab join screen: “You are entering…”, a name field and a “Join the class” button"
   },
   "server.brief.parameters": {
     "ru": {

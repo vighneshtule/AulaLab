@@ -1,5 +1,5 @@
 /**
- * Consistent copies of colloq.db inside the data volume.
+ * Consistent copies of aulalab.db inside the data volume.
  *
  * In a customer's Kubernetes the backup is a snapshot of the volume (Velero,
  * CSI), taken whenever the platform's schedule says, in the middle of a class
@@ -13,13 +13,13 @@
  *
  * And one more, always: right before a migration raises the data schema
  * (data-schema.ts). An upgrade through GitOps is a new image tag in a
- * repository; nobody runs `colloq-host backup` first, and a Helm upgrade
+ * repository; nobody runs `aulalab-host backup` first, and a Helm upgrade
  * without a backup hook would otherwise have no way back to the release
  * before it.
  *
  * Files are 0600 in a 0700 directory, like the database itself: they hold
  * the teachers' sign-in keys and the model key. A copy is written under a
- * temporary name and renamed when it is whole, so every `colloq-*.db` in the
+ * temporary name and renamed when it is whole, so every `aulalab-*.db` in the
  * folder is a complete database; a process killed halfway leaves a
  * `.partial`, swept away before the next snapshot.
  *
@@ -55,9 +55,9 @@ const PAGES_PER_STEP = 256
 const MAX_TIMER_MS = 2 ** 31 - 1
 
 const STAMP = String.raw`\d{8}T\d{6}Z`
-const PERIODIC = new RegExp(`^colloq-(${STAMP})\\.db$`)
+const PERIODIC = new RegExp(`^aulalab-(${STAMP})\\.db$`)
 const PRE_SCHEMA = new RegExp(`^pre-schema-(\\d+)-to-(\\d+)-(${STAMP})\\.db$`)
-const PARTIAL = new RegExp(`^(?:colloq|pre-schema-\\d+-to-\\d+)-${STAMP}\\.db\\.partial(?:-journal|-wal|-shm)?$`)
+const PARTIAL = new RegExp(`^(?:aulalab|pre-schema-\\d+-to-\\d+)-${STAMP}\\.db\\.partial(?:-journal|-wal|-shm)?$`)
 
 export interface SnapshotSettings {
   /** 0 means periodic snapshots are off (DB_SNAPSHOT_HOURS unset or 0). */
@@ -71,7 +71,7 @@ export interface SnapshotSettings {
  * DB_SNAPSHOT_HOURS and DB_SNAPSHOT_KEEP.
  *
  * Off unless asked for: the teacher's laptop and the single VM have their own
- * backups (`colloq backup`, `colloq-host backup`), and a copy of the database
+ * backups (`aulalab backup`, `aulalab-host backup`), and a copy of the database
  * every day inside the same folder is disk they did not ask to spend. The
  * Helm chart turns it on.
  *
@@ -212,7 +212,7 @@ export type SnapshotOutcome =
   | { ok: false; reason: 'busy' | 'stopped' | 'failed'; error?: string }
 
 /**
- * Take one periodic snapshot: `snapshots/colloq-<stamp>.db`.
+ * Take one periodic snapshot: `snapshots/aulalab-<stamp>.db`.
  *
  * Never two at once: a second call while one is running answers `busy` and
  * does nothing. A copy of the database is the one job here that can take
@@ -243,7 +243,7 @@ async function snapshotOnce(
 ): Promise<SnapshotOutcome> {
   const started = performance.now()
   const at = now()
-  const name = `colloq-${snapshotStamp(at)}.db`
+  const name = `aulalab-${snapshotStamp(at)}.db`
   let partial: string | null = null
   try {
     const dir = snapshotDirectory(dataDir)
@@ -409,7 +409,7 @@ export function startDatabaseSnapshots(
   abandoning = false
   arm()
   console.log(
-    `[db] snapshots of colloq.db every ${durationText(settings.everyMs)} into ${path.join(dataDir, SNAPSHOT_DIR)}, ` +
+    `[db] snapshots of aulalab.db every ${durationText(settings.everyMs)} into ${path.join(dataDir, SNAPSHOT_DIR)}, ` +
       `keeping ${settings.keep}; the next at ${new Date(nextAt).toISOString()}`,
   )
   return nextAt

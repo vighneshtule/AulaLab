@@ -6,7 +6,7 @@ import os from 'node:os'
 import zlib from 'node:zlib'
 import { precompress } from '../web/scripts/precompress.mjs'
 
-const root = await fs.mkdtemp(path.join(os.tmpdir(), 'colloq-precompress-'))
+const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aulalab-precompress-'))
 after(() => fs.rm(root, { recursive: true, force: true }))
 
 test('optimized artifacts round-trip, retain originals and exclude already compressed files', async () => {

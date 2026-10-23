@@ -1,146 +1,134 @@
-# Dependency Manager для соревнований — дизайн v1
+# Competition dependency manager — design v1
 
-Статус: реализован и проверен 22.09.2026. Для соревнования `pvz-demand-geo` подготовка дополнительных пакетов включена. Результаты проверки — в конце документа.
+**Status:** Implemented and verified on 22 September 2026. Additional package preparation is enabled for `pvz-demand-geo`; verification notes are at the end of this document.
 
-Макеты: https://app.paper.design/file/01M0WXJVWBZB3MY0SN1X97S0AH/p-G-0
+Design mockups: https://app.paper.design/file/01M0WXJVWBZB3MY0SN1X97S0AH/p-G-0
 
-- P5 · Dependency Manager · пакеты участника.
-- P6 · Dependency Manager · подготовка и конфликт.
-- P7 · Посылки · закреплённый набор пакетов.
-- P8 · Dependency Manager · телефон.
-- A4 · Dependency Manager · политика соревнования.
+- P5 — participant packages.
+- P6 — package preparation and conflicts.
+- P7 — submissions with a pinned package bundle.
+- P8 — mobile dependency manager.
+- A4 — competition dependency policy.
 
-Версии и размеры дополнительных пакетов в макетах — примеры состояний. В продукте они берутся из результата реальной подготовки.
+Package versions and sizes in the mockups are illustrative states. In production they come from actual preparation results.
 
-## Решение
+## Decision
 
-У соревнования есть базовое окружение, у участника — собственные дополнительные пакеты. Сервер готовит их заранее, а каждая посылка ссылается на конкретный неизменяемый набор. Исполнение тетради и подсчёт метрики остаются без сети.
+Each competition has a base environment, and each participant may add private dependencies. The server prepares dependencies before execution. Every submission points to an immutable bundle. Notebook execution and metric calculation run without general network access.
 
-Текущий `kaggle-base` — лёгкое CPU-окружение Colloq, не официальный образ Kaggle. Выбор сделан пользователем после проверки официальных образов: их размеры в сжатом виде на момент проверки — 8,51 / 21,45 GiB (CPU/GPU), платформа CPU — linux/amd64; локальный Docker — ARM64 и имел 6,1 GiB свободного места. Официальные образы не скачивались, локальная VM не перезапускалась.
+The current `kaggle-base` is Aula Lab's lightweight CPU environment, not an official Kaggle image. This choice followed a check of official image sizes: 8.51 / 21.45 GiB compressed for CPU/GPU, with the CPU image using linux/amd64. The local Docker host was ARM64 with 6.1 GiB free. The official images were not downloaded and the local VM was not restarted.
 
-Варианты:
+Options considered:
 
-1. Только общий образ: уже работает, но преподаватель обслуживает каждый новый пакет.
-2. Личные наборы wheel-файлов поверх закреплённой базы: выбранный вариант, соответствует текущему исполнителю и не требует отдельного большого образа на каждого участника.
-3. Отдельный Docker-образ на набор: возможен позже, но добавляет хранение и сборку слоёв, удалённый реестр и ещё одну очередь образов.
+1. A single shared image, which already worked but required teachers to maintain every new package.
+2. Private wheel bundles layered over a pinned base, selected because it matches the current executor and avoids a large image per participant.
+3. A separate Docker image for each bundle, which could be considered later but adds storage, layer builds, a remote registry, and another image queue.
 
-## Пользовательский поток
+## Participant flow
 
-1. Во вкладке «Пакеты» видны базовое окружение, Python и ссылка на полный фактический состав.
-2. Участник вводит дополнительные зависимости по одной на строку или загружает requirements.txt **в менеджер**. Это не общий файл данных соревнования.
-3. «Проверить и подготовить» создаёт задачу: очередь → проверка совместимости → скачивание → проверка установки → готов.
-4. Ошибка указывает пакет, строку запроса и способ исправления. Предыдущий готовый набор остаётся доступен.
-5. Готовый набор содержит точные версии, прямые и транзитивные зависимости, размеры и базу, под которую он подготовлен. Можно скачать список закреплённых версий.
-6. «Использовать набор» выбирает его для следующей посылки; уже отправленные посылки не меняются.
-7. Во вкладке «Посылки» выбор файла больше не отправляет его сразу. Сначала показываются имя файла и выбранный набор, затем пользователь нажимает «Отправить тетрадь».
-8. Каждая строка посылки показывает свой набор. Повтор берёт именно его, независимо от текущего выбора участника.
-9. Без дополнительных пакетов работает вариант «Базовый набор» без подготовки и без лишнего действия.
+1. The **Packages** tab shows the base environment, Python version, and a link to the complete installed inventory.
+2. A participant enters dependencies one per line or uploads a `requirements.txt` into the manager. This is not a shared competition data file.
+3. **Check and prepare** queues compatibility checks, download, installation verification, and readiness.
+4. Errors identify the package, request line, and corrective action. The last ready bundle remains available.
+5. A ready bundle records exact direct and transitive versions, sizes, and its base environment. Participants can download its pinned package list.
+6. **Use bundle** selects a bundle for the next submission. Existing submissions do not change.
+7. In the **Submissions** tab, selecting a file no longer uploads it immediately. The participant reviews the file and selected bundle, then submits the notebook.
+8. Each submission row shows its bundle. Re-running uses that bundle regardless of the participant's current selection.
+9. With no extra packages, **Base environment** works without preparation or an extra action.
 
-На телефоне те же действия идут одной колонкой; название пакета и кнопки не обрезаются. Технический журнал раскрывается отдельно. Основной текст — 16 px, подписи — 14–15 px.
+On mobile, controls use one column without clipping package names or buttons. Technical logs are in a separate disclosure. Main text is 16 px; labels are 14–15 px.
 
-## Правила v1
+## Version 1 rules
 
-- Источник дополнительных пакетов — публичный PyPI, только готовые wheels под Python/ABI/платформу базового образа.
-- Поддержаны имена, extras, ограничения версий и корректные environment markers через packaging.Requirement.
-- Произвольные shell-команды, pip options, Git/URL/local-path зависимости и сборка sdist в v1 не поддерживаются. У отказа есть конкретная причина, без попытки молча заменить запрос.
-- Базовые пакеты закреплены целиком. Если установленная версия удовлетворяет запросу — пакет уже есть в базе и не скачивается. Изменить базовый NumPy или служебный ipykernel личным набором нельзя; конфликт возвращается до запуска тетради.
-- Новые версии базы публикуются как отдельные revisions. Обновление соревнования явно выбирает преподаватель. Старые посылки и их образы сохраняются.
-- Подготовка не расходует дневной лимит посылок. Установка набора внутри исполнения входит в общий лимит времени/памяти посылки. Системный сбой установки до первой ячейки не расходует дневную квоту, как и нынешние ошибки до исполнения.
-- Выключение менеджера запрещает новые подготовки. Уже принятые посылки и готовые наборы продолжают работать, чтобы не ломать воспроизводимость.
-- Черновик списка и наборы приватны для участника; преподаватель видит их для диагностики. Другой участник не может использовать чужой bundleId.
+- Extra packages come from public PyPI and must have wheels compatible with the base image's Python, ABI, and platform.
+- Package names, extras, version constraints, and valid environment markers are parsed with `packaging.Requirement`.
+- Arbitrary shell commands, pip options, Git/URL/local-path requirements, and source distribution builds are not supported. Rejections include a specific reason; the request is never silently changed.
+- Base packages are fully pinned. If an installed version satisfies a request, it is reused without a download. A participant bundle cannot replace base NumPy or the system `ipykernel`; conflicts are rejected before notebook execution.
+- New base images are separate revisions. A teacher explicitly selects a revision for a competition. Old submissions and their images remain available.
+- Preparation does not consume the daily submission limit. Installing a bundle during execution counts toward the submission's time/memory limit. A system installation failure before the first cell does not consume the daily quota, consistent with other pre-execution failures.
+- Disabling the manager prevents new preparations. Accepted submissions and ready bundles continue working to preserve reproducibility.
+- Draft requirements and bundles are private to the participant. Teachers can view them for troubleshooting; another participant cannot use someone else's `bundleId`.
 
-## Модель данных
+## Data model
 
-`environment_revision`:
-- id, environmentName, imageDigest, pythonVersion, pythonAbi, platform;
-- полный installed inventory, baseConstraintsHash, createdAt.
+`environment_revision` stores an ID, environment name, image digest, Python version, Python ABI, platform, full installed inventory, base constraints hash, and creation time.
 
-`dependency_draft`:
-- competitionId, entrantId, requirementsText, selectedBundleId, updatedAt.
+`dependency_draft` stores the competition ID, entrant ID, requirements text, selected bundle ID, and update time.
 
-`dependency_bundle`:
-- id, competitionId, entrantId, revisionId;
-- исходные и нормализованные requirements;
-- lockManifest, contentHash, downloadBytes, installedBytes;
-- state: queued / resolving / downloading / verifying / ready / failed / cancelled;
-- failureCode, participantMessage, createdAt, readyAt.
+`dependency_bundle` stores its ID, competition and entrant IDs, environment revision, original and normalized requirements, lock manifest, content hash, Docker image ID, state, preparation log, sizes, and timestamps.
 
-`dependency_artifact`:
-- sha256, wheelFileName, distribution, version, bytes, storagePath;
-- путь хранилища никогда не отдаётся клиенту; общие wheel-файлы переиспользуются по хэшу.
+A submission stores `environmentRevisionId` and nullable `dependencyBundleId` at acceptance. Migrations bind old submissions to an available image ID where possible; otherwise they mark them as legacy/unpinned rather than inventing reproducibility.
 
-`submission` получает `environmentRevisionId` и nullable `dependencyBundleId`. Оба поля фиксируются при приёме. Для старых посылок migration привязывает доступный image ID, при невозможности это явно помечается как legacy/unpinned; воспроизводимость старых запусков не выдумывается.
+The sequential bundle number shown in the UI is scoped to a participant within a competition. It is neither an internal UUID nor a hash.
 
-Номер набора в UI — последовательный номер для участника внутри соревнования, не внутренний UUID и не хэш.
+## Preparation pipeline
 
-## Подготовка
+Preparation has its own queue, separate from submission execution; a slow package download must not occupy the only worker slot for queued models.
 
-Отдельная очередь подготовки, не очередь исполнения посылок. Иначе медленное скачивание займёт единственное место, на котором ждут модели.
+1. The server checks identity, competition access, policy, request size, and rate limits.
+2. Requirements are parsed; forbidden sources/options are rejected; names and markers are normalized.
+3. The manager resolves the immutable base image and its complete constraints snapshot.
+4. An isolated downloader, with no competition data, secrets, or notebooks, resolves dependencies. Network access is limited to PyPI and `files.pythonhosted.org`. This is not execution of participant notebook code.
+5. Compatible wheels are saved and checked for package names, versions, hashes, and limits. Version ranges become exact versions with SHA-256 hashes.
+6. A fresh container with no network, the same base, and the same platform performs an offline installation and `pip check`. The check does not import arbitrary modules just to infer Python import names.
+7. The bundle becomes ready atomically only after every file passes verification. A partial download can never be used by a submission.
 
-1. Сервер проверяет личность, доступ к соревнованию, политику, размер запроса и rate limit.
-2. Разбирает requirements, запрещённые источники/опции, нормализует имена и markers.
-3. Находит immutable base image и его полный constraints snapshot.
-4. Изолированный downloader без данных соревнования, ключей и тетрадей разрешает зависимости. Сеть ограничена PyPI и files.pythonhosted.org; это не исполнение пользовательского notebook-кода.
-5. Сохраняет только подходящие wheels, проверяет имена/версии/хэши и лимиты. Запрошенные интервалы превращаются в точные версии и SHA-256.
-6. Новый контейнер **без сети**, с той же базой и платформой, делает offline-установку и pip check. Проверка не импортирует произвольные модули только ради сопоставления имени пакета и имени Python-модуля.
-7. Набор становится ready атомарно после проверки всех файлов. Частичная загрузка не может использоваться посылкой.
+The reuse key includes the base digest, Python ABI, platform, and normalized request. A ready bundle is immutable. Explicit re-preparation creates another revision; it does not replace the old one.
 
-Ключ повторного использования учитывает digest базы, Python ABI, платформу и нормализованный запрос. Готовый набор остаётся неизменным; явная повторная подготовка создаёт новую ревизию, не подменяет старую.
+Initial policy limits are 32 lines / 8 KiB per request, 500 MiB of downloaded wheels, 512 MiB installed size, 10 minutes of preparation, one active request per participant, one global preparation job, and at most 10 preparations per hour per participant. Free disk space is checked before downloads. When space is low, existing bundles are not deleted.
 
-Начальные ограничения политики: 32 строки / 8 KiB запроса, 500 MiB скачанных wheels, 512 MiB после установки, 10 минут подготовки, один активный запрос на участника, одна глобальная задача подготовки, максимум 10 подготовок в час на участника. Порог свободного диска проверяется до скачивания; на исчерпании места действующие наборы не удаляются.
+## Submission execution
 
-## Запуск посылки
+1. On acceptance, the server verifies the bundle owner, ready state, and exact revision match with the competition environment.
+2. Competition data and the wheel bundle are mounted read-only in the notebook container. Network access is disabled and existing resource limits remain in force.
+3. A temporary virtual environment is created in writable workspace storage with access to the base image's system packages.
+4. Extra wheels are installed with `--no-index --no-deps --require-hashes` from a lock file. Execution neither resolves new versions nor downloads packages.
+5. A temporary kernelspec points `argv` to **the virtual environment's Python**. Changing `PATH` is not sufficient because an existing kernelspec may use an absolute path to the base Python.
+6. The progress sequence is **Queue → Install packages → Notebook → Check CSV → Score**. The participant sees the current phase; the cell number appears when notebook execution begins.
+7. The metric container uses a separate pinned teacher environment. Participant packages and virtual environments are not mounted into it.
 
-1. При приёме сервер проверяет владельца набора, ready-состояние и точное совпадение revisionId с окружением соревнования.
-2. В контейнер тетради монтируются данные и wheel-набор read-only. Сеть выключена, ресурсные ограничения остаются текущими.
-3. В записываемой рабочей области создаётся временный venv с доступом к системным пакетам базового образа.
-4. Дополнительные wheels устанавливаются `--no-index --no-deps --require-hashes` по lock-файлу. Ни разрешения новых версий, ни скачивания при исполнении нет.
-5. Для nbclient создаётся временный kernelspec, argv которого указывает **на Python этого venv**. Изменить PATH недостаточно: существующий kernelspec может указывать на абсолютный путь базового Python.
-6. Полоса исполнения: «Очередь → Установка пакетов → Тетрадь → Проверка CSV → Оценка». Пользователь видит текущий этап; номер ячейки появляется после начала тетради.
-7. Контейнер метрики использует отдельную закреплённую базу преподавателя. Пакеты участника и его venv туда не попадают.
+The accepted submission records the exact Docker image ID and bundle. Re-runs and rescoring use the same references. Submissions from before the manager are marked legacy because the original value of a mutable image tag cannot be reconstructed reliably.
 
-При приёме посылки сохраняются конкретный Docker image ID и набор пакетов. Повторное исполнение и пересчёт используют эту привязку. История до внедрения менеджера помечена как legacy: исходное значение старого mutable tag восстановить достоверно нельзя.
+## API surface
 
-## API
+- `GET /api/k/competitions/:slug/dependencies` returns the draft, selected bundle, and ready bundles for the current participant.
+- `PUT /api/k/competitions/:slug/dependencies/draft` saves requirements and the selected bundle.
+- `POST /api/k/competitions/:slug/dependencies/prepare` returns a bundle ID and queues preparation.
+- `GET /api/k/competitions/:slug/dependencies/:bundleId` returns state, pinned versions, sizes, and a readable error.
+- `GET /api/k/competitions/:slug/dependencies/:bundleId/stream` provides SSE during preparation, with polling as a fallback.
+- `POST /api/k/competitions/:slug/dependencies/:bundleId/cancel` cancels the participant's own preparation.
+- `GET /api/k/competitions/:slug/dependencies/:bundleId/lock` downloads a lock file without server paths or tokens.
+- The existing `POST /submissions` accepts a multipart notebook and `bundleId`; clients cannot upload arbitrary wheel bytes through this endpoint.
+- Admin controls configure preparation policy and expose queues, statuses, and logs with secret filtering.
 
-- GET `/api/k/competitions/:slug/dependencies` — черновик, выбранный и готовые наборы своего участника.
-- PUT `/api/k/competitions/:slug/dependencies/draft` — сохранить список и выбор готового набора.
-- POST `/api/k/competitions/:slug/dependencies/prepare` — вернуть bundleId и поставить подготовку в очередь.
-- GET `/api/k/competitions/:slug/dependencies/:bundleId` — статус, точные версии, размеры, понятная ошибка.
-- GET `/api/k/competitions/:slug/dependencies/:bundleId/stream` — SSE для активной подготовки; запасной polling по текущему паттерну проекта.
-- POST `/api/k/competitions/:slug/dependencies/:bundleId/cancel` — отменить свою подготовку.
-- GET `/api/k/competitions/:slug/dependencies/:bundleId/lock` — скачать lock без серверных путей и токенов.
-- POST существующей `/submissions` — multipart notebook + bundleId; байты произвольного wheel от клиента этим маршрутом не принимаются.
-- Admin: политика подготовки в настройках соревнования, очередь, просмотр статусов и журналов с фильтрацией секретов.
+## Storage and recovery
 
-## Хранение и восстановление
+Bundles referenced by submissions and the required image digest are retained with the competition. Unused drafts and unselected bundles may be removed by retention policy; garbage collection never deletes referenced artifacts. After restart, incomplete preparation is retried safely or reported as failed. Partial files never make a bundle ready. Backups must include manifests and artifacts, or document a verifiable method to restore them by hash.
 
-Набор, на который ссылается посылка, и нужный image digest сохраняются вместе с соревнованием. Неиспользуемые черновики и невыбранные наборы могут очищаться по retention-политике; GC не удаляет referenced artifacts. После рестарта незавершённая подготовка безопасно повторяется или сообщает ошибку, но не становится ready по наличию части файлов. Резервная копия должна включать manifests и артефакты либо документированную проверяемую возможность восстановить их по хэшам.
+Bundles live under `data/dependencies`; references and queue state live in SQLite. Backups include wheels, manifests, locks, and competition files. Docker layers are stored separately: rebuilding from requirements cannot recover the old image ID. Keep `aulalab-revision:*` images while referenced submissions need them. Preparation and its queue run in the server process; incomplete jobs receive a clear failure after restart, while ready bundles are retained.
 
-## Приёмка реализации
+## Acceptance checks
 
-- Подготовить чистый Python-пакет и пакет с транзитивной зависимостью, затем исполнить настоящую тетрадь с сетью none.
-- Пакет, уже присутствующий в базе, не скачивается и не меняет версию.
-- Конфликт с базой, неизвестный пакет, отсутствующий wheel, неверный hash, полный диск и таймаут возвращают разные понятные причины.
-- Изменение выбора набора не меняет повтор старой посылки.
-- Обновление базового окружения не меняет revision старых посылок; несовместимый старый bundle не принимается в новую посылку.
-- Другой участник не получает чужой список/набор; downloader не имеет доступа к тетрадям и скрытым ответам; scorer не видит пакетов участника.
-- Проверить отмену/рестарт в каждой фазе, дедупликацию параллельных запросов, размер после распаковки и GC referenced artifacts.
-- Browser QA: пустой набор, подготовка, успех, конфликт, отправка с готовым набором, мобильная ширина 390 px, клавиатура и объявление статусов.
+- Prepare a clean Python package and one with a transitive dependency, then run a real notebook with `network=none`.
+- A package already present in the base is not downloaded or upgraded.
+- Base conflicts, unknown packages, missing wheels, bad hashes, full disk, and timeout produce distinct understandable reasons.
+- Changing the selected bundle does not change a re-run of an old submission.
+- Updating the base does not change old submission revisions; an incompatible old bundle is rejected for a new submission.
+- Participants cannot read each other's bundles. The downloader cannot access notebooks or hidden answers; the scorer cannot see participant packages.
+- Check cancellation and restart in every phase, parallel request deduplication, expanded size limits, and garbage collection of referenced artifacts.
+- Browser QA covers an empty bundle, preparation, success, conflicts, submission with a ready bundle, 390 px mobile width, keyboard use, and status announcements.
 
-## Эксплуатация и проверка реализации
+## Verification recorded for the implementation
 
-Для подготовки нужен Docker Engine 28+ с изолированным шлюзом internal-сети. Downloader выходит только через CONNECT-прокси к `pypi.org` и `files.pythonhosted.org:443`; прямой выход, внутренние сервисы и произвольные домены запрещены. При недоступной изоляции подготовка завершается отказом. Для самого notebook и scorer остаётся `--network=none`.
+Preparation requires Docker Engine 28+ with an isolated internal-network gateway. The downloader exits only through a CONNECT proxy to `pypi.org` and `files.pythonhosted.org:443`; direct internet, internal services, and arbitrary domains are blocked. If isolation is unavailable, preparation fails closed. Notebook and scorer containers use `--network=none`.
 
-Наборы хранятся в `data/dependencies`, привязки и очередь — в SQLite. Бэкапы включают wheels, manifests, locks и файлы соревнований. Docker-слои сохраняются отдельно: пересборка по requirements не восстанавливает прежний image ID. Не удаляйте образы `colloq-revision:*`, пока нужны связанные посылки. Подготовка и её очередь работают в том же серверном процессе; незавершённые задачи после перезапуска получают понятную ошибку, готовые наборы сохраняются.
+Verified on local `kaggle-base`, Python 3.11.16, linux/arm64:
 
-Проверено на локальном `kaggle-base`, Python 3.11.16, linux/arm64:
+- Prepared `python-slugify==8.0.4` and transitive dependency `text-unidecode==1.3`: 88,205 bytes of wheels and 347,372 bytes installed, with a hashed lock file.
+- Submitted `ku3vwzjw`: installed from the wheel bundle, checked imports and versions, used a kernelspec for the temporary virtual environment, verified no network access, created a CSV, and calculated public/private metrics in a separate container.
+- After switching the draft to the base bundle, re-running the same submission still used its original bundle #1. All four phases of both runs returned `ok`; the test submission was excluded from scoring.
+- UI checks covered a `numpy==1.26.4` base conflict with its request line, selecting a ready bundle, submission history bindings, saving teacher policy, desktop, and 390 px mobile without horizontal overflow.
+- The recorded `npm test` run reported 3,648 passed, 24 skipped, and 0 failed (3,672 total). Typecheck and build passed; eight existing Svelte warnings remained.
+- Separate Docker checks covered real downloads, base-package reuse, egress limits, cancellation, timeout, size limits, missing wheels, cleanup, and suppressing `.pth` processing in the verification virtual environment.
 
-- Реальная подготовка `python-slugify==8.0.4` и транзитивного `text-unidecode==1.3`: 88 205 байт wheels, 347 372 байт после установки, hashed lock.
-- Реальная посылка `ku3vwzjw`: установка из wheel-набора, импорт и проверка версий, kernelspec на Python временного venv, проверка отсутствия сети, создание CSV, подсчёт публичной и приватной метрик в отдельном контейнере.
-- После переключения черновика на базовый набор повтор той же посылки снова прошёл с первоначальным набором №1. Все четыре шага двух запусков имеют verdict `ok`. Тестовая посылка снята с зачёта.
-- Через интерфейс: подготовка конфликта `numpy==1.26.4` с указанием строки, выбор готового набора, история посылок с привязкой, сохранение политики преподавателя, desktop и ширина 390 px без горизонтального переполнения.
-- Общая серия `npm test`: 3 648 passed, 24 skipped, 0 failed (3 672 теста). Полный typecheck и сборка прошли; Svelte сообщает 8 существовавших предупреждений.
-- Отдельные Docker-проверки подготовки покрывают реальные загрузки, reuse базового пакета, ограничения выхода в сеть, отмену, timeout, размеры, отсутствие wheel, очистку и подавление `.pth` в проверяющем venv.
-
-Автоматический выбор локального файла через расширение Chrome остался непроверенным: расширению не разрешён доступ к file URLs. Multipart-приём файла, выбор bundleId и полный запуск проверены реальным API; начальное состояние формы покрыто компонентными проверками. В коде выбор файла и отправка разделены; сам переход между этими состояниями в браузере не проверен. Это ограничение браузерной автоматизации, а не запрет загрузки в приложении.
+Chrome's local-file chooser extension could not be tested because it did not have file-URL access. Multipart file receipt, bundle selection, and full submission were checked through the real API; the form's initial state was covered by component tests. File selection and submission are separate in the code, but that transition was not verified in a browser. This is a browser-automation limitation, not an application restriction on uploads.

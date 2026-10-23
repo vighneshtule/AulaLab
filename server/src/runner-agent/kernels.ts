@@ -51,7 +51,7 @@
  * update` as any slot's are.
  *
  * NEVER A SUBMISSION'S, AND ONE LEDGER WITH THEM. Class containers carry a
- * kind of their own (`colloq.kind=class-kernel`), so neither the Docker
+ * kind of their own (`aulalab.kind=class-kernel`), so neither the Docker
  * runner's sweep nor the agent's (sync.ts · sweep) ever touches them; their
  * memory and CPUs join what the machine holds (`holding`), and a GPU room's
  * whole card is held as a run at one per card (`cardRuns`, `wholeCards`), so
@@ -195,7 +195,7 @@ const FACTS_AT_ADOPTION_MS = 5_000
 const IMAGE_ID = /^(?:sha256:)?[a-f0-9]{64}$/
 
 /** What the canary prints, in one line, before the JSON of its checks. */
-const CANARY_PREFIX = 'colloq-canary: '
+const CANARY_PREFIX = 'aulalab-canary: '
 
 /** The checks the canary reports (§7.6), each true when the sandbox held. */
 export const CANARY_CHECKS = [
@@ -219,11 +219,11 @@ export interface KernelHostOptions {
   layout: StateLayout
   docker: Docker
   images: KernelImages
-  /** COLLOQ_RUNNER_CONTAINER: the agent's own container (its network mode, and its image for the perimeter's helper); null — none (make runner-dev). */
+  /** AULALAB_RUNNER_CONTAINER: the agent's own container (its network mode, and its image for the perimeter's helper); null — none (make runner-dev). */
   container: string | null
-  /** COLLOQ_RUNNER_IMAGE: the helper's image when the agent has no container of its own. */
+  /** AULALAB_RUNNER_IMAGE: the helper's image when the agent has no container of its own. */
   image: string | null
-  /** The machine's own COLLOQ_ROOM_NETWORK, KERNEL_BLOCKED_CIDRS and KERNEL_ROOM_SUBNET: stricter than home's floor or more, never less. */
+  /** The machine's own AULALAB_ROOM_NETWORK, KERNEL_BLOCKED_CIDRS and KERNEL_ROOM_SUBNET: stricter than home's floor or more, never less. */
   env?: NodeJS.ProcessEnv
   /** The agent's INSTANCE_LABEL (images.ts); a test may name its own. */
   instanceLabel?: string
@@ -331,7 +331,7 @@ export function strictestMode(home: 'blocked' | 'none', machine: 'blocked' | 'no
 /**
  * What only a new container changes, as one digest: the image, the process
  * ceiling, the card, the network mode (`--dns`) and the hardening profile it
- * names (`colloq.profile`), the flags the machine adds to home's argv, the
+ * names (`aulalab.profile`), the flags the machine adds to home's argv, the
  * token, the hash seed, the shared memory, the pool's size. Memory and CPUs
  * are not in it (`docker update` changes them live), nor the blocked ranges
  * (the rules follow the bridge, not the container). An exited container is
@@ -455,7 +455,7 @@ export function canaryScript(input: { seed: string; ports: readonly [number, num
     'r["capEff"] = int(status.get("CapEff") or "f", 16) == 0',
     'r["noNewPrivs"] = status.get("NoNewPrivs") == "1"',
     'r["noDockerSocket"] = not any(os.path.lexists(p) for p in ["/var/run/docker.sock", "/run/docker.sock", "/run/containerd/containerd.sock", "/var/run/containerd/containerd.sock"])',
-    `r["noAgentFiles"] = not any(os.path.lexists(p) for p in [${JSON.stringify(input.state)}, "/var/lib/colloq-runner"])`,
+    `r["noAgentFiles"] = not any(os.path.lexists(p) for p in [${JSON.stringify(input.state)}, "/var/lib/aulalab-runner"])`,
     'r["metadataRefused"] = refused("169.254.169.254", 80)',
     'r["hostRefused"] = gw is not None and refused(gw, wide)',
     'r["lanRefused"] = all(refused(a, wide) for a in lan)',
@@ -880,7 +880,7 @@ export class KernelHost {
    * What makes the machine eligible for classes (§6.3), as last found. What
    * is not known yet is said the way that keeps classes off: no host network,
    * and a home on this docker (start refuses on the same rule). `mode` is the
-   * machine's own floor (its COLLOQ_ROOM_NETWORK), not the last plan's: every
+   * machine's own floor (its AULALAB_ROOM_NETWORK), not the last plan's: every
    * intent carries home's mode, and the stricter of the two is what runs.
    */
   facts(): RemoteClassFacts {
@@ -1357,7 +1357,7 @@ export class KernelHost {
     if (this.sameDaemon === null) await this.detectSameDaemon()
     if (ended()) return this.abandon(placement, made)
     if (this.sameDaemon !== false) {
-      return this.fail(placement, made, { unschedulable: 'other', detail: this.sameDaemon ? 'a Colloq home runs on this Docker: its classes stay with it (D20)' : 'docker did not say whether a Colloq home runs on it' })
+      return this.fail(placement, made, { unschedulable: 'other', detail: this.sameDaemon ? 'a Aula Lab home runs on this Docker: its classes stay with it (D20)' : 'docker did not say whether a Aula Lab home runs on it' })
     }
     const fence = await this.ensurePerimeter()
     if (ended()) return this.abandon(placement, made)
@@ -1749,7 +1749,7 @@ export class KernelHost {
     }
     if (typeof policy.machine === 'string') return failed('refused', policy.machine)
     const helper = await this.helperImage()
-    if (helper === null) return failed('refused', 'no image of the agent\'s own to run the perimeter helper from (COLLOQ_RUNNER_CONTAINER or COLLOQ_RUNNER_IMAGE)')
+    if (helper === null) return failed('refused', 'no image of the agent\'s own to run the perimeter helper from (AULALAB_RUNNER_CONTAINER or AULALAB_RUNNER_IMAGE)')
     const bridge = await this.bridge()
     if ('error' in bridge) return failed('refused', bridge.error)
     let plan: ReturnType<typeof machinePerimeterPlan>
@@ -1759,7 +1759,7 @@ export class KernelHost {
       return failed('refused', error instanceof Error ? error.message : String(error))
     }
     const ran = await this.docker(helperArgs(helper, perimeterScript(plan, this.scope)), { timeoutMs: 60_000 })
-    if (ran.code === 0 && /colloq-perimeter: ok/.test(ran.out)) {
+    if (ran.code === 0 && /aulalab-perimeter: ok/.test(ran.out)) {
       this.fence = { key, at: this.now() }
       this.mode = plan.mode ?? 'blocked'
       // Whoever installed them (a start, the canary, the re-check), the rules hold: the failures in a row are none (§7.6).
@@ -1829,7 +1829,7 @@ export class KernelHost {
     }
   }
 
-  /** The machine's own COLLOQ_ROOM_NETWORK and KERNEL_BLOCKED_CIDRS: `open` is no mode for a class here (machinePerimeterPlan), a broken list a refusal. */
+  /** The machine's own AULALAB_ROOM_NETWORK and KERNEL_BLOCKED_CIDRS: `open` is no mode for a class here (machinePerimeterPlan), a broken list a refusal. */
   private machinePolicy(): PerimeterPolicy | string {
     const env = this.options.env ?? process.env
     const { cidrs, invalid } = blockedCidrsSetting(env)
@@ -1847,7 +1847,7 @@ export class KernelHost {
    */
   async councilScratch(sessionId: string, action: ScratchAction): Promise<{ ok: true; out: string } | { ok: false; why: string }> {
     const helper = await this.helperImage()
-    if (helper === null) return { ok: false, why: 'no image of the agent\'s own to run the scratch helper from (COLLOQ_RUNNER_CONTAINER or COLLOQ_RUNNER_IMAGE)' }
+    if (helper === null) return { ok: false, why: 'no image of the agent\'s own to run the scratch helper from (AULALAB_RUNNER_CONTAINER or AULALAB_RUNNER_IMAGE)' }
     const ran = await this.docker(scratchHelperArgs(helper, councilScratchDir(this.layout, sessionId), action), { timeoutMs: 120_000 })
     if (ran.code === 0 && scratchHelperDone(ran.out)) return { ok: true, out: ran.out }
     return { ok: false, why: remoteText(dockerWords(ran), REMOTE_REASON_CHARS, 'start') }
@@ -1856,7 +1856,7 @@ export class KernelHost {
   /**
    * The image the privileged helper runs from: the agent's own, by its id
    * (§7.6) — built by CI, never editable from a panel, certainly here, and
-   * with nsenter in it — read from its container, or from COLLOQ_RUNNER_IMAGE
+   * with nsenter in it — read from its container, or from AULALAB_RUNNER_IMAGE
    * without one. Never a kernel image: a teacher's package list must not run
    * as root on the host (perimeter.ts · helperImage says why).
    */
@@ -1872,7 +1872,7 @@ export class KernelHost {
     return this.helper
   }
 
-  /** The agent's class bridge (`colloq-mrooms-<i6>`): made when missing, and its subnets as docker has them, never as asked. */
+  /** The agent's class bridge (`aulalab-mrooms-<i6>`): made when missing, and its subnets as docker has them, never as asked. */
   private async bridge(): Promise<{ subnets: string[] } | { error: string }> {
     const network = this.scope.network
     const inspect = (): Promise<DockerResult> => this.docker(['network', 'inspect', network, '--format', '{{range .IPAM.Config}}{{.Subnet}} {{end}}'], { timeoutMs: 15_000 })
@@ -1909,7 +1909,7 @@ export class KernelHost {
       if (this.hostNetwork === null) await this.detectHostNetwork()
       if (this.sameDaemon === null || this.now() - this.sameDaemonAt >= 30 * 60_000) await this.detectSameDaemon()
       if (this.sameDaemon === true) {
-        this.setCanary('not run: a Colloq home runs on this Docker (D20)')
+        this.setCanary('not run: a Aula Lab home runs on this Docker (D20)')
         return
       }
       // While class containers live the re-check owns the perimeter, and counts its failures (recheckPerimeter): at once when this
@@ -1946,15 +1946,15 @@ export class KernelHost {
   }
 
   /**
-   * Whether a Colloq home lives on this docker (D20): its server's container
-   * (colloq-host labels it `colloq.kind=app`), its rooms, or its rooms'
+   * Whether a Aula Lab home lives on this docker (D20): its server's container
+   * (aulalab-host labels it `aulalab.kind=app`), its rooms, or its rooms'
    * network. A daemon that did not answer says nothing either way.
    */
   private async detectSameDaemon(): Promise<void> {
     const questions = [
-      ['ps', '-aq', '--filter', 'label=colloq.kind=app'],
-      ['ps', '-aq', '--filter', 'label=colloq.kind=room-kernel'],
-      ['network', 'ls', '-q', '--filter', 'label=colloq.kind=room-network'],
+      ['ps', '-aq', '--filter', 'label=aulalab.kind=app'],
+      ['ps', '-aq', '--filter', 'label=aulalab.kind=room-kernel'],
+      ['network', 'ls', '-q', '--filter', 'label=aulalab.kind=room-network'],
     ]
     let found = false
     for (const question of questions) {
@@ -1965,7 +1965,7 @@ export class KernelHost {
     this.sameDaemonAt = this.now()
     if (found !== this.sameDaemon) {
       this.sameDaemon = found
-      if (found) this.log('[runner] a Colloq home runs on this Docker: this machine takes no classes (D20)')
+      if (found) this.log('[runner] a Aula Lab home runs on this Docker: this machine takes no classes (D20)')
       this.options.onChange(true)
     }
   }
@@ -2034,7 +2034,7 @@ export class KernelHost {
       fs.chmodSync(path.join(dir, 'seed'), 0o664)
       if (process.getuid?.() === 0) for (const made of [dir, path.join(dir, 'seed')]) fs.chownSync(made, 1000, 1000)
       const lan = Object.values(os.networkInterfaces()).flatMap((list) => list ?? []).filter((info) => info.family === 'IPv4' && !info.internal).map((info) => info.address).slice(0, 16)
-      const name = `colloq-runner-canary-${this.scope.i6}`
+      const name = `aulalab-runner-canary-${this.scope.i6}`
       await this.docker(['rm', '-f', name], { timeoutMs: 30_000 })
       const ran = await this.docker([
         'run', '--rm', '--name', name, ...CHECK_LABELS, '--network', this.scope.network,
@@ -2160,19 +2160,19 @@ export class KernelHost {
 
   /** The class containers of this tree, as docker lists them; null — it did not answer. */
   private async listed(): Promise<Array<{ id: string; state: string; placement: string }> | null> {
-    const found = await this.docker(['ps', '-a', '--no-trunc', '--filter', `label=${CLASS_KERNEL_LABEL}`, '--filter', `label=${this.instanceLabel}`, '--format', '{{.ID}}\t{{.State}}\t{{.Label "colloq.placement"}}'], { timeoutMs: 20_000 })
+    const found = await this.docker(['ps', '-a', '--no-trunc', '--filter', `label=${CLASS_KERNEL_LABEL}`, '--filter', `label=${this.instanceLabel}`, '--format', '{{.ID}}\t{{.State}}\t{{.Label "aulalab.placement"}}'], { timeoutMs: 20_000 })
     if (found.code !== 0) return null
     return found.out.split('\n').map((line) => line.trim().split('\t')).filter(([id]) => id !== undefined && /^[a-f0-9]{64}$/.test(id)).map(([id, state = '', placement = '']) => ({ id: id!, state: state.trim(), placement: placement.trim() }))
   }
 
   /**
    * The container that has the placement's name now: its id, its state, its
-   * placement label and its hardening profile (`colloq.profile`); null —
+   * placement label and its hardening profile (`aulalab.profile`); null —
    * none; `unknown` — docker did not say, which is never taken for "none" (a
    * live kernel would be removed on it).
    */
   private async byName(name: string): Promise<{ id: string; status: string; placement: string; profile: string } | null | 'unknown'> {
-    const asked = await this.docker(['inspect', '--type', 'container', '--format', '{{.Id}}\t{{.State.Status}}\t{{index .Config.Labels "colloq.placement"}}\t{{index .Config.Labels "colloq.profile"}}', name], { timeoutMs: 15_000 })
+    const asked = await this.docker(['inspect', '--type', 'container', '--format', '{{.Id}}\t{{.State.Status}}\t{{index .Config.Labels "aulalab.placement"}}\t{{index .Config.Labels "aulalab.profile"}}', name], { timeoutMs: 15_000 })
     if (asked.code !== 0) return dockerMissing(asked) ? null : 'unknown'
     const [id = '', status = '', placement = '', profile = ''] = asked.out.trim().split('\n')[0]?.split('\t') ?? []
     return /^[a-f0-9]{64}$/.test(id.trim()) ? { id: id.trim(), status: status.trim(), placement: placement.trim(), profile: profile.trim() } : 'unknown'

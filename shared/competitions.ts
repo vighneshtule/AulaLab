@@ -279,9 +279,9 @@ export interface MintedEntrant {
  * Different cookies, not one role in one signature: a teacher who came to
  * `/k` to look through a student's eyes must stay a teacher in the
  * neighboring tab with the panel, and a participant must get nothing from the
- * fact that their browser once held `colloq_staff`.
+ * fact that their browser once held `aulalab_staff`.
  */
-export const ENTRANT_COOKIE = 'colloq_k'
+export const ENTRANT_COOKIE = 'aulalab_k'
 
 /** Where the "Sign-in link" leads: the page exchanges the key for the cookie. */
 export const ENTRANT_SIGN_IN_PATH = '/k/t/'

@@ -1,14 +1,14 @@
 # Public documentation
 
-The guides are plain HTML in Russian and English, served at `https://colloq.ru/docs/` and `https://colloq.ru/docs/en/` by the existing GitHub Pages workflow. They need no Node.js runtime, JavaScript build, external CDN, or client router. Search, code copying, and mobile navigation progressively enhance ordinary HTML navigation.
+The guides are plain English HTML in `docs/pages/en/`, rendered by `python3 docs/build.py` into `site/docs/`. They need no Node.js runtime, external CDN, or client router. Search, code copying, and mobile navigation progressively enhance ordinary HTML navigation.
 
-Article bodies live in `docs/pages/<lang>/<slug>.html` and page metadata (slug, group, title, description, menu order) in `docs/pages/<lang>/pages.json`. Russian is canonical; the English pages keep the same structure and ids, and their interface terms match the `en` values in `shared/locales`. The shared HTML template lives in `docs/build.py`. Edit the sources, then regenerate the guides and both search indexes using the Python standard library:
+Article bodies live in `docs/pages/en/<slug>.html`; page metadata (slug, group, title, description, menu order) lives in `docs/pages/en/pages.json`. The shared HTML template lives in `docs/build.py`. Edit the sources, then regenerate the guides and search index using the Python standard library:
 
 ```sh
 python3 docs/build.py
 ```
 
-Commit the regenerated `site/docs` (HTML and both `search-index.json`) together with the source change: the **Docs up to date** workflow (`.github/workflows/docs-check.yml`) rebuilds it and fails when the committed output differs. When you delete a page, `git rm` its generated `site/docs/<slug>.html` too. Styles and browser behavior live in `site/docs/docs.css` and `site/docs/docs.js`; they reuse the landing page's local fonts and palette.
+Commit the regenerated `site/docs` (HTML and `search-index.json`) together with the source change: the **Docs up to date** workflow (`.github/workflows/docs-check.yml`) rebuilds it and fails when the committed output differs. When you delete a page, remove its generated `site/docs/<slug>.html` too. Styles and browser behavior live in `site/docs/docs.css` and `site/docs/docs.js`; they reuse the landing page's local fonts and palette.
 
 For local preview, from the repository root:
 

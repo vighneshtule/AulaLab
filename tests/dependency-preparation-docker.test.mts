@@ -9,13 +9,13 @@ import { PREPARATION_PYTHON } from '../server/src/dependencies/preparation-pytho
 import { prepareDependencies, cleanupPreparationResources } from '../server/src/dependencies/preparation.ts'
 import type { PreparationRequest } from '../server/src/dependencies/preparation-contract.ts'
 
-const label = 'ru.colloq.dependency-preparation=' + createHash('sha256').update(path.join(TEST_ROOT, 'data')).digest('hex').slice(0, 16)
-const enabled = process.env.COLLOQ_DEPENDENCY_DOCKER_TEST === '1'
+const label = 'ru.aulalab.dependency-preparation=' + createHash('sha256').update(path.join(TEST_ROOT, 'data')).digest('hex').slice(0, 16)
+const enabled = process.env.AULALAB_DEPENDENCY_DOCKER_TEST === '1'
 const workDirs: string[] = []
 let imageDigest = '', basePackages: PreparationRequest['basePackages'] = []
 if (enabled) {
   delete process.env.DATA_HOST_DIR
-  imageDigest = execFileSync('docker', ['image', 'inspect', '--format', '{{.Id}}', 'colloq-kernel:kaggle-base'], { encoding: 'utf8' }).trim()
+  imageDigest = execFileSync('docker', ['image', 'inspect', '--format', '{{.Id}}', 'aulalab-kernel:kaggle-base'], { encoding: 'utf8' }).trim()
   basePackages = JSON.parse(execFileSync('docker', ['run', '--rm', '--network=none', '--entrypoint=python', imageDigest, '-I', '-c', 'import importlib.metadata,json; print(json.dumps([{"name":d.metadata["Name"],"version":d.version} for d in importlib.metadata.distributions() if d.metadata["Name"]]))'], { encoding: 'utf8' }))
 }
 async function request(requirementsText: string, extra: Partial<PreparationRequest> = {}) {
@@ -31,7 +31,7 @@ test('Docker: public wheel with transitive dependencies resolves and verifies of
   job.onProgress = update => {
     stages.push(update.state)
     if (!update.normalizedRequirements) return
-    const container = execFileSync('docker', ['ps', '--filter', `label=${label}`, '--filter', 'name=colloq-dep-resolve-', '--format', '{{.Names}}'], { encoding: 'utf8' }).trim()
+    const container = execFileSync('docker', ['ps', '--filter', `label=${label}`, '--filter', 'name=aulalab-dep-resolve-', '--format', '{{.Names}}'], { encoding: 'utf8' }).trim()
     const details = JSON.parse(execFileSync('docker', ['inspect', container], { encoding: 'utf8' }))[0]
     assert.equal(details.HostConfig.ReadonlyRootfs, true)
     assert.equal(details.Mounts.length, 2)
@@ -88,7 +88,7 @@ test('Docker: cancellation tears down both containers and the private network', 
 
 
 test('Docker: failed lookups distinguish unknown packages from incompatible wheels', { skip: !enabled, timeout: 120000 }, async () => {
-  const missing = await request('colloq-package-that-does-not-exist-9284538==1.0')
+  const missing = await request('aulalab-package-that-does-not-exist-9284538==1.0')
   await assert.rejects(prepareDependencies(missing), { code: 'package_not_found' })
   const noWheel = await request('python-slugify==0.0.1')
   await assert.rejects(prepareDependencies(noWheel), { code: 'wheel_unavailable' })
@@ -128,10 +128,10 @@ with zipfile.ZipFile(sys.argv[1], 'w') as archive:
 
 test('Docker: restart sweep removes instance orphans and preserves other instance networks', { skip: !enabled, timeout: 30000 }, async () => {
   const suffix = createHash('sha256').update(TEST_ROOT).digest('hex').slice(0, 12)
-  const orphan = `colloq-dep-test-orphan-${suffix}`, network = `colloq-dep-test-net-${suffix}`, unrelated = `colloq-dep-test-other-${suffix}`
+  const orphan = `aulalab-dep-test-orphan-${suffix}`, network = `aulalab-dep-test-net-${suffix}`, unrelated = `aulalab-dep-test-other-${suffix}`
   try {
     execFileSync('docker', ['network', 'create', '--internal', '--label', label, network])
-    execFileSync('docker', ['network', 'create', '--internal', '--label', 'ru.colloq.dependency-preparation=other-test-instance', unrelated])
+    execFileSync('docker', ['network', 'create', '--internal', '--label', 'ru.aulalab.dependency-preparation=other-test-instance', unrelated])
     execFileSync('docker', ['run', '-d', '--name', orphan, '--label', label, '--read-only', '--network=none', '--cap-drop=ALL', '--memory=128m', '--entrypoint=python', imageDigest, '-I', '-c', 'import time; time.sleep(60)'])
     await cleanupPreparationResources()
     assert.equal(execFileSync('docker', ['ps', '-aq', '--filter', `label=${label}`], { encoding: 'utf8' }).trim(), '')

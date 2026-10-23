@@ -18,9 +18,8 @@ harness instead.
 at all. The landing page has no build step, no types and no other check —
 `site/index.html` ships to Pages exactly as written — and three of its promises
 had quietly drifted from what the file does: a cache-busting marker that had not
-moved through five edits of the stylesheet, a seat count parsed with `parseInt`
-out of a Russian sentence (`NaN`, so the door said "1 person inside" the moment
-somebody walked in), and a decorative cursor layer inside the `<h1>` that a
+moved through five edits of the stylesheet, a participant count parsed incorrectly from localized text (`NaN`, so the door said
+"1 person inside" as soon as somebody joined), and a decorative cursor layer inside the `<h1>` that a
 screen reader read out along with the headline. Nothing in the repository would
 have said so. What can be read out of that file is now read out of it here.
 
@@ -91,36 +90,14 @@ What can be decided without a DOM is decided in a plain module and tested here;
 what needs pixels or a real DOMPurify is measured in a browser, and these files
 carry the finding so it cannot be quietly undone.
 
-## Клиентские модули: что проверяется здесь, а что только вживую
+## Client modules: what is tested here and what needs a live browser
 
-Всё, что можно решить без DOM, вынесено из компонентов в обычные модули
-`web/src/lib/*` и проверяется отсюда. Пять файлов `weblib-*.test.mts` — про
-то, что ломается молча в браузере, а не на экране:
+Logic that does not need a DOM is extracted from components into ordinary modules under `web/src/lib/*` and tested here. Five `weblib-*.test.mts` files cover browser failures that can otherwise be difficult to notice:
 
-`weblib-presence.test.mts` — кадр присутствия, в котором не изменилось ничего из
-нарисованного, не должен доходить ни до кого. Интерфейс при этом остаётся
-правильным; неправильной становится только скорость, и заметить это можно лишь
-в зале на пятьсот человек.
+- `weblib-presence.test.mts` checks that an unchanged presence frame is not sent to every client. The interface remains correct, but performance degrades; a large class is where the impact becomes visible.
+- `weblib-evidence.test.mts` checks that irreversible actions require sufficient evidence, including ending a class, removing a banned participant, and deleting an offline bundle.
+- `weblib-refusal-cells.test.mts` checks that a gate refusal explains what happens to unsaved text instead of silently losing it.
+- `weblib-rule-rows.test.mts` checks room-rule labels and safe handling of values unknown to `readRules`.
+- `weblib-one-copy.test.mts` checks that shared rules have one authoritative copy and cannot drift.
 
-`weblib-evidence.test.mts` — обрезанный список файлов и голый код состояния не
-доказывают того, по чему делается необратимое: погашенная у всей комнаты
-лекция, стёртая личность забаненного, стёртый офлайн-набор.
-
-`weblib-refusal-cells.test.mts` — что человек прочитает после того, как вкладку
-пересобрали отказом гейта: там решается, покажут ему потерянный текст или он
-исчезнет молча.
-
-`weblib-rule-rows.test.mts` — подписи правил комнаты: правило без строки
-исчезает из панели, а значение, которого не знает `readRules`, рисуется
-кнопкой, тихо возвращающейся на умолчание.
-
-`weblib-one-copy.test.mts` — места, где одно правило успело обзавестись второй
-копией и копии разошлись.
-
-Два самых больших модуля клиента проверяются ТОЛЬКО вживую, и это осознанно:
-`web/src/lib/yreactive.svelte.ts` и `web/src/lib/filedoc.svelte.ts` — мост
-между Yjs и рунами Svelte. Их поведение — это подписки, эффекты и порядок
-пробуждения компонентов; без компилятора Svelte и без документа в браузере
-проверять там нечего, а подделка того и другого проверяла бы подделку. Что от
-них зависит — считанные снимки и правила диффа — вынесено в модули без рун
-(`lib/peers.ts`, `lib/room.ts`, `lib/board.ts`) и проверяется здесь.
+The two largest client modules are intentionally checked only in a live browser: `web/src/lib/yreactive.svelte.ts` and `web/src/lib/filedoc.svelte.ts` bridge Yjs and Svelte runes. Their behavior depends on subscriptions, effects, and component wake-up order. Without the Svelte compiler and a browser document, a test would only test a mock. The dependent snapshots and diff rules are extracted into modules without runes (`lib/peers.ts`, `lib/room.ts`, and `lib/board.ts`) and tested here.

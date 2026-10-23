@@ -132,11 +132,11 @@ export const remotePaths = {
  * retried for ever, running notebooks home had requeued. The version travels
  * beside it, in REMOTE_PROTOCOL_HEADER.
  */
-export const REMOTE_MARKER_HEADER = 'X-Colloq-Runner-Api'
-export const REMOTE_MARKER = 'colloq-runners'
+export const REMOTE_MARKER_HEADER = 'X-AulaLab-Runner-Api'
+export const REMOTE_MARKER = 'aulalab-runners'
 
 /** The protocol home speaks, on every reply of the router beside the marker: what a 426 `protocol` asks the machine to update to. */
-export const REMOTE_PROTOCOL_HEADER = 'X-Colloq-Runner-Protocol'
+export const REMOTE_PROTOCOL_HEADER = 'X-AulaLab-Runner-Protocol'
 
 /** The protocol a marked reply says home speaks; `null` — it did not say, or not as a version. */
 export function remoteProtocolOf(header: string | null | undefined): number | null {
@@ -163,8 +163,8 @@ export function remoteTransient(status: number, marker: string | null | undefine
  * `Content-Encoding: gzip`): home stops decompressing at the declared length
  * plus one byte, and keeps the file only if both match.
  */
-export const REMOTE_SHA256_HEADER = 'X-Colloq-Sha256'
-export const REMOTE_BYTES_HEADER = 'X-Colloq-Bytes'
+export const REMOTE_SHA256_HEADER = 'X-AulaLab-Sha256'
+export const REMOTE_BYTES_HEADER = 'X-AulaLab-Bytes'
 
 /**
  * The relay's page (not home's) the agent reads after a transient reply, to
@@ -213,8 +213,8 @@ export function isRemoteCredential(token: string | null | undefined): boolean {
 }
 
 /**
- * What COLLOQ_RUNNER_JOIN holds: home's address with the owner's code as its
- * fragment, `https://vsos.colloq.ru#<code>`, one string to paste into the
+ * What AULALAB_RUNNER_JOIN holds: home's address with the owner's code as its
+ * fragment, `https://vsos.example.edu#<code>`, one string to paste into the
  * join command. A fragment never leaves the machine in a request line, so the
  * code stays out of every proxy's and relay's log on the way; the agent sends
  * it in the join body and nowhere else.
@@ -275,7 +275,7 @@ export const REMOTE_BUNDLE_ID = COMPETITION_ATTEMPT_ID
 export const REMOTE_HARNESS = /^[a-f0-9]{12}$/
 
 /** A notebook container's name as home mints it (runner.ts · containerName): the submission, a token, `run`. */
-export const REMOTE_CONTAINER = /^colloq-comp-[a-z2-9]{8}-[a-f0-9]{8}-run$/
+export const REMOTE_CONTAINER = /^aulalab-comp-[a-z2-9]{8}-[a-f0-9]{8}-run$/
 
 /** A card as the machine's own probe names it: an index or a `GPU-<uuid>`. */
 export const REMOTE_DEVICE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/
@@ -288,7 +288,7 @@ export const REMOTE_WHEEL_NAME = /^[A-Za-z0-9][A-Za-z0-9_.+!-]{0,230}\.whl$/
 
 /**
  * An image by digest, as home pins it (environment_revisions.registry_ref,
- * image-identity.ts · registryRefOf): `ghcr.io/colloq-edu/colloq-kernel@sha256:…`,
+ * image-identity.ts · registryRefOf): `ghcr.io/vighneshtule/aulalab-kernel@sha256:…`,
  * the grammar docker's references have. A tag is not a pin: what it names
  * changes under it, and a machine would run something home never saw.
  */
@@ -544,7 +544,7 @@ export function remoteManifest(files: readonly { name: string; sha256: string }[
     names.add(file.name)
   }
   const sorted = [...files].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
-  return hash(`colloq.remote.data.v1\n${sorted.map((file) => `${file.name}\t${file.sha256}\n`).join('')}`)
+  return hash(`aulalab.remote.data.v1\n${sorted.map((file) => `${file.name}\t${file.sha256}\n`).join('')}`)
 }
 
 /**
@@ -695,7 +695,7 @@ export interface RemoteProblem {
   detail: string
 }
 
-/** `active` takes work; `draining` finishes what it holds and takes none; `leaving` is about to revoke itself (colloq-host runner leave). */
+/** `active` takes work; `draining` finishes what it holds and takes none; `leaving` is about to revoke itself (aulalab-host runner leave). */
 export type RemoteRunnerState = 'active' | 'draining' | 'leaving'
 
 /**
@@ -729,7 +729,7 @@ export interface RemoteSyncRequest {
 export interface RemoteJoinRequest {
   protocol: typeof REMOTE_PROTOCOL
   build: string
-  /** The owner's code, from the fragment of COLLOQ_RUNNER_JOIN. */
+  /** The owner's code, from the fragment of AULALAB_RUNNER_JOIN. */
   code: string
   joinId: string
   facts: RemoteFacts
@@ -777,7 +777,7 @@ export interface RemoteLease {
   container: string
   /** Until the lease's ceiling, relative: home's clock is the one that counts. */
   deadlineMs: number
-  /** The pinned image; the machine runs it as colloq-revision:<id>, tagged after its layers matched. */
+  /** The pinned image; the machine runs it as aulalab-revision:<id>, tagged after its layers matched. */
   revision: { id: string; ref: string; layers: string }
   harness: string
   limits: RemoteStepLimits
@@ -1032,7 +1032,7 @@ export const REMOTE_ERRORS = {
   gone: 410,
   /** A body over its cap, or an upload over its own once decompressed. */
   too_large: 413,
-  /** An upload whose bytes do not match its X-Colloq-Sha256 and X-Colloq-Bytes. */
+  /** An upload whose bytes do not match its X-AulaLab-Sha256 and X-AulaLab-Bytes. */
   mismatch: 422,
   /** Another version of this contract: the machine needs the release home runs. */
   protocol: 426,
@@ -1137,7 +1137,7 @@ export function parseRemoteSyncReply(value: unknown): RemoteSyncReply {
 
 /**
  * An upload's headers: the file's name from the path, Content-Encoding,
- * X-Colloq-Sha256 and X-Colloq-Bytes as they arrived. `targetBytes` is the
+ * X-AulaLab-Sha256 and X-AulaLab-Bytes as they arrived. `targetBytes` is the
  * lease's answer cap; the notebook's is REMOTE_FILE_BYTES. Declared over its
  * cap, a file is refused before a byte of it is read.
  */
@@ -1332,7 +1332,7 @@ function leaseOf(value: unknown): RemoteLease {
     || !matching(v.submissionId, COMPETITION_ROW_ID) || !integer(v.deadlineMs, 1, REMOTE_RUN_MS_MAX) || !matching(v.harness, REMOTE_HARNESS)
     || !matching(v.data, REMOTE_SHA256) || !flag(v.sealed) || !flag(v.gpu)) refuse('Invalid lease')
   // The container is named after its own submission (runner.ts · containerName), so a kill by name can only reach this run.
-  if (!matching(v.container, REMOTE_CONTAINER) || !v.container.startsWith(`colloq-comp-${v.submissionId}-`)) refuse('Invalid lease container')
+  if (!matching(v.container, REMOTE_CONTAINER) || !v.container.startsWith(`aulalab-comp-${v.submissionId}-`)) refuse('Invalid lease container')
   const revision = imageOf(v.revision, 'lease revision', ['id', 'ref', 'layers'])
   const limits = limitsOf(v.limits)
   // The hidden test's manifest comes with a sealed lease and with nothing else.

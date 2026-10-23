@@ -77,7 +77,7 @@ test('a kernel being brought up is `starting`; a start that fails is counted for
   const started = ensureKernel('metrics-kernel-room')
   started.catch(() => {})
   assert.equal(kernelMetrics().kernels.room.starting, 1)
-  assert.equal(sample(renderMetrics(), 'colloq_kernels{backend="broker",role="room",state="starting"}'), 1)
+  assert.equal(sample(renderMetrics(), 'aulalab_kernels{backend="broker",role="room",state="starting"}'), 1)
 
   // Let the broker answer, and wait for the refusal to arrive.
   const waitForBroker = async () => {
@@ -94,9 +94,9 @@ test('a kernel being brought up is `starting`; a start that fails is counted for
   assert.equal(later.kernelStartFailures.room, before.kernelStartFailures.room + 1)
   assert.equal(later.kernelStarts.room, before.kernelStarts.room, 'a failed start was counted as a start')
   const text = renderMetrics()
-  const failures = 'colloq_kernel_start_failures_total{backend="broker",role="room"}'
+  const failures = 'aulalab_kernel_start_failures_total{backend="broker",role="room"}'
   assert.equal(sample(text, failures), sample(beforeText, failures) + 1)
-  assert.equal(sample(text, 'colloq_kernels{backend="broker",role="room",state="starting"}'), 0)
+  assert.equal(sample(text, 'aulalab_kernels{backend="broker",role="room",state="starting"}'), 0)
   // The room is nowhere on the page.
   assert.doesNotMatch(text, /metrics-kernel-room/)
 })

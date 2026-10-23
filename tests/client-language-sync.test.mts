@@ -18,7 +18,7 @@ async function withClient(run: (client: Client, requests: Pending[]) => Promise<
   const names = ['window', 'document', 'localStorage', 'fetch', 'location'] as const
   const descriptors = new Map(names.map(name => [name, Object.getOwnPropertyDescriptor(globalThis, name)]))
   const requests: Pending[] = []
-  const storage = new Map(cached ? [['colloq:instance-language', cached]] : [])
+  const storage = new Map(cached ? [['aulalab:instance-language', cached]] : [])
   const win = Object.assign(new EventTarget(), { setInterval: () => 1, clearInterval: () => {} })
   const doc = Object.assign(new EventTarget(), {
     documentElement: { lang: '' }, visibilityState: 'visible',
@@ -34,7 +34,7 @@ async function withClient(run: (client: Client, requests: Pending[]) => Promise<
     fetch: () => new Promise<Response>((resolve, reject) => requests.push({ resolve, reject })),
   }
   for (const name of names) Object.defineProperty(globalThis, name, { configurable: true, writable: true, value: globals[name] })
-  const dir = await mkdtemp(join(tmpdir(), 'colloq-language-client-'))
+  const dir = await mkdtemp(join(tmpdir(), 'aulalab-language-client-'))
   let client: Client | undefined
   try {
     const source = await readFile(new URL('../web/src/lib/i18n.svelte.ts', import.meta.url), 'utf8')

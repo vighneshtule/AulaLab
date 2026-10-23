@@ -185,7 +185,7 @@ test('the shell is removed on the first screen, not on mount', () => {
   assert.ok(dismiss > wait, 'the shell is removed before the screen has anything to show')
   // The "form is drawn" event does not wait for the splash: the room chunks
   // warm up on it.
-  assert.ok(main.indexOf("'colloq:ready'") < wait, 'the room warm-up is postponed until the splash leaves')
+  assert.ok(main.indexOf("'aulalab:ready'") < wait, 'the room warm-up is postponed until the splash leaves')
 })
 
 test('the splash does not hang forever', () => {

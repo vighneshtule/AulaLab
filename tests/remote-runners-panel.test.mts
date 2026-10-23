@@ -29,7 +29,7 @@ import { loseLease } from '../server/src/competitions/remote/release.js'
 import { queueForecast } from '../server/src/competitions/forecast.js'
 import { getSubmission, queueRow } from '../server/src/competitions/store.js'
 import { tr } from '../shared/i18n.js'
-import { COLLOQ_VERSION } from '../server/src/version.js'
+import { AULALAB_VERSION } from '../server/src/version.js'
 import { config } from '../server/src/config.js'
 import { ANSWER, FACTS, Machine, close, competition, finished, reset, send, serve, type TestCompetition } from './_remote.mts'
 
@@ -102,20 +102,20 @@ test('a code is minted inside the three join commands, with this server\'s addre
   assert.equal(minted.body.machines, 3)
   assert.equal(minted.body.trusted, true)
   assert.ok(minted.body.expiresAt > Date.now() + 11 * 3600_000)
-  const image = `ghcr.io/colloq-edu/colloq-server:${COLLOQ_VERSION}`
+  const image = `ghcr.io/vighneshtule/aulalab-server:${AULALAB_VERSION}`
   // This server's own address, as PUBLIC_URL (or the checkout's .env) names it.
   const home = new URL(config.publicUrl).origin
   assert.equal(commands.docker, [
-    'docker run -d --name colloq-runner --restart unless-stopped --network host --stop-timeout 90 \\',
+    'docker run -d --name aulalab-runner --restart unless-stopped --network host --stop-timeout 90 \\',
     '  -v /var/run/docker.sock:/var/run/docker.sock \\',
-    '  -v /var/lib/colloq-runner:/var/lib/colloq-runner \\',
-    `  -e COLLOQ_RUNNER_JOIN='${home}#${code}' \\`,
+    '  -v /var/lib/aulalab-runner:/var/lib/aulalab-runner \\',
+    `  -e AULALAB_RUNNER_JOIN='${home}#${code}' \\`,
     `  ${image} runner`,
   ].join('\n'))
   assert.equal(commands.bare, [
     'command -v docker || curl -fsSL https://get.docker.com | sh',
     `docker run --rm -v /usr/local/sbin:/host ${image} install-host /host`,
-    `colloq-host runner up ${home} ${code}`,
+    `aulalab-host runner up ${home} ${code}`,
   ].join('\n'))
   assert.equal(commands.vast, `make vast-runner COUNT=3 CODE=${code} URL=${home}`)
   // It joins machines named after its prefix, trusted and capped as minted.
@@ -142,14 +142,14 @@ test('a code is minted inside the three join commands, with this server\'s addre
 
 test('a machine joined with a code minted on the console is enrolled by the console in the audit log, not by nobody', async () => {
   reset()
-  // The row colloq-host runner-code writes (ops/runner-code.ts): the same minter, with the console as its maker.
-  const minted = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, namePrefix: null, createdBy: 'colloq-host' })
+  // The row aulalab-host runner-code writes (ops/runner-code.ts): the same minter, with the console as its maker.
+  const minted = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, namePrefix: null, createdBy: 'aulalab-host' })
   const m = new Machine(await serve())
   assert.equal((await m.join(minted.code)).status, 200)
   const enrolled = listAdminEvents({ limit: 50 }).events.find((event) => event.action === 'runner.enrolled' && event.target?.id === m.runnerId)
   assert.ok(enrolled)
   assert.equal(enrolled.actor, null)
-  assert.equal(enrolled.detail?.source, 'colloq-host')
+  assert.equal(enrolled.detail?.source, 'aulalab-host')
   // A code from the panel names its owner and says nothing of a console.
   const fromPanel = await admin<MintRemoteCodeResponse>('POST', '/api/admin/runners/codes', { body: { machines: 1, hours: 1, trusted: false, approvedSlots: null } })
   assert.equal(fromPanel.status, 200)
@@ -471,7 +471,7 @@ test('a competition whose environment is this server\'s alone reads «тольк
 test('a minted code says which code it is, warns of a loopback address, names this server\'s own image, and takes up to a hundred machines', async () => {
   reset()
   const minted = await admin<MintRemoteCodeResponse>('POST', '/api/admin/runners/codes', { body: { machines: 100, hours: 2, trusted: false, approvedSlots: null } })
-  assert.equal(minted.status, 200, 'a hundred machines, as colloq-host runner-code --machines allows')
+  assert.equal(minted.status, 200, 'a hundred machines, as aulalab-host runner-code --machines allows')
   assert.equal((await admin('POST', '/api/admin/runners/codes', { body: { machines: 101, hours: 2, trusted: false, approvedSlots: null } })).status, 400)
   // Its id is the list's id of that code: the dialog counts only the machines that joined with it.
   const list = (await admin<RemoteMachinesResponse>('GET', '/api/admin/runners')).body
@@ -485,17 +485,17 @@ test('a minted code says which code it is, warns of a loopback address, names th
   // The tests' PUBLIC_URL is this machine's loopback: no machine anywhere else can reach it, and the answer says so.
   assert.equal(minted.body.loopback, true)
   const { loopbackAddress } = await import('../server/src/competitions/remote/origin.js')
-  assert.equal(loopbackAddress('https://vsos.colloq.ru'), false)
-  // An instance on an image of its own (colloq-host passes it as COLLOQ_SERVER_IMAGE) names that very image, and no Vast command.
-  const before = process.env.COLLOQ_SERVER_IMAGE
-  process.env.COLLOQ_SERVER_IMAGE = 'registry.example.org/colloq/colloq-vast:0.24.0-campus'
+  assert.equal(loopbackAddress('https://vsos.example.edu'), false)
+  // An instance on an image of its own (aulalab-host passes it as AULALAB_SERVER_IMAGE) names that very image, and no Vast command.
+  const before = process.env.AULALAB_SERVER_IMAGE
+  process.env.AULALAB_SERVER_IMAGE = 'registry.example.org/aulalab/aulalab-vast:0.24.0-campus'
   try {
     const own = (await admin<MintRemoteCodeResponse>('POST', '/api/admin/runners/codes', { body: { machines: 1, hours: 1, trusted: false, approvedSlots: null } })).body
-    assert.ok(own.commands.docker.includes('  registry.example.org/colloq/colloq-vast:0.24.0-campus runner'))
+    assert.ok(own.commands.docker.includes('  registry.example.org/aulalab/aulalab-vast:0.24.0-campus runner'))
     assert.equal(own.commands.vast, '')
   } finally {
-    if (before === undefined) delete process.env.COLLOQ_SERVER_IMAGE
-    else process.env.COLLOQ_SERVER_IMAGE = before
+    if (before === undefined) delete process.env.AULALAB_SERVER_IMAGE
+    else process.env.AULALAB_SERVER_IMAGE = before
   }
 })
 

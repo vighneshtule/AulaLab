@@ -52,7 +52,7 @@ export function gpuSliceMb(cardMb: number | null, perDevice: number): number | n
   return Math.floor(cardMb / Math.max(1, Math.floor(perDevice)))
 }
 
-/** The cap given to torch's allocator for a share (COLLOQ_GPU_MEMORY_MB): the share less the context, never below the floor. */
+/** The cap given to torch's allocator for a share (AULALAB_GPU_MEMORY_MB): the share less the context, never below the floor. */
 export function gpuAllocatorMb(sliceMb: number): number {
   return Math.max(GPU_ALLOCATOR_FLOOR_MB, sliceMb - GPU_CONTEXT_MB)
 }

@@ -4,7 +4,7 @@
  * dataSchemaVersion used to be a literal 1 in every release while destructive
  * migrations shipped (competitions/store.ts · liftEntrantKeys), so the
  * rollback check compared 1 with 1 and could never refuse. Now the number is
- * one constant (server/src/data-schema.ts), stamped into colloq.db as
+ * one constant (server/src/data-schema.ts), stamped into aulalab.db as
  * PRAGMA user_version before any migration runs, read by release-build.py
  * (tests/release-source.test.mts) and checked by the backup tools
  * (tests/portable-backup-robustness.test.mts).
@@ -26,7 +26,7 @@ const dirs: string[] = []
 after(() => dirs.forEach((dir) => fs.rmSync(dir, { recursive: true, force: true })))
 
 function instance(userVersion?: number) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-schema-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-schema-'))
   dirs.push(root)
   fs.mkdirSync(path.join(root, 'data'), { mode: 0o700 })
   fs.mkdirSync(path.join(root, 'workspace'))
@@ -36,7 +36,7 @@ function instance(userVersion?: number) {
     execFileSync('python3', ['-c', `import sqlite3,sys
 c=sqlite3.connect(sys.argv[1]); c.execute('create table sessions (id text primary key, name text not null, created_at integer not null)')
 c.execute("insert into sessions values ('s1','kept',1)"); c.execute('pragma user_version=${userVersion}'); c.commit(); c.close()`,
-      path.join(root, 'data/colloq.db')])
+      path.join(root, 'data/aulalab.db')])
   }
   return root
 }
@@ -60,7 +60,7 @@ process.exit(0)
 
 function stampOf(root: string): number {
   return Number(execFileSync('python3', ['-c', 'import sqlite3,sys; print(sqlite3.connect(sys.argv[1]).execute("pragma user_version").fetchone()[0])',
-    path.join(root, 'data/colloq.db')], { encoding: 'utf8' }).trim())
+    path.join(root, 'data/aulalab.db')], { encoding: 'utf8' }).trim())
 }
 
 test('the constant is a positive integer that release-build.py can read', () => {

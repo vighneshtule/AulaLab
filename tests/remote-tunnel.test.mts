@@ -772,7 +772,7 @@ test('only a machine\'s credential, in its header, opens the tunnel; a browser\'
   refused(await knock(port, TUNNEL, { authorization: `Bearer ${roomToken}`, [TUNNEL_PROTOCOL_HEADER]: '1' }), 401, 'unauthorized')
   refused(await knock(port, `${TUNNEL}?token=${m.credential}`, { [TUNNEL_PROTOCOL_HEADER]: '1' }), 401, 'unauthorized')
   refused(await knock(port, TUNNEL, machineHeaders({ id: m.id, credential: remoteCredential(m.id, 'f'.repeat(64)) })), 401, 'unauthorized')
-  assert.equal(callCounts.unauthorized - unauthorized, 4, 'counted with the machines\' other doors (colloq_runner_unauthorized_total)')
+  assert.equal(callCounts.unauthorized - unauthorized, 4, 'counted with the machines\' other doors (aulalab_runner_unauthorized_total)')
   const opened = await knock(port, TUNNEL, machineHeaders(m))
   assert.equal(opened.status, 101)
   assert.equal(opened.headers[REMOTE_MARKER_HEADER.toLowerCase()], REMOTE_MARKER, 'the 101 is home\'s, as its refusals are')
@@ -1365,13 +1365,13 @@ test('the agent honours HTTPS_PROXY and HTTP_PROXY with a CONNECT, and dials a l
   const proxyUrl = `http://127.0.0.1:${(proxy.address() as net.AddressInfo).port}`
   const m = machine()
   const proxied = new AgentTunnel({
-    url: `ws://home.colloq.test:${port}/api/runners/v1/tunnel`, authorization: `Bearer ${m.credential}`, build: 'dev',
+    url: `ws://home.aulalab.test:${port}/api/runners/v1/tunnel`, authorization: `Bearer ${m.credential}`, build: 'dev',
     resolve: () => ({ refused: 'gone' }), log: quiet, env: { HTTP_PROXY: proxyUrl, HTTPS_PROXY: proxyUrl },
   })
   open.add(proxied)
   proxied.want('open')
   await until(() => tunnels.isUp(m.id), 'up through the proxy')
-  assert.deepEqual(connects, [`home.colloq.test:${port}`])
+  assert.deepEqual(connects, [`home.aulalab.test:${port}`])
   await proxied.close()
   await until(() => !tunnels.isUp(m.id), 'down')
   const direct = new AgentTunnel({
@@ -1521,7 +1521,7 @@ function dialling(answer: (dial: number) => IncomingMessage) {
     return ws as unknown as WebSocket
   }
   const agent = new AgentTunnel({
-    url: 'wss://home.colloq.test/api/runners/v1/tunnel', authorization: 'Bearer cr1.abcdefgh.' + 'a'.repeat(64), build: 'dev',
+    url: 'wss://home.aulalab.test/api/runners/v1/tunnel', authorization: 'Bearer cr1.abcdefgh.' + 'a'.repeat(64), build: 'dev',
     resolve: () => ({ refused: 'gone' }), log: (event, detail) => events.push([event, detail]), clock, dial, random: () => 0.5,
     relayState: async () => {
       relayAsked++

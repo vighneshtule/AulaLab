@@ -250,7 +250,7 @@ test('forgetting what is not there is not an error', () => {
 
 test('a corrupted entry means "we remember no one", not a crash at the entrance', () => {
   storage.clear()
-  storage.setItem('colloq.identity.v1', '{not json')
+  storage.setItem('aulalab.identity.v1', '{not json')
   assert.equal(loadIdentity('kf3n8q2p'), null)
   // And one can still write over the garbage.
   saveIdentity(IDENTITY)
@@ -312,13 +312,13 @@ test('a card written before the organization line is read without it', () => {
   storage.clear()
   const old: Record<string, unknown> = { ...ROOM }
   delete old.institution
-  storage.setItem('colloq.room.v1', JSON.stringify({ kf3n8q2p: old }))
+  storage.setItem('aulalab.room.v1', JSON.stringify({ kf3n8q2p: old }))
   assert.equal(recallSessionInfo('kf3n8q2p')?.institution, '')
 })
 
 test('corrupted storage — the room is simply unknown', () => {
   storage.clear()
-  storage.setItem('colloq.room.v1', 'null}')
+  storage.setItem('aulalab.room.v1', 'null}')
   assert.equal(recallSessionInfo('kf3n8q2p'), null)
   rememberSessionInfo(ROOM)
   assert.equal(recallSessionInfo('kf3n8q2p')?.id, 'kf3n8q2p')

@@ -127,7 +127,7 @@ function logo(): Node {
   }
   return h('div', { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 14 }, [
     { type: 'svg', props: { width: 28, height: 28, viewBox: '0 0 24 24', children: cells } },
-    text('COLLOQ', { fontFamily: 'HSE Sans', fontWeight: 900, fontSize: 22, lineHeight: 1.27, letterSpacing: 4.8, color: '#FFFFFF' }),
+    text('AULALAB', { fontFamily: 'HSE Sans', fontWeight: 900, fontSize: 22, lineHeight: 1.27, letterSpacing: 4.8, color: '#FFFFFF' }),
   ])
 }
 

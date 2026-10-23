@@ -782,7 +782,7 @@ async function cardHost() {
     readyIds: () => [REVISION.id],
   }
   const host: KernelHost = new KernelHost({
-    layout, docker, images, container: 'colloq-runner', image: null, env: {},
+    layout, docker, images, container: 'aulalab-runner', image: null, env: {},
     cards: () => cards,
     cardRuns: () => host.cardRuns(),
     heldGpus: () => ({}),

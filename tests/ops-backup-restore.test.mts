@@ -63,7 +63,7 @@ after(() => {
 })
 
 function machine(): Machine {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-restore-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-restore-'))
   built.push(dir)
   fs.mkdirSync(path.join(dir, 'scripts'))
   // backup-local.sh is that very backup recipe: it moved from the Makefile
@@ -84,14 +84,14 @@ function machine(): Machine {
     make: (target) =>
       execFileSync('make', ['--no-print-directory', '-C', dir, target === 'backup' ? 'backup-legacy' : target], {
         encoding: 'utf8',
-        env: { ...process.env, COLLOQ_HOME: '', ENV_FILE: path.join(dir, '.env') },
+        env: { ...process.env, AULALAB_HOME: '', ENV_FILE: path.join(dir, '.env') },
       }),
     restore: (args, env = {}) => {
       const r = spawnSync('bash', [path.join(dir, 'scripts/restore.sh'), ...args], {
         cwd: dir,
         encoding: 'utf8',
         timeout: 60_000,
-        env: { ...process.env, COLLOQ_HOME: '', ENV_FILE: path.join(dir, '.env'), ...env },
+        env: { ...process.env, AULALAB_HOME: '', ENV_FILE: path.join(dir, '.env'), ...env },
       })
       return { status: r.status, out: `${r.stdout ?? ''}${r.stderr ?? ''}` }
     },
@@ -101,7 +101,7 @@ function machine(): Machine {
 /** A database with one table and an unclosed WAL journal — as on a live machine. */
 function seedDb(dir: string, mark: string): void {
   execFileSync('sqlite3', [
-    path.join(dir, 'data/colloq.db'),
+    path.join(dir, 'data/aulalab.db'),
     'pragma journal_mode=wal;',
     'create table if not exists seminars (id text primary key, name text);',
     `insert into seminars values ('s-one', '${mark}');`,
@@ -182,7 +182,7 @@ test('on an empty machine the backup is restored whole, and the signing key stay
   const pair = backupPair(m.dir)
 
   // An empty machine: no database, no files, no lists.
-  fs.rmSync(path.join(m.dir, 'data/colloq.db'))
+  fs.rmSync(path.join(m.dir, 'data/aulalab.db'))
   fs.rmSync(path.join(m.dir, 'data/session-secret'))
   fs.rmSync(path.join(m.dir, 'workspace/s-one'), { recursive: true })
   fs.rmSync(path.join(m.dir, 'kernel/environments/nlp.txt'))
@@ -192,7 +192,7 @@ test('on an empty machine the backup is restored whole, and the signing key stay
   const r = m.restore([pair.db, pair.files])
   assert.equal(r.status, 0, r.out)
 
-  assert.equal(markOf(path.join(m.dir, 'data/colloq.db')), 'первая пара')
+  assert.equal(markOf(path.join(m.dir, 'data/aulalab.db')), 'первая пара')
   assert.equal(fs.readFileSync(path.join(m.dir, 'data/competitions/c-one/open/train.csv'), 'utf8'), 'feature\n42\n')
   assert.equal(fs.readFileSync(path.join(m.dir, 'data/competitions/c-one/secret/solution.csv'), 'utf8'), 'target\n1\n')
   assert.equal(fs.statSync(path.join(m.dir, 'data/competitions/c-one/secret/solution.csv')).mode & 0o777, 0o600)
@@ -204,7 +204,7 @@ test('on an empty machine the backup is restored whole, and the signing key stay
   assert.equal(fs.readFileSync(path.join(m.dir, 'workspace/s-one/notes.csv'), 'utf8'), 'a,b\n1,2\n')
   assert.equal(fs.readFileSync(path.join(m.dir, 'kernel/environments/nlp.txt'), 'utf8'), '# из панели\nspacy\n')
   assert.equal(fs.statSync(path.join(m.dir, 'data/session-secret')).mode & 0o777, 0o600)
-  assert.equal(fs.statSync(path.join(m.dir, 'data/colloq.db')).mode & 0o777, 0o600)
+  assert.equal(fs.statSync(path.join(m.dir, 'data/aulalab.db')).mode & 0o777, 0o600)
 })
 
 test('over a non-empty machine and without a terminal — a refusal, not a silent replacement', () => {
@@ -215,7 +215,7 @@ test('over a non-empty machine and without a terminal — a refusal, not a silen
   const pair = backupPair(m.dir)
 
   // A class has taken place on the machine since then.
-  execFileSync('sqlite3', [path.join(m.dir, 'data/colloq.db'), "update seminars set name='сегодняшняя пара'"])
+  execFileSync('sqlite3', [path.join(m.dir, 'data/aulalab.db'), "update seminars set name='сегодняшняя пара'"])
   fs.writeFileSync(path.join(m.dir, 'workspace/s-one/notes.csv'), 'сегодняшнее\n')
 
   const r = m.restore([pair.db, pair.files])
@@ -223,7 +223,7 @@ test('over a non-empty machine and without a terminal — a refusal, not a silen
   assert.match(r.out, /REPLACE=1/)
   // And nothing is touched: not the database, not the files, and there are no
   // set-aside copies next to them.
-  assert.equal(markOf(path.join(m.dir, 'data/colloq.db')), 'сегодняшняя пара')
+  assert.equal(markOf(path.join(m.dir, 'data/aulalab.db')), 'сегодняшняя пара')
   assert.equal(fs.readFileSync(path.join(m.dir, 'workspace/s-one/notes.csv'), 'utf8'), 'сегодняшнее\n')
   assert.equal(
     fs.readdirSync(path.join(m.dir, 'data')).filter((n) => n.includes('replaced')).length,
@@ -238,21 +238,21 @@ test('REPLACE=1 restores over it and takes the old journal away together with th
   m.make('backup')
   const pair = backupPair(m.dir)
 
-  execFileSync('sqlite3', [path.join(m.dir, 'data/colloq.db'), "update seminars set name='сегодняшняя пара'"])
+  execFileSync('sqlite3', [path.join(m.dir, 'data/aulalab.db'), "update seminars set name='сегодняшняя пара'"])
   // A journal next to the database is the reason the script exists at all.
-  fs.writeFileSync(path.join(m.dir, 'data/colloq.db-wal'), 'страницы прежней базы')
-  fs.writeFileSync(path.join(m.dir, 'data/colloq.db-shm'), 'общая память')
+  fs.writeFileSync(path.join(m.dir, 'data/aulalab.db-wal'), 'страницы прежней базы')
+  fs.writeFileSync(path.join(m.dir, 'data/aulalab.db-shm'), 'общая память')
 
   const r = m.restore([pair.db, pair.files], { REPLACE: '1' })
   assert.equal(r.status, 0, r.out)
 
-  assert.equal(markOf(path.join(m.dir, 'data/colloq.db')), 'вчерашняя копия')
+  assert.equal(markOf(path.join(m.dir, 'data/aulalab.db')), 'вчерашняя копия')
   const left = fs.readdirSync(path.join(m.dir, 'data'))
   assert.ok(
-    !left.includes('colloq.db-wal') && !left.includes('colloq.db-shm'),
+    !left.includes('aulalab.db-wal') && !left.includes('aulalab.db-shm'),
     `someone else's journal stayed next to the new database: ${left.join(', ')}`,
   )
-  const replaced = left.filter((n) => n.startsWith('colloq.db.replaced-'))
+  const replaced = left.filter((n) => n.startsWith('aulalab.db.replaced-'))
   assert.equal(replaced.length, 3, `the old database and journal are set aside whole: ${replaced.join(', ')}`)
   assert.equal(
     markOf(path.join(m.dir, 'data', replaced.find((n) => !n.endsWith('-wal') && !n.endsWith('-shm'))!)),
@@ -265,35 +265,35 @@ test('a file that is not an sqlite database is not restored at all', () => {
   seedDb(m.dir, 'первая пара')
   seedFiles(m.dir)
   fs.mkdirSync(path.join(m.dir, 'backups'), { recursive: true })
-  fs.writeFileSync(path.join(m.dir, 'backups/colloq-20260101-000000.db'), '<html>не докачалось</html>')
-  fs.rmSync(path.join(m.dir, 'data/colloq.db'))
+  fs.writeFileSync(path.join(m.dir, 'backups/aulalab-20260101-000000.db'), '<html>не докачалось</html>')
+  fs.rmSync(path.join(m.dir, 'data/aulalab.db'))
 
-  const r = m.restore(['backups/colloq-20260101-000000.db'])
+  const r = m.restore(['backups/aulalab-20260101-000000.db'])
   assert.notEqual(r.status, 0)
   assert.match(r.out, /sqlite/i)
-  assert.ok(!fs.existsSync(path.join(m.dir, 'data/colloq.db')), 'a broken copy is not put in place')
+  assert.ok(!fs.existsSync(path.join(m.dir, 'data/aulalab.db')), 'a broken copy is not put in place')
 })
 
 test('SQLite quick_check output must be ok even when sqlite3 exits successfully', () => {
   const m = machine(); seedDb(m.dir, 'keep')
   fs.mkdirSync(path.join(m.dir, 'backups'))
-  fs.renameSync(path.join(m.dir, 'data/colloq.db'), path.join(m.dir, 'backups/check.db'))
+  fs.renameSync(path.join(m.dir, 'data/aulalab.db'), path.join(m.dir, 'backups/check.db'))
   fs.mkdirSync(path.join(m.dir, 'bin'))
   fs.writeFileSync(path.join(m.dir, 'bin/sqlite3'), '#!/bin/sh\necho "database integrity error"\nexit 0\n', { mode: 0o755 })
   const r = m.restore(['backups/check.db'], { PATH: path.join(m.dir, 'bin') + ':' + process.env.PATH })
   assert.notEqual(r.status, 0, r.out)
-  assert.ok(!fs.existsSync(path.join(m.dir, 'data/colloq.db')), 'non-ok database must not be installed')
+  assert.ok(!fs.existsSync(path.join(m.dir, 'data/aulalab.db')), 'non-ok database must not be installed')
 })
 
 /* ------------------------------------------ what student code leaves behind */
 
-/** backup-local.sh itself, with settings in the environment (the pip `colloq backup`, the image's `colloq-vast backup`). */
+/** backup-local.sh itself, with settings in the environment (the pip `aulalab backup`, the image's `aulalab-vast backup`). */
 function backupLocal(dir: string, env: Record<string, string> = {}) {
   const r = spawnSync('bash', [path.join(dir, 'scripts/backup-local.sh')], {
     cwd: dir,
     encoding: 'utf8',
     timeout: 60_000,
-    env: { ...process.env, COLLOQ_HOME: '', ENV_FILE: path.join(dir, '.env'), ...env },
+    env: { ...process.env, AULALAB_HOME: '', ENV_FILE: path.join(dir, '.env'), ...env },
   })
   return { status: r.status, out: `${r.stdout ?? ''}${r.stderr ?? ''}` }
 }
@@ -320,7 +320,7 @@ test('symlinks of every kind survive the round trip as links, FIFOs and sockets 
   const m = machine()
   seedDb(m.dir, 'first class')
   seedFiles(m.dir)
-  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-outside-'))
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-outside-'))
   built.push(outside)
   fs.writeFileSync(path.join(outside, 'secret.txt'), 'not the backup\'s')
   studentMess(m.dir, outside)
@@ -339,7 +339,7 @@ test('symlinks of every kind survive the round trip as links, FIFOs and sockets 
   assert.ok(!listed.some((n) => n.includes('secret.txt') || n.startsWith('workspace/s-one/to-dir/') || /pipe$|k\.sock$/.test(n)))
 
   // An empty machine, then the restore.
-  for (const p of ['data/colloq.db', 'workspace', 'data/blobs']) fs.rmSync(path.join(m.dir, p), { recursive: true, force: true })
+  for (const p of ['data/aulalab.db', 'workspace', 'data/blobs']) fs.rmSync(path.join(m.dir, p), { recursive: true, force: true })
   const r = m.restore([pair.db, pair.files])
   assert.equal(r.status, 0, r.out)
   for (const [name, target] of Object.entries(LINKS)) {
@@ -395,33 +395,33 @@ test('BACKUP_KEEP keeps the newest pairs of this instance, never the one just ma
   fs.mkdirSync(path.join(backups, 'demo'), { recursive: true })
   const old = ['20250101-000000', '20250102-000000', '20250103-000000']
   for (const stamp of old) {
-    fs.writeFileSync(path.join(backups, `colloq-${stamp}.db`), 'old')
-    fs.writeFileSync(path.join(backups, `colloq-${stamp}-files.tar.gz`), 'old')
+    fs.writeFileSync(path.join(backups, `aulalab-${stamp}.db`), 'old')
+    fs.writeFileSync(path.join(backups, `aulalab-${stamp}-files.tar.gz`), 'old')
   }
-  fs.renameSync(path.join(backups, 'colloq-20250103-000000.db'), path.join(backups, 'colloq-20250103-000000.db.age'))
-  const strangers = ['notes.txt', 'colloq-manual.db', 'colloq-20250101-000000.db.replaced-1']
+  fs.renameSync(path.join(backups, 'aulalab-20250103-000000.db'), path.join(backups, 'aulalab-20250103-000000.db.age'))
+  const strangers = ['notes.txt', 'aulalab-manual.db', 'aulalab-20250101-000000.db.replaced-1']
   for (const name of strangers) fs.writeFileSync(path.join(backups, name), 'keep me')
-  fs.writeFileSync(path.join(backups, 'demo/colloq-20200101-000000.db'), 'another deployment')
+  fs.writeFileSync(path.join(backups, 'demo/aulalab-20200101-000000.db'), 'another deployment')
 
   const b = backupLocal(m.dir, { BACKUP_KEEP: '2' })
   assert.equal(b.status, 0, b.out)
   const left = fs.readdirSync(backups).sort()
-  const fresh = left.filter((n) => /^colloq-\d{8}-\d{6}\.db$/.test(n) && !n.startsWith('colloq-2025'))
+  const fresh = left.filter((n) => /^aulalab-\d{8}-\d{6}\.db$/.test(n) && !n.startsWith('aulalab-2025'))
   assert.equal(fresh.length, 1, left.join(', '))
-  assert.deepEqual(left.filter((n) => n.startsWith('colloq-2025')).sort(),
-    ['colloq-20250101-000000.db.replaced-1', 'colloq-20250103-000000-files.tar.gz', 'colloq-20250103-000000.db.age'])
+  assert.deepEqual(left.filter((n) => n.startsWith('aulalab-2025')).sort(),
+    ['aulalab-20250101-000000.db.replaced-1', 'aulalab-20250103-000000-files.tar.gz', 'aulalab-20250103-000000.db.age'])
   for (const name of strangers) assert.ok(left.includes(name), name)
-  assert.ok(fs.existsSync(path.join(backups, 'demo/colloq-20200101-000000.db')))
+  assert.ok(fs.existsSync(path.join(backups, 'demo/aulalab-20200101-000000.db')))
 
   // A clock that went backwards: the fresh pair sorts older and still stays.
   // (Names go by the second, so the next backup waits for a new one.)
-  fs.writeFileSync(path.join(backups, 'colloq-29991231-235959.db'), 'future')
+  fs.writeFileSync(path.join(backups, 'aulalab-29991231-235959.db'), 'future')
   await new Promise((resolve) => setTimeout(resolve, 1100))
   const again = backupLocal(m.dir, { BACKUP_KEEP: '1' })
   assert.equal(again.status, 0, again.out)
-  const now = fs.readdirSync(backups).filter((n) => /^colloq-\d{8}-\d{6}(\.db|-files\.tar\.gz)(\.age)?$/.test(n)).sort()
+  const now = fs.readdirSync(backups).filter((n) => /^aulalab-\d{8}-\d{6}(\.db|-files\.tar\.gz)(\.age)?$/.test(n)).sort()
   assert.equal(now.length, 3, now.join(', '))
-  assert.ok(now.includes('colloq-29991231-235959.db'))
+  assert.ok(now.includes('aulalab-29991231-235959.db'))
   // Nonsense is refused before anything is written.
   const before = fs.readdirSync(backups).length
   const bad = backupLocal(m.dir, { BACKUP_KEEP: 'fourteen' })
@@ -444,7 +444,7 @@ test('a disk without room for both files refuses before writing either', () => {
 
 /** A files archive built entry by entry. */
 function craftFiles(dir: string, entries: string): string {
-  const file = path.join(dir, 'backups', 'colloq-20260101-000000-files.tar.gz')
+  const file = path.join(dir, 'backups', 'aulalab-20260101-000000-files.tar.gz')
   fs.mkdirSync(path.dirname(file), { recursive: true })
   execFileSync('python3', ['-c', `import tarfile,io,sys
 t=tarfile.open(sys.argv[1],'w:gz')
@@ -459,13 +459,13 @@ t.close()`, file])
 }
 
 test('restore reads the archive names first and never unpacks outside the state directory', () => {
-  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-outside-'))
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-outside-'))
   built.push(outside)
   for (const [label, entries, reason] of [
     ['an absolute name', `add('${outside}/evil')`, /absolute name/],
     ['a name with ..', "add('workspace/../../evil')", /"\.\."/],
     ['a name outside what a backup holds', "add('.env')", /unexpected name/],
-    ['the database slipped into the files', "add('data/colloq.db')", /unexpected name/],
+    ['the database slipped into the files', "add('data/aulalab.db')", /unexpected name/],
   ] as const) {
     const m = machine()
     const archive = craftFiles(m.dir, entries)
@@ -474,7 +474,7 @@ test('restore reads the archive names first and never unpacks outside the state 
     assert.match(r.out, reason, label)
     assert.deepEqual(fs.readdirSync(outside), [], label)
     assert.deepEqual(fs.readdirSync(path.join(m.dir, 'workspace/s-one')), [], `${label}: nothing unpacked`)
-    assert.equal(fs.existsSync(path.join(m.dir, 'data/colloq.db')), false, label)
+    assert.equal(fs.existsSync(path.join(m.dir, 'data/aulalab.db')), false, label)
   }
   // A link, then a file beneath it: tar itself refuses to write through the
   // link it has just made (GNU delays such links, bsdtar refuses), so the
@@ -508,22 +508,22 @@ test('BACKUP_AGE_RECIPIENT encrypts both files, and restore decrypts them with B
   assert.equal(b.status, 0, b.out)
   const names = fs.readdirSync(path.join(m.dir, 'backups')).sort()
   assert.equal(names.length, 2, names.join(', '))
-  assert.match(names[0], /^colloq-\d{8}-\d{6}-files\.tar\.gz\.age$/)
-  assert.match(names[1], /^colloq-\d{8}-\d{6}\.db\.age$/)
+  assert.match(names[0], /^aulalab-\d{8}-\d{6}-files\.tar\.gz\.age$/)
+  assert.match(names[1], /^aulalab-\d{8}-\d{6}\.db\.age$/)
   for (const name of names) assert.equal(fs.statSync(path.join(m.dir, 'backups', name)).mode & 0o777, 0o600)
-  assert.match(b.out, /restore it back: colloq restore --legacy --db backups\/colloq-.*\.db\.age --files backups\/colloq-.*-files\.tar\.gz\.age/)
+  assert.match(b.out, /restore it back: aulalab restore --legacy --db backups\/aulalab-.*\.db\.age --files backups\/aulalab-.*-files\.tar\.gz\.age/)
 
-  fs.rmSync(path.join(m.dir, 'data/colloq.db'))
+  fs.rmSync(path.join(m.dir, 'data/aulalab.db'))
   fs.rmSync(path.join(m.dir, 'workspace/s-one'), { recursive: true })
   const db = `backups/${names[1]}`
   const refused = m.restore([db], env)
   assert.notEqual(refused.status, 0)
   assert.match(refused.out, /BACKUP_AGE_IDENTITY/)
-  assert.equal(fs.existsSync(path.join(m.dir, 'data/colloq.db')), false)
+  assert.equal(fs.existsSync(path.join(m.dir, 'data/aulalab.db')), false)
   const identity = path.join(m.dir, 'identity.txt'); fs.writeFileSync(identity, 'AGE-SECRET-KEY-TEST')
   const r = m.restore([db], { ...env, BACKUP_AGE_IDENTITY: identity })
   assert.equal(r.status, 0, r.out)
-  assert.equal(markOf(path.join(m.dir, 'data/colloq.db')), 'secret class')
+  assert.equal(markOf(path.join(m.dir, 'data/aulalab.db')), 'secret class')
   assert.equal(fs.readFileSync(path.join(m.dir, 'workspace/s-one/notes.csv'), 'utf8'), 'a,b\n1,2\n')
   assert.equal(fs.readdirSync(m.dir).filter((n) => n.startsWith('.restore-plain')).length, 0, 'the plain copies are removed')
 })

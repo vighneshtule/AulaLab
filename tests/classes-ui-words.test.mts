@@ -137,7 +137,7 @@ test('each thing that keeps new classes away has its words and the chip\'s tone 
     [block('image', { percent: 45, environment: 'base' }), 'образ ↓ 45 % — возьмёт классы, когда скачает base', 'accent', false],
     [block('host-network'), 'нужен --network host — перезапустите машину командой из панели', 'warning', false],
     [block('perimeter', { detail: 'no-iptables' }), 'периметр: у Docker нет iptables', 'danger', false],
-    [block('same-daemon'), 'на этой машине стоит сервер Colloq — занятия нельзя', 'neutral', true],
+    [block('same-daemon'), 'на этой машине стоит сервер Aula Lab — занятия нельзя', 'neutral', true],
     [block('canary', { detail: 'egress to 10.0.0.1 open' }), 'проверка допуска не прошла: egress to 10.0.0.1 open', 'danger', false],
   ]
   for (const [blocked, words, tone, dashed] of cases) {

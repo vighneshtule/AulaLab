@@ -95,7 +95,7 @@ async function makeClass(name = `Класс ${Math.random().toString(36).slice(2
 function place(sessionId: string, runnerId: string, role: 'room' | 'own' | 'council', state: 'ready' | 'unreachable' = 'ready') {
   return writePlacement({
     sessionId, role, runnerId, state, environment: 'base',
-    revision: { id: 'rev1', ref: 'ghcr.io/colloq-edu/colloq-kernel:base@sha256:' + 'a'.repeat(64), layers: 'l'.repeat(64) },
+    revision: { id: 'rev1', ref: 'ghcr.io/vighneshtule/aulalab-kernel:base@sha256:' + 'a'.repeat(64), layers: 'l'.repeat(64) },
     memoryMb: 4096, cpus: 2, gpu: null, workers: role === 'council' ? 4 : null, container: 'c'.repeat(64),
     readyAt: Date.now(), endedAt: null, reason: null, createdAt: Date.now(),
   })

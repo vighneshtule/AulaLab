@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# The relay for *.colloq.ru — what Colloq uses instead of Cloudflare Tunnel.
+# The relay for *.example.edu — what Aula Lab uses instead of Cloudflare Tunnel.
 #
 # Why at all. A Cloudflare tunnel always ends at Cloudflare's edge addresses: a
 # record like *.cfargotunnel.com only makes sense for their proxy, and the
 # orange cloud cannot be taken off it. And those addresses do not open from
-# Russia — the landing page on colloq.sleep3r.ru did not load right up to the
+# Russia — the landing page on aulalab.sleep3r.ru did not load right up to the
 # day proxying was taken off it. So a seminar exposed through Cloudflare is out
 # of reach for the very audience it is made for.
 #
@@ -31,24 +31,24 @@
 # name, and frps would answer with its built-in page: "The page you requested
 # was not found… powered by frp". A student who came ten minutes before class
 # could tell from it neither what happened nor what to do. Instead
-# /etc/colloq-relay/offline.html is served — it is also shown when frps itself
+# /etc/aulalab-relay/offline.html is served — it is also shown when frps itself
 # does not answer, and it reloads itself, so whoever is waiting gets into the
 # room without a single click.
 #
 # The waiting page is home to a pixel capybara (a game in the spirit of
 # Chrome's dinosaur) with a shared high-score table. The table is kept by a
-# third, tiny daemon — colloq-capy (scripts/relay-capy.py, python3 out of the
+# third, tiny daemon — aulalab-capy (scripts/relay-capy.py, python3 out of the
 # box): caddy hands it the path /.relay/capy/* on any name. The game works
 # without it, the table does not.
 #
-# And a fourth daemon — colloq-assets (scripts/relay-assets.py), a mirror of
+# And a fourth daemon — aulalab-assets (scripts/relay-assets.py), a mirror of
 # the immutable static files. Before it, EVERY byte of every /assets/*,
 # /fonts/* and /pdf/* travelled through the tunnel from the teacher's laptop —
 # 598 KB compressed for every arrival, over the same channel the room's
 # sockets live on. The files are the same for everyone (names in assets/
 # contain a content hash), so the instance puts them here as one archive on
 # `make host`, and caddy serves them straight from
-# /var/lib/colloq-assets/<name>. A mirror miss is not a failure: the `file`
+# /var/lib/aulalab-assets/<name>. A mirror miss is not a failure: the `file`
 # matcher lets such a request through to the tunnel, as before.
 #
 # And one more directory — /etc/caddy/names, the memory of names. A
@@ -58,7 +58,7 @@
 # class started would get a TLS refusal instead of the waiting page. So once a
 # minute a timer copies the names from frps into files in this directory, and
 # a name that has been up even once is remembered forever. To add a name in
-# advance: touch /etc/caddy/names/<name>.colloq.ru.
+# advance: touch /etc/caddy/names/<name>.example.edu.
 #
 # Run: scripts/relay-setup.sh root@203.0.113.10
 # Only the page: scripts/relay-setup.sh --page root@203.0.113.10
@@ -73,7 +73,7 @@ PAGE_ONLY=0
 if [ "${1:-}" = "--page" ]; then PAGE_ONLY=1; shift; fi
 
 HOST=${1:?give the target machine: scripts/relay-setup.sh root@203.0.113.10}
-DOMAIN=${DOMAIN:-colloq.ru}
+DOMAIN=${DOMAIN:?set DOMAIN to a domain you control}
 FRP_VERSION=${FRP_VERSION:-0.71.0}
 # The key is named explicitly: ~/.ssh usually holds a dozen of them, sshd cuts
 # the attempt off after the fifth, and the right one is never reached.
@@ -126,14 +126,14 @@ die() { printf '%s%s%s\n' "$RED" "$*" "$OFF" >&2; exit 1; }
 relay_page() {
   cat <<'SNIPPET'
 echo "== waiting page"
-[ -d /etc/colloq-relay ] || { echo "no /etc/colloq-relay — run the full install first"; exit 1; }
+[ -d /etc/aulalab-relay ] || { echo "no /etc/aulalab-relay — run the full install first"; exit 1; }
 [ -d /etc/caddy ]        || { echo "no /etc/caddy — run the full install first"; exit 1; }
 
 # Two copies of one file, and that is not sloppiness. The page is served
 # sometimes by frps (when a name has no client), sometimes by caddy (when frps
 # itself does not answer), and the daemons run as different users and are
 # locked into their own directories. One shared file would mean either caddy
-# in the frps group — that is, the right to read all of /etc/colloq-relay,
+# in the frps group — that is, the right to read all of /etc/aulalab-relay,
 # the shared secret included — or a page open to the whole machine. It is
 # cheaper to put the same text down twice: it is written from here anyway.
 page_tmp=$(mktemp)
@@ -146,7 +146,7 @@ PAGE_B64
 # Permissions like the neighbours' in the directory: owner root, the daemon's
 # group, read for the group. The daemon reads the file but cannot rewrite it —
 # only this script does that, as root.
-install -o root -g frps  -m 0640 "$page_tmp" /etc/colloq-relay/offline.html
+install -o root -g frps  -m 0640 "$page_tmp" /etc/aulalab-relay/offline.html
 install -o root -g caddy -m 0640 "$page_tmp" /etc/caddy/offline.html
 rm -f "$page_tmp"
 SNIPPET
@@ -171,7 +171,7 @@ if [ "$PAGE_ONLY" = 1 ]; then
 # place with nobody to show it: the configs have not a single line about it.
 # That cannot be kept quiet — from outside it looks like "the page did not
 # update".
-if ! grep -q 'custom404Page' /etc/colloq-relay/frps.toml 2>/dev/null ||
+if ! grep -q 'custom404Page' /etc/aulalab-relay/frps.toml 2>/dev/null ||
    ! grep -q 'offline.html' /etc/caddy/Caddyfile 2>/dev/null ||
    ! grep -q '/.relay/capy/' /etc/caddy/Caddyfile 2>/dev/null ||
    ! grep -q '/.relay/state' /etc/caddy/Caddyfile 2>/dev/null; then
@@ -272,8 +272,8 @@ frps --version
 echo "== users and directories"
 id -u caddy >/dev/null 2>&1 || useradd --system --home /var/lib/caddy --shell /usr/sbin/nologin caddy
 id -u frps  >/dev/null 2>&1 || useradd --system --home /var/lib/frps  --shell /usr/sbin/nologin frps
-id -u capy  >/dev/null 2>&1 || useradd --system --home /var/lib/colloq-capy --shell /usr/sbin/nologin capy
-id -u assets >/dev/null 2>&1 || useradd --system --home /var/lib/colloq-assets --shell /usr/sbin/nologin assets
+id -u capy  >/dev/null 2>&1 || useradd --system --home /var/lib/aulalab-capy --shell /usr/sbin/nologin capy
+id -u assets >/dev/null 2>&1 || useradd --system --home /var/lib/aulalab-assets --shell /usr/sbin/nologin assets
 install -d -o caddy -g caddy -m 0750 /var/lib/caddy /etc/caddy /etc/caddy/names
 install -d -o frps  -g frps  -m 0750 /var/lib/frps
 # The static mirror is written by one daemon and read by another: owner
@@ -281,23 +281,23 @@ install -d -o frps  -g frps  -m 0750 /var/lib/frps
 # rewrite what it serves. Bit 2000 (setgid) is required: without it everything
 # the service creates inside gets group assets, and caddy answers 403 on every
 # file — that is, the mirror simply does not work, silently and entirely.
-install -d -o assets -g caddy -m 2750 /var/lib/colloq-assets
+install -d -o assets -g caddy -m 2750 /var/lib/aulalab-assets
 # Group frps, not just root: the daemon does not run as root, and one chown on
 # the file is not enough — the directory has to be traversable too.
-install -d -o root -g frps -m 0750 /etc/colloq-relay
+install -d -o root -g frps -m 0750 /etc/aulalab-relay
 
 echo "== shared secret"
 # With it an instance proves that it may take a subdomain. Without it anyone
-# who knows the address could declare themselves hse.colloq.ru.
-if [ ! -s /etc/colloq-relay/token ]; then
-  head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 40 > /etc/colloq-relay/token
+# who knows the address could declare themselves hse.example.edu.
+if [ ! -s /etc/aulalab-relay/token ]; then
+  head -c 32 /dev/urandom | base64 | tr -d '/+=' | head -c 40 > /etc/aulalab-relay/token
 fi
-chown root:frps /etc/colloq-relay/token
-chmod 640 /etc/colloq-relay/token
-TOKEN=$(cat /etc/colloq-relay/token)
+chown root:frps /etc/aulalab-relay/token
+chmod 640 /etc/aulalab-relay/token
+TOKEN=$(cat /etc/aulalab-relay/token)
 
 echo "== frps config"
-cat > /etc/colloq-relay/frps.toml <<CONF
+cat > /etc/aulalab-relay/frps.toml <<CONF
 # The control port: instances call here. Open to the outside, protected only
 # by the shared secret below.
 bindPort = 7000
@@ -327,7 +327,7 @@ subDomainHost = "${DOMAIN}"
 # is not "the setting did not apply" but an frps that does not start.
 # The path is absolute: the service has no WorkingDirectory, its working
 # directory is /.
-custom404Page = "/etc/colloq-relay/offline.html"
+custom404Page = "/etc/aulalab-relay/offline.html"
 
 auth.method = "token"
 auth.token = "${TOKEN}"
@@ -348,8 +348,8 @@ webServer.port = 7500
 
 log.level = "info"
 CONF
-chown root:frps /etc/colloq-relay/frps.toml
-chmod 640 /etc/colloq-relay/frps.toml
+chown root:frps /etc/aulalab-relay/frps.toml
+chmod 640 /etc/aulalab-relay/frps.toml
 
 echo "== caddy config"
 # The site header: by default "any name on 443" with a certificate on demand;
@@ -371,7 +371,7 @@ fi
 # Estonia, 12 Sep 2026) Cloudflare is not reachable over IPv4 at all and over
 # IPv6 only every other time: Cogent and Cloudflare have a long-standing
 # peering dispute. ZeroSSL and Google are open from there. The file
-# /etc/colloq-relay/acme.env on the machine (ACME_DIR, ACME_EMAIL,
+# /etc/aulalab-relay/acme.env on the machine (ACME_DIR, ACME_EMAIL,
 # ACME_EAB_KID, ACME_EAB_KEY) switches the certificate authority; ZeroSSL
 # issues EAB for a single email: POST
 # https://api.zerossl.com/acme/eab-credentials-email -d email=… . No file —
@@ -380,16 +380,16 @@ fi
 # Cloudflare — and Let's Encrypt behind it — go dead: the ICMP "fragment"
 # message gets lost on the way, the TLS handshake goes through, and the HTTP
 # answer never arrives (12 Sep 2026, found by trial: with mtu 1300 on the
-# route LE answers in half a second). The number in /etc/colloq-relay/path-mtu
+# route LE answers in half a second). The number in /etc/aulalab-relay/path-mtu
 # is put on the default routes (v4 and v6) by a service on every boot; no file
 # — nothing changes. The interface MTU is left alone: it also receives the
 # students' frames.
-if [ -s /etc/colloq-relay/path-mtu ]; then
-  PATH_MTU=$(tr -dc '0-9' < /etc/colloq-relay/path-mtu)
-  cat > /usr/local/sbin/colloq-relay-mtu <<'MTU'
+if [ -s /etc/aulalab-relay/path-mtu ]; then
+  PATH_MTU=$(tr -dc '0-9' < /etc/aulalab-relay/path-mtu)
+  cat > /usr/local/sbin/aulalab-relay-mtu <<'MTU'
 #!/bin/sh
-# Cap the MTU of the default routes at the number in /etc/colloq-relay/path-mtu.
-mtu=$(tr -dc '0-9' < /etc/colloq-relay/path-mtu)
+# Cap the MTU of the default routes at the number in /etc/aulalab-relay/path-mtu.
+mtu=$(tr -dc '0-9' < /etc/aulalab-relay/path-mtu)
 [ -n "$mtu" ] || exit 0
 ip -4 route show default | while read -r line; do
   # shellcheck disable=SC2086
@@ -400,29 +400,29 @@ ip -6 route show default | sed 's/ expires [^ ]*//; s/ pref [^ ]*//; s/ nhid [^ 
   ip -6 route change $line mtu "$mtu" 2>/dev/null || true
 done
 MTU
-  chmod 755 /usr/local/sbin/colloq-relay-mtu
-  cat > /etc/systemd/system/colloq-relay-mtu.service <<UNIT
+  chmod 755 /usr/local/sbin/aulalab-relay-mtu
+  cat > /etc/systemd/system/aulalab-relay-mtu.service <<UNIT
 [Unit]
-Description=path MTU ${PATH_MTU} on default routes for colloq relay
+Description=path MTU ${PATH_MTU} on default routes for aulalab relay
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/colloq-relay-mtu
+ExecStart=/usr/local/sbin/aulalab-relay-mtu
 RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
 UNIT
   systemctl daemon-reload
-  systemctl enable --now colloq-relay-mtu.service >/dev/null 2>&1 || true
+  systemctl enable --now aulalab-relay-mtu.service >/dev/null 2>&1 || true
 fi
 
 ACME_BLOCK=""
-if [ -s /etc/colloq-relay/acme.env ]; then
+if [ -s /etc/aulalab-relay/acme.env ]; then
   # shellcheck disable=SC1091
-  . /etc/colloq-relay/acme.env
+  . /etc/aulalab-relay/acme.env
   ACME_BLOCK="
 	email ${ACME_EMAIL}
 	cert_issuer acme {
@@ -448,7 +448,7 @@ http://127.0.0.1:9180 {
 	# where to listen. Without bind it would bring 9180 up on all interfaces, and
 	# anyone outside could ask for permission for a certificate.
 	bind 127.0.0.1
-	# The name arrives in the request as ?domain=hse.colloq.ru. The query matcher
+	# The name arrives in the request as ?domain=hse.example.edu. The query matcher
 	# compares the value as a whole and does not understand a wildcard inside it —
 	# with "query domain=*.${DOMAIN}" the ask endpoint answered 403 even for our
 	# own names, and no certificate was issued for anyone at all.
@@ -497,7 +497,7 @@ ${SITE_LABEL} {
 	# A classroom opens by a personal link and lives for hours; it has no place in
 	# search. And a domain with hundreds of indexed subdomains looks like a farm
 	# from the outside — for that Safe Browsing once flagged the whole of
-	# colloq.ru, and students would have seen the red screen on every seminar
+	# example.edu, and students would have seen the red screen on every seminar
 	# address. The refusal is given before the tunnel: it is the same for all
 	# rooms and does not depend on whether a seminar is up right now.
 	#
@@ -524,7 +524,7 @@ Disallow: /
 " 200
 	}
 
-	# The scores of the waiting page's game go to the colloq-capy service (see the
+	# The scores of the waiting page's game go to the aulalab-capy service (see the
 	# header). The path starts with a dot: no instance address looks like that, and
 	# the route takes nothing away from a room even when it is open.
 	handle /.relay/capy/* {
@@ -574,25 +574,25 @@ Disallow: /
 		host *.${DOMAIN}
 		path /assets/* /fonts/* /pdf/*
 		file {
-			root /var/lib/colloq-assets/{host}
+			root /var/lib/aulalab-assets/{host}
 			try_files {path}
 		}
 	}
 	handle @mirror {
-		root * /var/lib/colloq-assets/{host}
+		root * /var/lib/aulalab-assets/{host}
 		header /assets/* Cache-Control "public, max-age=31536000, immutable"
 		header /fonts/* Cache-Control "public, max-age=3600"
 		header /pdf/* Cache-Control "public, max-age=3600"
 		# So that \`curl -sI\` answers "is the mirror working at all?" with one word
 		# rather than a comparison of lengths.
-		header X-Colloq-Mirror hit
+		header X-AulaLab-Mirror hit
 		file_server {
 			precompressed br gzip
 		}
 	}
 
 	# What the relay knows about this name — for the error page. From this answer
-	# it tells "the room is not open yet" from "no such room" and from "Colloq on
+	# it tells "the room is not open yet" from "no such room" and from "Aula Lab on
 	# the teacher's machine is silent": frps gives all three the same 404 without a
 	# single distinguishing sign, and from outside they cannot be told apart at all.
 	#
@@ -629,7 +629,7 @@ Disallow: /
 	# X-Forwarded-For is caddy's own: it writes the address it sees and drops
 	# whatever the client put there, and the instance takes the client from it
 	# (server/src/net/inbound.ts). CF-Connecting-IP it would pass through
-	# untouched, and an instance started behind Colloq's own Cloudflare tunnel
+	# untouched, and an instance started behind Aula Lab's own Cloudflare tunnel
 	# believes that header (TRUST_CF_CONNECTING_IP). No Cloudflare stands in
 	# front of the relay, so here the header can only be made up: it goes.
 	reverse_proxy 127.0.0.1:8080 {
@@ -700,14 +700,14 @@ cat <<'REMOTE_TAIL'
 echo "== services"
 cat > /etc/systemd/system/frps.service <<'UNIT'
 [Unit]
-Description=frp server for colloq relay
+Description=frp server for aulalab relay
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 User=frps
 Group=frps
-ExecStart=/usr/local/bin/frps -c /etc/colloq-relay/frps.toml
+ExecStart=/usr/local/bin/frps -c /etc/aulalab-relay/frps.toml
 Restart=always
 RestartSec=3
 # Ceilings. Measured on a live class: two hundred students in one evening
@@ -734,7 +734,7 @@ UNIT
 
 cat > /etc/systemd/system/caddy.service <<'UNIT'
 [Unit]
-Description=Caddy for colloq relay
+Description=Caddy for aulalab relay
 After=network-online.target
 Wants=network-online.target
 
@@ -764,12 +764,12 @@ WantedBy=multi-user.target
 UNIT
 
 echo "== capybara scores"
-base64 -d > /usr/local/bin/colloq-capy <<'CAPY_B64'
+base64 -d > /usr/local/bin/aulalab-capy <<'CAPY_B64'
 REMOTE_TAIL
 embed "$CAPY_FILE"
 cat <<'REMOTE_TAIL'
 CAPY_B64
-chmod 0755 /usr/local/bin/colloq-capy
+chmod 0755 /usr/local/bin/aulalab-capy
 # The Cloudflare token goes to the caddy process, and only with the wildcard.
 # systemd reads EnvironmentFile as root before dropping privileges, and
 # ProtectSystem=strict does not get in the way.
@@ -783,18 +783,18 @@ if [ "${WILDCARD:-0}" = 1 ]; then
 else
   rm -f /etc/systemd/system/caddy.service.d/cloudflare.conf /etc/caddy/cloudflare.env
 fi
-cat > /etc/systemd/system/colloq-capy.service <<'UNIT'
+cat > /etc/systemd/system/aulalab-capy.service <<'UNIT'
 [Unit]
-Description=capybara leaderboard for the colloq relay waiting page
+Description=capybara leaderboard for the aulalab relay waiting page
 After=network-online.target
 Wants=network-online.target
 [Service]
 User=capy
 Group=capy
-Environment=CAPY_STATE=/var/lib/colloq-capy
+Environment=CAPY_STATE=/var/lib/aulalab-capy
 Environment=CAPY_PORT=9181
-StateDirectory=colloq-capy
-ExecStart=/usr/bin/python3 /usr/local/bin/colloq-capy
+StateDirectory=aulalab-capy
+ExecStart=/usr/bin/python3 /usr/local/bin/aulalab-capy
 Restart=always
 RestartSec=3
 NoNewPrivileges=true
@@ -806,36 +806,36 @@ WantedBy=multi-user.target
 UNIT
 
 echo "== static mirror"
-base64 -d > /usr/local/bin/colloq-assets <<'ASSETS_B64'
+base64 -d > /usr/local/bin/aulalab-assets <<'ASSETS_B64'
 REMOTE_TAIL
 embed "$ASSETS_FILE"
 cat <<REMOTE_TAIL
 ASSETS_B64
-chmod 0755 /usr/local/bin/colloq-assets
+chmod 0755 /usr/local/bin/aulalab-assets
 # The marker is quoted: \${DOMAIN} is already substituted here, while
 # \$CREDENTIALS_DIRECTORY in the comment below is a systemd variable, and it
 # must not be expanded at install time (under set -u it brought down the whole
 # run with an empty unit). Escaped twice: this text itself goes through a
 # heredoc without quotes.
-cat > /etc/systemd/system/colloq-assets.service <<'UNIT'
+cat > /etc/systemd/system/aulalab-assets.service <<'UNIT'
 [Unit]
-Description=static mirror for colloq relay
+Description=static mirror for aulalab relay
 After=network-online.target
 Wants=network-online.target
 [Service]
 User=assets
 Group=assets
-Environment=ASSETS_ROOT=/var/lib/colloq-assets
+Environment=ASSETS_ROOT=/var/lib/aulalab-assets
 Environment=ASSETS_PORT=9182
 Environment=ASSETS_DOMAIN=${DOMAIN}
-ExecStart=/usr/bin/python3 /usr/local/bin/colloq-assets
+ExecStart=/usr/bin/python3 /usr/local/bin/aulalab-assets
 Restart=always
 RestartSec=3
 # The secret is the same as frps's — and it comes as a copy from systemd, not
 # through membership in the frps group: the service needs one file, not the
 # right to read the daemon's whole directory. The file appears in
 # \$CREDENTIALS_DIRECTORY/token and is visible only to this service.
-LoadCredential=token:/etc/colloq-relay/token
+LoadCredential=token:/etc/aulalab-relay/token
 # Parsing someone else's archive: memory with room for unpacking, but no more.
 MemoryHigh=256M
 # Directories inside the mirror are 0750, files 0640, the group is inherited
@@ -845,7 +845,7 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
-ReadWritePaths=/var/lib/colloq-assets
+ReadWritePaths=/var/lib/aulalab-assets
 [Install]
 WantedBy=multi-user.target
 UNIT
@@ -859,24 +859,24 @@ cat <<'REMOTE_TAIL'
 # Pieces of earlier builds age by themselves — they are carried over into a
 # new set only while they are less than a month old
 # (scripts/relay-assets.py · carry_over).
-cat > /etc/systemd/system/colloq-assets-prune.service <<'UNIT'
+cat > /etc/systemd/system/aulalab-assets-prune.service <<'UNIT'
 [Unit]
-Description=drop abandoned colloq relay mirrors
+Description=drop abandoned aulalab relay mirrors
 [Service]
 Type=oneshot
 User=assets
 Group=assets
-Environment=ASSETS_ROOT=/var/lib/colloq-assets
-ExecStart=/usr/bin/python3 /usr/local/bin/colloq-assets --prune
+Environment=ASSETS_ROOT=/var/lib/aulalab-assets
+ExecStart=/usr/bin/python3 /usr/local/bin/aulalab-assets --prune
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
-ReadWritePaths=/var/lib/colloq-assets
+ReadWritePaths=/var/lib/aulalab-assets
 UNIT
-cat > /etc/systemd/system/colloq-assets-prune.timer <<'UNIT'
+cat > /etc/systemd/system/aulalab-assets-prune.timer <<'UNIT'
 [Unit]
-Description=drop abandoned colloq relay mirrors daily
+Description=drop abandoned aulalab relay mirrors daily
 [Timer]
 OnCalendar=daily
 Persistent=true
@@ -886,14 +886,14 @@ WantedBy=timers.target
 UNIT
 
 echo "== name memory"
-cat > /usr/local/bin/colloq-relay-names <<NAMES
+cat > /usr/local/bin/aulalab-relay-names <<NAMES
 #!/usr/bin/env bash
 # Rewrites /etc/caddy/names from the list of frps tunnels: every name that frps
 # has seen since its last start becomes an empty file <name>.${DOMAIN}.
 # Files are never deleted — that is what the directory exists for: the frps
 # list is empty after each of its restarts, and a name must be remembered
 # beyond that.
-# Called by the colloq-relay-names.timer timer as user caddy.
+# Called by the aulalab-relay-names.timer timer as user caddy.
 set -euo pipefail
 python3 - "${DOMAIN}" <<'PY'
 import json, re, sys, urllib.request
@@ -908,25 +908,25 @@ for p in d.get('proxies', []):
         open(f'/etc/caddy/names/{n}.{dom}', 'a').close()
 PY
 NAMES
-chmod 0755 /usr/local/bin/colloq-relay-names
-cat > /etc/systemd/system/colloq-relay-names.service <<'UNIT'
+chmod 0755 /usr/local/bin/aulalab-relay-names
+cat > /etc/systemd/system/aulalab-relay-names.service <<'UNIT'
 [Unit]
-Description=remember colloq relay names for on-demand TLS
+Description=remember aulalab relay names for on-demand TLS
 After=frps.service
 [Service]
 Type=oneshot
 User=caddy
 Group=caddy
-ExecStart=/usr/local/bin/colloq-relay-names
+ExecStart=/usr/local/bin/aulalab-relay-names
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
 ReadWritePaths=/etc/caddy/names
 UNIT
-cat > /etc/systemd/system/colloq-relay-names.timer <<'UNIT'
+cat > /etc/systemd/system/aulalab-relay-names.timer <<'UNIT'
 [Unit]
-Description=remember colloq relay names every minute
+Description=remember aulalab relay names every minute
 [Timer]
 OnBootSec=30s
 OnUnitActiveSec=1min
@@ -935,14 +935,14 @@ AccuracySec=10s
 WantedBy=timers.target
 UNIT
 systemctl daemon-reload
-systemctl enable --now frps caddy colloq-capy colloq-assets \
-  colloq-relay-names.timer colloq-assets-prune.timer
+systemctl enable --now frps caddy aulalab-capy aulalab-assets \
+  aulalab-relay-names.timer aulalab-assets-prune.timer
 # enable --now does not touch what is already running, and the script is meant
 # to be repeatable: without an explicit restart a second run would leave both
 # services on the old config.
-systemctl restart frps caddy colloq-capy colloq-assets
+systemctl restart frps caddy aulalab-capy aulalab-assets
 sleep 3
-systemctl is-active frps caddy colloq-capy colloq-assets | tr '\n' ' '; echo
+systemctl is-active frps caddy aulalab-capy aulalab-assets | tr '\n' ' '; echo
 
 echo "== listening"
 ss -lntp | awk 'NR==1 || /:(80|443|7000|8080|9180|9182|7500)\b/{print "  "$4"  "$6}'
@@ -951,7 +951,7 @@ echo "== memory"
 free -m | awk 'NR<=3{print "  "$0}'
 
 echo
-echo "the secret for instances is in /etc/colloq-relay/token"
+echo "the secret for instances is in /etc/aulalab-relay/token"
 REMOTE_TAIL
 } | "${SSH[@]}" "$HOST" DOMAIN="$DOMAIN" FRP_VERSION="$FRP_VERSION" 'bash -s'
 
@@ -962,11 +962,11 @@ REMOTE_TAIL
 # neither .env.example nor the README, and host.sh says nothing about them
 # until it picks the relay. People got to the classroom with a Cloudflare
 # address that does not open for the group.
-TOKEN="$("${SSH[@]}" "$HOST" 'cat /etc/colloq-relay/token' 2>/dev/null || true)"
+TOKEN="$("${SSH[@]}" "$HOST" 'cat /etc/aulalab-relay/token' 2>/dev/null || true)"
 echo
 say "put this into the instance's .env — no indentation, as it is:"
 printf 'RELAY_DOMAIN=%s\nRELAY_ADDR=%s\nRELAY_PORT=7000\nRELAY_TOKEN=%s\n' \
-  "$DOMAIN" "${HOST#*@}" "${TOKEN:-<from /etc/colloq-relay/token on the relay>}"
+  "$DOMAIN" "${HOST#*@}" "${TOKEN:-<from /etc/aulalab-relay/token on the relay>}"
 echo
 say "then take the seminar outside: make host HOST=hse.${DOMAIN}"
 echo

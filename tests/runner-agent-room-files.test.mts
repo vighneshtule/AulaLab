@@ -524,7 +524,10 @@ test('a rewrite that keeps the length and puts the mtime back is a change: its c
   fs.utimesSync(file, TAR_TIME, TAR_TIME)
   await answer(r, block({ scan: [{ sessionId: 's1' }] }))
   assert.deepEqual(say(r), [])
+  const previousCtime = fs.statSync(file, { bigint: true }).ctimeNs
+  await waitFor(() => BigInt(Date.now()) * 1_000_000n > previousCtime + 1_000_000_000n, 'a filesystem ctime tick')
   rewrite(file, 'version-B')
+  assert.notEqual(fs.statSync(file, { bigint: true }).ctimeNs, previousCtime, 'the test filesystem did not advance ctime')
   r.clock.now += 10_000
   await answer(r, block({ scan: [{ sessionId: 's1' }] }))
   const [report] = say(r)
@@ -627,8 +630,8 @@ test('what a crash of an earlier life left mid-write in the copy is swept at its
   const r = rig()
   await answer(r, block({ pushes: [push(1, { full: true, put: [put('d/a.csv', 'a')] })] }))
   r.files.stop()
-  fs.writeFileSync(path.join(r.dir(), '.colloq.saving-0123456789ab'), 'half of a file')
-  fs.writeFileSync(path.join(r.dir(), 'd', '.colloq.saving-ba9876543210'), 'half of another')
+  fs.writeFileSync(path.join(r.dir(), '.aulalab.saving-0123456789ab'), 'half of a file')
+  fs.writeFileSync(path.join(r.dir(), 'd', '.aulalab.saving-ba9876543210'), 'half of another')
   fs.writeFileSync(path.join(r.dir(), '.kernel-cache'), 'the kernel\'s own hidden file')
   const next = rig(r.layout)
   next.files.load()
@@ -675,8 +678,11 @@ test('a version gone before its PUT is waited on no more: a rewrite is said in i
   await answer(r, block({ scan: [{ sessionId: 's1' }] }))
   assert.deepEqual(say(r)[0]!.changed.map((entry) => entry.path).sort(), ['results.csv', 'scratch.bin'])
   // The next epoch rewrites one and deletes the other before home's pulls come; home repeats its pulls in every reply.
+  const previousCtime = fs.statSync(results, { bigint: true }).ctimeNs
+  await waitFor(() => BigInt(Date.now()) * 1_000_000n > previousCtime + 1_000_000_000n, 'a filesystem ctime tick')
   const x2 = randomBytes(CLASS_INLINE_BYTES * 2)
   fs.writeFileSync(results, x2)
+  assert.notEqual(fs.statSync(results, { bigint: true }).ctimeNs, previousCtime, 'the test filesystem did not advance ctime')
   fs.rmSync(scratch)
   const pulls = block({ pulls: [{ sessionId: 's1', gen: 1, paths: [{ path: 'results.csv', sha256: sha(x1) }, { path: 'scratch.bin', sha256: sha(t1) }] }] })
   await answer(r, pulls)
@@ -819,17 +825,17 @@ test('a link is never followed and never travels — one planted to the agent\'s
 test('a change goes out once and waits for its verdict; a refused one is not said again while it stays, and home\'s next push overwrites it; one never answered is said again after a minute', async () => {
   const r = rig()
   await answer(r, block({ pushes: [begin()] }))
-  fs.writeFileSync(path.join(r.dir(), 'Тетрадь.ipynb'), '{"cells":[]}')
+  fs.writeFileSync(path.join(r.dir(), 'Notebook.ipynb'), '{"cells":[]}')
   await answer(r, block({ scan: [{ sessionId: 's1' }] }))
   const [first] = say(r)
   await answer(r, block({ scan: [{ sessionId: 's1' }] }))
   assert.deepEqual(say(r), [], 'a change in flight was said twice')
   // A notebook file is home's: refused, and not said again while the machine holds the same.
-  await answer(r, block({ verdicts: [{ sessionId: 's1', seq: first!.seq, accepted: [], refused: [{ path: 'Тетрадь.ipynb', why: 'book' }] }], scan: [{ sessionId: 's1' }] }))
+  await answer(r, block({ verdicts: [{ sessionId: 's1', seq: first!.seq, accepted: [], refused: [{ path: 'Notebook.ipynb', why: 'book' }] }], scan: [{ sessionId: 's1' }] }))
   assert.deepEqual(say(r), [])
   // Re-projected by home: its push overwrites the refused version.
-  await answer(r, block({ pushes: [push(2, { put: [put('Тетрадь.ipynb', '{"cells":[1]}')] })] }))
-  assert.equal(fs.readFileSync(path.join(r.dir(), 'Тетрадь.ipynb'), 'utf8'), '{"cells":[1]}')
+  await answer(r, block({ pushes: [push(2, { put: [put('Notebook.ipynb', '{"cells":[1]}')] })] }))
+  assert.equal(fs.readFileSync(path.join(r.dir(), 'Notebook.ipynb'), 'utf8'), '{"cells":[1]}')
   // A change whose verdict never comes (a reply lost): said again once a minute has passed, with a seq of its own.
   fs.writeFileSync(path.join(r.dir(), 'b.csv'), 'b')
   await answer(r, block({ scan: [{ sessionId: 's1' }] }))
@@ -1092,8 +1098,8 @@ test('through the sync: a push lands in the class folder and is acked in the nex
   const docker = fakeAgentDocker()
   docker.registry.set(REVISION.ref, { diffIds: DIFF_IDS })
   const agent = new Agent({
-    layout, join: { home: home.url, code: '0123456789abcdef0123456789abcdef' }, build: 'dev', version: '0.25.0', container: 'colloq-runner',
-    image: 'ghcr.io/colloq-edu/colloq-server:0.25.0', docker, runner: new FakeSeam(), fetch: through,
+    layout, join: { home: home.url, code: '0123456789abcdef0123456789abcdef' }, build: 'dev', version: '0.25.0', container: 'aulalab-runner',
+    image: 'ghcr.io/vighneshtule/aulalab-server:0.25.0', docker, runner: new FakeSeam(), fetch: through,
     machine: () => ({ memTotalMb: 16_000, memAvailableMb: 15_000, cpus: 16, diskFreeMb: 500_000, diskTotalMb: 1_000_000 }),
     backoffMs: { min: 5, max: 20 }, stopMs: 2_000, log: () => undefined,
     tunnel: () => ({ want: () => undefined, state: () => ({ up: false, rttMs: null, since: 0 }), close: async () => undefined }),
@@ -1133,7 +1139,7 @@ test('through the sync: a push lands in the class folder and is acked in the nex
     const [sent] = puts as [{ url: URL; headers: Headers; body: Buffer }]
     assert.equal(sent.url.pathname, '/api/runners/v1/rooms/s1/files')
     assert.deepEqual([sent.url.searchParams.get('path'), sent.url.searchParams.get('gen')], ['big.bin', '1'])
-    assert.deepEqual([sent.headers.get('content-encoding'), sent.headers.get('x-colloq-sha256'), sent.headers.get('x-colloq-bytes')], ['gzip', sha(big), String(big.length)])
+    assert.deepEqual([sent.headers.get('content-encoding'), sent.headers.get('x-aulalab-sha256'), sent.headers.get('x-aulalab-bytes')], ['gzip', sha(big), String(big.length)])
     assert.match(sent.headers.get('authorization') ?? '', /^Bearer cr1\./)
     assert.ok(sent.body.equals(big))
     // out.csv was accepted: what is left pending is the pulled file, until its own verdict.
@@ -1151,8 +1157,8 @@ test('through the sync: a sync the agent cuts short for news counts as said, and
   const docker = fakeAgentDocker()
   docker.registry.set(REVISION.ref, { diffIds: DIFF_IDS })
   const agent = new Agent({
-    layout, join: { home: home.url, code: '0123456789abcdef0123456789abcdef' }, build: 'dev', version: '0.25.0', container: 'colloq-runner',
-    image: 'ghcr.io/colloq-edu/colloq-server:0.25.0', docker, runner: new FakeSeam(),
+    layout, join: { home: home.url, code: '0123456789abcdef0123456789abcdef' }, build: 'dev', version: '0.25.0', container: 'aulalab-runner',
+    image: 'ghcr.io/vighneshtule/aulalab-server:0.25.0', docker, runner: new FakeSeam(),
     machine: () => ({ memTotalMb: 16_000, memAvailableMb: 15_000, cpus: 16, diskFreeMb: 500_000, diskTotalMb: 1_000_000 }),
     backoffMs: { min: 5, max: 20 }, stopMs: 2_000, log: () => undefined,
     tunnel: () => ({ want: () => undefined, state: () => ({ up: false, rttMs: null, since: 0 }), close: async () => undefined }),
@@ -1208,8 +1214,8 @@ test('through the sync: a file report home\'s parser would refuse goes nowhere, 
   docker.registry.set(REVISION.ref, { diffIds: DIFF_IDS })
   const logs: string[] = []
   const agent = new Agent({
-    layout, join: { home: home.url, code: '0123456789abcdef0123456789abcdef' }, build: 'dev', version: '0.25.0', container: 'colloq-runner',
-    image: 'ghcr.io/colloq-edu/colloq-server:0.25.0', docker, runner: new FakeSeam(),
+    layout, join: { home: home.url, code: '0123456789abcdef0123456789abcdef' }, build: 'dev', version: '0.25.0', container: 'aulalab-runner',
+    image: 'ghcr.io/vighneshtule/aulalab-server:0.25.0', docker, runner: new FakeSeam(),
     machine: () => ({ memTotalMb: 16_000, memAvailableMb: 15_000, cpus: 16, diskFreeMb: 500_000, diskTotalMb: 1_000_000 }),
     backoffMs: { min: 5, max: 20 }, stopMs: 2_000, log: (line) => logs.push(line),
     tunnel: () => ({ want: () => undefined, state: () => ({ up: false, rttMs: null, since: 0 }), close: async () => undefined }),

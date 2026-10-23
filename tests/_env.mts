@@ -8,7 +8,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-const root = mkdtempSync(path.join(tmpdir(), 'colloq-test-'))
+const root = mkdtempSync(path.join(tmpdir(), 'aulalab-test-'))
 
 /*
  * The process cleans up after itself, and does it at the very end.
@@ -59,7 +59,7 @@ process.env.JUPYTER_URL = 'http://127.0.0.1:1'
  *
  * A room now has its own container (`kernel/pool.ts`), and without this line
  * the suite started a real one for every seminar: one run left thirty-six
- * hanging `colloq-room-*` on the machine. The Jupyter fake in
+ * hanging `aulalab-room-*` on the machine. The Jupyter fake in
  * `kernel.test.mts` replaces the kernel entirely, so there is nothing to
  * start.
  */

@@ -63,7 +63,7 @@ const BOOT = `(function(){
   "use strict";
   var TAG=${JSON.stringify(PLOTLY_MSG)},SRC=${JSON.stringify(PLOTLY_BUNDLE_PATH)};
   var host=document.getElementById("plot"),pending=null,shown=false,sent=-1;
-  function send(msg){msg.colloq=TAG;try{parent.postMessage(msg,"*")}catch(e){}}
+  function send(msg){msg.aulalab=TAG;try{parent.postMessage(msg,"*")}catch(e){}}
   function measure(){
     var h=Math.ceil(host.getBoundingClientRect().height);
     if(h>0&&h!==sent){sent=h;send({kind:"height",height:h})}
@@ -92,7 +92,7 @@ const BOOT = `(function(){
   window.addEventListener("message",function(e){
     if(e.source!==window.parent)return;
     var msg=e.data;
-    if(!msg||typeof msg!=="object"||msg.colloq!==TAG)return;
+    if(!msg||typeof msg!=="object"||msg.aulalab!==TAG)return;
     if(msg.kind==="draw"&&msg.figure&&Array.isArray(msg.figure.data))draw(msg.figure);
   });
   if(window.ResizeObserver){

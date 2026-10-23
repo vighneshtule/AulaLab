@@ -355,7 +355,7 @@ test('Secure follows the scheme of this request, otherwise the cookie is not sto
 
 test('a malformed or foreign cookie means no mark, not a mark', () => {
   assert.equal(deviceOf(undefined), null)
-  assert.equal(deviceOf('colloq_staff=abc'), null)
+  assert.equal(deviceOf('aulalab_staff=abc'), null)
   assert.equal(deviceOf(`${DEVICE_COOKIE}=слишком-коротко`), null)
   assert.equal(deviceOf(`${DEVICE_COOKIE}=${'x'.repeat(4096)}`), null)
   assert.equal(deviceOf(`${DEVICE_COOKIE}=%`), null, 'a malformed cookie does not crash the parsing')

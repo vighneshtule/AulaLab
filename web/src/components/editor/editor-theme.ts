@@ -1,6 +1,6 @@
 import type { Extension } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { colloqTheme } from '@/components/notebook/cm-theme'
+import { aulalabTheme } from '@/components/notebook/cm-theme'
 
 /**
  * The file editor's styling: the same as the cell's, plus what the cell does
@@ -97,4 +97,4 @@ const surface = EditorView.theme({
   },
 })
 
-export const fileTheme: Extension = [colloqTheme, surface]
+export const fileTheme: Extension = [aulalabTheme, surface]

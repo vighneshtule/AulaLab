@@ -292,7 +292,7 @@ for on_full in (lambda output: download_full(output, limit), None):
  */
 test('a phase works in its room: /tmp under docker, the job\'s /work under the broker', () => {
   python(PREPARATION_PYTHON, `assert ROOM == pathlib.Path('/tmp'), ROOM`, { COMP_OUT: '' })
-  const room = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-room-'))
+  const room = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-room-'))
   try {
     python(PREPARATION_PYTHON + FIXTURES, `
 assert ROOM == pathlib.Path(${JSON.stringify(room)}), ROOM

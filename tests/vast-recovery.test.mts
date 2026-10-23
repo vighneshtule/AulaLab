@@ -9,18 +9,18 @@ import { fileURLToPath } from 'node:url'
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dirs: string[] = []
 after(() => dirs.forEach(dir => fs.rmSync(dir, { recursive: true, force: true })))
-function temp() { const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-portable-')); dirs.push(dir); return dir }
+function temp() { const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-portable-')); dirs.push(dir); return dir }
 function run(...args: string[]) { const r = spawnSync('python3', [path.join(repo, 'scripts/runtime-backup.py'), ...args], { encoding: 'utf8' }); return { status: r.status, out: r.stdout + r.stderr } }
 function seed() {
   const root = temp(); fs.mkdirSync(path.join(root, 'data')); fs.mkdirSync(path.join(root, 'workspace/room-a'), { recursive: true })
-  const sql = spawnSync('python3', ['-c', 'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("create table note(value text)"); c.execute("insert into note values (\'kept\')"); c.commit()', path.join(root, 'data/colloq.db')]); assert.equal(sql.status, 0)
+  const sql = spawnSync('python3', ['-c', 'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("create table note(value text)"); c.execute("insert into note values (\'kept\')"); c.commit()', path.join(root, 'data/aulalab.db')]); assert.equal(sql.status, 0)
   fs.writeFileSync(path.join(root, 'workspace/room-a/file.txt'), 'room data')
   fs.writeFileSync(path.join(root, 'workspace/room-a/run.sh'), '#!/bin/sh\ntrue\n', { mode: 0o700 })
   fs.writeFileSync(path.join(root, 'data/session-secret'), 'test-key', { mode: 0o600 })
   fs.writeFileSync(path.join(root, 'config.env'), 'OPENAI_API_KEY=test-secret\n', { mode: 0o600 })
   fs.mkdirSync(path.join(root, 'secrets')); fs.writeFileSync(path.join(root, 'secrets/room-secret'), 'persistent-room-identity', { mode: 0o600 })
   const release = path.join(root, 'release.json'); fs.writeFileSync(release, JSON.stringify({ schemaVersion: 1, version: '1.0.0', dataSchemaVersion: 1, compatibleDataSchemaVersions: [1], catalog: { schemaVersion: 1, release: '1.0.0', environments: [] } }))
-  return { root, release, archive: path.join(temp(), 'colloq-test.tar.gz') }
+  return { root, release, archive: path.join(temp(), 'aulalab-test.tar.gz') }
 }
 test('portable live backup roundtrips data, secret, catalog and declares non-atomic files', () => {
   const s = seed()
@@ -73,8 +73,8 @@ test('workspace manifest.json files are also checksum-covered', () => {
 test('consistent shell backup stops all writers and resumes only when explicitly requested', () => {
   const s = seed(); fs.mkdirSync(path.join(s.root, 'scripts'))
   for (const f of ['backup.sh', 'runtime-backup.py', 'state-lock.py']) fs.copyFileSync(path.join(repo, 'scripts', f), path.join(s.root, 'scripts', f))
-  fs.writeFileSync(path.join(s.root, 'scripts/cluster.sh'), '#!/bin/bash\necho "$1" >> "$COLLOQ_STATE_DIR/lifecycle"\n')
-  const result = spawnSync('bash', ['scripts/backup.sh'], { cwd: s.root, encoding: 'utf8', env: { ...process.env, COLLOQ_STATE_DIR: s.root, RELEASE: s.release, OUT: s.archive, MODE: 'consistent', RESUME: '1', NAME: '' } })
+  fs.writeFileSync(path.join(s.root, 'scripts/cluster.sh'), '#!/bin/bash\necho "$1" >> "$AULALAB_STATE_DIR/lifecycle"\n')
+  const result = spawnSync('bash', ['scripts/backup.sh'], { cwd: s.root, encoding: 'utf8', env: { ...process.env, AULALAB_STATE_DIR: s.root, RELEASE: s.release, OUT: s.archive, MODE: 'consistent', RESUME: '1', NAME: '' } })
   assert.equal(result.status, 0, result.stdout + result.stderr)
   assert.equal(fs.readFileSync(path.join(s.root, 'lifecycle'), 'utf8'), 'stop\nstart\n')
   assert.match(run('validate', '--archive', s.archive).out, /stopped-writers/)
@@ -82,8 +82,8 @@ test('consistent shell backup stops all writers and resumes only when explicitly
 test('a failed stop prevents consistent backup creation and does not restart writers', () => {
   const s = seed(); fs.mkdirSync(path.join(s.root, 'scripts'))
   for (const f of ['backup.sh', 'runtime-backup.py', 'state-lock.py']) fs.copyFileSync(path.join(repo, 'scripts', f), path.join(s.root, 'scripts', f))
-  fs.writeFileSync(path.join(s.root, 'scripts/cluster.sh'), '#!/bin/bash\necho "$1" >> "$COLLOQ_STATE_DIR/lifecycle"\nexit 55\n')
-  const result = spawnSync('bash', ['scripts/backup.sh'], { cwd: s.root, encoding: 'utf8', env: { ...process.env, COLLOQ_STATE_DIR: s.root, RELEASE: s.release, OUT: s.archive, MODE: 'consistent', RESUME: '1', NAME: '' } })
+  fs.writeFileSync(path.join(s.root, 'scripts/cluster.sh'), '#!/bin/bash\necho "$1" >> "$AULALAB_STATE_DIR/lifecycle"\nexit 55\n')
+  const result = spawnSync('bash', ['scripts/backup.sh'], { cwd: s.root, encoding: 'utf8', env: { ...process.env, AULALAB_STATE_DIR: s.root, RELEASE: s.release, OUT: s.archive, MODE: 'consistent', RESUME: '1', NAME: '' } })
   assert.equal(result.status, 55)
   assert.equal(fs.readFileSync(path.join(s.root, 'lifecycle'), 'utf8'), 'stop\n')
   assert.ok(!fs.existsSync(s.archive))

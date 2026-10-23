@@ -81,7 +81,7 @@ export function counterValues() {
  * word about metrics, and those land in `other` rather than nowhere. A route
  * that knows more than its address says leaves a note on the response.
  */
-const REFUSAL_KEY = 'colloqRefusal'
+const REFUSAL_KEY = 'aulalabRefusal'
 
 export function refusalReason(res: { locals: Record<string, unknown> }, reason: RefusalReason): void {
   res.locals[REFUSAL_KEY] = reason

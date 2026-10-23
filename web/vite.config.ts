@@ -20,19 +20,19 @@ const API_TARGET = process.env.VITE_API_TARGET ?? 'http://localhost:3000'
  * a hard-coded string "v0.1" there, which would not have changed with any
  * release.
  */
-const COLLOQ_VERSION = (JSON.parse(
+const AULALAB_VERSION = (JSON.parse(
   fs.readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
 ) as { version: string }).version
-const LOCALES: readonly Locale[] = ['ru', 'en']
+const LOCALES: readonly Locale[] = ['en']
 
 /** Server imports keep all catalogs; browser entry carries only its own copy. */
 function entryLanguage(): Plugin {
   const root = fileURLToPath(new URL('../', import.meta.url))
   const shared = path.join(root, 'shared/i18n')
   const browser = path.join(root, 'web/src/lib/i18n-browser.ts')
-  const virtual = 'virtual:colloq-entry-messages'
+  const virtual = 'virtual:aulalab-entry-messages'
   return {
-    name: 'colloq-entry-language',
+    name: 'aulalab-entry-language',
     enforce: 'pre',
     resolveId(source, importer) {
       if (source === virtual) return '\0' + virtual
@@ -87,23 +87,23 @@ function screenLanguage(): Plugin {
    */
   let client: Set<string> | null = null
   return {
-    name: 'colloq-screen-language',
+    name: 'aulalab-screen-language',
     enforce: 'pre',
     load(id) {
       const file = id.split('?')[0]
       if (path.dirname(file) !== folder || !file.endsWith('.ts')) return
       const [area, locale] = path.basename(file, '.ts').split('-')
       if (!area || !LOCALES.includes(locale as Locale)) {
-        throw new Error(`colloq-screen-language: ${file} — the name must be <area>-<ru|en>.ts`)
+        throw new Error(`aulalab-screen-language: ${file} — the name must be <area>-en.ts`)
       }
       const source = fs.readFileSync(file, 'utf8')
       const wanted = [...source.matchAll(/@shared\/locales\/([a-z]+)/g)].map((match) => match[1])
-      if (wanted.length === 0) throw new Error(`colloq-screen-language: ${file} has no catalogs`)
+      if (wanted.length === 0) throw new Error(`aulalab-screen-language: ${file} has no catalogs`)
       client ??= collectClientKeys(root, messages, 'server')
       const out: Record<string, Record<string, unknown>> = {}
       for (const name of wanted) {
         const catalog = catalogs[name]
-        if (!catalog) throw new Error(`colloq-screen-language: unknown catalog ${name}`)
+        if (!catalog) throw new Error(`aulalab-screen-language: unknown catalog ${name}`)
         this.addWatchFile(path.join(root, 'shared/locales', `${name}.ts`))
         for (const [key, pair] of Object.entries(catalog)) {
           if (name === 'server' && !client.has(key)) continue
@@ -218,15 +218,14 @@ function withoutComments(html: string): string {
 /*
  * The same pair of helpers for both scripts in the head: `add` inserts a
  * preload link, working out whether it is a module or a stylesheet, and
- * `lang` reads the language from `<html lang>`, which the server has already
- * rewritten for the instance (frontend-html.ts). The language meta comes
- * AFTER these scripts and is not visible to them yet.
+ * `lang` pins this English-only build to its sole supported locale. The
+ * language meta comes AFTER these scripts and is not visible to them yet.
  */
 const PRELOAD_HELPERS =
   `const add=(f,w)=>{const l=document.createElement("link");const css=f.endsWith(".css");` +
   `l.rel=css?"preload":"modulepreload";if(css)l.as="style";l.crossOrigin="anonymous";` +
   `if(w)l.fetchPriority=w;l.href=f;document.head.appendChild(l)};` +
-  `const lang=document.documentElement.lang==="en"?"en":"ru";`
+  `const lang="en";`
 
 /**
  * Edits to the HTML Vite serves — all for the sake of the first frame:
@@ -246,7 +245,7 @@ const PRELOAD_HELPERS =
 function firstPaint(): Plugin {
   let base = '/'
   return {
-    name: 'colloq-first-paint',
+    name: 'aulalab-first-paint',
     apply: 'build',
     configResolved(config) {
       base = config.base
@@ -263,10 +262,10 @@ function firstPaint(): Plugin {
         // it at all: the monospace font was warmed there just because "it is
         // not the room".
         out = out.replace(/<link\b[^>]*href="\/fonts\/jetbrains-mono-latin\.woff2"[^>]*>/g,
-          `<script data-colloq-mono-preload>(()=>{const p=location.pathname;` +
+          `<script data-aulalab-mono-preload>(()=>{const p=location.pathname;` +
           `const room=/^\\/s\\/([A-Za-z0-9_-]{1,64})(?:\\/|$)/.exec(p);` +
           `let warm=/^\\/(?:c|p)\\//.test(p);` +
-          `try{if(room)warm=!!JSON.parse(localStorage.getItem("colloq.identity.v1")||"{}")[room[1]]?.token}catch{}` +
+          `try{if(room)warm=!!JSON.parse(localStorage.getItem("aulalab.identity.v1")||"{}")[room[1]]?.token}catch{}` +
           `if(warm){const l=document.createElement("link");l.rel="preload";l.as="font";l.type="font/woff2";` +
           `l.crossOrigin="anonymous";l.href="/fonts/jetbrains-mono-latin.woff2";document.head.appendChild(l)}})()</script>`)
         out = out.replace(/<link[^>]+rel="stylesheet"[^>]*>/g, (tag) => {
@@ -275,7 +274,7 @@ function firstPaint(): Plugin {
           if (/\bmedia=/.test(tag) || /href="https?:/.test(tag)) return tag
           const deferred = tag
             .replace(/\brel="stylesheet"/, 'rel="preload" as="style"')
-            .replace(/\/?>$/, ` onload="this.rel='stylesheet'" data-colloq-css>`)
+            .replace(/\/?>$/, ` onload="this.rel='stylesheet'" data-aulalab-css>`)
           return `${deferred}<noscript>${tag}</noscript>`
         })
 
@@ -301,7 +300,7 @@ function firstPaint(): Plugin {
           const chunk = byName.get(name)
           if (!chunk) {
             throw new Error(
-              `colloq-first-paint: the build has no chunk ${name} — it was renamed, ` +
+              `aulalab-first-paint: the build has no chunk ${name} — it was renamed, ` +
                 'but the preload in the head kept the old name',
             )
           }
@@ -326,7 +325,7 @@ function firstPaint(): Plugin {
         const styles = (list: Chunk[]): string[] => [
           ...new Set(list.flatMap((chunk) => [...(chunk.viteMetadata?.importedCss ?? [])])),
         ].filter((file) => !out.includes(`href="${base}${file}"`))
-        /** The area's dictionary in each language: the script in the head picks one. */
+        /** The English dictionary for this area. */
         const speaks = (area: string, files: string[]): Record<string, string[]> =>
           Object.fromEntries(LOCALES.map((locale) =>
             [locale, [...files, base + need(`${area}-${locale}`).fileName]]))
@@ -367,12 +366,12 @@ function firstPaint(): Plugin {
           ...styles(room).map((file) => base + file),
         ]
         out = out.replace('</head>',
-          `<script data-colloq-room-preload>(()=>{const room=/^\\/s\\/([A-Za-z0-9_-]{1,64})(?:\\/|$)/.exec(location.pathname);` +
-            `let known=false;try{known=!!(room&&JSON.parse(localStorage.getItem("colloq.identity.v1")||"{}")[room[1]]?.token)}catch{}` +
+          `<script data-aulalab-room-preload>(()=>{const room=/^\\/s\\/([A-Za-z0-9_-]{1,64})(?:\\/|$)/.exec(location.pathname);` +
+            `let known=false;try{known=!!(room&&JSON.parse(localStorage.getItem("aulalab.identity.v1")||"{}")[room[1]]?.token)}catch{}` +
             `${PRELOAD_HELPERS}const files=${JSON.stringify(speaks('room', roomFiles))};` +
             `let warmed=false;const warm=()=>{if(!room||warmed)return;warmed=true;` +
             `for(const f of files[lang])add(f,"low")};` +
-            `if(known)warm();else window.addEventListener("colloq:ready",warm,{once:true})})()</script></head>`)
+            `if(known)warm();else window.addEventListener("aulalab:ready",warm,{once:true})})()</script></head>`)
 
         // These routes have no join form. Fetch their code and catalog together
         // now, while loadLocalizedScreen still controls evaluation order.
@@ -380,7 +379,7 @@ function firstPaint(): Plugin {
           const chunk = byName.get(name)
           return chunk ? [base + chunk.fileName, ...styles([chunk]).map((file) => base + file)] : []
         }))
-        out = out.replace('</head>', `<script data-colloq-route-preload>(()=>{` +
+        out = out.replace('</head>', `<script data-aulalab-route-preload>(()=>{` +
           `const p=location.pathname;${PRELOAD_HELPERS}` +
           `const files=/^\\/(?:admin(?:\\/|$)|$)/.test(p)?${JSON.stringify(route('admin', ['AdminScreen']))}:` +
           `/^\\/(?:c|p)\\//.test(p)?${JSON.stringify(route('reader', ['ReaderScreen', 'render']))}:null;` +
@@ -393,7 +392,7 @@ function firstPaint(): Plugin {
 
 export default defineConfig({
   plugins: [entryLanguage(), screenLanguage(), svelte(), firstPaint()],
-  define: { __COLLOQ_VERSION__: JSON.stringify(COLLOQ_VERSION) },
+  define: { __AULALAB_VERSION__: JSON.stringify(AULALAB_VERSION) },
   resolve: {
     alias: {
       '@shared': fileURLToPath(new URL('../shared', import.meta.url)),

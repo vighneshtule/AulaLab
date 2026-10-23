@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { acquireLock, readReceipt, writeJson } from '../cli/src/launch-state.js'
 
 test('launch lock excludes a second owner, reclaims a dead owner and never removes a replacement', () => {
-  const root = mkdtempSync(join(tmpdir(), 'colloq-launch-lock-')),
+  const root = mkdtempSync(join(tmpdir(), 'aulalab-launch-lock-')),
     file = join(root, 'lock')
   try {
     const release = acquireLock(file, 42, 'first', () => true)
@@ -23,7 +23,7 @@ test('launch lock excludes a second owner, reclaims a dead owner and never remov
 })
 
 test('malformed receipts cannot identify a running session', () => {
-  const root = mkdtempSync(join(tmpdir(), 'colloq-launch-receipt-')),
+  const root = mkdtempSync(join(tmpdir(), 'aulalab-launch-receipt-')),
     file = join(root, 'receipt')
   try {
     writeFileSync(file, '{"pid":1}')

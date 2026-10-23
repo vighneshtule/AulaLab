@@ -22,8 +22,8 @@ served from there, leaving the tunnel to what it is there for: the live room.
 Lives on the loopback (127.0.0.1:9182) behind caddy, which hands it the
 /.relay/assets/* path on any name under its zone. The path starts with a dot:
 no instance address looks like that, and the route takes nothing away from a
-room. Installed by scripts/relay-setup.sh as the colloq-assets service under a
-separate user; data in /var/lib/colloq-assets.
+room. Installed by scripts/relay-setup.sh as the aulalab-assets service under a
+separate user; data in /var/lib/aulalab-assets.
 
 The files are served NOT by this service but by caddy, straight from the
 directory (file_server with precompressed br gzip). A mirror miss is not a
@@ -33,7 +33,7 @@ breaks nothing; it only brings back the old speed.
 
 Who owns what. The secret is the same as for frps: everyone entitled to take a
 subdomain already has it. The name in the path must match the name the
-request came by (X-Forwarded-Host from caddy), that is, hse.colloq.ru can
+request came by (X-Forwarded-Host from caddy), that is, hse.example.edu can
 rewrite only its own mirror and only through its own tunnel address.
 
 Why the standard library: the relay has neither node nor pip; it is a machine
@@ -51,8 +51,8 @@ and that costs no space.
 
 Checking by hand, without the relay:
     ASSETS_ROOT=/tmp/mirror ASSETS_PORT=9182 ASSETS_TOKEN_FILE=/tmp/token \
-        ASSETS_DOMAIN=colloq.ru python3 scripts/relay-assets.py
-Cleanup once a day (the colloq-assets-prune timer):
+        ASSETS_DOMAIN=example.edu python3 scripts/relay-assets.py
+Cleanup once a day (the aulalab-assets-prune timer):
     python3 scripts/relay-assets.py --prune
 """
 
@@ -68,15 +68,15 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-ROOT = os.environ.get("ASSETS_ROOT", "/var/lib/colloq-assets")
+ROOT = os.environ.get("ASSETS_ROOT", "/var/lib/aulalab-assets")
 PORT = int(os.environ.get("ASSETS_PORT", "9182"))
-DOMAIN = os.environ.get("ASSETS_DOMAIN", "colloq.ru")
-# The secret is read either from /etc/colloq-relay/token or, under systemd,
+DOMAIN = os.environ.get("ASSETS_DOMAIN", "example.edu")
+# The secret is read either from /etc/aulalab-relay/token or, under systemd,
 # from the credentials directory: LoadCredential= gives the service a copy of
 # the file without letting it into the frps directory and without adding an
 # extra group membership.
 TOKEN_FILE = os.environ.get("ASSETS_TOKEN_FILE") or os.path.join(
-    os.environ.get("CREDENTIALS_DIRECTORY", "/etc/colloq-relay"), "token"
+    os.environ.get("CREDENTIALS_DIRECTORY", "/etc/aulalab-relay"), "token"
 )
 PREFIX = "/.relay/assets/"
 # What there is in web/dist at all that is worth mirroring. Everything else
@@ -320,7 +320,7 @@ def prune(now=None):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "colloq-assets/1"
+    server_version = "aulalab-assets/1"
     protocol_version = "HTTP/1.1"
     # A body that is never finished must not hold a thread forever. The archive
     # comes over the loopback from caddy, not from the classroom, but a
@@ -468,11 +468,11 @@ def main():
     os.makedirs(STAGE, exist_ok=True)
     if "--prune" in sys.argv[1:]:
         for name in prune():
-            sys.stderr.write("colloq-assets: removed %s\n" % name)
+            sys.stderr.write("aulalab-assets: removed %s\n" % name)
         return
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     server.daemon_threads = True
-    sys.stderr.write("colloq-assets: 127.0.0.1:%d, mirror %s, zone %s\n" % (PORT, ROOT, DOMAIN))
+    sys.stderr.write("aulalab-assets: 127.0.0.1:%d, mirror %s, zone %s\n" % (PORT, ROOT, DOMAIN))
     try:
         server.serve_forever()
     except KeyboardInterrupt:

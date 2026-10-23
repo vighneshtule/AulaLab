@@ -24,19 +24,19 @@ const hex = (seed: string) => createHash('sha256').update(seed).digest('hex')
 const DIFF_IDS = ['debian-bookworm', 'python-3.12', 'pip-base', 'kaggle-stack', 'harness-user'].map((layer) => `sha256:${hex(layer)}`)
 const INDEX = `sha256:${hex('the published index')}`
 const CONFIG = `sha256:${hex('the image config')}`
-const GHCR = 'ghcr.io/colloq-edu/colloq-kernel'
+const GHCR = 'ghcr.io/vighneshtule/aulalab-kernel'
 
-/** `docker image inspect colloq-kernel:kaggle-base` on Docker 27, the classic store (overlay2). */
+/** `docker image inspect aulalab-kernel:kaggle-base` on Docker 27, the classic store (overlay2). */
 const CLASSIC = {
   Id: CONFIG,
-  RepoTags: ['colloq-kernel:kaggle-base', `${GHCR}:v0.22.0-kaggle-base`],
+  RepoTags: ['aulalab-kernel:kaggle-base', `${GHCR}:v0.22.0-kaggle-base`],
   RepoDigests: [`${GHCR}@${INDEX}`],
   Parent: '',
   Comment: 'buildkit.dockerfile.v0',
   Created: '2026-10-11T09:12:44.123456789Z',
   DockerVersion: '',
   Author: '',
-  Config: { User: '1000', Env: ['PATH=/usr/local/bin:/usr/bin:/bin', 'PYTHONDONTWRITEBYTECODE=1'], Cmd: ['python3'], WorkingDir: '/home/jovyan', Labels: { 'org.opencontainers.image.source': 'https://github.com/colloq-edu/colloq' } },
+  Config: { User: '1000', Env: ['PATH=/usr/local/bin:/usr/bin:/bin', 'PYTHONDONTWRITEBYTECODE=1'], Cmd: ['python3'], WorkingDir: '/home/jovyan', Labels: { 'org.opencontainers.image.source': 'https://github.com/vighneshtule/AulaLab' } },
   Architecture: 'amd64',
   Os: 'linux',
   Size: 3_421_771_104,
@@ -48,9 +48,9 @@ const CLASSIC = {
 /** The same image on Docker 28 with the containerd image store. */
 const CONTAINERD = {
   Id: INDEX,
-  RepoTags: ['colloq-kernel:kaggle-base', `${GHCR}:v0.22.0-kaggle-base`, 'colloq-revision:0123456789abcdef0123456789abcdef'],
+  RepoTags: ['aulalab-kernel:kaggle-base', `${GHCR}:v0.22.0-kaggle-base`, 'aulalab-revision:0123456789abcdef0123456789abcdef'],
   // Every local name, with the target's digest: the local ones first.
-  RepoDigests: [`colloq-kernel@${INDEX}`, `colloq-revision@${INDEX}`, `${GHCR}@${INDEX}`],
+  RepoDigests: [`aulalab-kernel@${INDEX}`, `aulalab-revision@${INDEX}`, `${GHCR}@${INDEX}`],
   Parent: '',
   Comment: 'buildkit.dockerfile.v0',
   Created: '2026-10-11T09:12:44.123456789Z',
@@ -79,7 +79,7 @@ test('the fingerprint is the text the machines that run submissions hash, byte f
   // machines compute the same text over their own inspect.
   assert.equal(
     layersFingerprint('linux', 'amd64', [DIFF_IDS[0]!, DIFF_IDS[1]!]),
-    hex(`colloq.remote.layers.v1\nlinux/amd64\n${DIFF_IDS[0]}\n${DIFF_IDS[1]}\n`),
+    hex(`aulalab.remote.layers.v1\nlinux/amd64\n${DIFF_IDS[0]}\n${DIFF_IDS[1]}\n`),
   )
 })
 
@@ -109,7 +109,7 @@ test('the fingerprint is the platform and the layers in order, and nothing a sto
 
 test('an image built here and never pushed runs at home only, in both stores', () => {
   assert.equal(imageIdentity({ ...CLASSIC, RepoDigests: [] }, GHCR).registryRef, null)
-  assert.equal(imageIdentity({ ...CONTAINERD, RepoDigests: [`colloq-kernel@${INDEX}`, `colloq-revision@${INDEX}`] }, GHCR).registryRef, null)
+  assert.equal(imageIdentity({ ...CONTAINERD, RepoDigests: [`aulalab-kernel@${INDEX}`, `aulalab-revision@${INDEX}`] }, GHCR).registryRef, null)
   assert.equal(imageIdentity({ ...CLASSIC, RepoDigests: undefined }, GHCR).registryRef, null)
   // The fingerprint is there all the same: the image is known, only not reachable.
   assert.ok(imageIdentity({ ...CLASSIC, RepoDigests: [] }, GHCR).layers)
@@ -119,9 +119,9 @@ test('the reference prefers the kernels\' repository, names any other registry, 
   const mirror = `registry.campus.example:5000/ml/kernel@${INDEX}`
   assert.equal(registryRefOf([mirror, `${GHCR}@${INDEX}`], GHCR), `${GHCR}@${INDEX}`, 'the published repository comes first')
   assert.equal(registryRefOf([mirror], GHCR), mirror, 'an institution\'s registry is a registry')
-  assert.equal(registryRefOf([`localhost:5000/colloq-edu/colloq-kernel@${INDEX}`], GHCR), null, 'no other machine reaches this one\'s loopback')
-  assert.equal(registryRefOf([`127.0.0.1:5000/colloq-edu/colloq-kernel@${INDEX}`], GHCR), null)
-  assert.equal(registryRefOf([`localhost:5000/colloq-edu/colloq-kernel@${INDEX}`], 'localhost:5000/colloq-edu/colloq-kernel'), `localhost:5000/colloq-edu/colloq-kernel@${INDEX}`, 'unless the operator named it')
+  assert.equal(registryRefOf([`localhost:5000/vighneshtule/aulalab-kernel@${INDEX}`], GHCR), null, 'no other machine reaches this one\'s loopback')
+  assert.equal(registryRefOf([`127.0.0.1:5000/vighneshtule/aulalab-kernel@${INDEX}`], GHCR), null)
+  assert.equal(registryRefOf([`localhost:5000/vighneshtule/aulalab-kernel@${INDEX}`], 'localhost:5000/vighneshtule/aulalab-kernel'), `localhost:5000/vighneshtule/aulalab-kernel@${INDEX}`, 'unless the operator named it')
   // Docker Hub in docker's short form, only when it is the operator's own repository.
   assert.equal(registryRefOf([`myorg/kernels@${INDEX}`], GHCR), null)
   assert.equal(registryRefOf([`myorg/kernels@${INDEX}`], 'myorg/kernels'), `docker.io/myorg/kernels@${INDEX}`)
@@ -135,8 +135,8 @@ test('the reference prefers the kernels\' repository, names any other registry, 
 
 test("the preferred repository is the operator's, else the one the image was built with, else the public one", () => {
   assert.equal(kernelImageRepo({}), GHCR)
-  assert.equal(kernelImageRepo({ COLLOQ_KERNEL_REPO: 'registry.example/kernels' }), 'registry.example/kernels')
-  assert.equal(kernelImageRepo({ KERNEL_IMAGE_REPO: 'mirror.example/k', COLLOQ_KERNEL_REPO: 'registry.example/kernels' }), 'mirror.example/k')
+  assert.equal(kernelImageRepo({ AULALAB_KERNEL_REPO: 'registry.example/kernels' }), 'registry.example/kernels')
+  assert.equal(kernelImageRepo({ KERNEL_IMAGE_REPO: 'mirror.example/k', AULALAB_KERNEL_REPO: 'registry.example/kernels' }), 'mirror.example/k')
   assert.equal(kernelImageRepo({ KERNEL_IMAGE_REPO: 'none' }), null)
 })
 
@@ -204,7 +204,7 @@ async function withBackend<T>(backend: string, body: () => Promise<T>): Promise<
 test('a captured revision records its identity, and an image pushed since gains its reference at the next capture', async () => {
   await withBackend('docker', async () => {
     const local = { ...CLASSIC, Id: id(), RepoDigests: [] }
-    const images = new Map<string, object>([['colloq-kernel:base', local]])
+    const images = new Map<string, object>([['aulalab-kernel:base', local]])
     const calls: string[][] = []
     useDockerForRevisions(fakeDocker(images, calls))
     const first = await captureRevision('base')
@@ -212,7 +212,7 @@ test('a captured revision records its identity, and an image pushed since gains 
     assert.equal(first.registryRef, null, 'built here: runs at home only')
     assert.equal(first.layers, layersFingerprint('linux', 'amd64', DIFF_IDS))
     // `make kernel-publish` pushed it since: the same image, now with a repository digest.
-    images.set('colloq-kernel:base', { ...local, RepoDigests: [`${GHCR}@${INDEX}`] })
+    images.set('aulalab-kernel:base', { ...local, RepoDigests: [`${GHCR}@${INDEX}`] })
     const again = await captureRevision('base')
     assert.equal(again.id, first.id, 'the same image is the same revision')
     assert.equal(again.registryRef, `${GHCR}@${INDEX}`)
@@ -225,12 +225,12 @@ test("older revisions learn their images' identity at startup, by their tag or t
     const tagged = revisionOf(id())
     const untagged = revisionOf(id())
     const moved = revisionOf(id())
-    const catalog = revisionOf(`registry.example/colloq-kernel@${INDEX}`)
+    const catalog = revisionOf(`registry.example/aulalab-kernel@${INDEX}`)
     const images = new Map<string, object>([
-      [`colloq-revision:${tagged.id}`, { ...CLASSIC, Id: tagged.imageDigest }],
-      [untagged.imageDigest, { ...CONTAINERD, Id: untagged.imageDigest, RepoDigests: [`colloq-kernel@${untagged.imageDigest}`] }],
+      [`aulalab-revision:${tagged.id}`, { ...CLASSIC, Id: tagged.imageDigest }],
+      [untagged.imageDigest, { ...CONTAINERD, Id: untagged.imageDigest, RepoDigests: [`aulalab-kernel@${untagged.imageDigest}`] }],
       // The tag now names another image, and the revision's own image is gone.
-      [`colloq-revision:${moved.id}`, { ...CLASSIC, Id: id() }],
+      [`aulalab-revision:${moved.id}`, { ...CLASSIC, Id: id() }],
     ])
     const calls: string[][] = []
     useDockerForRevisions(fakeDocker(images, calls))
@@ -238,12 +238,12 @@ test("older revisions learn their images' identity at startup, by their tag or t
     assert.deepEqual([getRevision(tagged.id)?.registryRef, getRevision(tagged.id)?.layers], [`${GHCR}@${INDEX}`, layersFingerprint('linux', 'amd64', DIFF_IDS)])
     assert.deepEqual([getRevision(untagged.id)?.registryRef, getRevision(untagged.id)?.layers], [null, layersFingerprint('linux', 'amd64', DIFF_IDS)])
     assert.deepEqual([getRevision(moved.id)?.registryRef, getRevision(moved.id)?.layers], [null, null], "another image's reference was lent to this revision")
-    assert.ok(!calls.some((args) => args.includes(catalog.imageDigest) || args.includes(`colloq-revision:${catalog.id}`)), 'a catalog reference has no local image to ask')
+    assert.ok(!calls.some((args) => args.includes(catalog.imageDigest) || args.includes(`aulalab-revision:${catalog.id}`)), 'a catalog reference has no local image to ask')
     // A revision that is fully known is not asked again; one that may yet be pushed is.
     calls.length = 0
     assert.equal(await backfillRevisionImages(), 0)
-    assert.ok(!calls.some((args) => args.includes(`colloq-revision:${tagged.id}`)))
-    assert.ok(calls.some((args) => args.includes(`colloq-revision:${untagged.id}`)))
+    assert.ok(!calls.some((args) => args.includes(`aulalab-revision:${tagged.id}`)))
+    assert.ok(calls.some((args) => args.includes(`aulalab-revision:${untagged.id}`)))
   })
 })
 

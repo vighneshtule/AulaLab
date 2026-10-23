@@ -216,7 +216,7 @@ async function rig(timings: Partial<CouncilTimings> = {}, shared?: Pick<Rig, 'la
       try {
         const names = fs.readdirSync(folder)
         if (action === 'remove') for (const name of names) fs.rmSync(path.join(folder, name), { recursive: true, force: true })
-        return { ok: true, out: `${action === 'list' ? names.map((name) => `/s/${name}\0`).join('') + '\n' : ''}colloq-scratch: ok` }
+        return { ok: true, out: `${action === 'list' ? names.map((name) => `/s/${name}\0`).join('') + '\n' : ''}aulalab-scratch: ok` }
       } finally {
         fs.chmodSync(folder, mode)
       }
@@ -281,7 +281,7 @@ async function kernelHost() {
   }
   const logs: string[] = []
   const host: KernelHost = new KernelHost({
-    layout, docker, images, container: 'colloq-runner', image: null, env: {},
+    layout, docker, images, container: 'aulalab-runner', image: null, env: {},
     cards: () => [], cardRuns: () => host.cardRuns(), heldGpus: () => ({}), diskFreeMb: () => 500_000, diskFloorMb: 8192,
     heardAt: () => Date.now(), onChange: () => undefined, log: (line) => logs.push(line), probe: async () => true, sleep: async () => undefined,
     timings: { censusMs: 3_600_000 },
@@ -316,8 +316,8 @@ test('a council container sees the class folder and its epochs read-only and its
     gpu: null, memoryMb: 6144, cpus: 4, pids: 2048, mode: 'blocked', profile: '1', token: 'e'.repeat(40), hashSeed: 7, shm: '1g',
   }, { instanceLabel: INSTANCE_LABEL, gen: 2 }))
   assert.deepEqual(container.mounts, [
-    `${path.join(layout.roomsDir, 's1')}:/workspace/s1:ro`, `${epochsOf(layout)}:/colloq/epochs:ro`, `${scratchOf(layout)}:/colloq/scratch`,
-    `${path.join(gateOf(layout), 'module')}:/colloq/gate:ro`, `${path.join(gateOf(layout), 'ipython_kernel_config.py')}:/etc/ipython/ipython_kernel_config.py:ro`,
+    `${path.join(layout.roomsDir, 's1')}:/workspace/s1:ro`, `${epochsOf(layout)}:/aulalab/epochs:ro`, `${scratchOf(layout)}:/aulalab/scratch`,
+    `${path.join(gateOf(layout), 'module')}:/aulalab/gate:ro`, `${path.join(gateOf(layout), 'ipython_kernel_config.py')}:/etc/ipython/ipython_kernel_config.py:ro`,
   ])
   assert.ok(!container.args.some((arg) => /--gpus|docker\.sock|--privileged/.test(arg)))
   assert.ok(!container.mounts.some((mount) => mount.startsWith(`${layout.root}:`) || mount.includes(layout.placementsDir) || mount.includes(path.join(layout.root, 'data'))))
@@ -326,7 +326,7 @@ test('a council container sees the class folder and its epochs read-only and its
   // could, and the agent shares the kernels' uid (K7a #17, K12b). The agent's own image, as root, the folder alone mounted.
   assert.ok(scratchAtRun && scratchAtRun.isDirectory() && (scratchAtRun.mode & 0o7777) === 0o1733, `mode ${scratchAtRun?.mode.toString(8)}`)
   assert.deepEqual(docker.scratchRuns.map((run) => run.folder), [scratchOf(layout)])
-  const helped = docker.calls.findIndex((args) => args.includes('colloq.kind=council-scratch'))
+  const helped = docker.calls.findIndex((args) => args.includes('aulalab.kind=council-scratch'))
   assert.deepEqual(docker.calls[helped], scratchHelperArgs(docker.selfImage, scratchOf(layout), 'fresh'))
   assert.ok(helped >= 0 && helped < docker.calls.findIndex((args) => args[0] === 'run' && args.includes(CLASS_KERNEL_LABEL)), 'the container ran on a space its workers could list')
   assert.match(docker.scratchRuns[0]!.script, /chown 0:0 \/s; chmod 1733 \/s/)
@@ -395,7 +395,7 @@ test('a new council container finds no attempt of the one before it; one taken a
   // A council of another class that runs on through this life: taken as it runs, its live attempt kept.
   councilMounts(layout, 's2')
   fs.mkdirSync(path.join(scratchOf(layout, 's2'), 'r_live'), { recursive: true })
-  classContainer(docker, { name: machineRoomContainer(INSTANCE_LABEL, 's2', 'council'), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'colloq.placement=s2:council:1'] })
+  classContainer(docker, { name: machineRoomContainer(INSTANCE_LABEL, 's2', 'council'), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'aulalab.placement=s2:council:1'] })
   host.reconcile(block({}, [placement(), placement({ key: 's2:council', gen: 1 })]))
   await host.idle()
   assert.deepEqual(host.held().map((held) => [held.key, held.phase]).sort(), [['s1:council', 'ready'], ['s2:council', 'ready']])
@@ -423,8 +423,8 @@ test('a scratch space the helper cannot make root\'s keeps the council\'s contai
   assert.equal((fs.statSync(scratchOf(layout)).mode & 0o7777).toString(8), '1733')
   assert.deepEqual(fs.readdirSync(scratchOf(layout)), [])
   // What the helper lists is read by name, the folder's path off it, nothing docker said beside it.
-  assert.deepEqual(scratchHelperNames('/s/aa\0/s/b c\0/s/x/y\0WARNING: something\n/s/zz\0\ncolloq-scratch: ok\n'), ['aa', 'b c', 'zz'])
-  assert.deepEqual(scratchHelperNames('colloq-scratch: ok'), [])
+  assert.deepEqual(scratchHelperNames('/s/aa\0/s/b c\0/s/x/y\0WARNING: something\n/s/zz\0\naulalab-scratch: ok\n'), ['aa', 'b c', 'zz'])
+  assert.deepEqual(scratchHelperNames('aulalab-scratch: ok'), [])
 })
 
 /* ------------------------------------------------------------------ epochs */
@@ -1053,8 +1053,8 @@ test('the agent\'s sync says its epochs and the collections over, of what home n
     delayMs: 20,
   })
   const agent = new Agent({
-    layout, join: { home: home.url, code: '0123456789abcdef0123456789abcdef' }, build: 'dev', version: '0.26.0', container: 'colloq-runner',
-    image: 'ghcr.io/colloq-edu/colloq-server:0.26.0', docker, runner: new FakeSeam(),
+    layout, join: { home: home.url, code: '0123456789abcdef0123456789abcdef' }, build: 'dev', version: '0.26.0', container: 'aulalab-runner',
+    image: 'ghcr.io/vighneshtule/aulalab-server:0.26.0', docker, runner: new FakeSeam(),
     machine: () => ({ memTotalMb: 16_000, memAvailableMb: 15_000, cpus: 16, diskFreeMb: 500_000, diskTotalMb: 1_000_000 }),
     backoffMs: { min: 5, max: 20 }, stopMs: 2_000, log: () => undefined,
     tunnel: () => ({ want: () => undefined, state: () => ({ up: false, rttMs: null, since: 0 }), close: async () => undefined }),

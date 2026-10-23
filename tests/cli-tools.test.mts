@@ -18,14 +18,14 @@ const ROOT = '/repo'
 const NOW = 1_700_000_000_000
 
 const FILES: Record<string, string> = {
-  '/repo/package.json': '{ "name": "colloq", "version": "0.1.0" }',
-  '/repo/cli/package.json': '{ "name": "@colloq/cli", "version": "0.1.0" }',
+  '/repo/package.json': '{ "name": "aulalab", "version": "0.1.0" }',
+  '/repo/cli/package.json': '{ "name": "@aulalab/cli", "version": "0.1.0" }',
   // ACTIVITY_SHEET_ID is a marker: the screen prints no .env values except the
   // port and the environment.
   '/repo/.env': [
     'PORT=4000',
     'KERNEL_ENV=cv',
-    'RELAY_DOMAIN=hse.colloq.ru',
+    'RELAY_DOMAIN=hse.example.edu',
     'RELAY_ADDR=203.0.113.10',
     'ACTIVITY_SHEET_ID=1SheetFixture',
   ].join('\n'),
@@ -50,7 +50,7 @@ async function run(
   opts: {
     files?: Record<string, string>
     capture?: (cmd: string, args: string[]) => Answer
-    /** Installed colloq: the app separate, the state separate. */
+    /** Installed aulalab: the app separate, the state separate. */
     dist?: boolean
     home?: string
   } = {},
@@ -104,7 +104,7 @@ function hints(result: Harness): string[] {
  * workshop are gone, and the Makefile and scripts/ do not go into the wheel.
  */
 const DEAD_ENDS = [
-  /colloq (make|build|dev|vast|docker-gid|activity|relay|dns|tunnel|env build)\b/,
+  /aulalab (make|build|dev|vast|docker-gid|activity|relay|dns|tunnel|env build)\b/,
   /npm install/,
   /scripts\//,
   /\bmake\b(?! run)/,
@@ -136,15 +136,15 @@ const LIVE: Record<string, string> = {
   '/repo/.env': [
     'PORT=4000',
     'KERNEL_ENV=cv',
-    'RELAY_DOMAIN=hse.colloq.ru',
+    'RELAY_DOMAIN=hse.example.edu',
     'RELAY_ADDR=203.0.113.10',
     'ACTIVITY_SHEET_ID=1SheetFixture',
-    'PUBLIC_URL=https://hse.colloq.ru',
+    'PUBLIC_URL=https://hse.example.edu',
   ].join('\n'),
-  '/repo/.colloq.pid': '4821\n',
+  '/repo/.aulalab.pid': '4821\n',
   '/repo/web/dist/index.html': '<!doctype html>',
   '/repo/web/dist/assets/app.js': 'export {}',
-  '/repo/backups/colloq-20260905-201332.db': 'db',
+  '/repo/backups/aulalab-20260905-201332.db': 'db',
 }
 
 // ------------------------------------------------------------------ status
@@ -154,7 +154,7 @@ test('status: --dry-run says what it reads and starts nothing', async () => {
   assert.equal(result.code, 0)
   assert.deepEqual(result.calls, [])
   assert.deepEqual(result.out, [
-    'native: status (reads the class receipt, .env, .colloq.pid, docker ps)',
+    'native: status (reads the class receipt, .env, .aulalab.pid, docker ps)',
   ])
 })
 
@@ -162,13 +162,13 @@ test('status: the screen is built from ps, docker and pgrep, the network is not 
   const result = await run(['status'], { files: LIVE, capture: alive })
   assert.equal(result.code, 0)
   assert.deepEqual(result.made, [])
-  assert.match(result.text, /^Colloq · hse$/m)
+  assert.match(result.text, /^Aula Lab · hse$/m)
   assert.match(result.text, /● server\s+pid 4821 · port 4000 · 1h 14m · make run/)
-  assert.match(result.text, /● outside\s+hse\.colloq\.ru · relay \(frpc pid 4990\)/)
-  assert.match(result.text, /link\s+https:\/\/hse\.colloq\.ru/)
-  assert.match(result.text, /● kernels\s+colloq-kernel:cv, built 12\.09 · rooms with a kernel: 2/)
-  assert.match(result.text, /env\s+cv · change: colloq env use <name>/)
-  assert.match(result.text, /● backup\s+colloq-20260905-201332\.db · \d/)
+  assert.match(result.text, /● outside\s+hse\.aulalab\.ru · relay \(frpc pid 4990\)/)
+  assert.match(result.text, /link\s+https:\/\/hse\.aulalab\.ru/)
+  assert.match(result.text, /● kernels\s+aulalab-kernel:cv, built 12\.09 · rooms with a kernel: 2/)
+  assert.match(result.text, /env\s+cv · change: aulalab env use <name>/)
+  assert.match(result.text, /● backup\s+aulalab-20260905-201332\.db · \d/)
   // The setup token and other .env values do not reach the screen.
   assert.equal(result.text.includes('1SheetFixture'), false)
   // Only processes and docker: no systemctl, no network probes.
@@ -179,7 +179,7 @@ test('status: the screen is built from ps, docker and pgrep, the network is not 
 test('status: not a line about machine rental, even if its memory was left behind', async () => {
   const leftover = {
     ...LIVE,
-    '/repo/.colloq/state.json': JSON.stringify({
+    '/repo/.aulalab/state.json': JSON.stringify({
       name: 'hse',
       gpu: 'RTX 5070',
       last: { command: 'vast up', code: 0, at: NOW - 3_600_000 },
@@ -209,8 +209,8 @@ test('status: a client built after the server means a warning and one hint', asy
     /● client\s+web\/dist built \d\d:\d\d — newer than the server \(started \d\d:\d\d\)/,
   )
   assert.deepEqual(
-    hints(result).filter((hint) => hint === 'colloq restart'),
-    ['colloq restart'],
+    hints(result).filter((hint) => hint === 'aulalab restart'),
+    ['aulalab restart'],
   )
 })
 
@@ -219,7 +219,7 @@ test('status: a missing panel is fixed by reinstalling, not by building', async 
   for (const dist of [false, true]) {
     const result = await run(['status'], { files: bare, capture: alive, dist })
     assert.match(result.text, /○ client\s+the frontend is not built/)
-    assert.ok(hints(result).includes('reinstall colloq: pip install --force-reinstall colloq'))
+    assert.ok(hints(result).includes('reinstall aulalab: pip install --force-reinstall aulalab'))
     assertReachable(hints(result))
   }
 })
@@ -229,9 +229,9 @@ test('status: a missing image gets one hint, wherever the CLI is called from', a
     cmd === 'docker' && args[0] === 'image' ? silent : alive(cmd, args)
   for (const dist of [false, true]) {
     const result = await run(['status'], { files: LIVE, capture: noImage, dist })
-    assert.match(result.text, /○ kernels\s+no colloq-kernel:cv image · rooms with a kernel: 2/)
-    assert.ok(hints(result).includes('colloq start — the image is built before the class'))
-    assert.doesNotMatch(result.text, /colloq env build/)
+    assert.match(result.text, /○ kernels\s+no aulalab-kernel:cv image · rooms with a kernel: 2/)
+    assert.ok(hints(result).includes('aulalab start — the image is built before the class'))
+    assert.doesNotMatch(result.text, /aulalab env build/)
   }
 })
 
@@ -253,24 +253,24 @@ test('status: without publication the local address is named once', async () => 
   })
   assert.equal(result.code, 0)
   assert.match(result.text, /○ outside\s+not published · http:\/\/127\.0\.0\.1:4000 only/)
-  assert.ok(hints(result).includes('colloq host <name>'))
+  assert.ok(hints(result).includes('aulalab host <name>'))
   // There is no separate "link" line with the same address: it is given when
   // there is someone to give it to.
   assert.equal(/link/.test(result.text), false)
 })
 
-test('status: no backups, so the hint points to colloq backup', async () => {
-  const { '/repo/backups/colloq-20260905-201332.db': _gone, ...none } = LIVE
+test('status: no backups, so the hint points to aulalab backup', async () => {
+  const { '/repo/backups/aulalab-20260905-201332.db': _gone, ...none } = LIVE
   const result = await run(['status'], { files: none, capture: alive })
   assert.match(result.text, /○ backup\s+no backups/)
-  assert.ok(hints(result).includes('colloq backup'))
+  assert.ok(hints(result).includes('aulalab backup'))
 })
 
-test('status: a compose container has its own form, and the dead pid from .colloq.pid is not printed', async () => {
+test('status: a compose container has its own form, and the dead pid from .aulalab.pid is not printed', async () => {
   const result = await run(['status'], {
     files: LIVE,
     capture: (cmd, args) => {
-      // .colloq.pid is left over from a previous make run: ps knows nothing
+      // .aulalab.pid is left over from a previous make run: ps knows nothing
       // about it.
       if (cmd === 'ps') return silent
       if (cmd === 'docker' && args[0] === 'ps') {
@@ -287,8 +287,8 @@ test("status: neither a service nor a cluster — the teacher's laptop has neith
   const result = await run(['status'], {
     files: {
       ...LIVE,
-      '/repo/.env': LIVE['/repo/.env'] + '\nCOLLOQ_CLUSTER=1',
-      '/etc/systemd/system/colloq.service': '[Unit]',
+      '/repo/.env': LIVE['/repo/.env'] + '\nAULALAB_CLUSTER=1',
+      '/etc/systemd/system/aulalab.service': '[Unit]',
     },
     capture: alive,
   })
@@ -310,7 +310,7 @@ test('status: --short is exactly two lines, without hints', async () => {
   const quiet = await run(['status', '--short'])
   assert.deepEqual(quiet.out, [
     '  ○ server    not running · port 4000',
-    '  ○ outside   not published · colloq host <name>',
+    '  ○ outside   not published · aulalab host <name>',
   ])
 })
 
@@ -335,15 +335,15 @@ test('status: --json is one line and not a single extra .env value', async () =>
   assert.equal(value.public.transport, 'relay')
   assert.equal(value.public.tunnelPid, 4990)
   assert.equal(value.kernel.rooms, 2)
-  assert.equal(value.kernel.image, 'colloq-kernel:cv')
-  assert.equal(value.backup.path, '/repo/backups/colloq-20260905-201332.db')
+  assert.equal(value.kernel.image, 'aulalab-kernel:cv')
+  assert.equal(value.backup.path, '/repo/backups/aulalab-20260905-201332.db')
   assert.equal(result.out[0]?.includes('1SheetFixture'), false)
 })
 
 test('status: empty means exactly one line', async () => {
   const result = await run(['status'])
   assert.equal(result.code, 0)
-  assert.deepEqual(result.out, ['nothing is running · colloq run'])
+  assert.deepEqual(result.out, ['nothing is running · aulalab run'])
 })
 
 test('status: the help text points neither to rental nor to its memory', () => {
@@ -392,7 +392,7 @@ test('doctor: the examination covers only what a class on this machine depends o
     CHECK_IDS,
   )
   // From an installed wheel, the same set.
-  const installed = await run(['doctor', '--json'], { dist: true, home: '/home/.colloq' })
+  const installed = await run(['doctor', '--json'], { dist: true, home: '/home/.aulalab' })
   const same = JSON.parse(installed.out[0] ?? '[]') as { id: string }[]
   assert.deepEqual(
     same.map((check) => check.id),
@@ -405,7 +405,7 @@ test('doctor: broken means ✗ and code 3, switched off means ○ and is not an 
   assert.equal(result.code, 3)
   assert.deepEqual(result.made, [])
   assert.match(result.text, /✗ docker\s+the daemon is not answering/)
-  assert.match(result.text, /✗ kernel image\s+no colloq-kernel:cv image/)
+  assert.match(result.text, /✗ kernel image\s+no aulalab-kernel:cv image/)
   assert.match(result.text, /✗ web\/dist\s+the frontend is not built/)
   assert.match(result.text, /○ cloudflared\s+missing — the quick tunnel will not start/)
   assert.match(result.text, /○ Oracle\s+no key — suggestions are off/)
@@ -420,8 +420,8 @@ test('doctor: no hint leads to something the teacher does not have', async () =>
   // Every non-ok line has a hint, so there are many of them here.
   assert.ok(lines.length >= 8, lines.join('\n'))
   assertReachable(lines)
-  assert.ok(lines.includes('reinstall colloq: pip install --force-reinstall colloq'))
-  assert.ok(lines.includes('colloq start — the image is built before the class'))
+  assert.ok(lines.includes('reinstall aulalab: pip install --force-reinstall aulalab'))
+  assert.ok(lines.includes('aulalab start — the image is built before the class'))
   assert.ok(lines.includes('brew install frpc'))
   assert.ok(lines.includes('clear old backups out of /repo/backups'))
 
@@ -447,7 +447,7 @@ test('doctor: no network at all, so there is nothing for --offline to switch off
 
 test('doctor: frpc is needed only when the relay is set up', async () => {
   const wanted = await run(['doctor'])
-  assert.match(wanted.text, /✗ frpc\s+missing — no way out under \*\.hse\.colloq\.ru/)
+  assert.match(wanted.text, /✗ frpc\s+missing — no way out under \*\.hse\.aulalab\.ru/)
 
   const plain = await run(['doctor'], { files: { '/repo/.env': 'PORT=4000\nKERNEL_ENV=cv' } })
   assert.match(plain.text, /○ frpc\s+the relay is not set up/)
@@ -455,7 +455,7 @@ test('doctor: frpc is needed only when the relay is set up', async () => {
 
 /** A machine where everything is in place: the check must say so and return 0. */
 const READY: Record<string, string> = {
-  '/repo/.env': 'PORT=4000\nKERNEL_ENV=cv\nRELAY_DOMAIN=hse.colloq.ru\nOPENAI_API_KEY=sk-secret',
+  '/repo/.env': 'PORT=4000\nKERNEL_ENV=cv\nRELAY_DOMAIN=hse.example.edu\nOPENAI_API_KEY=sk-secret',
   '/repo/kernel/environments/cv.txt': 'numpy\n',
   '/repo/web/dist/index.html': '<!doctype html>',
   '/repo/web/dist/assets/app.js': 'export {}',
@@ -487,7 +487,7 @@ test('doctor: everything in place gives ✓ on every line, code 0 and not a sing
   assert.equal(result.code, 0, result.text)
   assert.match(result.text, /✓ docker\s+docker-desktop, 8 GB/)
   assert.match(result.text, /✓ port 4000\s+free/)
-  assert.match(result.text, /✓ kernel image\s+colloq-kernel:cv/)
+  assert.match(result.text, /✓ kernel image\s+aulalab-kernel:cv/)
   assert.match(result.text, /✓ environment\s+cv\.txt in place/)
   assert.match(result.text, /✓ web\/dist\s+built, pre-compressed: 1 of 1/)
   assert.match(result.text, /✓ frpc\s+present/)
@@ -499,28 +499,28 @@ test('doctor: everything in place gives ✓ on every line, code 0 and not a sing
   assert.equal(result.text.includes('sk-secret'), false)
 })
 
-test('doctor: room network is ✓ by default, ○ plus the way back with COLLOQ_ROOM_NETWORK=open', async () => {
+test('doctor: room network is ✓ by default, ○ plus the way back with AULALAB_ROOM_NETWORK=open', async () => {
   const blocked = await run(['doctor'], { files: READY, capture: healthy })
   assert.match(blocked.text, /✓ room network\s+local addresses blocked: LAN, router, this computer, cloud metadata/)
 
   const open = await run(['doctor'], {
-    files: { ...READY, '/repo/.env': READY['/repo/.env'] + '\nCOLLOQ_ROOM_NETWORK=open' },
+    files: { ...READY, '/repo/.env': READY['/repo/.env'] + '\nAULALAB_ROOM_NETWORK=open' },
     capture: healthy,
   })
   // A switched-off feature, not a breakage: the code is the same, but it is
   // said out loud.
   assert.equal(open.code, 0, open.text)
-  assert.match(open.text, /○ room network\s+open \(COLLOQ_ROOM_NETWORK=open\): rooms reach your LAN, router and this computer/)
-  assert.ok(hints(open).includes('remove COLLOQ_ROOM_NETWORK=open from .env, then colloq restart'))
+  assert.match(open.text, /○ room network\s+open \(AULALAB_ROOM_NETWORK=open\): rooms reach your LAN, router and this computer/)
+  assert.ok(hints(open).includes('remove AULALAB_ROOM_NETWORK=open from .env, then aulalab restart'))
   assertReachable(hints(open))
 
   // The stricter setting is ✓ and named as such: no internet, no DNS.
   const none = await run(['doctor'], {
-    files: { ...READY, '/repo/.env': READY['/repo/.env'] + '\nCOLLOQ_ROOM_NETWORK=none' },
+    files: { ...READY, '/repo/.env': READY['/repo/.env'] + '\nAULALAB_ROOM_NETWORK=none' },
     capture: healthy,
   })
   assert.equal(none.code, 0, none.text)
-  assert.match(none.text, /✓ room network\s+none \(COLLOQ_ROOM_NETWORK=none\): rooms reach nothing, not even the internet or DNS/)
+  assert.match(none.text, /✓ room network\s+none \(AULALAB_ROOM_NETWORK=none\): rooms reach nothing, not even the internet or DNS/)
 })
 
 test('doctor: an uncompressed panel gives ○ and the same advice to reinstall', async () => {
@@ -528,7 +528,7 @@ test('doctor: an uncompressed panel gives ○ and the same advice to reinstall',
   const result = await run(['doctor'], { files: raw, capture: healthy })
   assert.equal(result.code, 0)
   assert.match(result.text, /○ web\/dist\s+the frontend is not pre-compressed/)
-  assert.ok(hints(result).includes('reinstall colloq: pip install --force-reinstall colloq'))
+  assert.ok(hints(result).includes('reinstall aulalab: pip install --force-reinstall aulalab'))
 })
 
 test('doctor: too little docker memory and disk space give ✗, with workable hints', async () => {
@@ -578,8 +578,8 @@ test("doctor: someone else's process on the port gives ✗ and a fix without pki
         ? { code: 0, stdout: 'node 5150 alex 23u IPv4 TCP *:4000 (LISTEN)\n', stderr: '' }
         : silent,
   })
-  assert.match(result.text, /✗ port 4000\s+taken: node pid 5150 — a second Colloq/)
-  assert.match(result.text, /→ colloq stop · colloq status \(never pkill by name\)/)
+  assert.match(result.text, /✗ port 4000\s+taken: node pid 5150 — a second Aula Lab/)
+  assert.match(result.text, /→ aulalab stop · aulalab status \(never pkill by name\)/)
 })
 
 test('doctor: --json is an array of checks and not a line outside it', async () => {
@@ -608,39 +608,39 @@ test('doctor: --json is an array of checks and not a line outside it', async () 
 })
 
 /**
- * Doctor in an installed colloq: two environment directories and workable
+ * Doctor in an installed aulalab: two environment directories and workable
  * hints.
  *
- * Found live, from the wheel: `colloq doctor` wrote "no kernel/environments/
+ * Found live, from the wheel: `aulalab doctor` wrote "no kernel/environments/
  * mlcourse.txt" about an environment the person had just created and that sat
- * intact in their directory — and next to it suggested `colloq env build`,
- * which deliberately refuses in an installed colloq. Both hints led to a dead
+ * intact in their directory — and next to it suggested `aulalab env build`,
+ * which deliberately refuses in an installed aulalab. Both hints led to a dead
  * end.
  */
 const INSTALLED = {
   '/repo/kernel/environments/base.txt': '# база\n',
-  '/home/.colloq/.env': 'PORT=4000\nKERNEL_ENV=mine\n',
-  '/home/.colloq/environments/mine.txt': '# своё\nstatsmodels\n',
+  '/home/.aulalab/.env': 'PORT=4000\nKERNEL_ENV=mine\n',
+  '/home/.aulalab/environments/mine.txt': '# своё\nstatsmodels\n',
 }
 
 test("doctor sees one's own environment in the second directory and does not point where it will be refused", async () => {
-  const result = await run(['doctor'], { dist: true, home: '/home/.colloq', files: INSTALLED })
+  const result = await run(['doctor'], { dist: true, home: '/home/.aulalab', files: INSTALLED })
   assert.match(result.text, /environment\s+mine\.txt in place · your own/)
   assert.doesNotMatch(result.text, /no mine\.txt list/)
   // No image (the stand-in docker is silent) — but that is fixed by starting,
   // not by building.
-  assert.match(result.text, /colloq start — the image is built before the class/)
-  assert.doesNotMatch(result.text, /colloq env build/)
+  assert.match(result.text, /aulalab start — the image is built before the class/)
+  assert.doesNotMatch(result.text, /aulalab env build/)
   // And cleaning is suggested for backups where they live in an installed
-  // colloq.
-  assert.ok(hints(result).includes('clear old backups out of /home/.colloq/backups'))
+  // aulalab.
+  assert.ok(hints(result).includes('clear old backups out of /home/.aulalab/backups'))
 })
 
-test('doctor in an installed colloq still speaks up when the list is nowhere', async () => {
-  const { '/home/.colloq/environments/mine.txt': _gone, ...without } = INSTALLED
-  const result = await run(['doctor'], { dist: true, home: '/home/.colloq', files: without })
+test('doctor in an installed aulalab still speaks up when the list is nowhere', async () => {
+  const { '/home/.aulalab/environments/mine.txt': _gone, ...without } = INSTALLED
+  const result = await run(['doctor'], { dist: true, home: '/home/.aulalab', files: without })
   assert.match(result.text, /no mine\.txt list in either environment directory/)
-  assert.match(result.text, /colloq env list · colloq env new <name>/)
+  assert.match(result.text, /aulalab env list · aulalab env new <name>/)
 })
 
 test('from a working tree the doctor gives the same hints as from the wheel', async () => {
@@ -649,17 +649,17 @@ test('from a working tree the doctor gives the same hints as from the wheel', as
   const hintsOf = (result: Harness): string[] =>
     (JSON.parse(result.out[0] ?? '[]') as { hint: string }[]).map((check) => check.hint)
   assert.deepEqual(hintsOf(source), hintsOf(wheel))
-  assert.doesNotMatch(source.out[0] ?? '', /colloq env build/)
+  assert.doesNotMatch(source.out[0] ?? '', /aulalab env build/)
 })
 
 /**
  * A class under the supervisor: two processes, two roots and one receipt.
  *
- * .colloq.pid holds the SUPERVISOR's pid, while the port is held by its child,
+ * .aulalab.pid holds the SUPERVISOR's pid, while the port is held by its child,
  * the server, and half the screen computed from the wrong pid. Live it looked
  * like this: status called the supervisor the server and printed "port 3000"
  * while the class sat on 4100; doctor at once declared the real listener "a
- * second Colloq", suggested colloq stop and returned 3 — that is, told the
+ * second Aula Lab", suggested aulalab stop and returned 3 — that is, told the
  * teacher to stop their own class. Below is a test for every place where the
  * pid and the port now come from the receipt.
  */
@@ -672,15 +672,15 @@ const SESSION = JSON.stringify({
   mode: 'run',
   phase: 'ready',
   startedAt: NOW - 600_000,
-  leaseFile: '/repo/.colloq/public-url.json',
+  leaseFile: '/repo/.aulalab/public-url.json',
 })
 
-const RECEIPT = '/repo/.colloq/local-session.json'
+const RECEIPT = '/repo/.aulalab/local-session.json'
 
-test("status: the server's port and pid come from the receipt, not from .env and .colloq.pid", async () => {
+test("status: the server's port and pid come from the receipt, not from .env and .aulalab.pid", async () => {
   const result = await run(['status'], { files: { ...LIVE, [RECEIPT]: SESSION }, capture: alive })
   assert.equal(result.code, 0)
-  assert.match(result.text, /● server\s+pid 4822 · port 4100 · 1h 14m · colloq run/)
+  assert.match(result.text, /● server\s+pid 4822 · port 4100 · 1h 14m · aulalab run/)
   // No supervisor under the "server" label, and no port from .env either.
   assert.doesNotMatch(result.text, /pid 4821/)
   assert.doesNotMatch(result.text, /port 4000/)
@@ -693,8 +693,8 @@ test('status: dev mode is named by the command that starts it: npm run dev', asy
   const dev = JSON.stringify({ ...JSON.parse(SESSION), mode: 'dev' })
   const result = await run(['status'], { files: { ...LIVE, [RECEIPT]: dev }, capture: alive })
   assert.match(result.text, /● server\s+pid 4822 · port 4100 · 1h 14m · npm run dev/)
-  // The CLI has no `colloq dev`, and the screen does not send anyone there.
-  assert.doesNotMatch(result.text, /colloq dev/)
+  // The CLI has no `aulalab dev`, and the screen does not send anyone there.
+  assert.doesNotMatch(result.text, /aulalab dev/)
 })
 
 test("status: the class server is not up yet: the port is there, but no one else's pid", async () => {
@@ -704,7 +704,7 @@ test("status: the class server is not up yet: the port is there, but no one else
     phase: 'starting',
   })
   const result = await run(['status'], { files: { ...LIVE, [RECEIPT]: starting }, capture: alive })
-  assert.match(result.text, /● server\s+port 4100 · 1h 14m · colloq run/)
+  assert.match(result.text, /● server\s+port 4100 · 1h 14m · aulalab run/)
   assert.doesNotMatch(result.text, /pid 4821/)
 })
 
@@ -713,18 +713,18 @@ test("status: the class's public address comes from its address receipt, not fro
     files: {
       ...LIVE,
       [RECEIPT]: SESSION,
-      '/repo/.colloq/public-url.json': JSON.stringify({
+      '/repo/.aulalab/public-url.json': JSON.stringify({
         runId: 'r1',
-        owner: 'colloq',
-        url: 'https://hse.colloq.ru',
+        owner: 'aulalab',
+        url: 'https://hse.example.edu',
         expiresAt: NOW + 600_000,
       }),
     },
     capture: alive,
   })
-  assert.match(result.text, /^Colloq · hse$/m)
-  assert.match(result.text, /● outside\s+hse\.colloq\.ru · relay \(frpc pid 4990\)/)
-  assert.match(result.text, /link\s+https:\/\/hse\.colloq\.ru/)
+  assert.match(result.text, /^Aula Lab · hse$/m)
+  assert.match(result.text, /● outside\s+hse\.aulalab\.ru · relay \(frpc pid 4990\)/)
+  assert.match(result.text, /link\s+https:\/\/hse\.aulalab\.ru/)
 })
 
 test('status: a receipt from a killed class draws nothing', async () => {
@@ -732,10 +732,10 @@ test('status: a receipt from a killed class draws nothing', async () => {
   // process.
   const result = await run(['status'], { files: { [RECEIPT]: SESSION } })
   assert.equal(result.code, 0)
-  assert.deepEqual(result.out, ['nothing is running · colloq run'])
+  assert.deepEqual(result.out, ['nothing is running · aulalab run'])
 })
 
-/** A check during a class: no .colloq.pid at all, the receipt knows everything. */
+/** A check during a class: no .aulalab.pid at all, the receipt knows everything. */
 const CLASS: Record<string, string> = {
   '/repo/.env': 'PORT=4000\nKERNEL_ENV=cv\n',
   [RECEIPT]: SESSION,
@@ -748,10 +748,10 @@ function listening(pid: number): (cmd: string) => Answer {
       : silent
 }
 
-test('doctor: the port listener is the class server, not "a second Colloq"', async () => {
+test('doctor: the port listener is the class server, not "a second Aula Lab"', async () => {
   const result = await run(['doctor'], { files: CLASS, capture: listening(4822) })
   assert.match(result.text, /✓ port 4100\s+our server is listening, pid 4822/)
-  assert.doesNotMatch(result.text, /a second Colloq/)
+  assert.doesNotMatch(result.text, /a second Aula Lab/)
   // The port checked is the one the class runs on: .env knows nothing about
   // 4100.
   assert.ok(result.calls.some((call) => call.includes('-iTCP:4100')))
@@ -765,12 +765,12 @@ test('doctor: the supervisor on the port is ours too: the server may have restar
 test('doctor: someone else on the class port is still ✗', async () => {
   const result = await run(['doctor'], { files: CLASS, capture: listening(5150) })
   assert.equal(result.code, 3)
-  assert.match(result.text, /✗ port 4100\s+taken: node pid 5150 — a second Colloq/)
+  assert.match(result.text, /✗ port 4100\s+taken: node pid 5150 — a second Aula Lab/)
 })
 
 test("doctor: disk space is measured on the state directory's volume, not the app's", async () => {
-  const result = await run(['doctor'], { dist: true, home: '/home/.colloq', files: INSTALLED })
-  assert.ok(result.calls.some((call) => call[1] === 'df' && call[3] === '/home/.colloq'))
+  const result = await run(['doctor'], { dist: true, home: '/home/.aulalab', files: INSTALLED })
+  assert.ok(result.calls.some((call) => call[1] === 'df' && call[3] === '/home/.aulalab'))
   assert.equal(
     result.calls.some((call) => call[1] === 'df' && call[3] === '/repo'),
     false,

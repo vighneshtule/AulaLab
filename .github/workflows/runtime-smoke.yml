@@ -37,21 +37,21 @@ jobs:
           test "${version%%.*}" -ge 28
       - name: Build base and CPU Kaggle environment locally
         run: |
-          docker build --build-arg KERNEL_ENV=base -t colloq-kernel:base kernel
-          docker build --build-arg PARENT=colloq-kernel:base --build-arg KERNEL_ENV=kaggle-base -t colloq-kernel:kaggle-base kernel
+          docker build --build-arg KERNEL_ENV=base -t aulalab-kernel:base kernel
+          docker build --build-arg PARENT=aulalab-kernel:base --build-arg KERNEL_ENV=kaggle-base -t aulalab-kernel:kaggle-base kernel
       - name: Production capability gate and Linux filename regression
         run: node --import tsx --test --test-reporter=spec --test-force-exit --test-concurrency=1 tests/competition-capabilities.test.mts tests/workspace-unicode-atomic.test.mts
       - name: Real package preparation and offline verification
         env:
-          COLLOQ_DEPENDENCY_DOCKER_TEST: '1'
+          AULALAB_DEPENDENCY_DOCKER_TEST: '1'
         run: node --import tsx --test --test-reporter=spec --test-force-exit --test-concurrency=1 tests/dependency-preparation-docker.test.mts
       - name: Prepare, execute offline, score, archive, restore and execute again
         env:
-          COLLOQ_RESTORE_DOCKER_TEST: '1'
+          AULALAB_RESTORE_DOCKER_TEST: '1'
         run: node --import tsx --test --test-reporter=spec --test-force-exit --test-concurrency=1 tests/restore-run-docker.test.mts
       - name: Retained image prerequisite
         if: always()
         run: |
           # The portable archive contains the immutable image reference, not
           # Docker layers. The second run intentionally retains the same image.
-          docker image ls --no-trunc colloq-kernel
+          docker image ls --no-trunc aulalab-kernel

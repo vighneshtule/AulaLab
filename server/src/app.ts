@@ -64,7 +64,7 @@ import { instanceSettingsRoutes } from './routes/instance-settings.js'
 import { instanceResourcesRoutes } from './routes/instance-resources.js'
 import { workspaceFs } from './workspace.js'
 import { PUBLIC_PAGES_INDEXED } from '@shared/publish'
-import { COLLOQ_VERSION } from './version.js'
+import { AULALAB_VERSION } from './version.js'
 
 const STARTED_AT = Date.now()
 
@@ -321,7 +321,7 @@ app.use(express.json({ limit: '1mb' }))
  * Whether the Python the room will use is ready — not the one next door.
  *
  * With isolation (KERNEL_ISOLATION=auto and a live docker) every room has its
- * own container from the `colloq-kernel:<environment>` image, and nobody
+ * own container from the `aulalab-kernel:<environment>` image, and nobody
  * touches the shared compose kernel. Health asked exactly about that one: an
  * unbuilt image of the active environment gave a green answer over an instance
  * where not a single room would start, and a crashed compose kernel a red one
@@ -361,7 +361,7 @@ async function kernelHealth(): Promise<{ ok: boolean; reason: string | null }> {
  * door to the outside.
  *
  * A class may be published to the internet only when every room has its own
- * container (the author's decision): scripts/host.sh and the colloq supervisor
+ * container (the author's decision): scripts/host.sh and the aulalab supervisor
  * (cli/src/launch-share.ts) ask about it here rather than guessing from .env.
  * The answer is not a setting but a fact: the field is set only when the kernel
  * check passed, that is, requireKernelIsolation did not refuse and the docker
@@ -422,7 +422,7 @@ async function probeKernel(): Promise<{ ok: boolean; reason: string | null }> {
  * "Healthy" means "a seminar can be run here".
  *
  * It used to mean "the process answers", and that was enough for host.sh and
- * `make status` to print "Colloq is available at the link" over an instance
+ * `make status` to print "Aula Lab is available at the link" over an instance
  * where Docker had been off since yesterday: the room opens, the link works,
  * and the first Run answers KERNEL DEAD seventy seconds later. The database,
  * Python and file access are checked: without the last, neither a notebook can
@@ -481,7 +481,7 @@ app.get('/api/readyz', (_req, res) => {
  *
  * They are internal text: a database error with its path, Docker's words, the
  * address the server writes into links, the local run id. The operator reads
- * them from where the server runs (colloq-vast status, host.sh, the CLI: all
+ * them from where the server runs (aulalab-vast status, host.sh, the CLI: all
  * ask 127.0.0.1 there) and staff from anywhere; a visitor from the internet
  * gets the verdict, which check failed and the version, the same status code
  * included. Loopback is judged AFTER the forwarded address is resolved: behind
@@ -527,7 +527,7 @@ app.get('/api/health', (req, res) => {
           isolation: roomIsolation(kernel.ok),
           database: database.ok,
           workspace: workspace.ok,
-          version: COLLOQ_VERSION,
+          version: AULALAB_VERSION,
         })
         return
       }
@@ -554,7 +554,7 @@ app.get('/api/health', (req, res) => {
          * nobody to ask.
          */
         publicUrl: config.publicUrl,
-        localRunId: process.env.COLLOQ_LOCAL_SESSION === '1' ? process.env.COLLOQ_LOCAL_RUN_ID ?? null : null,
+        localRunId: process.env.AULALAB_LOCAL_SESSION === '1' ? process.env.AULALAB_LOCAL_RUN_ID ?? null : null,
         /*
          * Which version is answering. Troubleshooting starts with the question
          * "which release do you have", and before this field there was nothing
@@ -562,7 +562,7 @@ app.get('/api/health', (req, res) => {
          * Here, not in /api/livez: livez is a pulse for the k3s probe, and
          * nobody reads its body.
          */
-        version: COLLOQ_VERSION,
+        version: AULALAB_VERSION,
       })
     })()
   })
@@ -575,7 +575,7 @@ app.get('/api/health', (req, res) => {
  * it holds until the first machine with an old browser or an extension that
  * decides for it.
  *
- * The check sat under `/api/admin`, although the same `colloq_staff` also
+ * The check sat under `/api/admin`, although the same `aulalab_staff` also
  * authorizes the writes around it: creating a seminar, uploading and deleting
  * room files, interrupting and restarting the kernel, handing out the console.
  * There only SameSite held — exactly the browser rule this check was introduced
@@ -661,7 +661,7 @@ app.use('/api', (_req, res) => res.status(404).json({ error: tr('common.notFound
  *
  * A room opens by a personal link and lives for hours, and the panel sign-in
  * page is a form with an email field on a young domain: to a search robot,
- * exactly what phishers trade in. Google once flagged all of colloq.ru as
+ * exactly what phishers trade in. Google once flagged all of example.edu as
  * dangerous, and students would have seen the red screen on every seminar
  * address.
  *
@@ -816,7 +816,7 @@ if (config.staticDir) {
     markDevice(req, res)
     const language = getInstanceLanguage()
     // The tab title and the link card go by address: a room has its own name
-    // (link-preview.ts), everything else gets the general Colloq card.
+    // (link-preview.ts), everything else gets the general Aula Lab card.
     void linkPreview(req.path, language, staticDir)
       .then((extras) => frontendPage(indexFile, language, extras))
       .then((page) => {

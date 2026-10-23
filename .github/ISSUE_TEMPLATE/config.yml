@@ -4,11 +4,11 @@
 blank_issues_enabled: true
 contact_links:
   - name: Report a security vulnerability
-    url: https://github.com/colloq-edu/colloq/security/advisories/new
+    url: https://github.com/vighneshtule/AulaLab/security/advisories/new
     about: Report privately. Never open a public issue for a vulnerability.
   - name: Documentation
-    url: https://colloq.ru/docs/en/
-    about: Guides for installing, teaching with and operating Colloq.
+    url: https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/
+    about: Guides for installing, teaching with and operating Aula Lab.
   - name: Troubleshooting
-    url: https://colloq.ru/docs/en/troubleshooting.html
+    url: https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/troubleshooting.html
     about: Common problems and how to diagnose them before filing a bug.

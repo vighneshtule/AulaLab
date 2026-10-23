@@ -17,6 +17,6 @@ test('production app image excludes Docker clients and root systemd entry point 
   assert.doesNotMatch(base, /COPY --from=docker:/)
   assert.match(base, /USER node/)
   assert.match(dockerfile, /FROM app-base AS production\s*$/)
-  assert.doesNotMatch(read('deploy/colloq.service'), /^User=root$/m)
+  assert.doesNotMatch(read('deploy/aulalab.service'), /^User=root$/m)
   assert.match(read('scripts/service.sh'), /cluster.sh install/)
 })

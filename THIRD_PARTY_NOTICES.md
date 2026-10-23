@@ -1,13 +1,13 @@
 # Third-party notices
 
-Colloq's own code is licensed under the [MIT License](LICENSE). This repository
+Aula Lab's own code is licensed under the [MIT License](LICENSE). This repository
 and everything built from it also contain third-party work under other licenses:
 
 - the web bundle (`web/dist`);
 - the server bundle;
 - the Docker images;
 - the pip wheels;
-- the colloq.ru site.
+- the generated static site under `site/`.
 
 This file lists the assets that are committed to the repository and the
 non-MIT components that ship in the builds.
@@ -36,7 +36,7 @@ Copyright 2020 The JetBrains Mono Project Authors
 HSE Sans is the corporate typeface of HSE University (National Research
 University Higher School of Economics). It is **not** covered by this project's
 MIT license, and this repository grants no rights to it: the files are here only
-to render Colloq's own interface. Do not reuse them outside Colloq. A fork that
+to render Aula Lab's own interface. Do not reuse them outside Aula Lab. A fork that
 needs a freely licensed typeface can swap these files and the `@font-face`
 rules in `web/index.html`, `site/styles.css` and `docs/build.py`; the font stacks
 already fall back to system fonts.
@@ -85,7 +85,7 @@ license file, and a Node.js binary:
 
 | Component | License | Where it ends up |
 | --- | --- | --- |
-| Node.js (version and sha256 pinned in `scripts/node-runtime.json`) | MIT, plus the licenses of the libraries it bundles | `colloq/_app/bin/node`, with its full license text in `colloq/_app/bin/node.LICENSE` |
+| Node.js (version and sha256 pinned in `scripts/node-runtime.json`) | MIT, plus the licenses of the libraries it bundles | `aulalab/_app/bin/node`, with its full license text in `aulalab/_app/bin/node.LICENSE` |
 
 ## The vast.ai image
 

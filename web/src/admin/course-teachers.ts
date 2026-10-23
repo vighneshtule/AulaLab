@@ -116,7 +116,7 @@ export function selfRemoval(isOwner: boolean): 'loses' | 'keeps' {
 /* ------------------------------------------------------- lists and rooms */
 
 /** The browser key for the owner's «Мои / Все» on the course list. */
-export const COURSE_SCOPE_KEY = 'colloq.admin.courses.scope'
+export const COURSE_SCOPE_KEY = 'aulalab.admin.courses.scope'
 
 /**
  * The owner's last choice of «Мои / Все», or 'mine'.

@@ -4,82 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!--
-      Language choice before the first paint. The script comes first in
-      <head>, before the styles: location.replace at this point cancels
-      loading the page altogether, and the reader has no time to see the
-      wrong language.
 
-      An explicit choice from the header beats the browser and is kept
-      forever; without it the first language in navigator.languages is
-      used. The Russian page is for ru, be, uk, kk; the English one is for
-      everyone else.
-
-      There will be no loop: both pages compute the same value, and the one
-      the reader is sent to always sees its own. The anchor is carried over,
-      otherwise a link to a section loses the section exactly at the moment
-      it changes language.
-    -->
-    <script>
-      ;(function () {
-        try {
-          var here = 'en'
-          var there = '/'
-          var want = null
-          try {
-            want = localStorage.getItem('colloq-site-lang')
-          } catch (e) {}
-          if (want !== 'ru' && want !== 'en') {
-            var tags =
-              navigator.languages && navigator.languages.length
-                ? navigator.languages
-                : [navigator.language || '']
-            want = null
-            for (var i = 0; i < tags.length; i += 1) {
-              var tag = String(tags[i] || '')
-                .toLowerCase()
-                .split('-')[0]
-              if (!tag) continue
-              want = tag === 'ru' || tag === 'be' || tag === 'uk' || tag === 'kk' ? 'ru' : 'en'
-              break
-            }
-          }
-          if (want && want !== here) location.replace(there + location.hash)
-        } catch (e) {}
-      })()
-    </script>
-
-    <title>Colloq — one link for the whole class</title>
+    <title>Aula Lab — one link for the whole class</title>
     <meta
       name="description"
-      content="A shared Python notebook, lectures with handwritten notes and a separate answer from every student in Council. Colloq runs on your own machine; students join from a link."
+      content="A shared Python notebook, lectures with handwritten notes and a separate answer from every student in Council. Aula Lab runs on your own machine; students join from a link."
     />
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#0f2d69" />
-    <link rel="canonical" href="https://colloq.ru/en/" />
+    <link rel="canonical" href="https://github.com/vighneshtule/AulaLab/" />
 
-    <!--
-      The canonical URL of both pages lives on colloq.ru: the colloq.cc
-      mirror serves the same text, and without a canonical a search engine
-      takes them for different pages about the same thing. x-default is the
-      English one: it is for those whose language matched none of the
-      declared ones, and that is everyone except Russian speakers.
-    -->
-    <link rel="alternate" hreflang="ru" href="https://colloq.ru/" />
-    <link rel="alternate" hreflang="en" href="https://colloq.ru/en/" />
-    <link rel="alternate" hreflang="x-default" href="https://colloq.ru/en/" />
 
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_US" />
-    <meta property="og:locale:alternate" content="ru_RU" />
-    <meta property="og:site_name" content="Colloq" />
-    <meta property="og:title" content="Colloq — one link for the whole class" />
+    <meta property="og:site_name" content="Aula Lab" />
+    <meta property="og:title" content="Aula Lab — one link for the whole class" />
     <meta
       property="og:description"
       content="Give lectures, write code together and go through your students’ answers. Notebook, slides and tasks behind one link, with no sign-up for students."
     />
-    <meta property="og:url" content="https://colloq.ru/en/" />
-    <meta property="og:image" content="https://colloq.ru/img/og-en.png?v=29ecbee2" />
+    <meta property="og:url" content="https://github.com/vighneshtule/AulaLab/" />
+    <meta property="og:image" content="https://github.com/vighneshtule/AulaLab/img/og-en.png?v=29ecbee2" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -97,7 +42,7 @@
 
     <!--
       Site name and logo for search engines: from this markup Google names
-      the site "Colloq" rather than by its domain, and takes the
+      the site "Aula Lab" rather than by its domain, and takes the
       organization's logo.
     -->
     <script type="application/ld+json">
@@ -106,43 +51,40 @@
       "@graph": [
         {
           "@type": "WebSite",
-          "@id": "https://colloq.ru/#site",
-          "url": "https://colloq.ru/",
-          "name": "Colloq",
+          "@id": "https://github.com/vighneshtule/AulaLab/#site",
+          "url": "https://github.com/vighneshtule/AulaLab/",
+          "name": "Aula Lab",
           "alternateName": [
-            "colloq",
-            "Colloq — classroom notebook"
+            "aulalab",
+            "Aula Lab — classroom notebook"
           ],
-          "inLanguage": [
-            "ru",
-            "en"
-          ],
+          "inLanguage": "en",
           "publisher": {
-            "@id": "https://colloq.ru/#org"
+            "@id": "https://github.com/vighneshtule/AulaLab/#org"
           }
         },
         {
           "@type": "Organization",
-          "@id": "https://colloq.ru/#org",
-          "name": "Colloq",
-          "url": "https://colloq.ru/",
+          "@id": "https://github.com/vighneshtule/AulaLab/#org",
+          "name": "Aula Lab",
+          "url": "https://github.com/vighneshtule/AulaLab/",
           "logo": {
             "@type": "ImageObject",
-            "url": "https://colloq.ru/icon-512.png",
+            "url": "https://github.com/vighneshtule/AulaLab/icon-512.png",
             "width": 512,
             "height": 512
           },
           "sameAs": [
-            "https://github.com/colloq-edu/colloq",
-            "https://pypi.org/project/colloq/"
+            "https://github.com/vighneshtule/AulaLab",
+            "https://pypi.org/project/aulalab/"
           ]
         },
         {
           "@type": "SoftwareApplication",
-          "name": "Colloq",
+          "name": "Aula Lab",
           "applicationCategory": "EducationalApplication",
           "operatingSystem": "macOS, Linux",
-          "url": "https://colloq.ru/en/",
+          "url": "https://github.com/vighneshtule/AulaLab/",
           "license": "https://opensource.org/licenses/MIT",
           "offers": {
             "@type": "Offer",
@@ -151,7 +93,7 @@
           },
           "inLanguage": "en",
           "publisher": {
-            "@id": "https://colloq.ru/#org"
+            "@id": "https://github.com/vighneshtule/AulaLab/#org"
           }
         }
       ]
@@ -177,7 +119,7 @@
     <header class="section section--brand on-brand hero" aria-labelledby="hero-h">
       <div class="inner">
         <nav class="nav" aria-label="Main navigation">
-          <a class="wordmark" href="/en/">
+          <a class="wordmark" href="/">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
               <rect x="2" y="2" width="6" height="6" rx="1.6" />
               <rect x="9" y="2" width="6" height="6" rx="1.6" fill="#374B9B" />
@@ -189,11 +131,11 @@
               <rect x="9" y="16" width="6" height="6" rx="1.6" fill="#374B9B" />
               <rect x="16" y="16" width="6" height="6" rx="1.6" />
             </svg>
-            <span>COLLOQ</span>
+            <span>AULALAB</span>
           </a>
           <div class="nav-links">
             <a href="#seminar">Features</a>
-            <a href="/docs/en/">Documentation</a>
+            <a href="/docs/">Documentation</a>
             <a href="#start">Install <span aria-hidden="true">↗</span></a>
           </div>
           <!--
@@ -201,13 +143,6 @@
             page to itself, and a screen reader will say from aria-current
             that the reader is already here.
           -->
-          <div class="lang-switch" role="group" aria-label="Page language">
-            <a class="lang-option" href="/" data-lang="ru" lang="ru" hreflang="ru" title="Русский"
-              >RU</a
-            >
-            <span class="lang-sep" aria-hidden="true">·</span>
-            <span class="lang-option" aria-current="page">EN</span>
-          </div>
         </nav>
 
         <div class="hero-layout">
@@ -240,7 +175,7 @@
             </div>
 
             <p class="release-note">
-              Open source under MIT. <code>pip install colloq</code> and the class runs on your own
+              Open source under MIT. <code>pip install aulalab</code> and the class runs on your own
               machine.
             </p>
           </div>
@@ -288,18 +223,18 @@
             <p class="label">Install · three commands</p>
             <h2 class="h2" id="start-h">Install the package.<br />Send one link.</h2>
             <p class="prose">
-              Colloq installs like any Python package and brings a class up on your own machine.
+              Aula Lab installs like any Python package and brings a class up on your own machine.
               Students need one link — no accounts, no Python to install.
             </p>
           </div>
           <div class="install-term">
-            <code>pip install colloq</code>
+            <code>pip install aulalab</code>
             <div>
-              <code>colloq start</code>
+              <code>aulalab start</code>
               <p>a class on this machine</p>
             </div>
             <div>
-              <code>colloq start --share</code>
+              <code>aulalab start --share</code>
               <!--
                 Exactly what the flag does: a quick Cloudflare tunnel. A
                 permanent address cannot be promised: it is new on every run.
@@ -309,13 +244,13 @@
           </div>
         </div>
         <div class="inner install-actions">
-          <a class="action-primary action-primary--dark" href="/docs/en/"
+          <a class="action-primary action-primary--dark" href="/docs/"
             >Documentation <span aria-hidden="true">↗</span></a
           >
-          <a class="action-ghost" href="https://github.com/colloq-edu/colloq"
+          <a class="action-ghost" href="https://github.com/vighneshtule/AulaLab"
             >GitHub <span aria-hidden="true">↗</span></a
           >
-          <a class="action-ghost" href="https://pypi.org/project/colloq/"
+          <a class="action-ghost" href="https://pypi.org/project/aulalab/"
             >PyPI <span aria-hidden="true">↗</span></a
           >
           <p class="install-req">Python · Docker</p>
@@ -773,7 +708,7 @@ df.shape</pre
                 <h3>Your own hardware</h3>
               </div>
               <p>
-                Run Colloq on your own computer or server. Different courses can get their own
+                Run Aula Lab on your own computer or server. Different courses can get their own
                 environments with the packages they need, and heavy classes and submissions can
                 compute on connected GPU machines.
               </p>
@@ -935,7 +870,7 @@ df.shape</pre
               <summary>Does it work for a remote class?</summary>
               <p>
                 Yes, as long as the room can reach the server. Voice and video stay in whatever call
-                service you use; the code, the slides and the tasks open in Colloq.
+                service you use; the code, the slides and the tasks open in Aula Lab.
               </p>
             </details>
             <details>
@@ -955,7 +890,7 @@ df.shape</pre
             <p class="label label--on-brand">On your own machine</p>
             <h2 class="h2" id="deploy-h">The course environment<br />stays under your control.</h2>
             <p class="prose">
-              Colloq runs on a teacher’s laptop, a department server or a VPS. Python executes on
+              Aula Lab runs on a teacher’s laptop, a department server or a VPS. Python executes on
               that machine; students connect from a browser.
             </p>
             <p class="deploy-release">
@@ -1010,40 +945,29 @@ df.shape</pre
               <rect x="9" y="16" width="6" height="6" rx="1.6" fill="#374B9B" />
               <rect x="16" y="16" width="6" height="6" rx="1.6" />
             </svg>
-            <span>COLLOQ</span>
+            <span>AULALAB</span>
           </div>
           <p>A teaching tool we build and teach with ourselves.</p>
         </div>
 
         <div class="foot-col">
           <p class="label label--on-brand">Project</p>
-          <a href="/docs/en/">Documentation</a>
-          <a href="https://github.com/colloq-edu/colloq">GitHub</a>
-          <a href="https://pypi.org/project/colloq/">PyPI</a>
-          <a href="/" lang="ru" hreflang="ru">Русский</a>
+          <a href="/docs/">Documentation</a>
+          <a href="https://github.com/vighneshtule/AulaLab">GitHub</a>
+          <a href="https://pypi.org/project/aulalab/">PyPI</a>
         </div>
 
-        <div class="foot-col">
-          <p class="label label--on-brand">Author</p>
-          <span>Alexander Kalashnikov</span>
-          <a class="host" href="mailto:sleep3r@icloud.com">sleep3r@icloud.com</a>
-          <span class="host">colloq.ru</span>
-        </div>
       </div>
     </footer>
 
     <!--
-      Dictionary of the page's live pieces. The logic lives in demos.js and
-      is shared by both languages; here is only what differs between them:
+      Dictionary of the page's live pieces. The logic lives in demos.js; this
+      dictionary contains the English interface text.
       names, number words and the kernel's lines.
     -->
     <script>
-      window.COLLOQ_I18N = {
-        /* [initials, colour, name, feminine]: the gender is needed only for
-           the Russian joined/left line, whose verbs agree in gender; here
-           both variants are the same, and the fourth field is zero in every
-           row. The field is kept on purpose: the lists of both languages
-           must be readable by one and the same program. */
+      window.AULALAB_I18N = {
+        /* [initials, colour, name]: the demo roster shown on the home page. */
         roster: [
           ['AL', '#e8734a', 'Alice', 0],
           ['BN', '#8b6bd9', 'Ben', 0],

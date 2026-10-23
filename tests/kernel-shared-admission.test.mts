@@ -19,7 +19,7 @@ function deferred<T>() { let resolve!: (value: T) => void; const promise = new P
 type Reply = { code: number; out: string }
 function fakeDocker() {
   const old = { ...process.env }, oldSpawn = cp.spawn, oldFetch = globalThis.fetch, exists = fs.existsSync
-  Object.assign(process.env, { KERNEL_BACKEND: 'docker', COMPETITION_BACKEND: 'docker', KERNEL_ISOLATION: 'required', KERNEL_NETWORK: 'admission-network', COLLOQ_ROOM_NETWORK: 'open' })
+  Object.assign(process.env, { KERNEL_BACKEND: 'docker', COMPETITION_BACKEND: 'docker', KERNEL_ISOLATION: 'required', KERNEL_NETWORK: 'admission-network', AULALAB_ROOM_NETWORK: 'open' })
   fs.existsSync = ((p: any) => p === '/.dockerenv' || exists(p)) as typeof fs.existsSync
   forgetCompetitionRunner()
   const containers = new Map<string, number>(), stopped = new Set<string>(), calls: string[][] = []
@@ -30,7 +30,7 @@ function fakeDocker() {
     if (args[0] === 'network' && args.at(-1)?.includes('Subnet')) return { code: 0, out: '10.213.0.0/22' }
     if (args[0] === 'version' || args[0] === 'network' || args[0] === 'image') return { code: 0, out: 'ready' }
     if (args[0] === 'ps') return { code: 0, out: [...containers].map(([name]) => {
-      const own = name.endsWith('-own'); return `${name.slice('colloq-room-'.length).replace(/-own$/, '')}\t\t${stopped.has(name) ? 'exited' : 'running'}\t${own ? 'own' : 'room'}`
+      const own = name.endsWith('-own'); return `${name.slice('aulalab-room-'.length).replace(/-own$/, '')}\t\t${stopped.has(name) ? 'exited' : 'running'}\t${own ? 'own' : 'room'}`
     }).join('\n') }
     if (args[0] === 'inspect') {
       if (!containers.has(args[1])) return { code: 1, out: 'No such container' }
@@ -43,7 +43,7 @@ function fakeDocker() {
       return { code: 0, out: '' }
     }
     if (args[0] === 'run') {
-      if (!args.includes('--name')) return { code: 0, out: 'colloq-perimeter: ok' }
+      if (!args.includes('--name')) return { code: 0, out: 'aulalab-perimeter: ok' }
       const name = args[args.indexOf('--name') + 1]
       containers.set(name, Number(args.find(a => a.startsWith('--memory='))!.match(/\d+/)![0]))
       return { code: 0, out: name }
@@ -69,7 +69,7 @@ function fakeDocker() {
   useDockerInfo(async () => ({ code: 0, out: `${9216 * 1024 ** 2} 8` })); forgetResources()
   return { containers, stopped, calls, intercept(fn: typeof intercept) { intercept = fn }, async restore() {
     intercept = undefined
-    for (const name of [...containers.keys()]) await dropRoomKernel(name.slice('colloq-room-'.length).replace(/-own$/, ''))
+    for (const name of [...containers.keys()]) await dropRoomKernel(name.slice('aulalab-room-'.length).replace(/-own$/, ''))
     cp.spawn = oldSpawn; globalThis.fetch = oldFetch; fs.existsSync = exists; syncBuiltinESMExports()
     for (const key of Object.keys(process.env)) if (!(key in old)) delete process.env[key]
     Object.assign(process.env, old); forgetCompetitionRunner(); useDockerInfo(null); forgetResources()
@@ -103,7 +103,7 @@ test('room and own startup honor already admitted competition and preparation me
 test('concurrent room and own launches reserve before Docker census can see either container', async () => {
   const docker = fakeDocker(), entered = deferred<void>(), finish = deferred<Reply>()
   const id = room('admission-racing', 5000)
-  docker.intercept(args => { if (args[0] === 'run' && args.includes('--name') && !args.includes(`colloq-room-${id}-own`)) { entered.resolve(); return finish.promise } })
+  docker.intercept(args => { if (args[0] === 'run' && args.includes('--name') && !args.includes(`aulalab-room-${id}-own`)) { entered.resolve(); return finish.promise } })
   const first = endpointForSession(id, 'base'); void first.catch(() => {})
   try {
     await entered.promise
@@ -111,7 +111,7 @@ test('concurrent room and own launches reserve before Docker census can see eith
     const capacity = await competitionRunner().capacity()
     const background = reserveWork({ id: 'race-preparation', kind: 'preparation', memoryMb: 4000, diskBytes: 0 }, { availableMemoryMb: capacity.availableMb })
     background?.(); assert.equal(background, null, 'background admission must see the in-flight room')
-    docker.containers.set(`colloq-room-${id}`, 5000)
+    docker.containers.set(`aulalab-room-${id}`, 5000)
     finish.resolve({ code: 0, out: 'created' }); await first
     assert.equal((await machineResources({ fresh: true })).memory.availableMb, 3192, 'stable census replaces the temporary hold exactly once')
     assert.equal(workBudgetSnapshot().jobs, 0)
@@ -120,7 +120,7 @@ test('concurrent room and own launches reserve before Docker census can see eith
 
 test('room and own positive resize honor background promises and failed launch releases its hold', async () => {
   const docker = fakeDocker(), id = room('admission-resize', 1024)
-  docker.containers.set(`colloq-room-${id}`, 1024); docker.containers.set(`colloq-room-${id}-own`, 1024)
+  docker.containers.set(`aulalab-room-${id}`, 1024); docker.containers.set(`aulalab-room-${id}-own`, 1024)
   const release = reserveWork({ id: 'resize-background', kind: 'preparation', memoryMb: 5000, diskBytes: 0 }, {})!
   try {
     setSessionMemoryMb(id, 4096)
@@ -163,8 +163,8 @@ test('successful startup stays reserved until a delayed census observes it, and 
 test('concurrent positive resizes and background starts share the unobserved growth budget', async () => {
   const docker = fakeDocker(), entered = deferred<void>(), finish = deferred<Reply>()
   const a = room('admission-resize-a', 1024), b = room('admission-resize-b', 1024)
-  docker.containers.set(`colloq-room-${a}`, 1024); docker.containers.set(`colloq-room-${b}`, 1024)
-  docker.intercept(args => { if (args[0] === 'update' && args.at(-1) === `colloq-room-${a}`) { entered.resolve(); return finish.promise } })
+  docker.containers.set(`aulalab-room-${a}`, 1024); docker.containers.set(`aulalab-room-${b}`, 1024)
+  docker.intercept(args => { if (args[0] === 'update' && args.at(-1) === `aulalab-room-${a}`) { entered.resolve(); return finish.promise } })
   const first = applyMemoryLimit(a, 5000)
   try {
     await entered.promise
@@ -172,7 +172,7 @@ test('concurrent positive resizes and background starts share the unobserved gro
     const capacity = await competitionRunner().capacity()
     const background = reserveWork({ id: 'resize-race-competition', kind: 'competition', memoryMb: 3000, diskBytes: 0 }, { availableMemoryMb: capacity.availableMb })
     background?.(); assert.equal(background, null)
-    docker.containers.set(`colloq-room-${a}`, 5000)
+    docker.containers.set(`aulalab-room-${a}`, 5000)
     finish.resolve({ code: 0, out: '' }); assert.equal(await first, 'applied')
     assert.equal((await machineResources({ fresh: true })).memory.availableMb, 2168)
     assert.equal(workBudgetSnapshot().jobs, 0)
@@ -184,7 +184,7 @@ test('concurrent positive resizes and background starts share the unobserved gro
 
 test('an unavailable allocation census cannot admit more Docker memory', async () => {
   const docker = fakeDocker(), existing = room('admission-census-existing', 7000)
-  docker.containers.set(`colloq-room-${existing}`, 7000)
+  docker.containers.set(`aulalab-room-${existing}`, 7000)
   docker.intercept(args => args[0] === 'ps' ? Promise.resolve({ code: 1, out: 'daemon census unavailable' }) : undefined)
   try {
     await assert.rejects(endpointForSession(room('admission-census-new', 2048), 'base'), /memory|памят/i)
@@ -198,7 +198,7 @@ test('a successful Docker launch that exits before its first running census rele
   try {
     for (const role of ['room', 'own'] as const) {
       const id = room(`admission-exits-${role}`, 4096)
-      const name = `colloq-room-${id}${role === 'own' ? '-own' : ''}`
+      const name = `aulalab-room-${id}${role === 'own' ? '-own' : ''}`
       docker.intercept(args => {
         if (args[0] !== 'run' || !args.includes('--name')) return undefined
         docker.containers.set(name, 4096); docker.stopped.add(name)
@@ -221,7 +221,7 @@ test('a successful Docker launch that exits before its first running census rele
 })
 
 test('a stopped census begun before Docker start completes cannot release its new reservation', async () => {
-  const docker = fakeDocker(), id = room('admission-old-stopped', 5000), name = `colloq-room-${id}`
+  const docker = fakeDocker(), id = room('admission-old-stopped', 5000), name = `aulalab-room-${id}`
   docker.containers.set(name, 5000); docker.stopped.add(name)
   const starting = deferred<void>(), finishStart = deferred<Reply>(), scanning = deferred<void>(), finishCensus = deferred<Reply>()
   let delayCensus = false

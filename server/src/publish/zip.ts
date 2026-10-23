@@ -148,7 +148,7 @@ export function zipPlan(ctx: ZipContext, options: { verify?: boolean } = {}): Zi
     }
   }
   // The room's own README keeps its name; ours steps aside.
-  const readmeName = files.has(`${top}/README.md`) ? 'README-colloq.md' : 'README.md'
+  const readmeName = files.has(`${top}/README.md`) ? 'README-aulalab.md' : 'README.md'
   const body = readmeOf(ctx)
   const readme = { name: `${top}/${readmeName}`, bytes: body.length, crc: crc32(body), file: null, body }
   return planOf(top, [readme, ...files.list], ctx.day)

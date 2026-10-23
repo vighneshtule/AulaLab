@@ -7,14 +7,14 @@ import path from 'node:path'
 import { parseRuntimeCatalog } from '../shared/runtime.js'
 
 const script = new URL('../scripts/release.py', import.meta.url).pathname
-const image = (letter: string) => `ghcr.io/example/colloq@sha256:${letter.repeat(64)}`
+const image = (letter: string) => `ghcr.io/example/aulalab@sha256:${letter.repeat(64)}`
 const release = () => ({ schemaVersion: 1, version: '0.2.0', sourceCommit: 'a'.repeat(40),
   k3sVersion: 'v1.34.1+k3s1', appImage: image('b'), runtimeImage: image('c'),
   dataSchemaVersion: 1, compatibleDataSchemaVersions: [1],
   catalog: { schemaVersion: 1, release: '0.2.0', defaultEnvironment: 'base',
     environments: [{ name: 'base', image: image('d'), gpu: false }] } })
 function run(command: string, value = release(), args: string[] = [], previous?: ReturnType<typeof release>, dataRelease?: ReturnType<typeof release>) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-release-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-release-'))
   try {
     const file = path.join(dir, 'release.json')
     fs.writeFileSync(file, JSON.stringify(value))
@@ -47,15 +47,15 @@ test('catalog rejects ambiguous defaults, duplicate current revisions, and unkno
   value.schemaVersion = 2; assert.notEqual(run('validate', value).status, 0)
 })
 test('render confines broker privileges and isolates credentials and persistent data', () => {
-  const result = run('render', release(), ['--node-name', 'test-node', '--state-dir', '/var/lib/colloq'])
+  const result = run('render', release(), ['--node-name', 'test-node', '--state-dir', '/var/lib/aulalab'])
   assert.equal(result.status, 0, result.stderr)
   const items = JSON.parse(result.stdout).items as any[]
   const find = (kind: string, name: string) => items.find(x => x.kind === kind && x.metadata.name === name)
-  assert.equal(find('Namespace', 'colloq').metadata.labels['pod-security.kubernetes.io/enforce'], 'restricted')
+  assert.equal(find('Namespace', 'aulalab').metadata.labels['pod-security.kubernetes.io/enforce'], 'restricted')
   for (const mode of ['enforce', 'audit', 'warn']) {
-    assert.equal(find('Namespace', 'colloq').metadata.labels[`pod-security.kubernetes.io/${mode}-version`], 'v1.34')
+    assert.equal(find('Namespace', 'aulalab').metadata.labels[`pod-security.kubernetes.io/${mode}-version`], 'v1.34')
   }
-  const app = find('Deployment', 'colloq-app').spec
+  const app = find('Deployment', 'aulalab-app').spec
   assert.equal(app.replicas, 0); assert.equal(app.strategy.type, 'Recreate')
   assert.equal(app.template.spec.automountServiceAccountToken, false)
   assert.equal(app.template.spec.securityContext.runAsUser, 1000)
@@ -63,17 +63,17 @@ test('render confines broker privileges and isolates credentials and persistent 
   assert.equal(JSON.stringify(app).includes('docker.sock'), false)
   assert.equal(JSON.stringify(app).includes('room-secret'), false)
   assert.equal(JSON.stringify(app).includes('KUBE_TOKEN'), false)
-  const broker = find('Deployment', 'colloq-runtime').spec.template.spec
-  assert.equal(broker.serviceAccountName, 'colloq-runtime')
+  const broker = find('Deployment', 'aulalab-runtime').spec.template.spec
+  assert.equal(broker.serviceAccountName, 'aulalab-runtime')
   assert.deepEqual(broker.volumes.filter((x: any) => x.persistentVolumeClaim), [
-    { name: 'data', persistentVolumeClaim: { claimName: 'colloq-data' } },
+    { name: 'data', persistentVolumeClaim: { claimName: 'aulalab-data' } },
   ])
   const brokerEnv = Object.fromEntries(broker.containers[0].env.map((e: any) => [e.name, e.value]))
-  assert.equal(brokerEnv.RUNTIME_IMAGE_PULL_SECRET, 'colloq-registry')
+  assert.equal(brokerEnv.RUNTIME_IMAGE_PULL_SECRET, 'aulalab-registry')
   assert.equal(brokerEnv.RUNTIME_KUBE_URL, 'https://kubernetes.default.svc')
   assert.equal(brokerEnv.RUNTIME_COMPETITION_EXPORTER_IMAGE, image('c'))
-  assert.equal(brokerEnv.RUNTIME_COMPETITION_DATA_CLAIM, 'colloq-data')
-  assert.equal(brokerEnv.RUNTIME_COMPETITION_INSTANCE_ID, 'colloq')
+  assert.equal(brokerEnv.RUNTIME_COMPETITION_DATA_CLAIM, 'aulalab-data')
+  assert.equal(brokerEnv.RUNTIME_COMPETITION_INSTANCE_ID, 'aulalab')
   assert.ok(broker.containers[0].volumeMounts.some((mount: any) => mount.name === 'data' && mount.mountPath === '/data'))
   const brokerAuth = broker.containers[0].volumeMounts.find((v: any) => v.name === 'runtime-token')
   const projectedTokenDirectory = '/run/secrets/kubernetes.io/serviceaccount'
@@ -82,15 +82,15 @@ test('render confines broker privileges and isolates credentials and persistent 
   assert.equal(brokerEnv.RUNTIME_TOKEN_FILE, `${brokerAuth.mountPath}/runtime-token`)
   // The only write beyond create/delete is the resize subresource: a live room's
   // memory is changed in place. The Pod itself (image, command, mounts) is closed to patches.
-  assert.deepEqual(find('Role', 'colloq-runtime').rules, [
+  assert.deepEqual(find('Role', 'aulalab-runtime').rules, [
     { apiGroups: [''], resources: ['pods', 'services'], verbs: ['get', 'list', 'create', 'delete'] },
     { apiGroups: [''], resources: ['pods/resize'], verbs: ['patch'] },
     { apiGroups: [''], resources: ['persistentvolumeclaims'], verbs: ['get'] },
     { apiGroups: ['networking.k8s.io'], resources: ['networkpolicies'], verbs: ['get'] },
   ])
-  assert.equal(find('PersistentVolume', 'colloq-data').spec.persistentVolumeReclaimPolicy, 'Retain')
-  assert.equal(find('PersistentVolume', 'colloq-workspace').spec.local.path, '/var/lib/colloq/workspace')
-  assert.equal(find('Service', 'colloq-app').spec.ports[0].nodePort, 30080)
+  assert.equal(find('PersistentVolume', 'aulalab-data').spec.persistentVolumeReclaimPolicy, 'Retain')
+  assert.equal(find('PersistentVolume', 'aulalab-workspace').spec.local.path, '/var/lib/aulalab/workspace')
+  assert.equal(find('Service', 'aulalab-app').spec.ports[0].nodePort, 30080)
   assert.deepEqual(find('NetworkPolicy', 'room-isolation').spec.egress, [{ to: [{
     namespaceSelector: { matchLabels: { 'kubernetes.io/metadata.name': 'kube-system' } },
     podSelector: { matchLabels: { 'k8s-app': 'kube-dns' } },
@@ -101,16 +101,16 @@ test('competition network policies isolate jobs and constrain the resolver proxy
   assert.equal(rendered.status, 0, rendered.stderr)
   const items = JSON.parse(rendered.stdout).items as any[]
   const policy = (name: string) => items.find(x => x.kind === 'NetworkPolicy' && x.metadata.name === name)?.spec
-  const broker = { podSelector: { matchLabels: { 'colloq.dev/role': 'runtime' } } }
-  const resolver = { podSelector: { matchLabels: { 'colloq.dev/role': 'competition-resolver' } } }
-  const proxy = { podSelector: { matchLabels: { 'colloq.dev/role': 'competition-proxy' } } }
+  const broker = { podSelector: { matchLabels: { 'aulalab.dev/role': 'runtime' } } }
+  const resolver = { podSelector: { matchLabels: { 'aulalab.dev/role': 'competition-resolver' } } }
+  const proxy = { podSelector: { matchLabels: { 'aulalab.dev/role': 'competition-proxy' } } }
   const dns = { namespaceSelector: { matchLabels: { 'kubernetes.io/metadata.name': 'kube-system' } }, podSelector: { matchLabels: { 'k8s-app': 'kube-dns' } } }
   assert.deepEqual(policy('competition-job-isolation'), {
-    podSelector: { matchLabels: { 'colloq.dev/role': 'competition-job' } }, policyTypes: ['Ingress', 'Egress'],
+    podSelector: { matchLabels: { 'aulalab.dev/role': 'competition-job' } }, policyTypes: ['Ingress', 'Egress'],
     ingress: [{ from: [broker], ports: [{ protocol: 'TCP', port: 8765 }] }], egress: [],
   })
   assert.deepEqual(policy('competition-resolver-isolation'), {
-    podSelector: { matchLabels: { 'colloq.dev/role': 'competition-resolver' } }, policyTypes: ['Ingress', 'Egress'],
+    podSelector: { matchLabels: { 'aulalab.dev/role': 'competition-resolver' } }, policyTypes: ['Ingress', 'Egress'],
     ingress: [{ from: [broker], ports: [{ protocol: 'TCP', port: 8765 }] }],
     egress: [
       { to: [proxy], ports: [{ protocol: 'TCP', port: 3128 }] },
@@ -219,7 +219,7 @@ test('GPU releases require exact host tooling and render a pinned plugin and CUD
  * settings, and only into the broker.
  */
 function withEnv(text: string, check: (file: string) => void) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-env-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-env-'))
   try {
     const file = path.join(dir, 'instance.env')
     fs.writeFileSync(file, text)
@@ -228,7 +228,7 @@ function withEnv(text: string, check: (file: string) => void) {
 }
 const brokerEnv = (stdout: string) => {
   const items = JSON.parse(stdout).items as any[]
-  const broker = items.find(x => x.kind === 'Deployment' && x.metadata.name === 'colloq-runtime')
+  const broker = items.find(x => x.kind === 'Deployment' && x.metadata.name === 'aulalab-runtime')
   return Object.fromEntries(broker.spec.template.spec.containers[0].env.map((e: any) => [e.name, e.value]))
 }
 test('render puts the operator memory default and ceiling into the broker and nowhere else', () => {
@@ -240,8 +240,8 @@ test('render puts the operator memory default and ceiling into the broker and no
     assert.equal(env.RUNTIME_KERNEL_MEMORY_MAX, '24Gi')
     // Only these two keys: the rest of the broker's settings is pinned by the installer.
     assert.equal(env.RUNTIME_KERNEL_CPU, undefined)
-    assert.equal(env.RUNTIME_NAMESPACE, 'colloq')
-    const app = JSON.parse(result.stdout).items.find((x: any) => x.kind === 'Deployment' && x.metadata.name === 'colloq-app')
+    assert.equal(env.RUNTIME_NAMESPACE, 'aulalab')
+    const app = JSON.parse(result.stdout).items.find((x: any) => x.kind === 'Deployment' && x.metadata.name === 'aulalab-app')
     assert.equal(JSON.stringify(app).includes('RUNTIME_KERNEL_MEMORY'), false)
     // Nor do they end up in the app's Secret.
     const config = run('config', release(), ['--env-file', file])
@@ -257,8 +257,8 @@ test('render puts the operator memory default and ceiling into the broker and no
 })
 test('the app stays in rotation while the broker is down, and the proxy settings reach it', () => {
   // Readiness on the database and workspace only: a broker hiccup must not turn the site into 502s.
-  const items = JSON.parse(run('render', release(), ['--node-name', 'test-node', '--state-dir', '/var/lib/colloq']).stdout).items as any[]
-  const app = items.find(x => x.kind === 'Deployment' && x.metadata.name === 'colloq-app').spec.template.spec.containers[0]
+  const items = JSON.parse(run('render', release(), ['--node-name', 'test-node', '--state-dir', '/var/lib/aulalab']).stdout).items as any[]
+  const app = items.find(x => x.kind === 'Deployment' && x.metadata.name === 'aulalab-app').spec.template.spec.containers[0]
   assert.equal(app.readinessProbe.httpGet.path, '/api/readyz')
   assert.equal(app.livenessProbe.httpGet.path, '/api/livez')
   // Behind the NodePort every student arrives from one address unless the proxy is named.
@@ -305,7 +305,7 @@ test('render gives the broker the competition GPU resource and count, and refuse
     const env = brokerEnv(result.stdout)
     assert.equal(env.RUNTIME_COMPETITION_GPU_RESOURCE, 'nvidia.com/gpu')
     assert.equal(env.RUNTIME_COMPETITION_GPU_COUNT, '2')
-    const app = JSON.parse(result.stdout).items.find((x: any) => x.kind === 'Deployment' && x.metadata.name === 'colloq-app')
+    const app = JSON.parse(result.stdout).items.find((x: any) => x.kind === 'Deployment' && x.metadata.name === 'aulalab-app')
     assert.equal(JSON.stringify(app).includes('RUNTIME_COMPETITION_GPU'), false)
     // Known settings, not "unknown" ones, and none of them in the app's Secret.
     const config = run('config', release(), ['--env-file', file])

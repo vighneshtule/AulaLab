@@ -1,5 +1,5 @@
 <!--
-  The course page: the one Colloq address people bookmark.
+  The course page: the one Aula Lab address people bookmark.
 
   A student opens it a dozen times a semester, and every time with one of
   two questions: what was last time (the slides, the notebook) and what is

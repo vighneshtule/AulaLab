@@ -2,7 +2,7 @@ import { tr } from '@shared/i18n'
 /**
  * The model endpoint, kept deliberately thin.
  *
- * Colloq targets "any OpenAI-compatible endpoint" — OpenAI, vLLM, Ollama,
+ * Aula Lab targets "any OpenAI-compatible endpoint" — OpenAI, vLLM, Ollama,
  * LM Studio, OpenRouter — so this module sticks to the smallest request that
  * all of them honour, and translates SDK failures into a sentence a teacher
  * standing in front of a class can act on.
@@ -114,7 +114,7 @@ function getClient(): OpenAI {
 
 export function providerReady(): boolean {
   const ai = resolveAiConfig()
-  // A key, or a runtime that has no concept of one: pointing Colloq at the
+  // A key, or a runtime that has no concept of one: pointing Aula Lab at the
   // Ollama on the lecturer's own machine is a complete configuration, and
   // reporting it as unconfigured would be the panel's first lie.
   //

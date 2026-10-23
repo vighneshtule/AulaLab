@@ -49,11 +49,11 @@ class ResizeCluster implements KubernetesClient {
     if (!object) throw new KubernetesError(404, 'NotFound')
     return structuredClone(object) as T
   }
-  pod() { return this.objects.get(`/api/v1/namespaces/colloq/pods/${roomName('rollback')}`)! }
+  pod() { return this.objects.get(`/api/v1/namespaces/aulalab/pods/${roomName('rollback')}`)! }
 }
 function controller(kube: ResizeCluster) {
   return new RuntimeController({ kube, catalog: () => catalog, roomSecret: () => 'test-secret',
-    config: { namespace: 'colloq', workspaceClaim: 'workspace', cpu: '2', memory: '2Gi', ephemeral: '2Gi' },
+    config: { namespace: 'aulalab', workspaceClaim: 'workspace', cpu: '2', memory: '2Gi', ephemeral: '2Gi' },
     probe: async () => true, pollMs: 1, startupTimeoutMs: 50, resizeTimeoutMs: 50 })
 }
 

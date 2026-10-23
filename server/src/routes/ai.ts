@@ -410,7 +410,7 @@ export function aiRoutes(): Router {
     if (settings.questionsPerHour === 0) {
       return res
         .status(403)
-        .json({ error: tr("server.theOracleIsDisabledInThisColloq.e3d7f7") })
+        .json({ error: tr("server.theOracleIsDisabledInThisAulaLab.e3d7f7") })
     }
     if (!aiReady()) {
       /*
@@ -423,7 +423,7 @@ export function aiRoutes(): Router {
         error:
           auth.role === 'host'
             ? tr("server.noModelIsSetUpOnThis.9957d2")
-            : tr("server.noModelIsConfiguredForThisColloq.112833"),
+            : tr("server.noModelIsConfiguredForThisAulaLab.112833"),
       })
     }
 

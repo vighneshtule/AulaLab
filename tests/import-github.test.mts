@@ -163,7 +163,7 @@ test('a link to a notebook creates a room with its cells and its rules', async (
 
   // And the notebook landed on disk right away, not a second and a half after
   // the first join: the panel counts the files of a fresh seminar right here.
-  const projected = readText(made.id, 'Тетрадь.ipynb')?.text ?? ''
+  const projected = readText(made.id, 'Notebook.ipynb')?.text ?? ''
   assert.match(projected, /import pandas as pd/, 'the notebook is not in the room folder')
 })
 

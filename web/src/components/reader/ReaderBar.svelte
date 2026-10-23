@@ -56,7 +56,7 @@
     <div class="flex min-w-0 items-center gap-3.5">
       <Icon name="logo" size={16} class="shrink-0 text-primary" />
       <span class="shrink-0 text-[15px] font-black uppercase leading-[22px] tracking-section text-primary">
-        Colloq
+        Aula Lab
       </span>
       {#if course || crumb}
         <span class="h-[18px] w-px shrink-0 bg-line" aria-hidden="true"></span>

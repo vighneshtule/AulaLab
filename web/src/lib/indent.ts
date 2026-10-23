@@ -1,5 +1,5 @@
 /**
- * Indentation in Colloq's editors: how much of it and what Tab does.
+ * Indentation in Aula Lab's editors: how much of it and what Tab does.
  *
  * Shared by the two editors — the notebook cell and the file — because code
  * travels between them by copying, and drifted indentation is visible only to

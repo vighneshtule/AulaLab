@@ -118,7 +118,7 @@ const SESSION = 'seminar_1'
 const OTHER = 'seminar_2'
 const CONTAINER = 'c'.repeat(64)
 const DIGEST = `sha256:${'a'.repeat(64)}`
-const REF = `ghcr.io/colloq-edu/colloq-kernel@sha256:${'3'.repeat(64)}`
+const REF = `ghcr.io/vighneshtule/aulalab-kernel@sha256:${'3'.repeat(64)}`
 const sha = (i: number): string => i.toString(16).padStart(64, '0')
 const b64 = (bytes: number, fill = 7): string => Buffer.alloc(bytes, fill).toString('base64')
 
@@ -205,7 +205,7 @@ const reply: RemoteKernelsReply = {
   }, { sessionId: OTHER, seq: 1, full: true, put: [], remove: [], move: [] }],
   verdicts: [{
     sessionId: SESSION, seq: 12, accepted: ['out.csv', 'данные/выборка 1.csv'],
-    refused: [{ path: 'Тетрадь.ipynb', why: 'book' }, { path: 'data.csv', why: 'base', copy: 'data (с машины 14-32).csv' }, { path: 'x.bin', why: 'cap' }],
+    refused: [{ path: 'Notebook.ipynb', why: 'book' }, { path: 'data.csv', why: 'base', copy: 'data (с машины 14-32).csv' }, { path: 'x.bin', why: 'cap' }],
   }],
   // The version a report named, and «Привезти» of a file left on the machine: as it is now, no hash.
   pulls: [{ sessionId: SESSION, gen: 3, paths: [{ path: 'данные/выборка 1.csv', sha256: sha(2) }, { path: 'model.pt' }] }],
@@ -228,7 +228,7 @@ const BAD_PATHS = [
   'line\nbreak', 'nul\u0000', 'tab\there', ' lead', 'trail ', 'half\uD83D', '\uDC00tail',
 ]
 /** Paths that are files like any other. */
-const GOOD_PATHS = ['данные/выборка.csv', 'Тетрадь.ipynb', 'a/b/c/d/e/f/g/h', '😀.txt', 'data (с машины 14-32).csv', 'x'.repeat(MAX_SEGMENT)]
+const GOOD_PATHS = ['данные/выборка.csv', 'Notebook.ipynb', 'a/b/c/d/e/f/g/h', '😀.txt', 'data (с машины 14-32).csv', 'x'.repeat(MAX_SEGMENT)]
 
 /* ------------------------------------------------- the machine's block, at home */
 
@@ -296,7 +296,7 @@ test('a held placement carries what its phase says it has, and nothing of anothe
   for (const slot of [1, 2]) refused(() => parseRemoteKernelsRequest(edit(request, ['placements', slot, 'card'], { device: '0', usedMb: null })), /card/)
   for (const [at, value] of [
     [['placements', 0, 'key'], 'seminar_1:lecture'], [['placements', 0, 'key'], 'seminar_1'], [['placements', 0, 'key'], '../x:room'],
-    [['placements', 0, 'phase'], 'running'], [['placements', 0, 'container'], 'colloq-class-abc'], [['placements', 0, 'container'], 'C'.repeat(64)],
+    [['placements', 0, 'phase'], 'running'], [['placements', 0, 'container'], 'aulalab-class-abc'], [['placements', 0, 'container'], 'C'.repeat(64)],
     [['placements', 0, 'revision'], 'd'.repeat(32)], [['placements', 0, 'revision'], REF], [['placements', 0, 'resized'], 'done'],
     [['placements', 0, 'card', 'device'], '../0'], [['placements', 0, 'card', 'usedMb'], -1],
     [['placements', 0, 'usage', 'cpuPercent'], 12.5], [['placements', 0, 'usage', 'usedMb'], -1], [['placements', 0, 'usage', 'limitMb'], undefined],
@@ -449,7 +449,7 @@ test('the agent drops every key it does not know, at every depth, and keeps none
   Object.assign(newer.epochs[0].buffers[0], { kind: 'ndarray' })
   Object.assign(newer.epochs[1].from, { user: 'root' })
   Object.assign(newer.collect[0], { author: 'Иванов' })
-  Object.assign(newer.collect[0].files[0], { path: '/colloq/scratch/x' })
+  Object.assign(newer.collect[0].files[0], { path: '/aulalab/scratch/x' })
   Object.assign(newer.rates, { competitionMBps: 2 })
   // JSON.parse makes `__proto__` an own key like any other: it is no key of the contract's either.
   const text = JSON.stringify(newer).replace(/^\{/, '{"__proto__":{"polluted":true},')
@@ -479,7 +479,7 @@ test('an intent is a whole placement, and says nothing a slot of its role cannot
     [['blockedCidrs'], ['10.0.0.0/8 ']], [['blockedCidrs'], ['2001:db8::/32']], [['blockedCidrs'], ['203.0.113.0/33']], [['blockedCidrs'], ['203.0.113.0/24', '203.0.113.0/24']],
     [['blockedCidrs'], Array.from({ length: 65 }, (_, i) => `10.0.${i}.0/24`)],
     [['token'], 'e'.repeat(39)], [['token'], 'E'.repeat(40)], [['hashSeed'], 0], [['hashSeed'], 4_294_967_296], [['hashSeed'], -1],
-    [['revision', 'ref'], 'ghcr.io/colloq-edu/colloq-kernel:v0.24.0-base'], [['revision', 'layers'], `sha256:${'4'.repeat(64)}`], [['revision'], undefined],
+    [['revision', 'ref'], 'ghcr.io/vighneshtule/aulalab-kernel:v0.24.0-base'], [['revision', 'layers'], `sha256:${'4'.repeat(64)}`], [['revision'], undefined],
   ] as const) refused(() => parseRemoteKernelsReply(edit(reply, ['placements', 0, ...at], value)), /Invalid|Unexpected/)
   assert.doesNotThrow(() => parseRemoteKernelsReply(edit(reply, ['placements', 0, 'hashSeed'], 4_294_967_295)))
   refused(() => parseRemoteKernelsReply({ ...reply, placements: Array.from({ length: REMOTE_PLACEMENTS_MAX + 1 }, (_, i) => ({ ...intent, key: `s${i}:room` })) }))
@@ -595,10 +595,10 @@ test('epochs: content-addressed, within their caps, and read from no folder but 
   refused(() => parseRemoteKernelsReply(epoch(['manifest', 'bytes'], 0)), /manifest/)
   refused(() => parseRemoteKernelsReply(epoch(['from'], 'machine')), /epoch source/)
   // docker cp reads the export's own folder, `<dir>/<seq>`, and nothing else on the machine.
-  for (const dir of [`${COUNCIL_EPOCH_DIR}/3`, '/etc', `${COUNCIL_EPOCH_DIR}/2/../../etc`, `${COUNCIL_EPOCH_DIR}/2/`, '/var/lib/colloq-runner']) {
+  for (const dir of [`${COUNCIL_EPOCH_DIR}/3`, '/etc', `${COUNCIL_EPOCH_DIR}/2/../../etc`, `${COUNCIL_EPOCH_DIR}/2/`, '/var/lib/aulalab-runner']) {
     refused(() => parseRemoteKernelsReply(edit(reply, ['epochs', 1, 'from', 'dir'], dir)), /epoch source/)
   }
-  refused(() => parseRemoteKernelsReply(edit(reply, ['epochs', 1, 'from', 'container'], 'colloq-runner')), /epoch source/)
+  refused(() => parseRemoteKernelsReply(edit(reply, ['epochs', 1, 'from', 'container'], 'aulalab-runner')), /epoch source/)
   refused(() => parseRemoteKernelsReply(edit(reply, ['epochs', 1, 'seq'], 4)), /epoch source/)
   refused(() => parseRemoteKernelsReply(edit(reply, ['epochs', 1], { ...reply.epochs[0] })), /epoch intent/)
   refused(() => parseRemoteKernelsReply(edit(reply, ['epochs'], Array.from({ length: REMOTE_EPOCHS_MAX + 1 }, (_, i) => ({ ...reply.epochs[0], seq: i + 1 })))), /epoch intents/)
@@ -686,13 +686,13 @@ test('council (0.26): home asks an export read on its machine to come home, of i
 })
 
 test('council (0.26): a worker finds an epoch\'s files and an attempt\'s folder by the contract\'s own paths', () => {
-  assert.equal(COUNCIL_EPOCHS_MOUNT, '/colloq/epochs')
-  assert.equal(COUNCIL_SCRATCH_MOUNT, '/colloq/scratch')
+  assert.equal(COUNCIL_EPOCHS_MOUNT, '/aulalab/epochs')
+  assert.equal(COUNCIL_SCRATCH_MOUNT, '/aulalab/scratch')
   assert.equal(COUNCIL_SCRATCH_ENTRIES, 2000)
-  assert.equal(councilEpochPath(sha(7)), `/colloq/epochs/${sha(7)}`)
-  assert.equal(councilScratchPath('r_1792000000'), '/colloq/scratch/r_1792000000')
+  assert.equal(councilEpochPath(sha(7)), `/aulalab/epochs/${sha(7)}`)
+  assert.equal(councilScratchPath('r_1792000000'), '/aulalab/scratch/r_1792000000')
   // The workers' gate (0.26.1, §9.6): its module's folder, and the system IPython config every kernel of the container reads.
-  assert.equal(COUNCIL_GATE_MOUNT, '/colloq/gate')
+  assert.equal(COUNCIL_GATE_MOUNT, '/aulalab/gate')
   assert.equal(COUNCIL_GATE_CONFIG_MOUNT, '/etc/ipython/ipython_kernel_config.py')
   // None under the class folder's mount: the class folder is read-only to the pool, and the epoch dir is the notebook kernel's own.
   for (const mount of [COUNCIL_EPOCHS_MOUNT, COUNCIL_SCRATCH_MOUNT, COUNCIL_GATE_MOUNT, COUNCIL_GATE_CONFIG_MOUNT]) assert.ok(!mount.startsWith('/workspace') && !mount.startsWith(COUNCIL_EPOCH_DIR))
@@ -749,7 +749,7 @@ test('checkRuntimeEndpoint takes an endpoint that echoes what was asked, and say
   for (const url of ['nonsense', 'ftp://127.0.0.1:1', 'http://u:p@127.0.0.1:1', 'http://127.0.0.1:1/api', 'http://127.0.0.1:1/?token=x', 'http://127.0.0.1:1/#x']) {
     assert.equal(why({ ...answer, url }, asked), 'url', url)
   }
-  assert.equal(why({ ...answer, url: 'https://colloq-kernel.svc:8888/' }, asked), null)
+  assert.equal(why({ ...answer, url: 'https://aulalab-kernel.svc:8888/' }, asked), null)
 })
 
 test('RuntimeClient.ensure says what it always said for each echo, now from the shared check', async () => {
@@ -763,14 +763,14 @@ test('RuntimeClient.ensure says what it always said for each echo, now from the 
   const { port } = server.address() as { port: number }
   try {
     const client = new RuntimeClient({ url: `http://127.0.0.1:${port}`, token: 'a'.repeat(64) })
-    const endpoint = { url: 'http://colloq-kernel-demo.colloq.svc:8888', token: 'r'.repeat(64), instanceId: 'pod-one', environment: 'base', revision: DIGEST }
+    const endpoint = { url: 'http://aulalab-kernel-demo.aulalab.svc:8888', token: 'r'.repeat(64), instanceId: 'pod-one', environment: 'base', revision: DIGEST }
     answer = { ...endpoint, gen: 99 }
     assert.deepEqual(await client.ensure('seminar_1', 'base', DIGEST), endpoint, 'a gen in the broker\'s answer is no echo it was asked for')
     for (const [value, key] of [
       [{ ...endpoint, instanceId: '' }, 'server.invalidKernelRuntimeEndpointOrInstanceIdentity.a63d8b'],
       [{ ...endpoint, environment: 'other' }, 'server.invalidKernelRuntimeEndpointOrInstanceIdentity.a63d8b'],
       [{ ...endpoint, revision: `sha256:${'b'.repeat(64)}` }, 'server.kernelRuntimeReturnedADifferentEnvironmentRevision.8f728c'],
-      [{ ...endpoint, url: 'http://colloq-kernel-demo.colloq.svc:8888/api' }, 'server.invalidJupyterEndpointUrl.edef18'],
+      [{ ...endpoint, url: 'http://aulalab-kernel-demo.aulalab.svc:8888/api' }, 'server.invalidJupyterEndpointUrl.edef18'],
       [{ ...endpoint, url: 'not a url' }, 'server.invalidJupyterEndpointUrl.edef18'],
     ] as const) {
       answer = value
@@ -792,7 +792,7 @@ test('a ready placement echoes the digest its image is pinned by, and home asks 
   const longest = `${'r'.repeat(262)}.io/${'p'.repeat(262)}@sha256:${'3'.repeat(64)}`
   assert.equal(longest.length, REMOTE_REF_CHARS)
   assert.equal(remoteRevisionDigest(longest), `sha256:${'3'.repeat(64)}`)
-  for (const bad of ['ghcr.io/colloq-edu/colloq-kernel:v0.24.0-base', `sha256:${'3'.repeat(64)}`, `${REF}\n`, `x${longest}`, 7, null]) {
+  for (const bad of ['ghcr.io/vighneshtule/aulalab-kernel:v0.24.0-base', `sha256:${'3'.repeat(64)}`, `${REF}\n`, `x${longest}`, 7, null]) {
     refused(() => remoteRevisionDigest(bad as string), /image ref/)
   }
   // The agent echoes the ref of its record, home asks for its intent's: the same pin passes the check placement makes.
@@ -834,7 +834,7 @@ test('the two contract modules, and the tunnel\'s, load in either order under ts
 })
 
 test('and in either order bundled as the agent\'s build bundles them', async () => {
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-kernels-order-'))
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-kernels-order-'))
   try {
     for (const first of ['remote-runner', 'remote-kernels', 'remote-tunnel']) {
       const result = await build({

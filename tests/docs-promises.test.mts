@@ -67,7 +67,7 @@ test('the server variable and the port publishing address are one word, not two'
 
   // Production ingress is a loopback NodePort, with no root systemd web process.
   assert.match(read('scripts/cluster.sh'), /nodeport-addresses=127\.0\.0\.0\/8/)
-  assert.doesNotMatch(read('deploy/colloq.service'), /^User=root$/m)
+  assert.doesNotMatch(read('deploy/aulalab.service'), /^User=root$/m)
 
   // The code's default is empty, that is, all interfaces: the README table
   // describes exactly that, and renaming the variable in the server will
@@ -79,7 +79,7 @@ test('deployment documentation describes mandatory broker isolation and explicit
   for (const file of ['runtime/README.md', 'deploy/k3s/README.md', 'docs/deployment-vast.md']) {
     assert.ok(readme.includes(file), `missing operational documentation link: ${file}`)
   }
-  for (const variable of ['KERNEL_BACKEND', 'KERNEL_RUNTIME_URL', 'KERNEL_RUNTIME_TOKEN_FILE', 'KERNEL_CATALOG_FILE', 'COLLOQ_UNSAFE_DEV_FILES']) {
+  for (const variable of ['KERNEL_BACKEND', 'KERNEL_RUNTIME_URL', 'KERNEL_RUNTIME_TOKEN_FILE', 'KERNEL_CATALOG_FILE', 'AULALAB_UNSAFE_DEV_FILES']) {
     assert.ok(example.includes(variable), `missing configuration contract: ${variable}`)
   }
   assert.doesNotMatch(example, /^KERNEL_ISOLATION=auto$|KERNEL_ISOLATION=off/m)
@@ -88,11 +88,11 @@ test('deployment documentation describes mandatory broker isolation and explicit
   assert.match(readme, /MODE=consistent/)
   assert.match(readme, /live.*not an atomic snapshot/is)
   assert.match(readme, /sourceCommit/)
-  // COLLOQ_UNSAFE_DEV_FILES no longer decides anything
+  // AULALAB_UNSAFE_DEV_FILES no longer decides anything
   // (server/src/secure-files.ts), and the README does not tell anyone to set
   // it; the development limit that remains is that Linux in production
   // requires /proc/self/fd.
-  assert.doesNotMatch(readme, /COLLOQ_UNSAFE_DEV_FILES=1/)
+  assert.doesNotMatch(readme, /AULALAB_UNSAFE_DEV_FILES=1/)
   assert.match(readme, /\/proc\/self\/fd/)
 })
 

@@ -6,7 +6,7 @@ import path from 'node:path'
 import { acquireLease, renewLease, releaseLease, readLeaseUrl } from '../server/src/local/public-url-lease.ts'
 
 test('temporary URLs expire, reject other sessions, and preserve newer tunnel ownership', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-lease-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-lease-'))
   const file = path.join(dir, 'public.json')
   try {
     assert.equal(readLeaseUrl(file, 'run', 100), null)
@@ -28,7 +28,7 @@ test('temporary URLs expire, reject other sessions, and preserve newer tunnel ow
 })
 
 test('invalid lease content and unsafe addresses never become public URLs', () => {
-  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-lease-'))
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-lease-'))
   const file=path.join(dir,'public.json')
   try {
     for(const value of ['{','null',JSON.stringify({runId:'run',owner:'one',expiresAt:10000,url:'javascript:alert(1)'})]) {
@@ -41,10 +41,10 @@ test('invalid lease content and unsafe addresses never become public URLs', () =
 
 test('local config ignores persistent PUBLIC_URL and uses an expiring address only for its run', async () => {
   const { spawnSync } = await import('node:child_process')
-  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-local-config-'))
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-local-config-'))
   const file=path.join(dir,'public.json')
   try {
-    const env={...process.env,SESSION_SECRET:'test',DATA_DIR:dir,COLLOQ_LOCAL_SESSION:'1',COLLOQ_LOCAL_RUN_ID:'run',COLLOQ_LOCAL_URL:'http://localhost:5173',COLLOQ_PUBLIC_URL_LEASE_FILE:file,PUBLIC_URL:'https://persistent.example'}
+    const env={...process.env,SESSION_SECRET:'test',DATA_DIR:dir,AULALAB_LOCAL_SESSION:'1',AULALAB_LOCAL_RUN_ID:'run',AULALAB_LOCAL_URL:'http://localhost:5173',AULALAB_PUBLIC_URL_LEASE_FILE:file,PUBLIC_URL:'https://persistent.example'}
     const read=()=>{
       const result=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',"import {config} from './server/src/config.ts'; process.stdout.write(config.publicUrl)"],{env,encoding:'utf8'})
       assert.equal(result.status,0,result.stderr)

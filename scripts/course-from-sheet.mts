@@ -1,7 +1,7 @@
 /**
  * A course from a schedule in Google Sheets.
  *
- * The semester schedule is put together in a spreadsheet, not in Colloq, and
+ * The semester schedule is put together in a spreadsheet, not in Aula Lab, and
  * nobody is going to carry it over by hand, thirty rows at a time. The script
  * reads the published CSV and creates a course in which every week is a
  * "planned" row: the topic, the group's own class day and the week in the

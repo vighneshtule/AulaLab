@@ -257,7 +257,7 @@ test('no strings of the old three-icon strip are left in the dictionary', () => 
 
 test('the right-click hint is shown once and survives a private window', () => {
   const files = code(read(FILES))
-  assert.match(files, /const TIP_KEY = 'colloq\.files\.menuTip'/)
+  assert.match(files, /const TIP_KEY = 'aulalab\.files\.menuTip'/)
   // Both reading and writing are in try/catch: in a private window, access
   // to storage throws, and the hint must not bring the panel down.
   assert.equal([...body(files, 'function tipWasSeen(', '{@render').matchAll(/catch \{/g)].length, 2)

@@ -32,7 +32,7 @@ import {
 import { forgetCourseIndex } from '../server/src/routes/course-view.js'
 import { instanceToday } from '../server/src/time-zone.js'
 
-const staticDir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-course-card-'))
+const staticDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-course-card-'))
 const ROOM = 'lpc4room'
 let courseId = ''
 let pubId = ''
@@ -54,7 +54,7 @@ function file(key: string, kind: StoredMaterial['kind'], name: string, p: string
 
 before(() => {
   fs.mkdirSync(path.join(staticDir, 'og'), { recursive: true })
-  fs.writeFileSync(path.join(staticDir, 'og', 'colloq.png'), 'not really a png')
+  fs.writeFileSync(path.join(staticDir, 'og', 'aulalab.png'), 'not really a png')
   createSession(ROOM, 'Неделя 4 (повтор)', null)
   pubId = writePublication({
     sessionId: ROOM,
@@ -120,7 +120,7 @@ test('a class page unfurls with its number, day, materials and course, under the
   for (const p of ['/p/lpc-ml-04', `/p/${pubId}`, '/p/lpc-ml-04/seminar', '/p/lpc-ml-04/3']) {
     const extras = await linkPreview(p, 'ru', staticDir)
     assert.equal(meta(extras.head!, 'og:title'), '04 · Лики и хаки данных', p)
-    assert.equal(extras.title, '04 · Лики и хаки данных · Colloq', p)
+    assert.equal(extras.title, '04 · Лики и хаки данных · Aula Lab', p)
     assert.match(meta(extras.head!, 'og:image') ?? '', /\/og\/courses\/lpc-ml\.png\?v=/, p)
     assert.ok(!`${extras.title}${extras.head}`.includes(ROOM), `${p} carries the room id`)
   }
@@ -143,5 +143,5 @@ test('a page outside a course: its own title and day, and the common picture', a
   assert.equal(card.description, `${formatDay('2026-09-30', 'ru')} · тетрадь`)
   assert.equal(card.course, null)
   const { head } = await linkPreview(`/p/${alone.id}`, 'ru', staticDir)
-  assert.match(meta(head!, 'og:image') ?? '', /\/og\/colloq\.png/)
+  assert.match(meta(head!, 'og:image') ?? '', /\/og\/aulalab\.png/)
 })

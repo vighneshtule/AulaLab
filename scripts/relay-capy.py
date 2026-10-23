@@ -18,10 +18,10 @@ collection on disk and three requests.
                                  409: the name is held by another owner.
 
 Lives on the loopback (127.0.0.1:9181) behind caddy, which hands it the
-/.relay/capy/* path for any name under *.colloq.ru; the path starts with a dot
+/.relay/capy/* path for any name under *.example.edu; the path starts with a dot
 so as not to collide with any instance address. Installed and updated by
-scripts/relay-setup.sh as the colloq-capy systemd service under a separate
-user; data in /var/lib/colloq-capy/: scores.json and secret.
+scripts/relay-setup.sh as the aulalab-capy systemd service under a separate
+user; data in /var/lib/aulalab-capy/: scores.json and secret.
 
 Why the standard library and not something more convenient: the relay has
 neither node nor pip, nor any wish to drag them there. It is a machine with
@@ -91,7 +91,7 @@ import time
 import unicodedata
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-STATE_DIR = os.environ.get("CAPY_STATE", "/var/lib/colloq-capy")
+STATE_DIR = os.environ.get("CAPY_STATE", "/var/lib/aulalab-capy")
 STORE = os.path.join(STATE_DIR, "scores.json")
 SECRET_FILE = os.path.join(STATE_DIR, "secret")
 PORT = int(os.environ.get("CAPY_PORT", "9181"))
@@ -309,7 +309,7 @@ def prune_used(now):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "colloq-capy/4"
+    server_version = "aulalab-capy/4"
     protocol_version = "HTTP/1.1"
     # A body that is never finished must not hold a thread forever.
     timeout = 15
@@ -469,7 +469,7 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     server.daemon_threads = True
-    sys.stderr.write("colloq-capy: 127.0.0.1:%d, store %s%s\n" % (PORT, STORE, " + page" if PAGE else ""))
+    sys.stderr.write("aulalab-capy: 127.0.0.1:%d, store %s%s\n" % (PORT, STORE, " + page" if PAGE else ""))
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -10,8 +10,8 @@ import path from 'node:path'
 import { after, before, test } from 'node:test'
 import assert from 'node:assert/strict'
 
-const staticDir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-card-'))
-fs.writeFileSync(path.join(staticDir, 'index.html'), '<!doctype html><html><head><title>Colloq</title></head><body></body></html>')
+const staticDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-card-'))
+fs.writeFileSync(path.join(staticDir, 'index.html'), '<!doctype html><html><head><title>Aula Lab</title></head><body></body></html>')
 process.env.STATIC_DIR = staticDir
 
 let base = ''
@@ -38,7 +38,7 @@ const pngSize = (png: Buffer): { width: number; height: number } => {
 
 test('the card is a 1200×630 PNG, and for one room it is drawn once', async () => {
   const { roomCardPng, roomCardRenders, CARD_WIDTH, CARD_HEIGHT } = await import('../server/src/og-card.js')
-  const room = { name: 'MMDA | week01', createdAt: 1789214082146, host: 'hse.colloq.ru', language: 'ru' as const }
+  const room = { name: 'MMDA | week01', createdAt: 1789214082146, host: 'hse.example.edu', language: 'ru' as const }
   const before = roomCardRenders()
   const png = await roomCardPng(room)
   assert.deepEqual(pngSize(png), { width: CARD_WIDTH, height: CARD_HEIGHT })
@@ -56,7 +56,7 @@ test('a long name does not crash the renderer and is cut with an ellipsis', asyn
   assert.ok([...cardName(name)].length <= 90)
   assert.ok(cardName(name).endsWith('…'))
   assert.equal(cardName('Короткое'), 'Короткое')
-  const png = await renderRoomCard({ name, createdAt: Date.now(), host: 'hse.colloq.ru', language: 'en' })
+  const png = await renderRoomCard({ name, createdAt: Date.now(), host: 'hse.example.edu', language: 'en' })
   assert.equal(pngSize(png).width, 1200)
 })
 
@@ -85,12 +85,12 @@ test('the card font ships in the image and the wheel together with its license t
 
 test('competition, course and competitions-list cards are 1200×630 PNGs, served under their addresses', async () => {
   const og = await import('../server/src/og-card.js')
-  const where = { host: 'vsos.colloq.ru', language: 'ru' as const, timeZone: 'Europe/Moscow' }
+  const where = { host: 'vsos.example.edu', language: 'ru' as const, timeZone: 'Europe/Moscow' }
   const competition = await og.competitionCardPng({ ...where, title: 'Соревнования по очень длинному названию задачи', blurb: 'Описание. '.repeat(40), phase: 'live', startsAt: null, deadlineAt: Date.now() + 3_600_000, metricName: 'Operational Score With A Long Name', metricDirection: 'higher', entrants: 12, perDay: 5 })
   assert.deepEqual(pngSize(competition), { width: og.CARD_WIDTH, height: og.CARD_HEIGHT })
-  const course = await og.courseCardPng({ host: 'vsos.colloq.ru', language: 'en', name: 'Data Analysis', blurb: null, lessons: ['One', 'Two'], total: 9 })
+  const course = await og.courseCardPng({ host: 'vsos.example.edu', language: 'en', name: 'Data Analysis', blurb: null, lessons: ['One', 'Two'], total: 9 })
   assert.deepEqual(pngSize(course), { width: og.CARD_WIDTH, height: og.CARD_HEIGHT })
-  const list = await og.competitionsCardPng({ host: 'vsos.colloq.ru', language: 'ru' })
+  const list = await og.competitionsCardPng({ host: 'vsos.example.edu', language: 'ru' })
   assert.deepEqual(pngSize(list), { width: og.CARD_WIDTH, height: og.CARD_HEIGHT })
 
   const { createCompetition, setCompetitionState } = await import('../server/src/competitions/store.js')

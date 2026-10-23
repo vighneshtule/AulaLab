@@ -1,21 +1,21 @@
 import { isLocale, normalizeLocale, setLocaleResolver, tr, type Locale } from '@shared/i18n'
 import { readRoomRoute } from './routes'
-const CACHE_KEY = 'colloq:instance-language'
+const CACHE_KEY = 'aulalab:instance-language'
 /** How often to ask the server for the language where nobody would report a change. */
 const REFRESH_EVERY = 5 * 60_000
 function cachedLanguage(): Locale | null {
   try {
     const value = localStorage.getItem(CACHE_KEY)
-    return isLocale(value) ? value : null
+    return value === 'en' ? 'en' : null
   } catch {
     return null
   }
 }
 const cached = typeof window === 'undefined' ? null : cachedLanguage()
 const suppliedValue = typeof document === 'undefined'
-  ? null : document.querySelector?.('meta[name="colloq-language"]')?.getAttribute('content')
-const supplied = isLocale(suppliedValue) ? suppliedValue : null
-export const language = $state<{ current: Locale }>({ current: supplied ?? cached ?? 'ru' })
+  ? null : document.querySelector?.('meta[name="aulalab-language"]')?.getAttribute('content')
+const supplied = suppliedValue === 'en' ? 'en' : null
+export const language = $state<{ current: Locale }>({ current: supplied ?? cached ?? 'en' })
 /*
  * A counter of arrived dictionaries, and it is reactive too.
  *
@@ -44,7 +44,7 @@ export function onLanguageChange(listener: () => void): () => void {
   }
 }
 export function setLanguage(value: Locale): void {
-  if (!isLocale(value)) return
+  if (value !== 'en') return
   generation++
   const changed = language.current !== value
   language.current = value

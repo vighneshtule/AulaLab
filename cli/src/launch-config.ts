@@ -7,7 +7,7 @@ export interface LaunchOptions {
   /**
    * cloudflared is not a class but a service word for scripts/host.sh: find
    * or download cloudflared and print the path (launch-cloudflared.ts). The
-   * script calls it when there is no cloudflared in PATH, so `colloq host` and
+   * script calls it when there is no cloudflared in PATH, so `aulalab host` and
    * `make host` also do without a manual install, and the search rule stays
    * one.
    */
@@ -69,7 +69,7 @@ export function parseLaunchArgs(args: string[]): LaunchOptions {
 export interface LaunchConfig {
   /** The application directory: server/dist, web/dist, kernel/, node_modules. */
   root: string
-  /** The state directory: .env, .colloq/, data/, workspace/. In the repository it equals root. */
+  /** The state directory: .env, .aulalab/, data/, workspace/. In the repository it equals root. */
   home: string
   /** The application is installed ready-made: there is no build, and nothing to call make and npm with. */
   dist: boolean
@@ -109,7 +109,7 @@ export function launchConfig(
   // as they were.
   const dataDir = path.resolve(home, source.DATA_DIR || 'data')
   const workspaceDir = path.resolve(home, source.WORKSPACE_DIR || 'workspace')
-  const leaseFile = path.join(home, '.colloq/public-url.json')
+  const leaseFile = path.join(home, '.aulalab/public-url.json')
   const url = `http://localhost:${uiPort}`
   const kernelEnv = source.KERNEL_ENV || 'base'
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(kernelEnv))
@@ -120,8 +120,8 @@ export function launchConfig(
    *
    * It used to fire precisely on the first one: .env was made as a copy of
    * .env.example, which has KERNEL_BACKEND=broker (it is the production
-   * template), and colloq refused on a file it had itself written out a
-   * minute earlier. The fix is not a weaker check but that colloq no longer
+   * template), and aulalab refused on a file it had itself written out a
+   * minute earlier. The fix is not a weaker check but that aulalab no longer
    * copies someone else's template: it writes its own .env for a local class,
    * with docker in it (see localClassEnv below).
    *
@@ -136,18 +136,18 @@ export function launchConfig(
    * copy already lies are still around: broker has stood in the template since
    * 9 Sep 2026. For them the refusal says which line to change: the former
    * "this is an installation with a broker, go to cluster" was untrue and a
-   * dead end for a developer with a laptop. COLLOQ_CLUSTER=1 does not get such
+   * dead end for a developer with a laptop. AULALAB_CLUSTER=1 does not get such
    * a hint: only a deployment writes it (scripts/vast.sh), it is never an
    * accidental copy.
    */
-  if (source.COLLOQ_CLUSTER === '1')
+  if (source.AULALAB_CLUSTER === '1')
     throw new Error(
       'This is a runtime broker installation: use the service or cluster commands for it. run is meant for local Docker.',
     )
   if (source.KERNEL_BACKEND === 'broker')
     throw new Error(
       'KERNEL_BACKEND=broker is the production setting from .env.example, and a local class runs its kernels in Docker. ' +
-        `Set KERNEL_BACKEND=docker in ${path.join(home, '.env')} (or move that file aside: colloq then writes one for this machine). ` +
+        `Set KERNEL_BACKEND=docker in ${path.join(home, '.env')} (or move that file aside: aulalab then writes one for this machine). ` +
         'A real runtime broker installation is run with the service or cluster commands.',
     )
   const env = Object.fromEntries(
@@ -161,17 +161,17 @@ export function launchConfig(
     DATA_DIR: dataDir,
     WORKSPACE_DIR: workspaceDir,
     WORKSPACE_HOST_DIR: '',
-    COLLOQ_LOCAL_SESSION: '1',
-    COLLOQ_LOCAL_URL: url,
-    COLLOQ_PUBLIC_URL_LEASE_FILE: leaseFile,
-    COLLOQ_STOP_KERNELS_ON_EXIT: dev ? '0' : '1',
+    AULALAB_LOCAL_SESSION: '1',
+    AULALAB_LOCAL_URL: url,
+    AULALAB_PUBLIC_URL_LEASE_FILE: leaseFile,
+    AULALAB_STOP_KERNELS_ON_EXIT: dev ? '0' : '1',
     // The state directory has to be TOLD to the server. On its own it works
     // out only the application root (stepping up to kernel/environments), and
     // so the "Environments" window did not see a single environment created
-    // by `colloq env new`, and put the ones created from the panel into
+    // by `aulalab env new`, and put the ones created from the panel into
     // site-packages. By this line the panel finds its environments and .env;
     // without it the panel has one directory, as before.
-    COLLOQ_HOME: home,
+    AULALAB_HOME: home,
     // The built interface is part of the application, so root, not home.
     STATIC_DIR: path.join(root, 'web/dist'),
     VITE_API_TARGET: `http://127.0.0.1:${port}`,
@@ -214,16 +214,16 @@ export function launchConfig(
 }
 
 /**
- * The .env of a local class: the one colloq writes out itself.
+ * The .env of a local class: the one aulalab writes out itself.
  *
  * A copy of .env.example here was a mistake at the very root: that is the
  * installation template, its very first line speaks of production and a
  * release, and its settings are production ones (KERNEL_BACKEND=broker). It
- * turned out that the first `colloq run` on a clean machine wrote a file that
+ * turned out that the first `aulalab run` on a clean machine wrote a file that
  * it then refused on itself.
  *
- * The rule is simple now: a file colloq writes on a person's behalf must be
- * fit for what colloq is about to do. The Makefile is protected in exactly the
+ * The rule is simple now: a file aulalab writes on a person's behalf must be
+ * fit for what aulalab is about to do. The Makefile is protected in exactly the
  * same way: in the run recipe it sets `KERNEL_BACKEND=docker` in the
  * environment (Makefile · run) without relying on the line in the file. The
  * difference is that a variable in a recipe is invisible: a person opens .env,
@@ -242,19 +242,19 @@ export function launchConfig(
  * without searching the documentation.
  */
 export function localClassEnv(dist: boolean): string {
-  return `# Settings for this machine. colloq wrote this file on its first start:
-# edit it and restart with colloq restart. The full list of everything that
+  return `# Settings for this machine. aulalab wrote this file on its first start:
+# edit it and restart with aulalab restart. The full list of everything that
 # can be configured is in .env.example next to the application.
 
 # The address of the class on this machine. From outside it is visible
-# only through colloq host.
+# only through aulalab host.
 PORT=3000
 BIND_ADDR=127.0.0.1
 UI_LANGUAGE=${dist ? 'en' : 'ru'}
 
 # The kernels of a class are Docker containers on this computer, one per room.
 # Each room container is hardened: no privileges, a process limit, the internet
-# yes, your local network and this computer no. COLLOQ_ROOM_NETWORK=open lifts
+# yes, your local network and this computer no. AULALAB_ROOM_NETWORK=open lifts
 # the network block for a machine you fully trust.
 KERNEL_BACKEND=docker
 KERNEL_ENV=base
@@ -361,7 +361,7 @@ export function kernelInputs(root: string, name: string): string[] {
     files.push(file)
     current = fs
       .readFileSync(path.join(root, file), 'utf8')
-      .match(/^\s*#\s*colloq:\s*from\s+(\S+)/m)?.[1]
+      .match(/^\s*#\s*aulalab:\s*from\s+(\S+)/m)?.[1]
   }
   return files
 }

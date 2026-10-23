@@ -30,9 +30,9 @@ COPY server/ server/
 COPY web/ web/
 COPY runtime/ runtime/
 
-RUN npm run build:optimized -w @colloq/web \
- && npm run build -w @colloq/server \
- && npm run build -w @colloq/runtime \
+RUN npm run build:optimized -w @aulalab/web \
+ && npm run build -w @aulalab/server \
+ && npm run build -w @aulalab/runtime \
  && npm prune --omit=dev
 
 # ---------- runtime ----------

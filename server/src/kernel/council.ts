@@ -36,7 +36,7 @@ const MAX_ERROR_LINE_CHARS = 2 * 1024
 
 function clip(text: string, max: number): string {
   if (text.length <= max) return text
-  return tr("server.colloqMoreCharactersCutHere.cfc854", { p0: text.slice(0, max), p1: text.length - max })
+  return tr("server.aulalabMoreCharactersCutHere.cfc854", { p0: text.slice(0, max), p1: text.length - max })
 }
 
 /** What the kernel needs to compute an attempt, and whom to tell the result. */
@@ -94,7 +94,7 @@ export class CouncilOutputBuffer {
       this.outputs.push({
         kind: 'stream',
         name: 'stderr',
-        text: tr("server.colloqAttemptOutputStoppedAfterCharactersSave.97282a", { p0: MAX_ATTEMPT_OUTPUT_CHARS }),
+        text: tr("server.aulalabAttemptOutputStoppedAfterCharactersSave.97282a", { p0: MAX_ATTEMPT_OUTPUT_CHARS }),
       })
     }
   }
@@ -129,7 +129,7 @@ export class CouncilOutputBuffer {
         this.outputs.push({
           kind: 'stream',
           name: 'stderr',
-          text: tr("server.colloqTheAttemptImageLimitWasReached.3d579d"),
+          text: tr("server.aulalabTheAttemptImageLimitWasReached.3d579d"),
         })
       }
       this.dataTruncated = true

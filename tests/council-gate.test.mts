@@ -29,7 +29,7 @@ import {
   COUNCIL_GATE_RUN_KEY,
   isGateRefusal,
 } from '../server/src/kernel/council-gate.js'
-import { COLLOQ_REFUSED, GUARD_MODULE, guardInstallLine } from '../server/src/kernel/danger.js'
+import { AULALAB_REFUSED, GUARD_MODULE, guardInstallLine } from '../server/src/kernel/danger.js'
 import {
   councilEnterSource,
   COUNCIL_EXIT_SOURCE,
@@ -52,13 +52,13 @@ after(() => {
   for (const root of roots) rmSync(root, { recursive: true, force: true })
 })
 function folder(): string {
-  const root = mkdtempSync(path.join(tmpdir(), 'colloq-gate-'))
+  const root = mkdtempSync(path.join(tmpdir(), 'aulalab-gate-'))
   roots.push(root)
   return root
 }
 
 /**
- * One python3 run: the gate's module installed as `colloq_gate` (`gate`),
+ * One python3 run: the gate's module installed as `aulalab_gate` (`gate`),
  * two stand-in kernels — `k7` as ipykernel 7 has do_execute, `k6` as an
  * older one without `cell_meta` — and `call7`/`call6`, which call them as
  * those ipykernels do. Its answer is the JSON line starting with @@.
@@ -67,7 +67,7 @@ function withGate(lines: string[]): any {
   const script = [
     'import asyncio, json, sys, types',
     `gate = types.ModuleType(${JSON.stringify(COUNCIL_GATE_MODULE)})`,
-    `exec(compile(${JSON.stringify(COUNCIL_GATE_PYTHON)}, 'colloq_gate.py', 'exec'), gate.__dict__)`,
+    `exec(compile(${JSON.stringify(COUNCIL_GATE_PYTHON)}, 'aulalab_gate.py', 'exec'), gate.__dict__)`,
     `sys.modules[${JSON.stringify(COUNCIL_GATE_MODULE)}] = gate`,
     'class K7(object):',
     '    def __init__(self):',
@@ -109,9 +109,9 @@ function withGate(lines: string[]): any {
 /* ----------------------------------------------------------------- texts */
 
 test('the gate refuses with the guard\'s own exception name, and only its own words are taken for its refusal', () => {
-  assert.equal(COUNCIL_GATE_REFUSED, COLLOQ_REFUSED)
-  assert.ok(isGateRefusal(COLLOQ_REFUSED, COUNCIL_GATE_REFUSAL))
-  assert.ok(!isGateRefusal(COLLOQ_REFUSED, 'exit() is refused in an attempt'), 'the guard\'s refusal is no gate\'s')
+  assert.equal(COUNCIL_GATE_REFUSED, AULALAB_REFUSED)
+  assert.ok(isGateRefusal(AULALAB_REFUSED, COUNCIL_GATE_REFUSAL))
+  assert.ok(!isGateRefusal(AULALAB_REFUSED, 'exit() is refused in an attempt'), 'the guard\'s refusal is no gate\'s')
   assert.ok(!isGateRefusal('ValueError', COUNCIL_GATE_REFUSAL))
   // English for the log, never a card's: no Cyrillic in either text.
   assert.doesNotMatch(COUNCIL_GATE_PYTHON + COUNCIL_GATE_CONFIG + COUNCIL_GATE_REFUSAL, /[А-Яа-яЁё]/)
@@ -187,7 +187,7 @@ test('a non-silent request runs only when the gate was opened for the token it c
   assert.equal(answer.wrong_spent.code, refusedCode, 'a refused request left the opening for the next')
   assert.equal(answer.closed.code, refusedCode)
   // The refused code raises the guard's exception with the gate's words, and binds no name where it runs.
-  assert.deepEqual(answer.refusal, { raised: COLLOQ_REFUSED, words: COUNCIL_GATE_REFUSAL, names: [] })
+  assert.deepEqual(answer.refusal, { raised: AULALAB_REFUSED, words: COUNCIL_GATE_REFUSAL, names: [] })
   assert.equal(answer.once, true)
 })
 
@@ -249,8 +249,8 @@ test('an opening stands only with its request\'s whole reply: one that ends in a
     'k = KR()',
     'gate.load_ipython_extension(types.SimpleNamespace(kernel=k))',
     'out = {}',
-    "whole = {'status': 'ok', 'user_expressions': {'colloq': {'status': 'ok', 'data': {}}}}",
-    "cases = [('error', {'status': 'error'}), ('expression', {'status': 'ok', 'user_expressions': {'colloq': {'status': 'error'}}}), ('raised', KeyboardInterrupt()), ('whole', whole)]",
+    "whole = {'status': 'ok', 'user_expressions': {'aulalab': {'status': 'ok', 'data': {}}}}",
+    "cases = [('error', {'status': 'error'}), ('expression', {'status': 'ok', 'user_expressions': {'aulalab': {'status': 'error'}}}), ('raised', KeyboardInterrupt()), ('whole', whole)]",
     'for sync in (False, True):',
     '    k.sync = sync',
     '    for name, reply in cases:',

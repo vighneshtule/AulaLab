@@ -209,7 +209,7 @@ export function createCapabilityReader(options: CapabilityReaderOptions = {}) {
     const version = await daemon.value
     if (!version) return evaluateCapabilities({ backend, dockerVersion: null })
     const imagePresent = (name: string | undefined, digest: string | undefined): Promise<boolean | null> => {
-      const image = digest ?? `colloq-kernel:${name}`
+      const image = digest ?? `aulalab-kernel:${name}`
       let cached = images.get(image)
       if (!cached || cached.until <= clock()) {
         cached = probe(() => run(['image', 'inspect', '--format', '{{.Id}}', image]).then(() => true, (error: unknown) => imageAbsent(error) ? false : null))

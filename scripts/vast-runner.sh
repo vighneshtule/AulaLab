@@ -2,11 +2,11 @@
 # Machines for another instance's submissions («машины для посылок») on
 # rented Vast VMs (docs/architecture/remote-runners.md).
 #
-#   make vast-runner COUNT=3 CODE=<code> URL=https://vsos.colloq.ru   three VMs join that home
+#   make vast-runner COUNT=3 CODE=<code> URL=https://vsos.example.edu   three VMs join that home
 #   make vast-runner COUNT=2 GPU="RTX 4090" GPUS=2 DISK=150 CODE=… URL=…   with two 4090s each
 #   make vast-runner … DESTROY_UNJOINED=1   a machine rented that did not join is destroyed at the end
 #   make runners-update                   every machine to its home's version, its runs finished first
-#   make runners-update URL=https://vsos.colloq.ru   only the machines of that home
+#   make runners-update URL=https://vsos.example.edu   only the machines of that home
 #   make runners-update VERSION=0.24.0 NOW=1   to that one, handing the runs back right away
 #   make runners-update FORCE=1           a machine already on its home's build too
 #   make runners-down                     every machine leaves its home, then is destroyed
@@ -16,12 +16,12 @@
 #   scripts/vast-runner.sh up | update | down
 #
 # CODE is the home owner's enrollment code (Resources → Machines →
-# «Подключить машину»; or colloq-host runner-code on the home),
+# «Подключить машину»; or aulalab-host runner-code on the home),
 # for at least COUNT machines. URL is the home; VAST_RUNNER_URL in .env names a
 # usual one for `up` (the fleet commands take URL= from the command line only:
 # a default there would quietly narrow, or widen, what is destroyed). GPU=,
 # GPUS=, GPU_RAM=, CPU=, RAM=, DISK= and MAX_PRICE= are scripts/vast-vm.sh's
-# filters, per machine. NAME= labels the batch colloq-runner-<NAME>, and the
+# filters, per machine. NAME= labels the batch aulalab-runner-<NAME>, and the
 # fleet commands then take only that batch.
 #
 # ONE WAY TO RENT. `up` runs COUNT copies of scripts/vast-vm.sh with
@@ -48,11 +48,11 @@
 # and DESTROY_UNJOINED=1 destroys them itself. One the copy destroyed already
 # (a broken host, scripts/vast-vm.sh) is said to be gone.
 #
-# WHICH MACHINES THE FLEET COMMANDS TAKE. Those labelled colloq-runner or
-# colloq-runner-<NAME> on Vast, and nothing else of the account. A label says
+# WHICH MACHINES THE FLEET COMMANDS TAKE. Those labelled aulalab-runner or
+# aulalab-runner-<NAME> on Vast, and nothing else of the account. A label says
 # nothing of the home, though, and one account may rent machines for two
 # homes (vsos and a lab's): so each machine is asked over ssh which home it
-# serves, COLLOQ_RUNNER_JOIN in its /etc/colloq/runner.env up to the # (the
+# serves, AULALAB_RUNNER_JOIN in its /etc/aulalab/runner.env up to the # (the
 # code never leaves the machine), with the agent's status beside it. The list
 # shows each machine's home before anything happens, and URL= keeps only the
 # machines of that home; a machine whose home is not known (no ssh, no
@@ -60,7 +60,7 @@
 # machine is taken, as before; but VERSION= for machines of several homes is
 # refused, since it would move some of them off their own home's version.
 #
-# UPDATE. `colloq-host runner update` drains a machine (the runs it holds
+# UPDATE. `aulalab-host runner update` drains a machine (the runs it holds
 # finish, it takes no new ones) and restarts it on the home's version, since a
 # machine whose runner code differs from its home's is «устарел» and gets no
 # work (decision 5). A release that leaves the runner code alone keeps the
@@ -74,30 +74,30 @@
 # back seconds later, the agent hearing relay pages meanwhile. A machine
 # skipped on that word was «устарел» from its next sync on, while this
 # script reported every machine on its home's build (review, 14 Oct 2026).
-# One that gives no fresh word is updated, and colloq-host decides there.
-# VERSION= names the version for every machine and skips none: colloq-host
+# One that gives no fresh word is updated, and aulalab-host decides there.
+# VERSION= names the version for every machine and skips none: aulalab-host
 # itself does nothing for one already on it. Classes on a machine keep
 # running through its update: the new agent adopts their containers, and
-# their home holds them for the restart (colloq-host · stop_runner). A
-# machine's first update to 0.25 is run by its colloq-host of before, which
+# their home holds them for the restart (aulalab-host · stop_runner). A
+# machine's first update to 0.25 is run by its aulalab-host of before, which
 # leaves the agent off the host's network, where it takes no classes: it is
-# updated once more, by the colloq-host that update brought (agent_network).
+# updated once more, by the aulalab-host that update brought (agent_network).
 #
 # A drain lasts up to four hours and a laptop's ssh does not, and an ssh that
 # drops kills what it runs: halfway through an update that is a machine
 # stopped and never started again, billing for nothing. So the update runs
 # detached on the machine (setsid and nohup, its log and exit code under
-# /var/log/colloq-runner-update), and this script polls it over short ssh
+# /var/log/aulalab-runner-update), and this script polls it over short ssh
 # calls. A dropped poll costs nothing but the poll; the same command run again
 # follows an update already running there instead of starting a second.
 #
-# DOWN. `colloq-host runner leave` drains a machine and revokes it on the
+# DOWN. `aulalab-host runner leave` drains a machine and revokes it on the
 # home, and only then is the VM destroyed. NOW=1 skips the wait: a destroyed
 # machine that did not leave is lost to its home after three minutes of
 # silence, its runs requeued spending no participant's attempts, while the
 # machine stays in the panel until the owner revokes it. A leave cut short by
 # a dropped ssh ends the same way, which is why it is not detached. A leave
-# ends with the home's answer, and colloq-host waits for it only while the
+# ends with the home's answer, and aulalab-host waits for it only while the
 # home answers: after ten minutes without a word from it (a home destroyed
 # before its machines, a tunnel down) the leave is given up, said so, and the
 # VM destroyed all the same, rather than billing while this waits for good.
@@ -124,7 +124,7 @@ py() { python3 -c "$1"; }
 . ./scripts/lib.sh
 
 API=https://console.vast.ai/api/v0
-BASE_LABEL=colloq-runner
+BASE_LABEL=aulalab-runner
 # NAME becomes a label on Vast and a word the copies' logs are searched for.
 name_re='^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$'
 [ -z "${NAME:-}" ] || [[ "$NAME" =~ $name_re ]] || die "NAME= is a short word (lowercase letters, digits, hyphens), not \"$NAME\"."
@@ -144,7 +144,7 @@ open_api() {
   local token
   token="$(read_env VAST_TOKEN)"
   [ -n "$token" ] || die "no VAST_TOKEN in .env (https://cloud.vast.ai/manage-keys/)."
-  CURLRC="$(mktemp -t colloq-vast.XXXXXX)"
+  CURLRC="$(mktemp -t aulalab-vast.XXXXXX)"
   printf 'header = "Authorization: Bearer %s"\n' "$token" > "$CURLRC"
   [ -f "$SSH_KEY" ] || die "no ssh key $SSH_KEY (VAST_SSH_KEY in .env)."
 }
@@ -187,7 +187,7 @@ prefix() {
 # line, separated by \037 rather than a tab (a tab is whitespace to `read`, and
 # an empty field, a machine not running, would shift the rest; vast.sh says
 # more). A VM's ssh is its own port map, not the ssh_host proxy (vast.sh ·
-# instances_tsv). Nothing but colloq-runner labels: every other instance of
+# instances_tsv). Nothing but aulalab-runner labels: every other instance of
 # the account is none of this script's business.
 runner_instances() {
   local raw
@@ -209,14 +209,14 @@ for i in sorted(json.load(sys.stdin).get("instances") or [], key=lambda i: i.get
 }
 
 # The home as the agent keeps it: an http(s) origin and nothing after it
-# (colloq-host · check_home, remote-runner.ts · homeOrigin).
+# (aulalab-host · check_home, remote-runner.ts · homeOrigin).
 check_home() {
   local rest re='^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?(:[0-9]{1,5})?$'
   case "$1" in
     https://*|http://*) rest="${1#*://}" ;;
     *) die "URL=$1: the home's address starts with https://" ;;
   esac
-  [[ "$rest" =~ $re ]] || die "URL=$1 is not a home's address: its origin alone, like https://vsos.colloq.ru"
+  [[ "$rest" =~ $re ]] || die "URL=$1 is not a home's address: its origin alone, like https://vsos.example.edu"
 }
 
 number() { [[ "$1" =~ ^[0-9]+([.][0-9]+)?$ ]]; }
@@ -227,10 +227,10 @@ up() {
   local code_re='^[a-f0-9]{32}$'
   case "$count" in ''|*[!0-9]*) die "COUNT= is how many machines to rent, 1 to 16, not \"$count\"." ;; esac
   [ "$count" -ge 1 ] && [ "$count" -le 16 ] || die "COUNT= is how many machines to rent, 1 to 16, not \"$count\"."
-  [ -n "$code" ] || die "CODE= is the enrollment code from the home's owner (its panel: Resources → Machines → Connect a machine; or colloq-host runner-code there)."
+  [ -n "$code" ] || die "CODE= is the enrollment code from the home's owner (its panel: Resources → Machines → Connect a machine; or aulalab-host runner-code there)."
   [[ "$code" =~ $code_re ]] || die "CODE= is not an enrollment code: 32 hex digits from the home's owner."
   [ -n "$url" ] || url="$(read_env VAST_RUNNER_URL)"
-  [ -n "$url" ] || die "URL= names the home these machines join (https://vsos.colloq.ru), or VAST_RUNNER_URL in .env."
+  [ -n "$url" ] || die "URL= names the home these machines join (https://vsos.example.edu), or VAST_RUNNER_URL in .env."
   url="${url%/}"
   check_home "$url"
   # A machine with cards is asked for the GPU kernels, and every Vast VM has a
@@ -242,12 +242,12 @@ up() {
   [ -f deploy/vast/onstart-runner.sh ] || die "no deploy/vast/onstart-runner.sh in this checkout."
   open_api
 
-  SCRIPT="$(mktemp -t colloq-runner-onstart.XXXXXX)"
+  SCRIPT="$(mktemp -t aulalab-runner-onstart.XXXXXX)"
   cp deploy/vast/onstart-runner.sh "$SCRIPT"
   URL="$url" CODE="$code" SCRIPT="$SCRIPT" py '
 import os, re
 path = os.environ["SCRIPT"]; text = open(path).read()
-for key, value in (("COLLOQ_RUNNER_URL", os.environ["URL"]), ("COLLOQ_RUNNER_CODE", os.environ["CODE"])):
+for key, value in (("AULALAB_RUNNER_URL", os.environ["URL"]), ("AULALAB_RUNNER_CODE", os.environ["CODE"])):
     text, n = re.subn(r"^export %s=\"[^\"]*\"" % key, "export %s=\"%s\"" % (key, value), text, count=1, flags=re.M)
     if not n: raise SystemExit("no %s line in deploy/vast/onstart-runner.sh" % key)
 open(path, "w").write(text)'
@@ -374,7 +374,7 @@ destroy_unjoined() {
 FLEET=""
 for_each_machine() {
   local task="$1" id host port status label home verdict pids=() ids=() logs failed=0 i
-  logs="$(mktemp -d -t colloq-runners.XXXXXX)"
+  logs="$(mktemp -d -t aulalab-runners.XXXXXX)"
   while IFS=$'\037' read -r id host port status label home verdict; do
     [ -n "$id" ] || continue
     (
@@ -399,29 +399,29 @@ EOF
 # its agent writes syncedAt by), its agent's status line and the network its
 # agent's container runs on (agent_network says why). The status goes
 # first: on a machine joined with the panel's plain `docker run`,
-# colloq-host's status writes runner.env out of the container (colloq-host ·
+# aulalab-host's status writes runner.env out of the container (aulalab-host ·
 # adopt_runner), and the home is read from there. With WAIT, an update's, a
 # working agent is given that many seconds for a sync made after it was
 # asked, so that what the line says of the home's word on its build is the
 # home's word now (UPDATE above says why); a machine whose agent does not
 # work (stopped, refused, no container) is not waited for. The marker
 # comment is how tests/vast-runner-fleet.test.mts tells the scripts apart.
-SURVEY_SCRIPT='# colloq-runner-fleet: survey
+SURVEY_SCRIPT='# aulalab-runner-fleet: survey
 # One group, read whole before a word of it runs: the script comes on
 # stdin, and bash 3.2 lost its place in it once a child shared that stdin.
 {
 bound="${1:-0}"
 asked="$(date +%s)000"
 while :; do
-  s="$(colloq-host runner status 2>/dev/null | grep "^{" | tail -1)"
+  s="$(aulalab-host runner status 2>/dev/null | grep "^{" | tail -1)"
   at="$(printf "%s" "$s" | sed -n "s/.*\"syncedAt\":\([0-9][0-9]*\).*/\1/p")"
   [ -z "$at" ] || [ "$at" -lt "$asked" ] || break
   case "$s" in *"\"state\":\"active\""*|*"\"state\":\"draining\""*|*"\"state\":\"leaving\""*) ;; *) break ;; esac
   [ "$bound" -gt 0 ] || break
   sleep 2; bound=$((bound - 2))
 done
-h="$(sed -n "s/^COLLOQ_RUNNER_JOIN=\([^#]*\)#.*/\1/p" /etc/colloq/runner.env 2>/dev/null | tail -1)"
-n="$(docker inspect -f "{{.HostConfig.NetworkMode}}" colloq-runner 2>/dev/null)"
+h="$(sed -n "s/^AULALAB_RUNNER_JOIN=\([^#]*\)#.*/\1/p" /etc/aulalab/runner.env 2>/dev/null | tail -1)"
+n="$(docker inspect -f "{{.HostConfig.NetworkMode}}" aulalab-runner 2>/dev/null)"
 printf "home %s\nasked %s\nstatus %s\nnetwork %s\n" "$h" "$asked" "$s" "$n"
 exit
 }'
@@ -445,7 +445,7 @@ survey_one() {
 # verdict reads the agent's status: `current` when its home said, in a sync
 # made after the survey asked, that the machine's build is its own
 # (compatible); `outdated` when home said it is not; `unknown` otherwise,
-# which an update treats as outdated (colloq-host decides on the machine).
+# which an update treats as outdated (aulalab-host decides on the machine).
 # No `current` from an older word, and none from the agent's version against
 # its home's: that too is the last sync's, and one version may be two builds
 # (a fork's image and the published one). And none for an agent that could
@@ -493,7 +493,7 @@ load_fleet() {
     say "no machines for submissions are rented (label $LABEL${NAME:+}; others: ${BASE_LABEL}-*)"
     exit 0
   fi
-  SURVEY="$(mktemp -d -t colloq-runners-survey.XXXXXX)"
+  SURVEY="$(mktemp -d -t aulalab-runners-survey.XXXXXX)"
   if [ "$SURVEY_WAIT" -gt 0 ]; then
     say "${DIM}asking each machine which home it serves, and its home's word on its build in a sync from now on (up to $SURVEY_WAIT s)…${OFF}"
   else
@@ -533,25 +533,25 @@ EOF
 # detached, so that it outlives the ssh that started it, or not started at all
 # when one is running there already (an earlier run of this script whose
 # connection dropped), which is then followed instead. The detached shell
-# writes its own pid (setsid may fork) and, at the end, colloq-host's exit
+# writes its own pid (setsid may fork) and, at the end, aulalab-host's exit
 # code; its log is what the polls print.
-UPDATE_START='# colloq-runner-fleet: start the update
+UPDATE_START='# aulalab-runner-fleet: start the update
 # One group, read whole before a word of it runs: the script comes on
 # stdin, and bash 3.2 lost its place in it once a child shared that stdin.
 {
-d=/var/log/colloq-runner-update
+d=/var/log/aulalab-runner-update
 mkdir -p "$d"
-alive() { p="$(cat "$d/pid" 2>/dev/null)"; [ -n "$p" ] && tr "\000" " " 2>/dev/null < "/proc/$p/cmdline" | grep -q "colloq-host runner update"; }
+alive() { p="$(cat "$d/pid" 2>/dev/null)"; [ -n "$p" ] && tr "\000" " " 2>/dev/null < "/proc/$p/cmdline" | grep -q "aulalab-host runner update"; }
 if [ ! -f "$d/exit" ] && alive; then
   echo "an update is running here already; following it"
   exit 0
 fi
 rm -f "$d/exit" "$d/pid"
 : > "$d/log"
-setsid nohup bash -c '"'"'echo "$$" > "$0/pid"; colloq-host runner update "$@" > "$0/log" 2>&1; echo "$?" > "$0/exit"'"'"' "$d" "$@" < /dev/null > /dev/null 2>&1 &
+setsid nohup bash -c '"'"'echo "$$" > "$0/pid"; aulalab-host runner update "$@" > "$0/log" 2>&1; echo "$?" > "$0/exit"'"'"' "$d" "$@" < /dev/null > /dev/null 2>&1 &
 for _ in 1 2 3 4 5 6 7 8 9 10; do [ -s "$d/pid" ] && break; sleep 0.5; done
 if [ ! -s "$d/pid" ] && [ ! -f "$d/exit" ]; then echo "the detached update did not start (no setsid or nohup here?)" >&2; exit 1; fi
-echo "colloq-host runner update${*:+ $*} runs detached on this machine: it goes on if this connection drops"
+echo "aulalab-host runner update${*:+ $*} runs detached on this machine: it goes on if this connection drops"
 exit
 }'
 
@@ -560,13 +560,13 @@ exit
 # state is `exit <code>`, `running`, or `gone` (no exit code and no process:
 # the machine rebooted under it). The exit file is looked at first, so that
 # once it is there the lines printed are the whole log.
-UPDATE_POLL='# colloq-runner-fleet: poll the update
+UPDATE_POLL='# aulalab-runner-fleet: poll the update
 # One group, read whole before a word of it runs: the script comes on
 # stdin, and bash 3.2 lost its place in it once a child shared that stdin.
 {
-d=/var/log/colloq-runner-update
+d=/var/log/aulalab-runner-update
 seen="${1:-0}"
-alive() { p="$(cat "$d/pid" 2>/dev/null)"; [ -n "$p" ] && tr "\000" " " 2>/dev/null < "/proc/$p/cmdline" | grep -q "colloq-host runner update"; }
+alive() { p="$(cat "$d/pid" 2>/dev/null)"; [ -n "$p" ] && tr "\000" " " 2>/dev/null < "/proc/$p/cmdline" | grep -q "aulalab-host runner update"; }
 if [ -f "$d/exit" ]; then state="exit $(cat "$d/exit")"
 elif alive; then state=running
 else state=gone
@@ -595,8 +595,8 @@ follow_update() {
       case "$lines" in ''|*[!0-9]*) ;; *) seen="$lines" ;; esac
       case "$state" in
         'exit 0') return 0 ;;
-        exit\ *) say "colloq-host runner update ended with code ${state#exit } (its words are above)"; return 1 ;;
-        gone) say "the update stopped without finishing (the machine rebooted?): the log is /var/log/colloq-runner-update/log there"; return 1 ;;
+        exit\ *) say "aulalab-host runner update ended with code ${state#exit } (its words are above)"; return 1 ;;
+        gone) say "the update stopped without finishing (the machine rebooted?): the log is /var/log/aulalab-runner-update/log there"; return 1 ;;
       esac
     else
       fails=$((fails + 1))
@@ -607,7 +607,7 @@ follow_update() {
       say "${DIM}no answer over ssh (poll $fails of $tries); the update goes on on the machine${OFF}"
     fi
     if [ $((SECONDS - began)) -ge "$bound" ]; then
-      say "still updating after $((bound / 60)) min; it goes on there: ssh to it and tail /var/log/colloq-runner-update/log"
+      say "still updating after $((bound / 60)) min; it goes on there: ssh to it and tail /var/log/aulalab-runner-update/log"
       return 1
     fi
     sleep "$poll"
@@ -622,16 +622,16 @@ follow_update() {
 #
 # OFF THE HOST'S NETWORK an agent that could hold classes takes submissions
 # and no classes, and that is where the first update of a machine to 0.25
-# leaves it: the update is the machine's own colloq-host, the one of its old
+# leaves it: the update is the machine's own aulalab-host, the one of its old
 # release, which starts the new agent as it always did, on Docker's bridge,
-# and only at its end installs the new colloq-host out of the new image. The
-# new colloq-host's update moves the agent (its fingerprint counts the
+# and only at its end installs the new aulalab-host out of the new image. The
+# new aulalab-host's update moves the agent (its fingerprint counts the
 # network, run_runner), so update_one runs it right after, and the survey
 # keeps a machine still off the host's network from passing for `current`.
-NETWORK_SCRIPT='# colloq-runner-fleet: the network of its agent
+NETWORK_SCRIPT='# aulalab-runner-fleet: the network of its agent
 {
-case "$(colloq-host runner status 2>/dev/null)" in
-  *"\"classes\""*) docker inspect -f "{{.HostConfig.NetworkMode}}" colloq-runner 2>/dev/null ;;
+case "$(aulalab-host runner status 2>/dev/null)" in
+  *"\"classes\""*) docker inspect -f "{{.HostConfig.NetworkMode}}" aulalab-runner 2>/dev/null ;;
 esac
 exit
 }'
@@ -655,16 +655,16 @@ update_one() {
   [ -z "$NOW_FLAG" ] || args="${args:+$args }$NOW_FLAG"
   # Once, and once more for an agent the first left off the host's network
   # (agent_network says why): that one drains again, for whatever it took
-  # meanwhile, and is replaced by the colloq-host the first brought.
+  # meanwhile, and is replaced by the aulalab-host the first brought.
   for pass in 1 2; do
     ssh_to "$host" "$port" "bash -s --${args:+ $args}" <<<"$UPDATE_START" || { say "the update could not be started there (above)"; return 1; }
     follow_update "$host" "$port" || return 1
     network="$(agent_network "$host" "$port")"
     case "$network" in ''|host) return 0 ;; esac
     [ "$pass" = 1 ] || break
-    say "its agent runs on Docker's network ($network), not the host's, as the colloq-host of its old release starts it, and takes no classes there: updated once more, by the colloq-host this update brought"
+    say "its agent runs on Docker's network ($network), not the host's, as the aulalab-host of its old release starts it, and takes no classes there: updated once more, by the aulalab-host this update brought"
   done
-  say "its agent still runs on Docker's network ($network): the colloq-host there is still one from before 0.25 (the update's lines above say why). It takes submissions, and no classes until colloq-host runner update moves it, once colloq-host is the new one"
+  say "its agent still runs on Docker's network ($network): the aulalab-host there is still one from before 0.25 (the update's lines above say why). It takes submissions, and no classes until aulalab-host runner update moves it, once aulalab-host is the new one"
   return 1
 }
 
@@ -703,7 +703,7 @@ update() {
 # owner revokes it, and that is worth a non-zero exit. NOW=1 asks for exactly
 # that, so there it is no failure.
 #
-# A machine with classes on it asks before it leaves (colloq-host · runner_leave,
+# A machine with classes on it asks before it leaves (aulalab-host · runner_leave,
 # its exit LEAVE_HOLDS_CLASSES), and nobody is at its terminal to answer: the
 # answer is the one given here already, that these machines go. So it is
 # asked again with --force, which moves its classes off it at once rather
@@ -717,11 +717,11 @@ down_one() {
   elif [ -z "$host" ] || [ -z "$port" ]; then
     say "instance $id is $status and has no ssh: it cannot leave its home"
   else
-    ssh_to "$host" "$port" 'colloq-host runner leave' || rc=$?
+    ssh_to "$host" "$port" 'aulalab-host runner leave' || rc=$?
     if [ "$rc" = "$LEAVE_HOLDS_CLASSES" ]; then
       say "its classes move off it (their variables are lost), and it leaves"
       rc=0
-      ssh_to "$host" "$port" 'colloq-host runner leave --force' || rc=$?
+      ssh_to "$host" "$port" 'aulalab-host runner leave --force' || rc=$?
     fi
     if [ "$rc" = 0 ]; then left=1; else say "it did not leave its home (above)"; fi
   fi

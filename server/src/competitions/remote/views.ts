@@ -546,8 +546,8 @@ function codeView(code: ReturnType<typeof liveCodes>[number]): RemoteCodeView {
     trusted: code.trusted,
     approvedSlots: code.approvedSlots,
     namePrefix: code.namePrefix || null,
-    createdBy: code.createdBy === 'colloq-host' ? null : (getTeacher(code.createdBy)?.name ?? null),
-    console: code.createdBy === 'colloq-host',
+    createdBy: code.createdBy === 'aulalab-host' ? null : (getTeacher(code.createdBy)?.name ?? null),
+    console: code.createdBy === 'aulalab-host',
     ...(code.classes ? { classes: true } : {}),
   }
 }

@@ -272,10 +272,10 @@ const DRIVER = /^[0-9]{1,4}(?:\.[0-9]{1,4}){0,3}$/
 /**
  * The machine's cards, from one throwaway container given every card
  * (kernel/card-probe.ts · cardsInContainer, the probe home uses), started
- * from `image` — the agent's own image (COLLOQ_RUNNER_IMAGE): `--gpus all`
+ * from `image` — the agent's own image (AULALAB_RUNNER_IMAGE): `--gpus all`
  * puts nvidia-smi into any container, and that image is on the machine for
  * certain, where a CUDA image would be a pull of gigabytes to count the cards.
- * Named by index, the way `--gpus device=` and the runs' `colloq.gpu` label
+ * Named by index, the way `--gpus device=` and the runs' `aulalab.gpu` label
  * name them. The driver comes from a second question to the same image.
  */
 export async function probeCards(docker: Docker, image: string | null): Promise<CardProbe> {
@@ -377,7 +377,7 @@ export async function measureDockerDisk(input: {
   rootDir: string | null
   tree: string
   image: string | null
-  /** Whether the agent runs in a container of its own (COLLOQ_RUNNER_CONTAINER). */
+  /** Whether the agent runs in a container of its own (AULALAB_RUNNER_CONTAINER). */
   contained: boolean
   /** The check container's labels (images.ts · CHECK_LABELS): swept like the smoke test should a life end mid-measure. */
   labels: readonly string[]

@@ -12,8 +12,8 @@ import {
   type SessionMe,
 } from '@shared/protocol'
 
-const KEY = 'colloq.identity.v1'
-const PROFILE_KEY = 'colloq.profile.v1'
+const KEY = 'aulalab.identity.v1'
+const PROFILE_KEY = 'aulalab.profile.v1'
 
 export interface StoredIdentity {
   sessionId: string
@@ -220,7 +220,7 @@ function saveProfile(profile: Profile): void {
  * a request, whether it is worth ASKING who the visitor is. Students never have
  * it, so they never pay for the question, and the answer is still the server's.
  */
-const STAFF_KEY = 'colloq.staff.v1'
+const STAFF_KEY = 'aulalab.staff.v1'
 
 export function markStaff(): void {
   try {

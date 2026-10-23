@@ -118,7 +118,7 @@
 
   /*
    * Public pages are a separate chunk too, and for a sharper reason than the
-   * panel: they are the only Colloq addresses people open from a phone, from
+   * panel: they are the only Aula Lab addresses people open from a phone, from
    * home, a week after the class. Dragging the editor, the terminal and the
    * Oracle there means making those who came to read a notebook pay for them.
    */
@@ -649,7 +649,7 @@
           : tr(failure.message)}
       </p>
       <!--
-        "Back to Colloq" — only for those who have somewhere to go there.
+        "Back to Aula Lab" — only for those who have somewhere to go there.
 
         The root is the teacher's panel (below), and on it is the "paste the
         setup token" form. A student who clicked here from a wrong seminar link

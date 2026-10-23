@@ -21,7 +21,7 @@
  *
  * A malformed entry is dropped with a line in the journal rather than
  * refusing to start: the same rule as the other network settings of this
- * server (KERNEL_ROOM_SUBNET, COLLOQ_ROOM_NETWORK in kernel/perimeter.ts), and
+ * server (KERNEL_ROOM_SUBNET, AULALAB_ROOM_NETWORK in kernel/perimeter.ts), and
  * dropping always errs toward believing less. The start line names what is
  * believed, so a typo is visible in the first screen of the log.
  */

@@ -23,7 +23,7 @@
  * the machine's DATA_DIR, so the notebook's folder, the package set's folder
  * and the harness are the very paths home would mount. Only what is not the
  * sandbox may differ, and each is named: the image (home runs the revision by
- * its local id, the machine by the colloq-revision tag it gave the pulled
+ * its local id, the machine by the aulalab-revision tag it gave the pulled
  * pin), the folder of the open data (home's data/, the machine's
  * inputs/<manifest12>/), and the attempt's id and container's name (the
  * machine's offer and home's run are two takes of the row, each with its own).
@@ -64,7 +64,7 @@ const RTX = { name: 'NVIDIA GeForce RTX 4090', memoryMb: 24_564 }
 const CARDS = [{ device: '0', ...RTX }, { device: '1', ...RTX }]
 const GPU_ENV = ['KERNEL_GPUS', 'COMPETITION_GPUS', 'COMPETITION_GPU_PER_DEVICE'] as const
 /** A notebook home's stand-in runs as a failed cell: no metric follows the run this file records. */
-const FAILING = '# colloq-test: {"status": "cell_error", "cell": 0, "detail": "ValueError: the sandbox is what is compared"}'
+const FAILING = '# aulalab-test: {"status": "cell_error", "cell": 0, "detail": "ValueError: the sandbox is what is compared"}'
 
 after(() => {
   useCompetitionRunner(null)
@@ -284,7 +284,7 @@ test('a GPU notebook with a package set: the card\'s share, its caps and the set
     sides.compare({ machine: sides.machine.request.dataDir, home: openDir(sides.c.id) })
     const args = sides.machine.args
     // The share is capped inside and watched outside, as at home: the allocator's cap and the card's size go in.
-    assert.ok(args.some((arg) => arg.startsWith('COLLOQ_GPU_MEMORY_MB=')))
+    assert.ok(args.some((arg) => arg.startsWith('AULALAB_GPU_MEMORY_MB=')))
     assert.ok(args.includes(`device=${sides.home.request.gpu!.device}`))
     assert.ok(args.includes(`${sides.home.request.dependenciesDir}:/deps:ro`))
     assert.ok(args.some((arg) => arg.startsWith('--tmpfs=/packages:') && arg.includes(`size=${sides.home.request.packagesMb}m`)))

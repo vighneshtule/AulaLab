@@ -2,7 +2,7 @@
  * What is left of the course pages in this repository: redirect stubs.
  *
  * `make site` used to export every course and class page into site/c and
- * site/p, and Pages served them from colloq.ru. That export is retired: a
+ * site/p, and Pages served them from example.edu. That export is retired: a
  * class page now carries PDFs, data and student outputs, and a public
  * repository's history cannot be withdrawn. What stays under site/c is a
  * hand-written pointer per course that was ever dictated to a group, so the
@@ -40,13 +40,13 @@ test('every course under site/c is a noindex redirect to its instance, and nothi
     assert.ok(refresh, `site/c/${name} does not redirect`)
     const target = refresh[1]
     assert.match(target, new RegExp(`^https://[a-z0-9.-]+/c/${name}$`), `site/c/${name} points elsewhere`)
-    assert.ok(!/^https:\/\/(www\.)?colloq\.(ru|cc)\//.test(target), `site/c/${name} redirects to itself`)
+    assert.ok(!/^https:\/\/(www\.)?aulalab\.(ru|cc)\//.test(target), `site/c/${name} redirects to itself`)
     assert.ok(html.includes(`<link rel="canonical" href="${target}">`), `site/c/${name} has no canonical`)
     // Without refresh (a reader mode, a blocked meta) the person still has the address.
     const shown = target.replace(/^https:\/\//, '')
     assert.ok(html.includes(`<a href="${target}">${shown}</a>`), `site/c/${name} shows no address`)
     assert.ok(!/<script/i.test(html), `site/c/${name} runs a script`)
-    // The mirror rewrites `.addr` text to colloq.cc; this address is not on that domain.
+    // The mirror rewrites `.addr` text to github.com/vighneshtule/AulaLab; this address is not on that domain.
     assert.ok(!/class="addr"/.test(html), `site/c/${name} would be rewritten by the mirror`)
   }
 })

@@ -5,9 +5,9 @@
  * attempt wrote on their way to its card at home.
  *
  *   <state>/council/<id>/epochs/<sha256>   every file of the class's epochs held here, a hard
- *                                          link into the CAS: mounted read-only at /colloq/epochs
+ *                                          link into the CAS: mounted read-only at /aulalab/epochs
  *   <state>/council/<id>/scratch/<runId>/  an attempt's working folder, made by its worker's
- *                                          `enter`: mounted read-write at /colloq/scratch
+ *                                          `enter`: mounted read-write at /aulalab/scratch
  *                                          (root's, 1733: a worker makes its own run's
  *                                          folder there and lists none; the agent's helper
  *                                          makes it so, scratchHelperArgs)
@@ -15,7 +15,7 @@
  *   <state>/council/<id>/.staging/         the agent's own: an export as `docker cp` copied it,
  *                                          a file of an attempt on its way home; never mounted
  *   <state>/council/.gate/<digest>/        the workers' gate (§9.6, councilGate), one for every
- *                                          class: module/ mounted read-only at /colloq/gate, its
+ *                                          class: module/ mounted read-only at /aulalab/gate, its
  *                                          ipython_kernel_config.py at /etc/ipython/
  *
  * AN EPOCH IS CONTENT-ADDRESSED, AND SO IS EVERY COPY OF IT HERE. Home names
@@ -23,7 +23,7 @@
  * when it is there already (an unchanged buffer of the notebook's previous
  * epoch, the same data in another class); from the export when the
  * notebook's kernel runs on this machine — `docker cp` of its
- * /tmp/colloq-epoch/<seq>/, which no other container reaches, every file
+ * /tmp/aulalab-epoch/<seq>/, which no other container reaches, every file
  * taken by its content and checked against the hash home named before the
  * CAS takes it, the folder then removed from the container; or from home, by
  * its hash, down the agent's one blob stream at the class's rate. Into the
@@ -204,7 +204,7 @@ const recordFile = (dir: string): string => path.join(dir, 'epochs.json')
 const SCRATCH_MODE = 0o1733
 
 /** The kind label of the scratch space's helper runs: the perimeter's helper has its own (perimeter-core.ts · helperArgs). */
-export const SCRATCH_HELPER_LABEL = 'colloq.kind=council-scratch'
+export const SCRATCH_HELPER_LABEL = 'aulalab.kind=council-scratch'
 
 /** What the helper does to a class's scratch space: make it root's for a new container, list it, or empty it for good. */
 export type ScratchAction = 'fresh' | 'list' | 'remove'
@@ -212,14 +212,14 @@ export type ScratchAction = 'fresh' | 'list' | 'remove'
 /** The scratch space inside the helper's container. */
 const SCRATCH_IN_HELPER = '/s'
 
-/** The helper's line for each, ending in its word, as the perimeter's ends in its own (`colloq-perimeter: ok`). */
+/** The helper's line for each, ending in its word, as the perimeter's ends in its own (`aulalab-perimeter: ok`). */
 const SCRATCH_SCRIPTS: Readonly<Record<ScratchAction, string>> = Object.freeze({
   // A new council container's start: what the attempts before it left goes, their workers gone, and the root is root's, 1733.
-  fresh: `set -e; find ${SCRATCH_IN_HELPER} -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +; chown 0:0 ${SCRATCH_IN_HELPER}; chmod 1733 ${SCRATCH_IN_HELPER}; echo 'colloq-scratch: ok'`,
+  fresh: `set -e; find ${SCRATCH_IN_HELPER} -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +; chown 0:0 ${SCRATCH_IN_HELPER}; chmod 1733 ${SCRATCH_IN_HELPER}; echo 'aulalab-scratch: ok'`,
   // The sweep's look: every entry by its path, NUL after each, then the word on a line of its own.
-  list: `set -e; find ${SCRATCH_IN_HELPER} -mindepth 1 -maxdepth 1 -print0; printf '\\ncolloq-scratch: ok\\n'`,
+  list: `set -e; find ${SCRATCH_IN_HELPER} -mindepth 1 -maxdepth 1 -print0; printf '\\naulalab-scratch: ok\\n'`,
   // The class gone from this machine: every entry, the root left for the agent to remove from its own folder.
-  remove: `set -e; find ${SCRATCH_IN_HELPER} -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +; echo 'colloq-scratch: ok'`,
+  remove: `set -e; find ${SCRATCH_IN_HELPER} -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +; echo 'aulalab-scratch: ok'`,
 })
 
 /**
@@ -257,12 +257,12 @@ export function scratchHelperArgs(image: string, scratch: string, action: Scratc
 
 /** Whether the helper's run said it did what it was asked. */
 export function scratchHelperDone(out: string): boolean {
-  return /(^|\n)colloq-scratch: ok\s*$/.test(out)
+  return /(^|\n)aulalab-scratch: ok\s*$/.test(out)
 }
 
 /** The entries the helper's `list` named: each by its name, the folder's path off it, nothing docker said beside them. */
 export function scratchHelperNames(out: string): string[] {
-  const listing = out.slice(0, Math.max(0, out.lastIndexOf('colloq-scratch: ok')))
+  const listing = out.slice(0, Math.max(0, out.lastIndexOf('aulalab-scratch: ok')))
   return listing
     .split('\0')
     // A line docker wrote on its own (a warning before the container's output) ends where the next path starts.
@@ -312,7 +312,7 @@ const gateRoot = (layout: StateLayout): string => path.join(councilRoot(layout),
 /**
  * The workers' gate on this machine (§9.6): the module and the config of
  * kernel/council-gate.ts, written once into a folder named by their own
- * hash, `<state>/council/.gate/<digest>/` — `module/colloq_gate.py` and
+ * hash, `<state>/council/.gate/<digest>/` — `module/aulalab_gate.py` and
  * `ipython_kernel_config.py`, 0644 in folders of 0755 — and never changed
  * in place: a container keeps the folder of the texts it was started with
  * (the next build's go into a folder of their own), and a folder that is
@@ -529,7 +529,7 @@ export interface CouncilPut {
   /** The door under REMOTE_API_BASE: remoteClassPaths.epoch or .artifact. */
   door: string
   sha256: string
-  /** The file's length, uncompressed (X-Colloq-Bytes). */
+  /** The file's length, uncompressed (X-AulaLab-Bytes). */
   bytes: number
   gzip: boolean
   body: ReadableStream<Uint8Array>
@@ -542,8 +542,8 @@ export type CouncilUploader = (put: CouncilPut) => Promise<RoomUploadAnswer>
  * Home's council doors (§15: PUT epochs/:sha256?session=&gen=, PUT
  * council/:sessionId/runs/:runId/files/:name?gen=), as the agent calls home:
  * the credential in the Authorization header and nowhere else, no redirect
- * followed, the body streamed as it is paced, X-Colloq-Sha256 and
- * X-Colloq-Bytes of the file as it is, a reply without home's marker, a 429
+ * followed, the body streamed as it is paced, X-AulaLab-Sha256 and
+ * X-AulaLab-Bytes of the file as it is, a reply without home's marker, a 429
  * or a 5xx transient, any other refusal home's by its code — and a 413
  * without the marker a proxy's in front of home, which no retry gets past
  * (room-files.ts · homeUploader reads its door the same way).

@@ -1,7 +1,7 @@
 /**
  * Sign-in by a proxy that vouches for the person: AUTH_JWT_*.
  *
- * Colloq's own credentials are links — a personal sign-in link per teacher, a
+ * Aula Lab's own credentials are links — a personal sign-in link per teacher, a
  * room link per class. An organisation that already authenticates everybody
  * at its edge (Teleport application access in front of a Kubernetes service,
  * oauth2-proxy in front of an OIDC provider) can let that sign-in count here
@@ -135,7 +135,7 @@ export function parseSsoPolicy(env: NodeJS.ProcessEnv): SsoPolicy {
   let header = (text(env, 'AUTH_JWT_HEADER') || DEFAULT_HEADER).toLowerCase()
   const headerProblem = TAKEN_HEADERS.has(header) || !/^[a-z0-9-]+$/.test(header)
   if (headerProblem) {
-    problems.push(`AUTH_JWT_HEADER=${header}: Colloq or HTTP already uses this header; pass the token in one of its own (Teleport: teleport-jwt-assertion)`)
+    problems.push(`AUTH_JWT_HEADER=${header}: Aula Lab or HTTP already uses this header; pass the token in one of its own (Teleport: teleport-jwt-assertion)`)
     header = DEFAULT_HEADER
   }
 

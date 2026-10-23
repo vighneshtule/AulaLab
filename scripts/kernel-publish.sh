@@ -3,13 +3,13 @@
 # base-gpu and kaggle-gpu (owner's decision 3, docs/architecture/remote-runners.md).
 #
 #   make kernel-publish ENV=base-gpu,kaggle-gpu       the two, parents first
-#   make kernel-publish ENV=kaggle-gpu OWNER=a-fork   ghcr.io/a-fork/colloq-kernel
+#   make kernel-publish ENV=kaggle-gpu OWNER=a-fork   ghcr.io/a-fork/aulalab-kernel
 #
 # On a builder with a card, from a clean checkout of the release tag, after
 # `docker login ghcr.io` with a token that writes packages (RELEASING.md, "GPU
 # kernels"):
 #
-#   git clone --branch vX.Y.Z https://github.com/colloq-edu/colloq && cd colloq
+#   git clone --branch vX.Y.Z https://github.com/vighneshtule/AulaLab && cd aulalab
 #   make kernel-publish ENV=base-gpu,kaggle-gpu
 #
 # WHY NOT IN publish.yml. A standard GitHub-hosted Linux runner is documented
@@ -62,14 +62,14 @@ git diff --quiet HEAD -- kernel scripts/check-kaggle-base.py \
   || die "kernel/ has local changes: an image published as $tag is built from the tag itself"
 commit="$(git rev-parse HEAD)"
 
-owner="$(printf '%s' "${OWNER:-colloq-edu}" | tr '[:upper:]' '[:lower:]')"
-repo="${REPO:-ghcr.io/$owner/colloq-kernel}"
-source_url="${SOURCE_URL:-https://github.com/$owner/colloq}"
+owner="$(printf '%s' "${OWNER:-vighneshtule}" | tr '[:upper:]' '[:lower:]')"
+repo="${REPO:-ghcr.io/$owner/aulalab-kernel}"
+source_url="${SOURCE_URL:-https://github.com/$owner/aulalab}"
 
-# One `# colloq: <key> <value>` directive of a list, read the way the entry
+# One `# aulalab: <key> <value>` directive of a list, read the way the entry
 # point and the panel read it.
 directive() {
-  sed -nE "s/^[[:space:]]*#[[:space:]]*colloq:[[:space:]]*$1[[:space:]]+([^[:space:]]+)[[:space:]]*\$/\\1/p" \
+  sed -nE "s/^[[:space:]]*#[[:space:]]*aulalab:[[:space:]]*$1[[:space:]]+([^[:space:]]+)[[:space:]]*\$/\\1/p" \
     "kernel/environments/$2.txt" | head -1
 }
 
@@ -77,7 +77,7 @@ directive() {
 is_gpu() {
   local name="$1" i=0
   while [ -n "$name" ] && [ "$i" -lt 8 ]; do
-    grep -qE '^[[:space:]]*#[[:space:]]*colloq:[[:space:]]*gpu[[:space:]]*$' "kernel/environments/$name.txt" && return 0
+    grep -qE '^[[:space:]]*#[[:space:]]*aulalab:[[:space:]]*gpu[[:space:]]*$' "kernel/environments/$name.txt" && return 0
     name="$(directive from "$name")"; i=$((i + 1))
   done
   return 1
@@ -107,20 +107,20 @@ fi
 # buildx with its own builder: provenance and an SBOM, as for every other
 # image of a release, need the docker-container driver (the default docker
 # driver of a plain Docker Engine refuses attestations).
-builder="${BUILDER:-colloq-kernel-publish}"
+builder="${BUILDER:-aulalab-kernel-publish}"
 docker buildx inspect "$builder" >/dev/null 2>&1 \
   || docker buildx create --name "$builder" --driver docker-container --bootstrap >/dev/null
 
 # The image a check runs: the one just built, loaded under a name of this
-# run's own, never as colloq-kernel:<env>. A builder may run an instance too
+# run's own, never as aulalab-kernel:<env>. A builder may run an instance too
 # (the Vast VM of RELEASING.md starts an idle one), and an instance builds and
-# pulls colloq-kernel:<env> whenever it likes: a tag it moved between this
+# pulls aulalab-kernel:<env> whenever it likes: a tag it moved between this
 # load and the check would have the check pass on its image while this one is
 # pushed. Nor is the instance's own name rewritten by a release step: an
-# instance that holds colloq-kernel:<env> keeps it (RELEASING.md says how to
+# instance that holds aulalab-kernel:<env> keeps it (RELEASING.md says how to
 # move one onto the published kernels). The names go when the run ends.
 probes=""
-probe_ref() { printf 'colloq-kernel-publish:%s-%s-%s' "$tag" "$1" "$$"; }
+probe_ref() { printf 'aulalab-kernel-publish:%s-%s-%s' "$tag" "$1" "$$"; }
 
 check() {
   local name="$1" ref="$2"
@@ -141,7 +141,7 @@ print("torch", torch.__version__, "CUDA", torch.version.cuda, "on", torch.cuda.g
   fi
 }
 
-work="$(mktemp -d -t colloq-kernel-publish.XXXXXX)"
+work="$(mktemp -d -t aulalab-kernel-publish.XXXXXX)"
 cleanup() {
   local ref
   rm -rf "$work"
@@ -159,13 +159,13 @@ for name in "${order[@]}"; do
     continue
   fi
   args=(--builder "$builder" --platform linux/amd64 -f kernel/Dockerfile --build-arg "KERNEL_ENV=$name"
-    --label "org.opencontainers.image.title=colloq-kernel"
-    --label "org.opencontainers.image.description=Colloq room kernel: the $name environment"
+    --label "org.opencontainers.image.title=aulalab-kernel"
+    --label "org.opencontainers.image.description=Aula Lab room kernel: the $name environment"
     --label "org.opencontainers.image.version=$version"
     --label "org.opencontainers.image.revision=$commit"
     --label "org.opencontainers.image.source=$source_url"
     --label "org.opencontainers.image.licenses=MIT"
-    --label "colloq.environment=$name")
+    --label "aulalab.environment=$name")
   parent="$(directive from "$name")"
   if [ -n "$parent" ]; then
     args+=(--build-arg "PARENT=$repo@$(digest_of "$parent")")

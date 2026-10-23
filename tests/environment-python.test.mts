@@ -54,7 +54,7 @@ const read = (rel: string): string => readFileSync(path.join(root, rel), 'utf8')
 /* ------------------------------------------------------------- directive */
 
 test('a directive in the header names the version, and pip does not see it', () => {
-  const source = '# зрение\n# colloq: python 3.12\ntorch>=2.4\n'
+  const source = '# зрение\n# aulalab: python 3.12\ntorch>=2.4\n'
   assert.equal(declaresPython(source), '3.12')
   // For pip it is a comment: neither an extra package in the count nor
   // "Needs rebuild" on a built image because of one line.
@@ -63,15 +63,15 @@ test('a directive in the header names the version, and pip does not see it', () 
 })
 
 test('spaces and case do not break the directive, and a phrase about it is not a directive', () => {
-  assert.equal(declaresPython('  #   colloq:  python   3.12  \n'), '3.12')
-  assert.equal(declaresPython('# Colloq: PYTHON 3.13\n'), '3.13')
-  assert.equal(declaresPython('# colloq: python 3.12 и новее\n'), null)
+  assert.equal(declaresPython('  #   aulalab:  python   3.12  \n'), '3.12')
+  assert.equal(declaresPython('# Aula Lab: PYTHON 3.13\n'), '3.13')
+  assert.equal(declaresPython('# aulalab: python 3.12 и новее\n'), null)
   assert.equal(declaresPython('# ставится на python 3.12\n'), null)
 })
 
 test('only what has an official slim image counts as a version', () => {
   for (const ok of ['3.9', '3.10', '3.11', '3.12', '3.13']) {
-    assert.equal(declaresPython(`# colloq: python ${ok}\n`), ok, ok)
+    assert.equal(declaresPython(`# aulalab: python ${ok}\n`), ok, ok)
   }
   // `python:3.8-slim-bookworm` does not exist, and "3.12.7" and "3" are not
   // tags either: this cannot be built, and silently building something else
@@ -79,19 +79,19 @@ test('only what has an official slim image counts as a version', () => {
   // environment goes on the default, which the editor mentions in a separate
   // line.
   for (const bad of ['3.8', '2.7', '4.0', '3.14', '3.12.7', '3', 'latest', '']) {
-    assert.equal(declaresPython(`# colloq: python ${bad}\n`), null, bad)
+    assert.equal(declaresPython(`# aulalab: python ${bad}\n`), null, bad)
   }
 })
 
 test('a line that looks like a directive is named out loud, not swallowed', () => {
-  assert.equal(unreadablePython('# colloq: python 3.8\n'), '# colloq: python 3.8')
-  assert.equal(unreadablePython('# colloq: python 3.12\n'), null)
+  assert.equal(unreadablePython('# aulalab: python 3.8\n'), '# aulalab: python 3.8')
+  assert.equal(unreadablePython('# aulalab: python 3.12\n'), null)
   assert.equal(unreadablePython('# зрение\ntorch>=2.4\n'), null)
 })
 
 test('the directive is written into the header, and the default is not written at all', () => {
   const source = '# зрение\ntorch>=2.4\n'
-  assert.equal(withPython(source, '3.12'), '# colloq: python 3.12\n# зрение\ntorch>=2.4\n')
+  assert.equal(withPython(source, '3.12'), '# aulalab: python 3.12\n# зрение\ntorch>=2.4\n')
   // A file without the line and a file with a line about the default mean
   // the same thing, and the second one will even lie if the default in the
   // Dockerfile is raised one day.
@@ -100,7 +100,7 @@ test('the directive is written into the header, and the default is not written a
   // read, while a person would edit the second.
   const twice = withPython(withPython(source, '3.12'), '3.13')
   assert.equal(declaresPython(twice), '3.13')
-  assert.equal(twice.split('\n').filter((line) => /colloq:\s*python/.test(line)).length, 1)
+  assert.equal(twice.split('\n').filter((line) => /aulalab:\s*python/.test(line)).length, 1)
   // And what was entered with a button is read back by the same parser as
   // the build.
   for (const version of PYTHON_VERSIONS) {
@@ -116,9 +116,9 @@ function reader(files: Record<string, string>) {
 }
 
 const CHAIN = {
-  'base-gpu': '# colloq: gpu\n# colloq: python 3.12\ntorch>=2.4\n',
-  gpu: '# colloq: from base-gpu\ntransformers>=4.44\n',
-  vlm: '# colloq: from gpu\nqwen-vl\n',
+  'base-gpu': '# aulalab: gpu\n# aulalab: python 3.12\ntorch>=2.4\n',
+  gpu: '# aulalab: from base-gpu\ntransformers>=4.44\n',
+  vlm: '# aulalab: from gpu\nqwen-vl\n',
   plain: 'pillow\n',
 }
 
@@ -133,7 +133,7 @@ test('the version is inherited together with the base image', () => {
 })
 
 test('a child\'s own version is a refusal, and both versions are named out loud', () => {
-  const files = reader({ ...CHAIN, gpu: '# colloq: from base-gpu\n# colloq: python 3.10\n' })
+  const files = reader({ ...CHAIN, gpu: '# aulalab: from base-gpu\n# aulalab: python 3.10\n' })
   // A layer on top of a ready image does not change the interpreter: the
   // build would build this on 3.12, silently, while the panel showed 3.10.
   assert.throws(() => buildChain('gpu', files), /gpu/)
@@ -143,13 +143,13 @@ test('a child\'s own version is a refusal, and both versions are named out loud'
   // And for a grandchild too: the chain is checked as a whole, not one step
   // up.
   assert.throws(
-    () => buildChain('vlm', reader({ ...CHAIN, vlm: '# colloq: from gpu\n# colloq: python 3.11\n' })),
+    () => buildChain('vlm', reader({ ...CHAIN, vlm: '# aulalab: from gpu\n# aulalab: python 3.11\n' })),
     /3\.11/,
   )
 })
 
 test('repeating the parent\'s version is not a conflict but a redundant line', () => {
-  const same = reader({ ...CHAIN, gpu: '# colloq: from base-gpu\n# colloq: python 3.12\n' })
+  const same = reader({ ...CHAIN, gpu: '# aulalab: from base-gpu\n# aulalab: python 3.12\n' })
   assert.deepEqual(buildChain('gpu', same), ['base-gpu', 'gpu'])
   assert.equal(pythonOf('gpu', same), '3.12')
   // Nothing forbids the root its own version: it is the one that sets it.
@@ -159,7 +159,7 @@ test('repeating the parent\'s version is not a conflict but a redundant line', (
 test('a broken chain leaves the panel what the file itself asks for', () => {
   // The build will say so; here something has to be shown, and there is
   // nothing to invent.
-  const broken = reader({ lone: '# colloq: from нет-такого\n# colloq: python 3.13\n' })
+  const broken = reader({ lone: '# aulalab: from нет-такого\n# aulalab: python 3.13\n' })
   assert.throws(() => buildChain('lone', broken))
   assert.equal(pythonOf('lone', broken), '3.13')
 })
@@ -197,26 +197,26 @@ test('the version default matches what is in effect in the Dockerfile and compos
 /* ---------------------------------------------------------- what builds it */
 
 /** The path to the kernel directory in these checks: it does not have to exist. */
-const KERNEL = '/srv/colloq/kernel'
+const KERNEL = '/srv/aulalab/kernel'
 
 test('the chain root is built on the official image of its version', () => {
   assert.equal(rootParentImage('3.12'), 'python:3.12-slim-bookworm')
   const direct = buildCommand({ via: 'direct' }, 'cv', rootParentImage('3.12'), KERNEL).args.join(' ')
   assert.ok(direct.includes('--build-arg PARENT=python:3.12-slim-bookworm'))
-  assert.ok(direct.includes('-t colloq-kernel:cv'))
+  assert.ok(direct.includes('-t aulalab-kernel:cv'))
   // The same image under the same name via compose: these two paths must
-  // not diverge — both produce the same `colloq-kernel:<name>`.
+  // not diverge — both produce the same `aulalab-kernel:<name>`.
   const { env } = buildCommand({ via: 'compose', files: [] }, 'cv', rootParentImage('3.12'))
   assert.equal(env.KERNEL_PARENT, 'python:3.12-slim-bookworm')
   assert.equal(env.KERNEL_ENV, 'cv')
 })
 
 test('a child gets no version: it stands on the parent\'s image', () => {
-  const direct = buildCommand({ via: 'direct' }, 'gpu', 'colloq-kernel:base-gpu', KERNEL).args.join(' ')
-  assert.ok(direct.includes('--build-arg PARENT=colloq-kernel:base-gpu'))
+  const direct = buildCommand({ via: 'direct' }, 'gpu', 'aulalab-kernel:base-gpu', KERNEL).args.join(' ')
+  assert.ok(direct.includes('--build-arg PARENT=aulalab-kernel:base-gpu'))
   assert.ok(!direct.includes('python:'))
-  const { env } = buildCommand({ via: 'compose', files: [] }, 'gpu', 'colloq-kernel:base-gpu')
-  assert.equal(env.KERNEL_PARENT, 'colloq-kernel:base-gpu')
+  const { env } = buildCommand({ via: 'compose', files: [] }, 'gpu', 'aulalab-kernel:base-gpu')
+  assert.equal(env.KERNEL_PARENT, 'aulalab-kernel:base-gpu')
 })
 
 test('the operator\'s KERNEL_PARENT beats the directive — and this is said out loud', () => {
@@ -331,7 +331,7 @@ test('a published catalogue names the version itself — or does not name it at 
     release: 'v1',
     defaultEnvironment: 'base',
     environments: [
-      { name: 'base', image: `registry.example/colloq-kernel@sha256:${'a'.repeat(64)}`, gpu: false, ...extra },
+      { name: 'base', image: `registry.example/aulalab-kernel@sha256:${'a'.repeat(64)}`, gpu: false, ...extra },
     ],
   })
   assert.equal(parseRuntimeCatalog(entry({ python: '3.12' })).environments[0].python, '3.12')

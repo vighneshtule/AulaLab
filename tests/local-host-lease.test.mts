@@ -10,7 +10,7 @@ function helper(args:string[], env:NodeJS.ProcessEnv=process.env):Promise<{code:
  return new Promise(resolve=>{const p=spawn(process.execPath,['--import','tsx','scripts/public-url-lease.mts',...args],{env}); let out='',err='';p.stdout.on('data',d=>out+=d);p.stderr.on('data',d=>err+=d);p.on('close',code=>resolve({code,out,err}))})
 }
 test('standalone host discovers the owning server and refuses a different run at the same port',async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-host-'))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-host-'))
  let runId='mine'
  const server=http.createServer((_req,res)=>res.end(JSON.stringify({localRunId:runId})))
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r))
@@ -18,7 +18,7 @@ test('standalone host discovers the owning server and refuses a different run at
  const receipt=path.join(dir,'session.json')
  fs.writeFileSync(receipt,JSON.stringify({pid:process.pid,runId:'mine',port,url:'http://localhost:5173',leaseFile:path.join(dir,'lease.json'),dataDir:dir}))
  try {
-  const env={...process.env,COLLOQ_LOCAL_SESSION:'',COLLOQ_LOCAL_RUN_ID:''}
+  const env={...process.env,AULALAB_LOCAL_SESSION:'',AULALAB_LOCAL_RUN_ID:''}
   const good=await helper(['discover',receipt],env)
   assert.equal(good.code,0,good.err)
   assert.deepEqual(good.out.trim().split('\t'),['mine',path.join(dir,'lease.json'),'http://localhost:5173',String(port),dir,'5173'])
@@ -32,16 +32,16 @@ test('standalone host discovers the owning server and refuses a different run at
 /*
  * Someone else's receipt is not a crashed session.
  *
- * On 20 Sep 2026 `make vast-up` brought `.colloq/` from the laptop to the
+ * On 20 Sep 2026 `make vast-up` brought `.aulalab/` from the laptop to the
  * rented machine: the `make dev` receipt with a process id that had never
  * existed on that machine. The server there ran as a systemd service (it knows
  * nothing about a local session — `localRunId: null`), and publishing refused
- * with the words "start colloq first". A receipt with a dead process next to a
+ * with the words "start aulalab first". A receipt with a dead process next to a
  * live server it does not belong to is "no receipt" (code 2); a dead process
  * with an empty port is still a refusal.
  */
 test('a stale receipt next to a server that is not a local session counts as no receipt', async () => {
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-stale-'))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-stale-'))
  const server=http.createServer((_req,res)=>res.end(JSON.stringify({ok:true,version:'0.2.0',localRunId:null})))
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r))
  const port=(server.address() as import('node:net').AddressInfo).port
@@ -49,7 +49,7 @@ test('a stale receipt next to a server that is not a local session counts as no 
  // pid 999999 is known to be dead: a process from the laptop does not live
  // on this machine.
  const write=(at:number)=>fs.writeFileSync(receipt,JSON.stringify({pid:999999,runId:'laptop-run',port:at,url:'http://localhost:5173',leaseFile:path.join(dir,'lease.json'),dataDir:dir}))
- const env={...process.env,COLLOQ_LOCAL_SESSION:'',COLLOQ_LOCAL_RUN_ID:''}
+ const env={...process.env,AULALAB_LOCAL_SESSION:'',AULALAB_LOCAL_RUN_ID:''}
  try {
   write(port)
   const foreign=await helper(['discover',receipt],env)
@@ -69,10 +69,10 @@ test('a stale receipt next to a server that is not a local session counts as no 
 test('the vast deploy never ships the laptop\'s session state and removes a receipt that already travelled', () => {
  const script=fs.readFileSync('scripts/vast-legacy.sh','utf8')
  const excludes=/<<'EXCL'\n([\s\S]*?)\nEXCL/.exec(script)?.[1].split('\n') ?? []
- for (const path of ['.colloq/','.claude/','scratchpad/']) assert.ok(excludes.includes(path),`${path} is shipped to the rented machine`)
+ for (const path of ['.aulalab/','.claude/','scratchpad/']) assert.ok(excludes.includes(path),`${path} is shipped to the rented machine`)
  // rsync --delete does not delete what is excluded, and the data and .env
  // there must not be touched — hence the targeted removal.
- assert.match(script,/rssh "rm -f '\$REMOTE_DIR\/\.colloq\/local-session\.json'/)
+ assert.match(script,/rssh "rm -f '\$REMOTE_DIR\/\.aulalab\/local-session\.json'/)
  assert.doesNotMatch(script,/--delete-excluded/)
 })
 
@@ -85,7 +85,7 @@ test('native host never restarts a server and local publication uses the lease h
 })
 
 test('lease watcher releases the URL and ends its tunnel when its host process disappears',async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-watch-'))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-watch-'))
  const file=path.join(dir,'lease.json')
  const server=http.createServer((_req,res)=>res.end(JSON.stringify({localRunId:'run'})))
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r))
@@ -107,7 +107,7 @@ test('lease watcher releases the URL and ends its tunnel when its host process d
 })
 
 test('a brief development server reload preserves the tunnel and resumes lease renewal',async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-watch-reload-'))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-watch-reload-'))
  const file=path.join(dir,'lease.json')
  let reloading=false
  const server=http.createServer((_req,res)=>{if(reloading){res.statusCode=503;res.end('Reloading')}else res.end(JSON.stringify({localRunId:'run'}))})
@@ -133,7 +133,7 @@ test('a brief development server reload preserves the tunnel and resumes lease r
 })
 
 test('local host script publishes and releases a lease without touching env or stopping the app',async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-host-script-'))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-host-script-'))
  const root=process.cwd()
  const server=http.createServer((_req,res)=>res.end(JSON.stringify({localRunId:'run'})))
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r))
@@ -152,11 +152,11 @@ test('local host script publishes and releases a lease without touching env or s
   fake('curl',"if(process.argv.some(a=>a.includes('/api/health'))) process.stdout.write('{\"localRunId\":\"run\",\"isolation\":\"docker\"}');else if(process.argv.includes('-w')) process.stdout.write('200')")
   fake('dig',"process.stdout.write('127.0.0.1\\n')")
   fake('cloudflared',"require('node:fs').writeFileSync('tunnel-argv.json',JSON.stringify(process.argv.slice(2)));setInterval(()=>{},1000)")
-  const original='PUBLIC_URL=https://persistent.example\nRELAY_DOMAIN=\nCOLLOQ_CLUSTER=\n'
+  const original='PUBLIC_URL=https://persistent.example\nRELAY_DOMAIN=\nAULALAB_CLUSTER=\n'
   fs.writeFileSync(path.join(dir,'.env'),original)
-  const lease=path.join(dir,'.colloq/public-url.json')
+  const lease=path.join(dir,'.aulalab/public-url.json')
   let output=''
-  host=spawn('bash',['scripts/host.sh'],{cwd:dir,env:{...process.env,PATH:`${bin}:${process.env.PATH}`,COLLOQ_CLUSTER:'1',COLLOQ_DIRECT:'',COLLOQ_HOSTNAME:'temporary.example',COLLOQ_LOCAL_SESSION:'1',COLLOQ_LOCAL_RUN_ID:'run',COLLOQ_LOCAL_URL:`http://127.0.0.1:${port}`,COLLOQ_PUBLIC_URL_LEASE_FILE:lease,PORT:String(port),DATA_DIR:path.join(dir,'data')}})
+  host=spawn('bash',['scripts/host.sh'],{cwd:dir,env:{...process.env,PATH:`${bin}:${process.env.PATH}`,AULALAB_CLUSTER:'1',AULALAB_DIRECT:'',AULALAB_HOSTNAME:'temporary.example',AULALAB_LOCAL_SESSION:'1',AULALAB_LOCAL_RUN_ID:'run',AULALAB_LOCAL_URL:`http://127.0.0.1:${port}`,AULALAB_PUBLIC_URL_LEASE_FILE:lease,PORT:String(port),DATA_DIR:path.join(dir,'data')}})
   host.stdout.on('data',d=>output+=d);host.stderr.on('data',d=>output+=d)
   const tunnelArgsFile=path.join(dir,'tunnel-argv.json')
   const deadline=Date.now()+8000
@@ -175,13 +175,13 @@ test('local host script publishes and releases a lease without touching env or s
 })
 
 /**
- * A host.sh stand under `colloq start --share`: the real script and a real
+ * A host.sh stand under `aulalab start --share`: the real script and a real
  * address receipt, with made-up curl, dig and cloudflared. cloudflared is NOT
- * on PATH — COLLOQ_CLOUDFLARED names it, as the supervisor does after finding
+ * on PATH — AULALAB_CLOUDFLARED names it, as the supervisor does after finding
  * and verifying the file itself.
  */
 async function shareStand(health:string){
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-host-share-'))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-host-share-'))
  const root=process.cwd()
  const server=http.createServer((_req,res)=>res.end(JSON.stringify({localRunId:'run'})))
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r))
@@ -200,8 +200,8 @@ async function shareStand(health:string){
  // in the log.
  fake(tools,'cloudflared',"require('node:fs').writeFileSync('tunnel-argv.json',JSON.stringify(process.argv.slice(2)));console.log('INF |  https://quick-share.trycloudflare.com  |');setInterval(()=>{},1000)")
  fs.writeFileSync(path.join(dir,'.env'),'RELAY_DOMAIN=\n')
- const lease=path.join(dir,'.colloq/public-url.json')
- const host=spawn('bash',['scripts/host.sh'],{cwd:dir,env:{...process.env,PATH:`${bin}:${process.env.PATH}`,COLLOQ_SHARE:'1',COLLOQ_CLOUDFLARED:path.join(tools,'cloudflared'),COLLOQ_CLUSTER:'',COLLOQ_DIRECT:'',COLLOQ_HOSTNAME:'',COLLOQ_LOCAL_SESSION:'1',COLLOQ_LOCAL_RUN_ID:'run',COLLOQ_LOCAL_URL:`http://127.0.0.1:${port}`,COLLOQ_PUBLIC_URL_LEASE_FILE:lease,PORT:String(port),DATA_DIR:path.join(dir,'data')}})
+ const lease=path.join(dir,'.aulalab/public-url.json')
+ const host=spawn('bash',['scripts/host.sh'],{cwd:dir,env:{...process.env,PATH:`${bin}:${process.env.PATH}`,AULALAB_SHARE:'1',AULALAB_CLOUDFLARED:path.join(tools,'cloudflared'),AULALAB_CLUSTER:'',AULALAB_DIRECT:'',AULALAB_HOSTNAME:'',AULALAB_LOCAL_SESSION:'1',AULALAB_LOCAL_RUN_ID:'run',AULALAB_LOCAL_URL:`http://127.0.0.1:${port}`,AULALAB_PUBLIC_URL_LEASE_FILE:lease,PORT:String(port),DATA_DIR:path.join(dir,'data')}})
  let output=''
  host.stdout.on('data',d=>output+=d);host.stderr.on('data',d=>output+=d)
  const close=async()=>{if(host.exitCode===null&&host.signalCode===null){const done=new Promise<void>(r=>host.once('exit',()=>r()));host.kill('SIGTERM');await done};await new Promise<void>(r=>server.close(()=>r()));fs.rmSync(dir,{recursive:true,force:true})}
@@ -212,12 +212,12 @@ test('--share: host.sh names the address with one marker line and keeps its own 
  const s=await shareStand('{"ok":true,"localRunId":"run","isolation":"docker"}')
  try {
   const deadline=Date.now()+15000
-  while(!s.read().includes('@colloq-share') && s.host.exitCode===null && Date.now()<deadline) await new Promise(r=>setTimeout(r,50))
+  while(!s.read().includes('@aulalab-share') && s.host.exitCode===null && Date.now()<deadline) await new Promise(r=>setTimeout(r,50))
   const out=s.read()
-  assert.match(out,/^@colloq-share ok https:\/\/quick-share\.trycloudflare\.com$/m,out)
+  assert.match(out,/^@aulalab-share ok https:\/\/quick-share\.trycloudflare\.com$/m,out)
   // The summary is printed by the supervisor: there is neither a link with a
   // token nor a paragraph of its own here.
-  assert.doesNotMatch(out,/Sign-in to the panel|Colloq is available|\/admin\/t\//)
+  assert.doesNotMatch(out,/Sign-in to the panel|Aula Lab is available|\/admin\/t\//)
   assert.equal(JSON.parse(fs.readFileSync(s.lease,'utf8')).url,'https://quick-share.trycloudflare.com')
   // The tunnel is the named cloudflared, and a quick one: no tunnel name.
   const argv=JSON.parse(fs.readFileSync(path.join(s.dir,'tunnel-argv.json'),'utf8'))
@@ -243,7 +243,7 @@ test('the gate: without the isolation field host.sh opens no tunnel at all',asyn
 
 test('Vite still rejects arbitrary public Hosts while accepting the rewritten tunnel origin', async()=>{
  const {createServer}=await import('vite')
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'colloq-vite-host-'))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'aulalab-vite-host-'))
  fs.writeFileSync(path.join(dir,'index.html'),'<html><body>local dev</body></html>')
  const vite=await createServer({configFile:false,root:dir,server:{host:'127.0.0.1',port:0},logLevel:'silent'})
  try {

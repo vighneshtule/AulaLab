@@ -1,5 +1,5 @@
 {
-  "name": "@colloq/cli",
+  "name": "@aulalab/cli",
   "private": true,
   "version": "0.27.0",
   "type": "module",

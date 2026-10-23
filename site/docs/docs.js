@@ -1,41 +1,14 @@
 /* Progressive enhancement: every guide and navigation link also works without JavaScript. */
 (() => {
-  const lang = document.documentElement.lang === 'en' ? 'en' : 'ru';
+  const lang = 'en';
   const text = {
-    ru: {
-      start: 'Начните вводить название или вопрос.',
-      searching: 'Ищем в документации…',
-      found: (count, shown) => `Найдено: ${count}${count > shown ? `. Показаны первые ${shown}.` : '.'}`,
-      nothing: 'Ничего не найдено. Попробуйте «ядро», «публикация» или «backup».',
-      failed: 'Не удалось загрузить поиск. Попробуйте ещё раз или выберите статью в меню разделов.',
-      copy: 'Копировать', copyLabel: 'Копировать этот блок кода', copied: 'Скопировано', copyByHand: 'Выделите код вручную',
-    },
-    en: {
-      start: 'Start typing a title or a question.',
-      searching: 'Searching the docs…',
-      found: (count, shown) => `Found: ${count}${count > shown ? `. Showing the first ${shown}.` : '.'}`,
-      nothing: 'Nothing found. Try “kernel”, “publishing” or “backup”.',
-      failed: 'Search could not load. Try again or pick an article from the menu.',
-      copy: 'Copy', copyLabel: 'Copy this code block', copied: 'Copied', copyByHand: 'Select the code by hand',
-    },
-  }[lang];
-
-  // Language switch: the other language's link keeps the #section, and the choice is
-  // remembered. No page redirects on its own (URLs stay stable); a remembered choice
-  // that differs from this page only highlights the switch.
-  const LANG_KEY = 'colloq-docs-lang';
-  const switchLinks = [...document.querySelectorAll('.lang-switch a[data-lang]')];
-  switchLinks.forEach(link => { link.dataset.base = link.getAttribute('href'); });
-  const syncHash = () => switchLinks.forEach(link => link.setAttribute('href', link.dataset.base + location.hash));
-  syncHash();
-  window.addEventListener('hashchange', syncHash);
-  switchLinks.forEach(link => link.addEventListener('click', () => {
-    syncHash();
-    try { localStorage.setItem(LANG_KEY, link.dataset.lang); } catch {}
-  }));
-  let preferred = null;
-  try { preferred = localStorage.getItem(LANG_KEY); } catch {}
-  if (preferred && preferred !== lang) switchLinks.find(link => link.dataset.lang === preferred)?.classList.add('lang-suggested');
+    start: 'Start typing a title or a question.',
+    searching: 'Searching the docs…',
+    found: (count, shown) => `Found: ${count}${count > shown ? `. Showing the first ${shown}.` : '.'}`,
+    nothing: 'Nothing found. Try “kernel”, “publishing” or “backup”.',
+    failed: 'Search could not load. Try again or pick an article from the menu.',
+    copy: 'Copy', copyLabel: 'Copy this code block', copied: 'Copied', copyByHand: 'Select the code by hand',
+  };
 
   const menu = document.querySelector('.mobile-nav');
   const mobile = window.matchMedia('(max-width: 760px)');
@@ -51,12 +24,12 @@
   let entries = null;
   let loading = null;
   let returnFocus = null;
-  const normalize = value => value.toLocaleLowerCase(lang).replaceAll('ё', 'е');
+  const normalize = value => value.toLocaleLowerCase('en');
 
   async function loadIndex() {
     if (entries) return entries;
     if (!loading) {
-      // Each language has its own index next to its pages: /docs/ and /docs/en/.
+      // The English guides and their search index are served from /docs/.
       loading = fetch(new URL('search-index.json', location.href))
         .then(response => { if (!response.ok) throw new Error('index'); return response.json(); })
         .then(data => { entries = data.map(entry => ({ ...entry, haystack: normalize(entry.title + ' ' + entry.section + ' ' + entry.text) })); return entries; })

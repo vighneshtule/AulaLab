@@ -28,7 +28,7 @@ import {
 /*
  * Header directives are parsed in one place for everyone, in shared/admin.ts.
  *
- * The environment creation form reads `# colloq: from` and `# colloq: python`
+ * The environment creation form reads `# aulalab: from` and `# aulalab: python`
  * with the same parser as the build: a second list of regular expressions
  * would drift away from the first at the very first edit, and the panel would
  * show a different version from the one the image gets built on. The
@@ -77,8 +77,8 @@ const COMPOSE_FILE = path.join(ROOT, 'docker-compose.yml')
  *
  * The server does not compute it and cannot: it finds the APPLICATION root by
  * walking up to kernel/environments (findRepoRoot above), while the state of
- * a colloq installed through pip lives somewhere else entirely, ~/.colloq or
- * COLLOQ_HOME. So the directory is PASSED to it in a variable, exactly like
+ * a aulalab installed through pip lives somewhere else entirely, ~/.aulalab or
+ * AULALAB_HOME. So the directory is PASSED to it in a variable, exactly like
  * DATA_DIR and WORKSPACE_DIR (cli/src/launch-config.ts · launchConfig).
  *
  * No variable means the server was not started by the supervisor: the
@@ -90,18 +90,18 @@ const COMPOSE_FILE = path.join(ROOT, 'docker-compose.yml')
  * decide whether we see the variable. The price is one path.join.
  */
 function stateHome(): string | null {
-  const named = process.env.COLLOQ_HOME?.trim()
+  const named = process.env.AULALAB_HOME?.trim()
   return named ? path.resolve(named) : null
 }
 
 /**
  * Where the panel WRITES environments. The same fork as in the CLI
  * (cli/src/env.ts · ownEnvDir), copied from there word for word: the two must
- * not drift apart, otherwise `colloq env new` creates an environment the
- * panel does not see, and the panel creates one `colloq env list` does not
+ * not drift apart, otherwise `aulalab env new` creates an environment the
+ * panel does not see, and the panel creates one `aulalab env list` does not
  * see. That is exactly what happened.
  *
- * For an installed colloq, <app>/kernel/environments is site-packages: the
+ * For an installed aulalab, <app>/kernel/environments is site-packages: the
  * whole directory is overwritten by the next `pip install -U`, and on many
  * machines it is not writable at all. So our own environments live in the
  * state directory, next to .env and data/, where nobody will overwrite them.
@@ -109,7 +109,7 @@ function stateHome(): string | null {
  * When the state IS the application directory (the repository, a clone, a
  * container under `make up`), the second directory is the FIRST one, the same
  * path: a new directory alongside would pull the file out from under make
- * env-list, `colloq env new` and the `docker build` context.
+ * env-list, `aulalab env new` and the `docker build` context.
  */
 export function ownEnvDirOf(root: string, home: string | null): string {
   const shipped = path.join(root, 'kernel', 'environments')
@@ -203,7 +203,7 @@ function envFile(): string {
  *
  * The stamp is the state of THIS machine: it is about the image sitting in its
  * docker, not about the product. So it is written into our own directory
- * (ownStampFor), even when the list itself came with colloq: in site-packages
+ * (ownStampFor), even when the list itself came with aulalab: in site-packages
  * it would either be refused on permissions or vanish at the first
  * `pip install -U` together with the whole folder. It is read from both: a
  * stamp left in the application directory by a previous version is the answer
@@ -246,7 +246,7 @@ export function listChanged(stamped: string, current: string): boolean {
  * A Set, not concatenation: our own environment with a shipped one's name is
  * the same environment, redefined, and it gets one line in the panel's list.
  * Previously only the application directory was read, and an environment
- * created by `colloq env new` was not shown at all, even though the panel
+ * created by `aulalab env new` was not shown at all, even though the panel
  * named exactly that one as active.
  */
 export function listNames(): string[] {
@@ -296,7 +296,7 @@ export function parsePackages(source: string): string[] {
 }
 
 /**
- * Whether this environment needs a GPU slice, by the `# colloq: gpu` directive
+ * Whether this environment needs a GPU slice, by the `# aulalab: gpu` directive
  * in the header.
  *
  * The flag lives in the package list itself, not next to the room, because it
@@ -310,11 +310,11 @@ export function parsePackages(source: string): string[] {
  *
  * It is looked for among all comments, not only up to the first package line:
  * a directive a person appended at the end of the file must work, not stay
- * silent. The line is compared whole: the phrase "# colloq: gpu not needed"
+ * silent. The line is compared whole: the phrase "# aulalab: gpu not needed"
  * does not count as the directive.
  */
 export function declaresGpu(source: string): boolean {
-  return source.split('\n').some((line) => /^#\s*colloq:\s*gpu$/i.test(line.trim()))
+  return source.split('\n').some((line) => /^#\s*aulalab:\s*gpu$/i.test(line.trim()))
 }
 
 /** How a list is read: name to text, or null when there is no such environment. */
@@ -384,7 +384,7 @@ export function buildChain(name: string, read: ReadEnvironment = fromDisk): stri
    *
    * A layer on top of a ready image does not change the interpreter: pip in it
    * installs wheels for the Python that came from the base. A file saying
-   * `# colloq: from base-gpu` and `# colloq: python 3.12` promises exactly what
+   * `# aulalab: from base-gpu` and `# aulalab: python 3.12` promises exactly what
    * the build cannot do, and it would silently build on the parent's version
    * while the panel showed 3.12. The same price as an unknown parent: better to
    * refuse here and name both versions out loud.
@@ -415,7 +415,7 @@ export function buildChain(name: string, read: ReadEnvironment = fromDisk): stri
  * otherwise the Dockerfile default.
  *
  * The root's directive, not its own, because the version comes from the base
- * image: `# colloq: python` on a leaf is either a repeat of the root or a lie,
+ * image: `# aulalab: python` on a leaf is either a repeat of the root or a lie,
  * and the build rejects the latter (buildChain above). A broken chain does not
  * throw here: the build will say so, while the panel needs to show something,
  * and what it shows is what the file itself asks for.
@@ -487,7 +487,7 @@ export function removeEnvironment(name: string): void {
   if (usingRuntimeBroker())
     throw new Error(tr('server.publishedEnvironmentsAreManagedByTheRelease.8ff51e'))
   if (isShipped(name)) {
-    throw new Error(tr('server.shipsWithColloqAndCannotBeDeletedHere.06a8ea', { p0: name }))
+    throw new Error(tr('server.shipsWithAulaLabAndCannotBeDeletedHere.06a8ea', { p0: name }))
   }
   fs.rmSync(ownFileFor(name), { force: true })
   // The stamp goes along with the list: otherwise an environment created anew
@@ -532,7 +532,7 @@ export function pickActiveName(envFile: string | null, fromEnv: string | undefin
  * wrong environment as active for as long as the server ran.
  *
  * The file is taken from the STATE directory (envFile above). For an installed
- * colloq, .env lives in ~/.colloq, not in site-packages: `colloq env use` writes
+ * aulalab, .env lives in ~/.aulalab, not in site-packages: `aulalab env use` writes
  * it there, the next start reads it from there, and the panel has to look at
  * the same file, otherwise it names one environment as active while the class
  * comes up on another.
@@ -667,10 +667,10 @@ function run(
  * command on the host, and the panel says so on exactly the button it
  * concerns.
  *
- * For an installed colloq all of this is the other way round, hence a third
+ * For an installed aulalab all of this is the other way round, hence a third
  * question, `home`. There is no repository and no docker-compose.yml there,
  * but there is a .env: it lives in the state directory the supervisor named.
- * `colloq env use` reads and writes that same file, and the next `colloq run`
+ * `aulalab env use` reads and writes that same file, and the next `aulalab run`
  * rereads it; no host "outside" exists here, and there is nobody to lie to.
  * Turning off "Make default" in this case would take away the teacher's only
  * way to choose an environment from the panel and send them to make, which
@@ -774,11 +774,11 @@ export function parseImageFacts(out: string): ImageFacts | null {
   return { bytes, builtAt, python: found ?? null }
 }
 
-/** Size, build time and Python of `colloq-kernel:<name>`; null when never built. */
+/** Size, build time and Python of `aulalab-kernel:<name>`; null when never built. */
 async function imageFacts(name: string): Promise<ImageFacts | null> {
   const res = await run(
     'docker',
-    ['image', 'inspect', `colloq-kernel:${name}`, '--format', IMAGE_FORMAT],
+    ['image', 'inspect', `aulalab-kernel:${name}`, '--format', IMAGE_FORMAT],
     8000,
   )
   if (res.code !== 0) return null
@@ -791,7 +791,7 @@ async function imageFacts(name: string): Promise<ImageFacts | null> {
  * The image an environment's rooms run now, as a freeze of it names it.
  *
  * Asked anew on every download and never remembered by name: the tag
- * `colloq-kernel:<name>` moves with every rebuild, and the id is the only
+ * `aulalab-kernel:<name>` moves with every rebuild, and the id is the only
  * thing that says whether a freeze in hand is still about the image the rooms
  * start from. One inspect costs milliseconds; a stale freeze is a student's
  * `pip install -r` that brings back last week's versions.
@@ -882,7 +882,7 @@ function lastLine(out: string): string {
 function freezeOf(id: string): Promise<string> {
   const known = freezes.get(id)
   if (known) return known
-  const container = `colloq-freeze-${randomUUID()}`
+  const container = `aulalab-freeze-${randomUUID()}`
   const pending = (async () => {
     try {
       const res = await run(
@@ -945,7 +945,7 @@ export async function lookUpFrozen(name: string, pinned: string | null = null): 
   if (pinned !== null && !IMAGE_ID.test(pinned)) return { state: 'missing' }
   const inspected = await run(
     'docker',
-    ['image', 'inspect', pinned ?? `colloq-kernel:${name}`, '--format', FROZEN_FORMAT],
+    ['image', 'inspect', pinned ?? `aulalab-kernel:${name}`, '--format', FROZEN_FORMAT],
     8000,
   )
   if (inspected.code !== 0) {
@@ -962,7 +962,7 @@ export async function lookUpFrozen(name: string, pinned: string | null = null): 
 }
 
 /**
- * The pip freeze of the image `colloq-kernel:<name>` now names, under its
+ * The pip freeze of the image `aulalab-kernel:<name>` now names, under its
  * header line; with `pinned`, of that image instead (lookUpFrozen), under the
  * environment's name all the same.
  */
@@ -1107,17 +1107,17 @@ export type BuildPlan = { via: 'direct' } | { via: 'compose'; files: string[] }
 
 /**
  * The command for one link of the chain. Both paths produce the same image
- * `colloq-kernel:<name>` from the same Dockerfile; they differ only in who
+ * `aulalab-kernel:<name>` from the same Dockerfile; they differ only in who
  * fills in the arguments: compose from its file, or we ourselves.
  *
  * The parent is the PARENT argument: the same Dockerfile builds both the base
- * (on top of python-slim) and a thin layer on top of a ready colloq image. When
+ * (on top of python-slim) and a thin layer on top of a ready aulalab image. When
  * there is no parent, the argument is not passed at all: the Dockerfile's own
  * default applies, and the base image name stays in one place, not in two that
  * drift apart.
  *
  * `kernel` is the context directory: usually the application's kernel/, and
- * for an installed colloq a merged copy with its own environments
+ * for an installed aulalab a merged copy with its own environments
  * (buildContext). The compose path does not accept it and should not: the
  * ./kernel context is written in docker-compose.yml, and that file exists only
  * where there is a single environment directory anyway.
@@ -1145,7 +1145,7 @@ export function buildCommand(
       `KERNEL_ENV=${step}`,
       ...(parentImage ? ['--build-arg', `PARENT=${parentImage}`] : []),
       '-t',
-      `colloq-kernel:${step}`,
+      `aulalab-kernel:${step}`,
       kernel,
     ],
     env,
@@ -1182,7 +1182,7 @@ export function buildCommand(
 export function buildContext(name: string): string {
   const home = stateHome()
   if (home === null || ownEnvDir() === ENV_DIR) return KERNEL_DIR
-  const staged = path.join(home, '.colloq', 'kernel-context', name)
+  const staged = path.join(home, '.aulalab', 'kernel-context', name)
   fs.rmSync(staged, { recursive: true, force: true })
   fs.mkdirSync(path.dirname(staged), { recursive: true })
   // preserveTimestamps: the copy must be indistinguishable from the original,
@@ -1489,7 +1489,7 @@ export async function startBuild(name: string): Promise<void> {
   for (const step of stages) {
     if (build.done) break
     const before = chain[chain.indexOf(step) - 1]
-    if (!(await runStage(build, plan, step, before ? `colloq-kernel:${before}` : base, kernel)))
+    if (!(await runStage(build, plan, step, before ? `aulalab-kernel:${before}` : base, kernel)))
       break
   }
 
@@ -1570,7 +1570,7 @@ async function switchTo(
   /*
    * KERNEL_ENV is passed explicitly, and that is the whole fix.
    *
-   * compose resolves `image: colloq-kernel:${KERNEL_ENV:-base}` from the
+   * compose resolves `image: aulalab-kernel:${KERNEL_ENV:-base}` from the
    * environment before it looks at the .env file, and this process was started
    * by `make run`, which had already exported the OLD value. So writing the
    * file and calling compose brought the container back up on the previous

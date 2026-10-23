@@ -29,7 +29,7 @@
  */
 
 /** Shared by the whole browser — the message carries the room and the cell. */
-export const PULT_CHANNEL = 'colloq-council-pult'
+export const PULT_CHANNEL = 'aulalab-council-pult'
 /** How often the window knocks. */
 export const PULT_BEAT_MS = 1000
 /** Older than this — we consider it closed. Three knocks: one missed is too few. */
@@ -90,7 +90,7 @@ export function beatsAlive(beat: PultBeat | null, now: number): boolean {
 
 /** The window name: one room — one window, a second cell reuses it. */
 export function pultWindowName(sessionId: string): string {
-  return `colloq-council-pult-${sessionId}`
+  return `aulalab-council-pult-${sessionId}`
 }
 
 /** The console address. The same parsing as in lib/routes.ts. */
@@ -98,7 +98,7 @@ export function pultPath(sessionId: string, cellId: string): string {
   return `/s/${sessionId}/council/${cellId}`
 }
 
-const placeKey = (sessionId: string): string => `colloq.council.pult.${sessionId}`
+const placeKey = (sessionId: string): string => `aulalab.council.pult.${sessionId}`
 
 /** This machine's screen as the browser knows it. `null` — nowhere to ask. */
 export function availScreen(): PultScreen | null {

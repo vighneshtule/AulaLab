@@ -69,7 +69,7 @@ const staffCookie = (() => {
 /* ------------------------------------------------------------------ HSTS */
 
 test('HSTS goes out on https requests to a real name, on every door', async () => {
-  const https = { host: 'colloq.example.edu', 'x-forwarded-proto': 'https' }
+  const https = { host: 'aulalab.example.edu', 'x-forwarded-proto': 'https' }
   for (const path of ['/api/livez', '/api/readyz', '/api/nope']) {
     assert.equal((await get(path, https)).headers['strict-transport-security'], STRICT_TRANSPORT_SECURITY, path)
   }
@@ -78,14 +78,14 @@ test('HSTS goes out on https requests to a real name, on every door', async () =
 })
 
 test('never on plain http, never with HSTS=0', async () => {
-  assert.equal((await get('/api/livez', { host: 'colloq.example.edu' })).headers['strict-transport-security'], undefined)
+  assert.equal((await get('/api/livez', { host: 'aulalab.example.edu' })).headers['strict-transport-security'], undefined)
   assert.equal(
-    (await get('/api/livez', { host: 'colloq.example.edu', 'x-forwarded-proto': 'http' })).headers['strict-transport-security'],
+    (await get('/api/livez', { host: 'aulalab.example.edu', 'x-forwarded-proto': 'http' })).headers['strict-transport-security'],
     undefined,
   )
   useInboundPolicy(parseInboundPolicy({ HSTS: '0' }))
   assert.equal(
-    (await get('/api/livez', { host: 'colloq.example.edu', 'x-forwarded-proto': 'https' })).headers['strict-transport-security'],
+    (await get('/api/livez', { host: 'aulalab.example.edu', 'x-forwarded-proto': 'https' })).headers['strict-transport-security'],
     undefined,
   )
 })
@@ -95,7 +95,7 @@ test('never for localhost or a bare IP: that would pin the machine, not the clas
     const seen = await get('/api/livez', { host, 'x-forwarded-proto': 'https' })
     assert.equal(seen.headers['strict-transport-security'], undefined, host)
   }
-  assert.equal(sendsStrictTransport({ enabled: true, https: true, hostname: 'Colloq.Example.EDU' }), true)
+  assert.equal(sendsStrictTransport({ enabled: true, https: true, hostname: 'Aula Lab.Example.EDU' }), true)
   assert.equal(sendsStrictTransport({ enabled: true, https: true, hostname: '' }), false)
 })
 
@@ -112,7 +112,7 @@ test('readiness stays green with a dead kernel runtime, while health says 503', 
 
 test('readiness goes red without the workspace or the database, and names no reason', async (t) => {
   const broken = t.mock.method(workspaceFs, 'mkdirSync', () => {
-    throw new Error("EACCES: permission denied, mkdir '/srv/colloq/workspace'")
+    throw new Error("EACCES: permission denied, mkdir '/srv/aulalab/workspace'")
   })
   const noFolder = await get('/api/readyz')
   assert.equal(noFolder.status, 503)
@@ -120,7 +120,7 @@ test('readiness goes red without the workspace or the database, and names no rea
   broken.mock.restore()
 
   const unreadable = t.mock.method(db, 'prepare', () => {
-    throw new Error('SQLITE_CORRUPT: /srv/colloq/data/colloq.db')
+    throw new Error('SQLITE_CORRUPT: /srv/aulalab/data/aulalab.db')
   })
   const noDatabase = await get('/api/readyz')
   unreadable.mock.restore()
@@ -132,7 +132,7 @@ test('readiness goes red without the workspace or the database, and names no rea
 
 test('a stranger from the internet gets the verdict, the checks and the version, not the reasons', async (t) => {
   t.mock.method(workspaceFs, 'mkdirSync', () => {
-    throw new Error("EACCES: permission denied, mkdir '/srv/colloq/workspace'")
+    throw new Error("EACCES: permission denied, mkdir '/srv/aulalab/workspace'")
   })
   // Forwarded by the relay: the peer is loopback, the client is not.
   const stranger = await get('/api/health', { 'x-forwarded-for': '203.0.113.9' })
@@ -143,10 +143,10 @@ test('a stranger from the internet gets the verdict, the checks and the version,
   assert.equal(said.ok, false)
   assert.equal(said.workspace, false)
   assert.equal(typeof said.version, 'string')
-  assert.doesNotMatch(stranger.body, /srv\/colloq|EACCES|localhost:9999/)
+  assert.doesNotMatch(stranger.body, /srv\/aulalab|EACCES|localhost:9999/)
   assert.equal(stranger.headers['server-timing'], undefined)
 
-  // The machine itself (colloq-vast status, host.sh, the CLI) reads everything.
+  // The machine itself (aulalab-vast status, host.sh, the CLI) reads everything.
   const local = JSON.parse((await get('/api/health')).body) as Record<string, unknown>
   assert.match(String(local.reason), /./)
   for (const field of ['capabilities', 'isolation', 'publicUrl', 'localRunId', 'uptimeMs', 'loopLagMs']) {

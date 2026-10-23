@@ -314,7 +314,7 @@ let shared: Agent | null = null
 
 /**
  * The file's class machine: joined with a code minted «Принимает занятия»,
- * as the instance's console mints one (`colloq-host runner-code --classes
+ * as the instance's console mints one (`aulalab-host runner-code --classes
  * --prefix vast`), its agent running and its tunnel up at home: one a class
  * set to machines may be placed on once its facts and the class's image are
  * there (`takes`). Named by the code's prefix («vast-1»), never by its tree,
@@ -322,7 +322,7 @@ let shared: Agent | null = null
  */
 async function classMachine(): Promise<Agent> {
   if (shared) return shared
-  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'vast', createdBy: 'colloq-host' }).code
+  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'vast', createdBy: 'aulalab-host' }).code
   const agent = new Agent(fleet, `a-${randomBytes(2).toString('hex')}`, { join: home.joinTarget(code), classes: true })
   agent.start()
   const runnerId = await until('the machine to join', () => agent.identity()?.runnerId, 30_000, () => agent.log())
@@ -554,7 +554,7 @@ test('A2 · two class notebooks in one room container; ten personal kernels on a
     return both.every((kernel) => kernel?.guarded) ? both : null
   })
   assert.notEqual(kernels[0]!.id, kernels[1]!.id)
-  assert.deepEqual(machine.classContainers().filter((c) => c.labels.includes(`colloq.session=${two}`)).map((c) => c.id), [room.id], 'one container for the class, the room\'s')
+  assert.deepEqual(machine.classContainers().filter((c) => c.labels.includes(`aulalab.session=${two}`)).map((c) => c.id), [room.id], 'one container for the class, the room\'s')
   assert.deepEqual([livePlacement(two, 'room')?.state, livePlacement(two, 'own')], ['ready', null])
   assert.deepEqual([bookKernel(lead.notebook.doc, CELLS_KEY).where, bookKernel(lead.notebook.doc, second.root).where], ['machine', 'machine'])
   assert.equal(here.kernelAt(jupyterSessionPath(two, second.root)) ?? null, null)
@@ -599,7 +599,7 @@ test('A2 · two class notebooks in one room container; ten personal kernels on a
   const personal = await ownDoor.kernels()
   assert.deepEqual(personal.map((kernel) => kernel.path).sort(), students.map(({ root }) => jupyterSessionPath(mixed, root)).sort(), 'ten personal kernels, in the one container')
   assert.ok(personal.every((kernel) => kernel.alive && kernel.guarded && kernel.count === 1), JSON.stringify(personal))
-  assert.deepEqual(machine.classContainers().filter((c) => c.labels.includes(`colloq.session=${mixed}`)).map((c) => c.id), [own.id], 'one personal notebooks\' container for the class (D6), and no room container')
+  assert.deepEqual(machine.classContainers().filter((c) => c.labels.includes(`aulalab.session=${mixed}`)).map((c) => c.id), [own.id], 'one personal notebooks\' container for the class (D6), and no room container')
   for (const { root } of students) assert.equal(here.kernelAt(jupyterSessionPath(mixed, root)) ?? null, null)
   const view = students[0]!.student.notebook.doc
   assert.deepEqual([bookKernel(view, students[0]!.root).where, bookKernel(view, CELLS_KEY).where], ['machine', null])

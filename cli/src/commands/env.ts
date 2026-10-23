@@ -10,10 +10,10 @@
  * by calling them.
  *
  * Nobody builds the environment image here, and that is a decision, not a
- * gap. colloq start builds it, before the class (launch-prepare.ts ·
- * prepare): that is where the `# colloq: from` chain, the source fingerprint,
+ * gap. aulalab start builds it, before the class (launch-prepare.ts ·
+ * prepare): that is where the `# aulalab: from` chain, the source fingerprint,
  * merging two directories into one docker context and the progress in
- * .colloq.log live. A second build from here would turn out to be a third
+ * .aulalab.log live. A second build from here would turn out to be a third
  * copy next to the start and the panel (server/src/environments.ts ·
  * buildCommand), and three copies drift apart on the very first edit of the
  * Dockerfile. So `env use` only rewrites KERNEL_ENV, and honestly warns in
@@ -24,7 +24,7 @@
  *
  *   · The ones shipped with the product (base, kaggle-base, base-gpu,
  *     kaggle-gpu) are in <app>/kernel/environments and are only read: for
- *     an installed colloq that is site-packages, and it cannot be written to
+ *     an installed aulalab that is site-packages, and it cannot be written to
  *     in any sense (see env.ts · ownEnvDir).
  *   · One's own are in <home>/environments, next to .env and data/. In the
  *     repository that is the very same kernel/environments, and nothing
@@ -47,14 +47,14 @@ import { localClassEnv } from '../launch-config.js'
 import { countWord, PreconditionError, UsageError } from '../ui.js'
 import { PYTHON_VERSIONS } from '../../../shared/admin.js'
 
-/** The ceiling of the `# colloq: from` chain: the same as the Makefile build has. */
+/** The ceiling of the `# aulalab: from` chain: the same as the Makefile build has. */
 const CHAIN_LIMIT = 8
 
 /** The two header directives. For pip they are comments, for us they are structure. */
-const FROM = /^[ \t]*#[ \t]*colloq:[ \t]*from[ \t]+([^\s]+)[ \t]*$/m
-const PYTHON = /^[ \t]*#[ \t]*colloq:[ \t]*python[ \t]+(3\.[0-9]+)[ \t]*$/m
+const FROM = /^[ \t]*#[ \t]*aulalab:[ \t]*from[ \t]+([^\s]+)[ \t]*$/m
+const PYTHON = /^[ \t]*#[ \t]*aulalab:[ \t]*python[ \t]+(3\.[0-9]+)[ \t]*$/m
 
-/** The environment name: both the file and the colloq-kernel:<name> image tag are called by it. */
+/** The environment name: both the file and the aulalab-kernel:<name> image tag are called by it. */
 const NAME = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/
 
 /** A line that is not visible in the package list: a comment, empty, a pip option. */
@@ -118,7 +118,7 @@ function isOwn(ctx: Ctx, name: string): boolean {
 
 /**
  * A shorter path: from the application root, the way the Makefile prints it;
- * from the person's home, with a tilde. For an installed colloq both
+ * from the person's home, with a tilde. For an installed aulalab both
  * directories are absolute and long, and in full they do not fit into the
  * line about an environment.
  */
@@ -154,7 +154,7 @@ function checkName(name: string): void {
   if (NAME.test(name)) return
   throw new UsageError(
     '"' + name + '" cannot be an environment name: lowercase latin letters, digits and a hyphen',
-    'colloq env list: which ones already exist',
+    'aulalab env list: which ones already exist',
   )
 }
 
@@ -173,10 +173,10 @@ function needFile(ctx: Ctx, name: string, fix: string): void {
  * As a value from an import, not by parsing the text of shared/admin.ts, as
  * it was done here before. That file was looked up from the APPLICATION root,
  * and a distribution has no shared/ directory at all (scripts/pack.mts ships
- * server/dist, web/dist, server/assets and kernel/*): for an installed colloq
+ * server/dist, web/dist, server/assets and kernel/*): for an installed aulalab
  * the list always came out empty, and the check in wantPython was silently
- * switched off along with it: `colloq env new ml --python 3.99` went through
- * without a refusal and wrote "# colloq: python 3.99" into the header, and env
+ * switched off along with it: `aulalab env new ml --python 3.99` went through
+ * without a refusal and wrote "# aulalab: python 3.99" into the header, and env
  * list and env show then showed it as the version of an environment that will
  * not build. esbuild bakes the import into the bundle, so there is nothing
  * left to read on the machine, and nothing to drift apart from the panel
@@ -208,7 +208,7 @@ function defaultPython(ctx: Ctx): string {
 }
 
 /**
- * The `# colloq: from` inheritance chain, from the root to the named
+ * The `# aulalab: from` inheritance chain, from the root to the named
  * environment, and the trouble if the chain is unfit.
  *
  * The trouble is returned, not thrown, because the chain has two readers with
@@ -216,7 +216,7 @@ function defaultPython(ctx: Ctx): string {
  * environment that references itself must not blank the whole screen, so it
  * takes what could be read and stays silent. For the view and the switch,
  * telling the truth matters more: there is no way to build such an
- * environment anyway, and it is better to learn about it now than at colloq
+ * environment anyway, and it is better to learn about it now than at aulalab
  * start before class, when the build falls over.
  *
  * The measures are exactly the same as in the build at start
@@ -306,7 +306,7 @@ function starter(name: string, python: string | undefined, fallback: string): st
    * written line will become a lie nobody asked for. An unwritten one will
    * simply agree.
    */
-  if (python && python !== fallback) lines.push('# colloq: python ' + python, '#')
+  if (python && python !== fallback) lines.push('# aulalab: python ' + python, '#')
   lines.push(
     '# Environment "' + name + '". It is installed on top of the base from',
     '# kernel/requirements.txt, so numpy/pandas/matplotlib/scikit-learn need no line here.',
@@ -337,11 +337,11 @@ function writeKernelEnv(ctx: Ctx, name: string): void {
    * The file does not exist yet, so it is created here, whole.
    *
    * A "KERNEL_ENV=…" line in an empty place would look harmless, but it is the
-   * .env: from then on `colloq start` sees the file in place and does not
+   * .env: from then on `aulalab start` sees the file in place and does not
    * write its own (launch.ts creates it ONLY when there is no file). The class
    * came up with the defaults, that is, with the well-known JUPYTER_TOKEN from
    * .env.example, and the server honestly complained about it in the log.
-   * Caught live: `colloq env use` from the wheel before the first `colloq
+   * Caught live: `aulalab env use` from the wheel before the first `aulalab
    * start`.
    *
    * So the basis is the very same text the start would have written
@@ -365,7 +365,7 @@ function renderList(ctx: Ctx): void {
   ctx.ui.line(ctx.ui.bold('Environments') + ' ' + ctx.ui.dim('(' + places(ctx) + ')'))
   ctx.ui.line()
   if (names.length === 0) {
-    ctx.ui.line('  ' + ctx.ui.dim('no environment files: create one with colloq env new <name>'))
+    ctx.ui.line('  ' + ctx.ui.dim('no environment files: create one with aulalab env new <name>'))
     return
   }
   // The 14-character column comes from the Makefile (%-14s); a long name widens
@@ -385,7 +385,7 @@ function renderList(ctx: Ctx): void {
     )
   }
   ctx.ui.line()
-  ctx.ui.line(ctx.ui.dim('* — the default for new classes. Change it: colloq env use <name>'))
+  ctx.ui.line(ctx.ui.dim('* — the default for new classes. Change it: aulalab env use <name>'))
 }
 
 /** The `env show` screen: the same as the env-show target prints, but about any environment. */
@@ -410,15 +410,15 @@ export const commands: Command[] = [
     aliases: ['env', 'env ls'],
     group: 'env',
     summary: 'Which environments exist',
-    usage: 'colloq env list [--json]',
+    usage: 'aulalab env list [--json]',
     flags: [
       { name: 'json', summary: 'Machine-readable: name, Python, packages on top of the base' },
     ],
     destructive: false,
     delegates: 'native: reads both environment directories and KERNEL_ENV from .env',
-    examples: ['colloq env list', 'colloq env list --json'],
+    examples: ['aulalab env list', 'aulalab env list --json'],
     notes:
-      'The star marks the default for new classes: KERNEL_ENV from .env, otherwise base. The Python version comes from the root of the "# colloq: from" chain, which is at most eight links long. "your own" is an environment you created yourself: it lives next to .env and survives an update of the package.',
+      'The star marks the default for new classes: KERNEL_ENV from .env, otherwise base. The Python version comes from the root of the "# aulalab: from" chain, which is at most eight links long. "your own" is an environment you created yourself: it lives next to .env and survives an update of the package.',
     async run(ctx) {
       // The intent in one line, both for the person and for --json: they have
       // no reason to differ, and a line written twice drifts apart.
@@ -457,22 +457,22 @@ export const commands: Command[] = [
     name: 'env show',
     group: 'env',
     summary: 'What is in an environment and which Python it runs on',
-    usage: 'colloq env show [name]',
+    usage: 'aulalab env show [name]',
     args: [{ name: 'name', summary: 'Environment; without a name, the current one' }],
     flags: [],
     destructive: false,
     delegates: 'native: reads <environment>.txt and kernel/requirements.txt',
-    examples: ['colloq env show', 'colloq env show {env}'],
+    examples: ['aulalab env show', 'aulalab env show {env}'],
     notes:
       'Without a name it shows the current one: what stands in KERNEL_ENV. When there is no such file it refuses. The base packages are listed separately: they are in every environment, and there is no need to repeat them in your own list.',
     async run(ctx) {
       const asked = (ctx.positionals[0] ?? '').trim() || ctx.env.kernelEnv()
       checkName(asked)
-      needFile(ctx, asked, 'colloq env list')
+      needFile(ctx, asked, 'aulalab env list')
       // An unfit chain means a refusal before the view: a "Python 3.11" line
       // over an environment that references itself looks like an answer, but
       // is not one.
-      needChain(ctx, asked, 'colloq env show ' + asked + ': fix the "# colloq: from" line')
+      needChain(ctx, asked, 'aulalab env show ' + asked + ': fix the "# aulalab: from" line')
       if (ctx.dryRun) {
         return ctx.sh.dry(
           'native: env show ' +
@@ -491,7 +491,7 @@ export const commands: Command[] = [
     name: 'env new',
     group: 'env',
     summary: 'Create an environment',
-    usage: 'colloq env new <name> [--python <version>]',
+    usage: 'aulalab env new <name> [--python <version>]',
     args: [
       {
         name: 'name',
@@ -508,17 +508,17 @@ export const commands: Command[] = [
     ],
     destructive: false,
     delegates: 'native: creates <name>.txt with a header in your own environment directory',
-    examples: ['colloq env new cv', 'colloq env new cv --python 3.12'],
+    examples: ['aulalab env new cv', 'aulalab env new cv --python 3.12'],
     notes:
-      'Creates an empty file with a header and does not overwrite an existing one. It is always written into your own directory, next to .env, and not where the package is installed: otherwise the environment would be gone on the first update. A name already taken by a bundled environment is allowed: your file overrides the bundled one. The version comes from PYTHON_VERSIONS in shared/admin.ts, and the "# colloq: python X.Y" line is written only when the version differs from ARG PARENT in kernel/Dockerfile.',
+      'Creates an empty file with a header and does not overwrite an existing one. It is always written into your own directory, next to .env, and not where the package is installed: otherwise the environment would be gone on the first update. A name already taken by a bundled environment is allowed: your file overrides the bundled one. The version comes from PYTHON_VERSIONS in shared/admin.ts, and the "# aulalab: python X.Y" line is written only when the version differs from ARG PARENT in kernel/Dockerfile.',
     async run(ctx) {
-      const name = wantName(ctx, 'colloq env new <name>')
+      const name = wantName(ctx, 'aulalab env new <name>')
       const python = wantPython(ctx)
       const file = ownFile(ctx, name)
       if (ctx.io.exists(file)) {
         throw new PreconditionError(
           short(ctx, file) + ' already exists',
-          'colloq env show ' + name + ': what is in it now',
+          'aulalab env show ' + name + ': what is in it now',
         )
       }
       // Overriding is not an error, but not a trifle either: the person must
@@ -545,7 +545,7 @@ export const commands: Command[] = [
         ctx.ui.dim(
           'Python ' +
             pythonOf(ctx, name, defaultPython(ctx)) +
-            ' · write the packages in, then: colloq env use ' +
+            ' · write the packages in, then: aulalab env use ' +
             name,
         ),
       )
@@ -558,35 +558,35 @@ export const commands: Command[] = [
     aliases: ['env switch'],
     group: 'env',
     summary: 'Make an environment the default for new classes',
-    usage: 'colloq env use <name>',
-    args: [{ name: 'name', summary: 'An environment from colloq env list', required: true }],
+    usage: 'aulalab env use <name>',
+    args: [{ name: 'name', summary: 'An environment from aulalab env list', required: true }],
     flags: [],
     destructive: true,
     confirm: 'cli',
     // The check before the question: no environment or an unfit chain means a
     // refusal, not a question before a refusal. The start will not build an
-    // unfit chain either, and learning about it now is cheaper than at colloq
+    // unfit chain either, and learning about it now is cheaper than at aulalab
     // start before class.
     check(ctx) {
-      const name = wantName(ctx, 'colloq env use <name>')
-      needFile(ctx, name, 'colloq env new ' + name)
-      needChain(ctx, name, 'fix the "# colloq: from" line in the chain')
+      const name = wantName(ctx, 'aulalab env use <name>')
+      needFile(ctx, name, 'aulalab env new ' + name)
+      needChain(ctx, name, 'fix the "# aulalab: from" line in the chain')
     },
     // The question promises exactly what the command will do: one line in
     // .env. There is no build here, so no promise of a long wait either: the
-    // command speaks about the minutes of building at colloq start only after
+    // command speaks about the minutes of building at aulalab start only after
     // the write.
     confirmQuestion: (ctx) =>
       'make environment ' +
-      wantName(ctx, 'colloq env use <name>') +
+      wantName(ctx, 'aulalab env use <name>') +
       ' the default for new classes?',
     delegates: 'native: KERNEL_ENV in .env',
-    examples: ['colloq env use cv', 'colloq env use {env} --yes'],
+    examples: ['aulalab env use cv', 'aulalab env use {env} --yes'],
     notes:
-      'The KERNEL_ENV= line is written into the existing .env instead of a fresh file put on top of it: under sudo the file would stay root:0600, and the next start would bring an instance up with the defaults. Classes that are already open stay on their own environment. The image is not built here: colloq start builds it before the class, together with the rest of the preparation, and the first time that can take minutes.',
+      'The KERNEL_ENV= line is written into the existing .env instead of a fresh file put on top of it: under sudo the file would stay root:0600, and the next start would bring an instance up with the defaults. Classes that are already open stay on their own environment. The image is not built here: aulalab start builds it before the class, together with the rest of the preparation, and the first time that can take minutes.',
     async run(ctx) {
       // check() has already checked the file and the chain, before the question and under --dry-run too.
-      const name = wantName(ctx, 'colloq env use <name>')
+      const name = wantName(ctx, 'aulalab env use <name>')
       if (ctx.dryRun) {
         return ctx.sh.dry(
           'native: env use ' +
@@ -601,7 +601,7 @@ export const commands: Command[] = [
       writeKernelEnv(ctx, name)
       ctx.ui.line(ctx.ui.bold('Default environment for new classes: ' + name))
       ctx.ui.line(
-        ctx.ui.dim('the image is built on your next colloq start: this can take minutes'),
+        ctx.ui.dim('the image is built on your next aulalab start: this can take minutes'),
       )
       return 0
     },

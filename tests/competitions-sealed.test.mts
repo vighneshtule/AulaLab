@@ -331,7 +331,7 @@ class NotebookClient:
 test("Docker mounts the run's own folder at /data, read-only, and never the sealed folder itself", () => {
   const inputs = attemptPath('abcd2345', 'efgh2345', 'e'.repeat(32), 'inputs')
   const args = runArgs({
-    container: 'c', image: 'colloq-kernel:base', dataDir: inputs,
+    container: 'c', image: 'aulalab-kernel:base', dataDir: inputs,
     inputDir: '/x/in', resultDir: '/x/out', target: 'submission.csv',
     limits: limitsFor({ limits: { wallSeconds: 600, memoryMb: 4096, cpus: 2, perDay: 5 } } as Competition, 'notebook'),
   })
@@ -341,7 +341,7 @@ test("Docker mounts the run's own folder at /data, read-only, and never the seal
 })
 
 const digest = `sha256:${'a'.repeat(64)}`
-const image = `registry.example/colloq/kaggle-base@${digest}`
+const image = `registry.example/aulalab/kaggle-base@${digest}`
 function brokerClient(seen: CompetitionJobIntent[]) {
   let current: CompetitionJobIntent
   const status = (intent: CompetitionJobIntent): CompetitionJobStatus => ({ jobId: intent.jobId, kind: intent.kind, phase: 'complete', startedAt: 1, finishedAt: 2, exitCode: 0, oomKilled: false, progress: null, error: null })
@@ -378,9 +378,9 @@ test('the broker Pod mounts the attempt inputs at /data with the flag; the metri
   const intent = (extra: object = {}) => ({ schemaVersion: 1 as const, jobId, kind: 'notebook' as const, environment: 'kaggle-base', revision, limits, competitionId: 'abcd2345', submissionId: 'efgh2345', attemptId, ...extra })
   const pods: any[] = []
   const objects = new Map<string, any>()
-  objects.set('/api/v1/namespaces/colloq/persistentvolumeclaims/colloq-data', { metadata: { name: 'colloq-data' } })
+  objects.set('/api/v1/namespaces/aulalab/persistentvolumeclaims/aulalab-data', { metadata: { name: 'aulalab-data' } })
   for (const name of ['competition-job-isolation', 'competition-resolver-isolation', 'competition-proxy-isolation'])
-    objects.set(`/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/${name}`, { metadata: { name } })
+    objects.set(`/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/${name}`, { metadata: { name } })
   const kube = { async request<T>(method: string, route: string, body?: any): Promise<T> {
     const key = route.split('?')[0]
     if (method === 'GET' && (key.endsWith('/pods') || key.endsWith('/services'))) return { items: [], metadata: {} } as T
@@ -388,7 +388,7 @@ test('the broker Pod mounts the attempt inputs at /data with the flag; the metri
     if (method === 'POST') { if (key.endsWith('/pods')) pods.push(body); return { ...body, metadata: { ...body.metadata, uid: '1' } } as T }
     return {} as T
   } }
-  const jobs = new CompetitionJobs({ kube, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage: `registry.example/runtime@sha256:${'d'.repeat(64)}`, instanceId: 'instance123' }, catalog: () => catalog, secret: () => 'x'.repeat(64), exporter: async () => ({ files: [], totalBytes: 0 }), now: () => Date.now() })
+  const jobs = new CompetitionJobs({ kube, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage: `registry.example/runtime@sha256:${'d'.repeat(64)}`, instanceId: 'instance123' }, catalog: () => catalog, secret: () => 'x'.repeat(64), exporter: async () => ({ files: [], totalBytes: 0 }), now: () => Date.now() })
   await jobs.start(jobId, intent({ sealedInputs: true }))
   const data = pods[0].spec.containers[0].volumeMounts.find((m: any) => m.mountPath === '/data')
   assert.equal(data.subPath, `competitions/abcd2345/s/efgh2345/attempts/${attemptId}/inputs`)
@@ -498,16 +498,16 @@ test('notebooks that try to carry the hidden test out: it reaches the teacher, n
   const restore = [write('log'), write('warn'), write('error')]
   try {
     // Reads data/test.csv into its answer: the check ran on the hidden rows.
-    await upload('reads', notebook('# colloq-test: {"read": "test.csv"}', 'x = 1'))
-    await upload('reads-extra', notebook('# colloq-test: {"read": "extra.csv"}'))
+    await upload('reads', notebook('# aulalab-test: {"read": "test.csv"}', 'x = 1'))
+    await upload('reads-extra', notebook('# aulalab-test: {"read": "extra.csv"}'))
     // Raises with the hidden rows in its message, prints them, and lies about its cell.
-    await upload('raises', notebook('# colloq-test: {"status": "cell_error", "detailFrom": "test.csv", "executed": true, "cell": 99999}', 'y = 2'))
+    await upload('raises', notebook('# aulalab-test: {"status": "cell_error", "detailFrom": "test.csv", "executed": true, "cell": 99999}', 'y = 2'))
     // Writes the rows into its answer, and the metric quotes the answer back.
-    await upload('echoes', notebook('# colloq-test: {"read": "test.csv", "metric": "participant_error", "echo": true}'))
+    await upload('echoes', notebook('# aulalab-test: {"read": "test.csv", "metric": "participant_error", "echo": true}'))
     // Our own alignment check, which would quote an id of the hidden test.
-    await upload('misaligned', notebook('# colloq-test: {"metric": "participant_error"}'))
+    await upload('misaligned', notebook('# aulalab-test: {"metric": "participant_error"}'))
     // A made-up exception class named after what it read.
-    await upload('named', notebook('# colloq-test: {"status": "cell_error", "detail": "Traceback\\nLEAKYNAMEError: boom"}'))
+    await upload('named', notebook('# aulalab-test: {"status": "cell_error", "detail": "Traceback\\nLEAKYNAMEError: boom"}'))
     await drainCompetitionQueue()
   } finally {
     for (const undo of restore) undo()
@@ -597,7 +597,7 @@ test('a competition without a hidden test shows a failed run in full, exactly as
   const joined = await call('/api/k/competitions/sealed-plain-doors/join', { method: 'POST', body: JSON.stringify({ name: '@open_student' }) })
   const own = cookieOf(joined)!
   const form = new FormData()
-  const body = notebook('# colloq-test: {"status": "cell_error", "detail": "Traceback\\nValueError: visible to its author", "executed": true}')
+  const body = notebook('# aulalab-test: {"status": "cell_error", "detail": "Traceback\\nValueError: visible to its author", "executed": true}')
   form.append('file', new Blob([body]), 'a.ipynb')
   const res = await call('/api/k/competitions/sealed-plain-doors/submissions', { method: 'POST', body: form, cookie: own })
   const id = ((await res.json()) as SubmissionAccepted).submission.id

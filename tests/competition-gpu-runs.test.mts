@@ -73,7 +73,7 @@ const LIMITS = limitsFor(COMPETITION, 'notebook')
 /** One run's paths and limits, as the runner hands them to `runArgs`. */
 const CPU_RUN = {
   attemptId: 'a'.repeat(32),
-  container: 'colloq-comp-s1-0123abcd-run',
+  container: 'aulalab-comp-s1-0123abcd-run',
   image: 'sha256:pinned',
   dataDir: '/data/competitions/c1/data',
   inputDir: '/data/competitions/c1/s/s1/in',
@@ -160,8 +160,8 @@ test('a run with a card gets the card, its /dev/shm and the label rooms carry, w
   assert.equal(runArgs({ ...CPU_RUN, limits: { ...LIMITS, memoryMb: 1536 }, gpu: SHARED }).find((arg) => arg.startsWith('--shm-size=')), '--shm-size=768m')
   // The label by which a new class is kept off the card (kernel/pool.ts · submissionGpuCards).
   const labels = args.filter((_, at) => args[at - 1] === '--label')
-  assert.ok(labels.includes('colloq.gpu=1'))
-  assert.ok(labels.includes('colloq.kind=competition-run'))
+  assert.ok(labels.includes('aulalab.gpu=1'))
+  assert.ok(labels.includes('aulalab.kind=competition-run'))
   // The card changes nothing of the perimeter.
   assert.equal(valueOf(args, '--network'), 'none')
   for (const flag of ['--read-only', '--cap-drop=ALL', '--user=1000:1000', '--security-opt=no-new-privileges', '--pids-limit=256']) {
@@ -176,21 +176,21 @@ test('a run with a card gets the card, its /dev/shm and the label rooms carry, w
 test('the allocator cap and the harness site go only to a run that shares its card and knows its size', () => {
   const shared = envOf(runArgs({ ...CPU_RUN, gpu: SHARED }))
   // The share less the CUDA context, which lives outside torch's allocator.
-  assert.equal(shared.get('COLLOQ_GPU_MEMORY_MB'), String(6144 - GPU_CONTEXT_MB))
+  assert.equal(shared.get('AULALAB_GPU_MEMORY_MB'), String(6144 - GPU_CONTEXT_MB))
   // The card the share was cut from: CatBoost's pool is a part of the card, not a size.
-  assert.equal(shared.get('COLLOQ_GPU_CARD_MB'), String(6144 * 4))
+  assert.equal(shared.get('AULALAB_GPU_CARD_MB'), String(6144 * 4))
   assert.equal(shared.get('PYTHONPATH'), HARNESS_SITE)
   // Never below the floor, however small the share.
   const tiny = envOf(runArgs({ ...CPU_RUN, gpu: { device: '0', sliceMb: 600, perDevice: 8 } }))
-  assert.equal(tiny.get('COLLOQ_GPU_MEMORY_MB'), '256')
-  assert.equal(tiny.get('COLLOQ_GPU_CARD_MB'), '4800')
+  assert.equal(tiny.get('AULALAB_GPU_MEMORY_MB'), '256')
+  assert.equal(tiny.get('AULALAB_GPU_CARD_MB'), '4800')
 
   // A whole card: nobody to disturb, nothing to cap. A card of unknown size: no limit anyone can state.
   for (const gpu of [{ device: '1', sliceMb: 24_564, perDevice: 1 }, { device: '1', sliceMb: null, perDevice: 4 }]) {
     const args = runArgs({ ...CPU_RUN, gpu })
     assert.equal(valueOf(args, '--gpus'), 'device=1', 'the card itself is still given')
-    assert.ok(!envOf(args).has('COLLOQ_GPU_MEMORY_MB'))
-    assert.ok(!envOf(args).has('COLLOQ_GPU_CARD_MB'))
+    assert.ok(!envOf(args).has('AULALAB_GPU_MEMORY_MB'))
+    assert.ok(!envOf(args).has('AULALAB_GPU_CARD_MB'))
     assert.ok(!envOf(args).has('PYTHONPATH'))
     assert.equal(heldShareMb(gpu), null)
   }
@@ -205,12 +205,12 @@ test('the CPU line is exactly what it was: a card adds its own arguments and not
   assert.deepEqual(runArgs({ ...CPU_RUN, gpu: undefined }), cpu)
   assert.deepEqual(runArgs({ ...CPU_RUN, gpu: { ...CLUSTER_GPU } }), cpu)
   const line = cpu.join(' ')
-  for (const word of ['--gpus', '--shm-size', 'colloq.gpu', 'COLLOQ_GPU_MEMORY_MB', 'COLLOQ_GPU_CARD_MB', 'PYTHONPATH']) {
+  for (const word of ['--gpus', '--shm-size', 'aulalab.gpu', 'AULALAB_GPU_MEMORY_MB', 'AULALAB_GPU_CARD_MB', 'PYTHONPATH']) {
     assert.ok(!line.includes(word), `${word} in a CPU line`)
   }
   // Take the card's own arguments out of the GPU line, and the CPU line is what remains, in order.
   const gpu = runArgs({ ...CPU_RUN, gpu: SHARED })
-  const own = new Set(['--gpus', 'device=1', '--shm-size=1024m', 'colloq.gpu=1', 'COLLOQ_GPU_MEMORY_MB=5632', 'COLLOQ_GPU_CARD_MB=24576', `PYTHONPATH=${HARNESS_SITE}`])
+  const own = new Set(['--gpus', 'device=1', '--shm-size=1024m', 'aulalab.gpu=1', 'AULALAB_GPU_MEMORY_MB=5632', 'AULALAB_GPU_CARD_MB=24576', `PYTHONPATH=${HARNESS_SITE}`])
   const rest: string[] = []
   for (let at = 0; at < gpu.length; at++) {
     if (own.has(gpu[at])) continue
@@ -223,7 +223,7 @@ test('the CPU line is exactly what it was: a card adds its own arguments and not
 
 test('the metric line never has a card, whatever the notebook had', () => {
   const args = scoreArgs({
-    container: 'colloq-comp-s1-0123abcd-score',
+    container: 'aulalab-comp-s1-0123abcd-score',
     image: 'sha256:pinned',
     secretDir: '/data/competitions/c1/secret',
     submissionDir: '/data/competitions/c1/s/s1/score',
@@ -236,7 +236,7 @@ test('the metric line never has a card, whatever the notebook had', () => {
     splitSeed: 'zerno',
   })
   const line = args.join(' ')
-  for (const word of ['--gpus', '--shm-size', 'colloq.gpu', 'COLLOQ_GPU', 'PYTHONPATH', '/harness/site']) {
+  for (const word of ['--gpus', '--shm-size', 'aulalab.gpu', 'AULALAB_GPU', 'PYTHONPATH', '/harness/site']) {
     assert.ok(!line.includes(word), `${word} in the metric's line`)
   }
 })
@@ -255,7 +255,7 @@ test('Docker launches the notebook on its card and the scorer of the same attemp
   const launches = commands.filter((args) => args[0] === 'run')
   assert.equal(launches.length, 2)
   assert.equal(valueOf(launches[0], '--gpus'), 'device=1')
-  assert.ok(!launches[1].some((arg) => arg === '--gpus' || arg.includes('colloq.gpu') || arg.includes('COLLOQ_GPU')))
+  assert.ok(!launches[1].some((arg) => arg === '--gpus' || arg.includes('aulalab.gpu') || arg.includes('AULALAB_GPU')))
 })
 
 /* --------------------------------------------------------------- the watchdog */
@@ -526,7 +526,7 @@ test('an orphan of the previous life that will not go keeps the card its label n
     await withDocker(async (args) => {
       asked.push(args)
       if (args[0] === 'ps') {
-        return args.includes('label=colloq.kind=competition-run') ? { code: 0, out: 'aa11\t0\nbb22\t\n' } : { code: 0, out: '' }
+        return args.includes('label=aulalab.kind=competition-run') ? { code: 0, out: 'aa11\t0\nbb22\t\n' } : { code: 0, out: '' }
       }
       if (args[0] === 'rm') return args.at(-1) === 'aa11' && removal === 'fails' ? { code: 1, out: 'daemon busy' } : { code: 0, out: '' }
       return { code: 1, out: 'unavailable' }
@@ -534,7 +534,7 @@ test('an orphan of the previous life that will not go keeps the card its label n
       const actual = competitionRunner()
       assert.equal(await actual.sweep(), 1, 'the one without a card is gone')
       const ps = asked.find((args) => args[0] === 'ps')!
-      assert.equal(valueOf(ps, '--format'), '{{.ID}}\t{{.Label "colloq.gpu"}}')
+      assert.equal(valueOf(ps, '--format'), '{{.ID}}\t{{.Label "aulalab.gpu"}}')
       assert.deepEqual((await actual.capacity()).heldGpus, { '0': 1 })
       removal = 'works'
       await actual.capacity()
@@ -553,7 +553,7 @@ test('the harness ships site/sitecustomize.py, alone in the directory PYTHONPATH
   const site = path.join(dir, 'site')
   assert.deepEqual(fs.readdirSync(site), ['sitecustomize.py'], 'nothing else of the harness is importable by name')
   const source = fs.readFileSync(path.join(site, 'sitecustomize.py'), 'utf8')
-  assert.match(source, /COLLOQ_GPU_MEMORY_MB/)
+  assert.match(source, /AULALAB_GPU_MEMORY_MB/)
   assert.match(source, /set_per_process_memory_fraction/)
   assert.match(source, /_lazy_call/)
   assert.equal(HARNESS_SITE, '/harness/site')
@@ -581,7 +581,7 @@ const PYTHON = { skip: python.status === 0 ? false : 'no python3 on this machine
  * parameters reaching them; and, apart in `odd/`, a catboost without them.
  */
 function standIns(): { root: string; odd: string } {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-fake-gpu-libs-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-fake-gpu-libs-'))
   const write = (file: string, lines: string[]) => {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true })
     fs.writeFileSync(path.join(root, file), `${lines.join('\n')}\n`)
@@ -630,15 +630,15 @@ function standIns(): { root: string; odd: string } {
 function inPython(script: string, libs: string, env: Record<string, string>, ...args: string[]): { out: any; stderr: string } {
   const site = path.join(harnessDir(), 'site')
   const vars: NodeJS.ProcessEnv = { ...process.env, PYTHONPATH: `${site}${path.delimiter}${libs}` }
-  delete vars.COLLOQ_GPU_MEMORY_MB
-  delete vars.COLLOQ_GPU_CARD_MB
+  delete vars.AULALAB_GPU_MEMORY_MB
+  delete vars.AULALAB_GPU_CARD_MB
   Object.assign(vars, env)
   const result = spawnSync('python3', ['-s', '-c', script, ...args], { encoding: 'utf8', env: vars })
   assert.equal(result.status, 0, result.stderr)
   return { out: JSON.parse(result.stdout), stderr: result.stderr }
 }
 
-test('sitecustomize caps torch at COLLOQ_GPU_MEMORY_MB when CUDA starts, once, however torch was asked about first', PYTHON, () => {
+test('sitecustomize caps torch at AULALAB_GPU_MEMORY_MB when CUDA starts, once, however torch was asked about first', PYTHON, () => {
   const libs = standIns()
   try {
     const script = [
@@ -661,13 +661,13 @@ test('sitecustomize caps torch at COLLOQ_GPU_MEMORY_MB when CUDA starts, once, h
       'print(json.dumps({"queued": queued, "fractions": torch.cuda.fractions,',
       '  "site": getattr(site, "__file__", None), "finders": [type(f).__name__ for f in sys.meta_path]}))',
     ].join('\n')
-    const share = { COLLOQ_GPU_MEMORY_MB: '4096' }
+    const share = { AULALAB_GPU_MEMORY_MB: '4096' }
     const capped = inPython(script, libs.root, share, 'plain')
     assert.ok(capped.out.site, 'a sitecustomize was imported')
     assert.equal(fs.realpathSync(capped.out.site), fs.realpathSync(path.join(harnessDir(), 'site', 'sitecustomize.py')), 'the harness\'s module is the one Python found')
     assert.equal(capped.out.queued, 1, 'one callback, queued for the moment CUDA initialises')
     assert.deepEqual(capped.out.fractions, [[4096 / (24 * 1024), 0]])
-    assert.ok(!capped.stderr.includes('colloq:'), capped.stderr)
+    assert.ok(!capped.stderr.includes('aulalab:'), capped.stderr)
 
     // Asked about before it is imported — by the notebook or by a library at its own import —
     // and asked again, imported again, reloaded: still exactly one cap.
@@ -675,12 +675,12 @@ test('sitecustomize caps torch at COLLOQ_GPU_MEMORY_MB when CUDA starts, once, h
       const asked = inPython(script, libs.root, share, order)
       assert.equal(asked.out.queued, 1, `one cap after ${order}`)
       assert.deepEqual(asked.out.fractions, [[4096 / (24 * 1024), 0]], order)
-      assert.ok(!asked.stderr.includes('colloq:'), asked.stderr)
+      assert.ok(!asked.stderr.includes('aulalab:'), asked.stderr)
     }
 
     for (const value of ['', '0', 'lots']) {
-      const free = inPython(script, libs.root, { COLLOQ_GPU_MEMORY_MB: value }, 'plain')
-      assert.equal(free.out.queued, 0, `no cap with COLLOQ_GPU_MEMORY_MB=${value}`)
+      const free = inPython(script, libs.root, { AULALAB_GPU_MEMORY_MB: value }, 'plain')
+      assert.equal(free.out.queued, 0, `no cap with AULALAB_GPU_MEMORY_MB=${value}`)
       assert.deepEqual(free.out.fractions, [])
       assert.ok(!free.out.finders.includes('_GpuFinder'), 'nothing is put in front of the import system')
     }
@@ -707,7 +707,7 @@ test('sitecustomize gives a GPU CatBoost fit the share\'s part of the card, unle
       'print(json.dumps({"calls": core.calls, "own": gpu._init_params, "mine": mine}))',
     ].join('\n')
     // A 24 GB card shared by four: 6144 MB each, 5632 of it for the allocators.
-    const card = { COLLOQ_GPU_MEMORY_MB: '5632', COLLOQ_GPU_CARD_MB: '24576' }
+    const card = { AULALAB_GPU_MEMORY_MB: '5632', AULALAB_GPU_CARD_MB: '24576' }
     const part = 5632 / 24576
     for (const order of ['plain', 'find_spec']) {
       const ran = inPython(script, libs.root, card, order)
@@ -722,17 +722,17 @@ test('sitecustomize gives a GPU CatBoost fit the share\'s part of the card, unle
       // Set on the copies handed to the GPU, never on what the participant holds.
       assert.deepEqual(ran.out.own, { task_type: 'GPU' })
       assert.deepEqual(ran.out.mine, { task_type: 'GPU' })
-      assert.ok(!ran.stderr.includes('colloq:'), ran.stderr)
+      assert.ok(!ran.stderr.includes('aulalab:'), ran.stderr)
     }
     // Without the card, or with numbers that make no part of it, catboost is left as it is.
-    for (const env of [{ COLLOQ_GPU_MEMORY_MB: '5632' }, { COLLOQ_GPU_MEMORY_MB: '5632', COLLOQ_GPU_CARD_MB: '4096' }, { COLLOQ_GPU_CARD_MB: '24576' }, {}]) {
+    for (const env of [{ AULALAB_GPU_MEMORY_MB: '5632' }, { AULALAB_GPU_MEMORY_MB: '5632', AULALAB_GPU_CARD_MB: '4096' }, { AULALAB_GPU_CARD_MB: '24576' }, {}]) {
       const left = inPython(script, libs.root, env, 'plain')
       assert.deepEqual(left.out.calls[0], ['fit', { task_type: 'GPU' }], JSON.stringify(env))
     }
     // A catboost without the doors of 1.2 imports and fits as it is, and the reason is said on stderr.
     const odd = inPython('import catboost, json; print(json.dumps(catboost.core.CatBoost().fit()))', libs.odd, card)
     assert.equal(odd.out, 'fitted')
-    assert.match(odd.stderr, /^colloq: CatBoost GPU memory default not applied: /)
+    assert.match(odd.stderr, /^aulalab: CatBoost GPU memory default not applied: /)
   } finally {
     fs.rmSync(libs.root, { recursive: true, force: true })
   }

@@ -10,7 +10,7 @@
  * Hence what is checked here. Not "is it pretty", but three things, each of
  * which breaks without a word:
  *   · parsing IPython's markup on real kernel answers (the samples below were
- *     taken from `colloq-kernel:base`, not made up);
+ *     taken from `aulalab-kernel:base`, not made up);
  *   · memory: a second hover does not go to the kernel, but it does not
  *     remember yesterday's refusals either;
  *   · the window's own promises — one scroll, the full signature, a layer
@@ -692,9 +692,9 @@ test('a temporary reason has a waiting sign, a final one does not', () => {
   assert.match(EDITOR, /wait\.className = 'cm-signature-wait'/)
   // The dots breathe through opacity: nothing moves, and the product's
   // prefers-reduced-motion rule (index.css) does not ask to touch this.
-  assert.match(THEME, /'\.cm-signature-wait i': \{[\s\S]*?animation: 'colloq-signature-wait/)
-  assert.match(THEME, /'@keyframes colloq-signature-wait': \{\s*'0%, 100%': \{ opacity: '0\.25' \}/)
-  assert.doesNotMatch(THEME, /colloq-signature-wait[\s\S]{0,200}translate/)
+  assert.match(THEME, /'\.cm-signature-wait i': \{[\s\S]*?animation: 'aulalab-signature-wait/)
+  assert.match(THEME, /'@keyframes aulalab-signature-wait': \{\s*'0%, 100%': \{ opacity: '0\.25' \}/)
+  assert.doesNotMatch(THEME, /aulalab-signature-wait[\s\S]{0,200}translate/)
 })
 
 test('the help gets its own deadline, longer than the server cap on parsing', () => {

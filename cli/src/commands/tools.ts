@@ -11,7 +11,7 @@
  * timetable, the load test rig, renting machines) lives in the Makefile and
  * scripts/, and there is not a word about it from here: not a line on the
  * screen, not a hint. Advice there is no way to follow after `pip install
- * colloq` reads as a breakage, so every hint below names a command of this
+ * aulalab` reads as a breakage, so every hint below names a command of this
  * CLI or something installed by hand (brew, pip).
  *
  * Exactly status, doctor and env list have --json: the command
@@ -24,7 +24,7 @@ import { SYMBOL } from '../ui.js'
 import { joinPath } from '../env.js'
 import { readSession, type Session } from '../session.js'
 import { leaseUrl } from '../../../shared/local-public-url-lease.js'
-// The same words colloq host says: two places, one wording; see PERIMETER in
+// The same words aulalab host says: two places, one wording; see PERIMETER in
 // host.ts. They must not drift apart, otherwise one of the two would turn out
 // to be untrue.
 import { PERIMETER } from './host.js'
@@ -49,23 +49,23 @@ function missing(): Promise<{ code: number; stdout: string; stderr: string }> {
  * the package has neither an npm build nor the sources. If it is missing or
  * not compressed, the installation is incomplete, and there is one way out:
  * install the package again. The start (launch-prepare.ts) gives the same
- * advice, so that doctor and `colloq start` do not advise different things.
+ * advice, so that doctor and `aulalab start` do not advise different things.
  *
  * From a working tree the advice is the same: the CLI behaves the same
  * wherever it is called from, and whoever holds the sources knows `npm run
  * build` without a hint.
  */
-const REINSTALL = 'reinstall colloq: pip install --force-reinstall colloq'
+const REINSTALL = 'reinstall aulalab: pip install --force-reinstall aulalab'
 
 /**
  * How to get the kernel image.
  *
- * `colloq env build` refuses on purpose for an installed colloq (there is no
+ * `aulalab env build` refuses on purpose for an installed aulalab (there is no
  * reason to build the image in advance, the start does it), and sending a
  * person there means sending them into a refusal. The advice is one and the
  * same wherever the CLI is called from.
  */
-const KERNEL_IMAGE_FIX = 'colloq start — the image is built before the class'
+const KERNEL_IMAGE_FIX = 'aulalab start — the image is built before the class'
 
 /** "01:14:23", "1-02:03:04", "05:23" → seconds. The etime format of ps is the same on both systems. */
 export function parseEtime(value: string): number | null {
@@ -189,7 +189,7 @@ function rowPrinter(ctx: Ctx, labels: string[]): (label: string, value: string) 
  * mean writing "2 rooms" where a single class is going on.
  */
 const PS_FORMAT =
-  '{{.Label "colloq.kind"}}|{{.Label "com.docker.compose.service"}}|{{.State}}|{{.Label "colloq.session"}}'
+  '{{.Label "aulalab.kind"}}|{{.Label "com.docker.compose.service"}}|{{.State}}|{{.Label "aulalab.session"}}'
 
 type Status = {
   envName: string
@@ -223,7 +223,7 @@ async function statusFacts(ctx: Ctx): Promise<Status> {
    * The first source is the class receipt, the second is .env.
    *
    * Their questions differ: .env says what is configured, the receipt says what
-   * the class is running on RIGHT NOW. `colloq run --port 4100` writes nothing
+   * the class is running on RIGHT NOW. `aulalab run --port 4100` writes nothing
    * into .env, and live the screen printed "port 3000" while the class sat on
    * 4100. So the port, the address and the process numbers are taken from the
    * receipt, and only when there is none, from .env, as it always was.
@@ -236,7 +236,7 @@ async function statusFacts(ctx: Ctx): Promise<Status> {
    * supervisor's child, and its number lies in the receipt in the serverPid
    * field; while the server is not up yet (phase preparing), the class is
    * running all the same, and the supervisor counts as alive. Without a
-   * receipt there remains .colloq.pid: `make run` writes it in a working tree,
+   * receipt there remains .aulalab.pid: `make run` writes it in a working tree,
    * and it holds the number of the server itself.
    */
   const pidText = (io.readText(env.paths.pidFile) ?? '').trim()
@@ -257,7 +257,7 @@ async function statusFacts(ctx: Ctx): Promise<Status> {
     sh.capture('docker', ['ps', '--format', PS_FORMAT], { timeoutMs: 700 }),
     sh.capture(
       'docker',
-      ['image', 'inspect', 'colloq-kernel:' + kernelEnv, '--format', '{{.Created}}'],
+      ['image', 'inspect', 'aulalab-kernel:' + kernelEnv, '--format', '{{.Created}}'],
       { timeoutMs: 700 },
     ),
     // The pid's liveness and uptime in one ps line, which exists on both macOS and Linux.
@@ -312,16 +312,16 @@ async function statusFacts(ctx: Ctx): Promise<Status> {
    * already taken from it, and calling this same class a "container" would
    * mean assembling two different servers on one line. The supervisor's dev
    * mode is started with `npm run dev` in a working tree: the CLI has no such
-   * command, and calling it `colloq dev` would send people to a word it does
+   * command, and calling it `aulalab dev` would send people to a word it does
    * not know. Then comes what happens on a laptop without a receipt: the
    * compose container app (`make up`) and a server that `make run` left in
-   * .colloq.pid. A systemd service and a cluster are forms of a dedicated
+   * .aulalab.pid. A systemd service and a cluster are forms of a dedicated
    * machine; the teacher's CLI does not have them.
    */
   const form = live
     ? live.mode === 'dev'
       ? 'npm run dev'
-      : 'colloq run'
+      : 'aulalab run'
     : appRunning
       ? 'container'
       : alive
@@ -367,7 +367,7 @@ async function statusFacts(ctx: Ctx): Promise<Status> {
      * the supervisor's number, doctor by its child's. While the class server
      * is not up yet, there is no number at all, and the line makes do with the
      * port and the time: showing the supervisor instead would bring back the
-     * same confusion. The number from .colloq.pid is printed only if ps
+     * same confusion. The number from .aulalab.pid is printed only if ps
      * confirmed it is alive: next to "container", a dead number from an
      * earlier `make run` would pass itself off as the container's server.
      */
@@ -380,7 +380,7 @@ async function statusFacts(ctx: Ctx): Promise<Status> {
     tunnel,
     tunnelPid,
     rooms,
-    image: 'colloq-kernel:' + kernelEnv,
+    image: 'aulalab-kernel:' + kernelEnv,
     imageAt,
     dockerNote,
     backupPath: backup ? joinPath(backupDir, backup.name) : '',
@@ -419,11 +419,11 @@ function renderStatus(ctx: Ctx, facts: Status): void {
   const empty =
     facts.form === '' && facts.rooms === 0 && facts.publicUrl === '' && facts.pid === null
   if (empty) {
-    ui.line('nothing is running · ' + ui.cyan('colloq run'))
+    ui.line('nothing is running · ' + ui.cyan('aulalab run'))
     return
   }
 
-  ui.header('Colloq · ' + (facts.envName || 'local'))
+  ui.header('Aula Lab · ' + (facts.envName || 'local'))
   serverLine(ctx, facts)
 
   // The client is the main line of the screen: a built panel newer than the
@@ -441,7 +441,7 @@ function renderStatus(ctx: Ctx, facts: Status): void {
         clock(facts.startedAt ?? 0) +
         ')',
     )
-    ui.hint('colloq restart')
+    ui.hint('aulalab restart')
   } else {
     ui.kv(SYMBOL.on + ' client', 'web/dist built ' + clock(facts.distAt))
   }
@@ -465,7 +465,7 @@ function renderStatus(ctx: Ctx, facts: Status): void {
       facts.image + ', built ' + day(facts.imageAt) + ' · rooms with a kernel: ' + facts.rooms,
     )
   }
-  ui.kv('  env', facts.kernelEnv, 'change: colloq env use <name>')
+  ui.kv('  env', facts.kernelEnv, 'change: aulalab env use <name>')
   backupLine(ctx, facts)
 }
 
@@ -478,7 +478,7 @@ function serverLine(ctx: Ctx, facts: Status, hint = true): void {
   const { ui } = ctx
   if (facts.form === '') {
     ui.kv(SYMBOL.off + ' server', 'not running · port ' + facts.port)
-    if (hint) ui.hint('colloq run')
+    if (hint) ui.hint('aulalab run')
     return
   }
   const parts: string[] = []
@@ -497,7 +497,7 @@ function publicLine(ctx: Ctx, facts: Status): void {
       SYMBOL.off + ' outside',
       'not published · ' + (facts.publicUrl || 'this machine') + ' only',
     )
-    ui.hint('colloq host <name>')
+    ui.hint('aulalab host <name>')
     return
   }
   const tail =
@@ -511,7 +511,7 @@ function publicLine(ctx: Ctx, facts: Status): void {
 function publicLineShort(ctx: Ctx, facts: Status): void {
   const host = hostOf(facts.publicUrl)
   if (facts.transport === '') {
-    ctx.ui.kv(SYMBOL.off + ' outside', 'not published · colloq host <name>')
+    ctx.ui.kv(SYMBOL.off + ' outside', 'not published · aulalab host <name>')
     return
   }
   const tail =
@@ -525,7 +525,7 @@ function backupLine(ctx: Ctx, facts: Status): void {
   const { ui } = ctx
   if (facts.backupAt === null) {
     ui.kv(SYMBOL.off + ' backup', 'no backups')
-    ui.hint('colloq backup')
+    ui.hint('aulalab backup')
     return
   }
   const name = facts.backupPath.split('/').pop() ?? facts.backupPath
@@ -565,7 +565,7 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
   const pidText = (io.readText(env.paths.pidFile) ?? '').trim()
   /*
    * The check-up goes by the port the class runs on, not by the one written in
-   * .env: `colloq run --port 4100` does not touch .env, and a check of port
+   * .env: `aulalab run --port 4100` does not touch .env, and a check of port
    * 3000 would answer "free" about a port the class has never laid eyes on.
    */
   const session = readSession(io, env.paths.sessionFile)
@@ -590,7 +590,7 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
     }),
     sh.capture(
       'docker',
-      ['image', 'inspect', 'colloq-kernel:' + kernelEnv, '--format', '{{.Created}}'],
+      ['image', 'inspect', 'aulalab-kernel:' + kernelEnv, '--format', '{{.Created}}'],
       { timeoutMs: 3000 },
     ),
     // LISTEN only: someone else's CLOSE_WAIT once already gave a false "port taken".
@@ -598,8 +598,8 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
     /*
      * We measure space on the volume of the STATE directory, not of the
      * application. Everything grows there: <home>/data, <home>/workspace,
-     * <home>/backups, <home>/.colloq.log, and the hint below itself asks to
-     * clean up backups/. For colloq installed through pip the directories
+     * <home>/backups, <home>/.aulalab.log, and the hint below itself asks to
+     * clean up backups/. For aulalab installed through pip the directories
      * differ, and may easily be on different volumes: the check-up showed the
      * free space under site-packages, while it was the data that ran out of
      * it.
@@ -649,15 +649,15 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
    * Whose listener this is; the answer used to be "always someone else's".
    *
    * The port is held by the server, and it is the supervisor's child;
-   * .colloq.pid holds the number of the supervisor ITSELF, and the comparison
+   * .aulalab.pid holds the number of the supervisor ITSELF, and the comparison
    * with it never matched. Live, during a healthy class, doctor printed "✗ port
-   * 3000 · taken: node pid 14552 — a second Colloq", advised colloq stop and
+   * 3000 · taken: node pid 14552 — a second Aula Lab", advised aulalab stop and
    * returned code 3, that is, told the teacher to stop their own class.
    *
    * Both of our numbers come from the receipt: serverPid is the one listening
    * now, the supervisor's pid is the one that will turn out to be the
    * listener if the server was restarted and the receipt has not been
-   * rewritten yet. .colloq.pid stays the third: without a receipt `make run`
+   * rewritten yet. .aulalab.pid stays the third: without a receipt `make run`
    * writes it in a working tree, and it holds the number of the server itself.
    */
   const ourPids = new Set<number>()
@@ -679,8 +679,8 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
           ? 'free'
           : ours
             ? 'our server is listening, pid ' + listener.pid
-            : 'taken: ' + listener.name + ' pid ' + listener.pid + ' — a second Colloq',
-    hint: 'colloq stop · colloq status (never pkill by name)',
+            : 'taken: ' + listener.name + ' pid ' + listener.pid + ' — a second Aula Lab',
+    hint: 'aulalab stop · aulalab status (never pkill by name)',
   })
 
   add({
@@ -689,12 +689,12 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
     ok: image.code === 0,
     optional: false,
     value:
-      image.code === 0 ? 'colloq-kernel:' + kernelEnv : 'no colloq-kernel:' + kernelEnv + ' image',
+      image.code === 0 ? 'aulalab-kernel:' + kernelEnv : 'no aulalab-kernel:' + kernelEnv + ' image',
     hint: KERNEL_IMAGE_FIX,
   })
 
   /*
-   * The environment list is looked for in BOTH directories, as in `colloq env
+   * The environment list is looked for in BOTH directories, as in `aulalab env
    * list`.
    *
    * Looking only into the shipped one would mean saying "no
@@ -715,7 +715,7 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
       envFileAt === ''
         ? 'no ' + kernelEnv + '.txt list in either environment directory'
         : kernelEnv + '.txt in place' + (envFileAt === ownEnvFile ? ' · your own' : ''),
-    hint: 'colloq env list · colloq env new <name>',
+    hint: 'aulalab env list · aulalab env new <name>',
   })
 
   const distNames = io.list(env.paths.dist)
@@ -742,7 +742,7 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
   /*
    * Both programs are installed by hand, and the advice is the same words
    * scripts/host.sh refuses with when it does not find them: doctor and
-   * `colloq host` share it.
+   * `aulalab host` share it.
    */
   const wantRelay = relay.domain !== ''
   add({
@@ -764,7 +764,7 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
     optional: true,
     value: found.has('cloudflared')
       ? 'present'
-      : 'missing — the quick tunnel will not start (not needed for *.colloq.ru)',
+      : 'missing — the quick tunnel will not start (not needed for *.example.edu)',
     hint: 'brew install cloudflared',
   })
 
@@ -799,7 +799,7 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
    * The room network is a check of a setting, not words. By default the
    * kernels do not reach local addresses (the LAN, the router, the computer
    * itself, cloud metadata; server/src/kernel/perimeter.ts), and that is ✓.
-   * COLLOQ_ROOM_NETWORK=open lifts the block: ○, as with any switched-off
+   * AULALAB_ROOM_NETWORK=open lifts the block: ○, as with any switched-off
    * capability: it does not count as an error (so decided whoever wrote the
    * line), but it is said out loud before every class. Whether the block
    * actually took effect doctor does not know and does not ask: that is
@@ -808,7 +808,7 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
    */
   // `none` is the stricter setting, and says so: no internet and no DNS either,
   // so `pip install` in a cell fails (perimeter.ts · roomNetworkMode).
-  const roomNetwork = env.read('COLLOQ_ROOM_NETWORK').trim().toLowerCase()
+  const roomNetwork = env.read('AULALAB_ROOM_NETWORK').trim().toLowerCase()
   const roomNetworkOpen = roomNetwork === 'open'
   add({
     id: 'room-network',
@@ -816,11 +816,11 @@ async function doctorChecks(ctx: Ctx): Promise<Check[]> {
     ok: !roomNetworkOpen,
     optional: true,
     value: roomNetworkOpen
-      ? 'open (COLLOQ_ROOM_NETWORK=open): rooms reach your LAN, router and this computer'
+      ? 'open (AULALAB_ROOM_NETWORK=open): rooms reach your LAN, router and this computer'
       : roomNetwork === 'none'
-        ? 'none (COLLOQ_ROOM_NETWORK=none): rooms reach nothing, not even the internet or DNS'
+        ? 'none (AULALAB_ROOM_NETWORK=none): rooms reach nothing, not even the internet or DNS'
         : 'local addresses blocked: LAN, router, this computer, cloud metadata',
-    hint: 'remove COLLOQ_ROOM_NETWORK=open from .env, then colloq restart',
+    hint: 'remove AULALAB_ROOM_NETWORK=open from .env, then aulalab restart',
   })
 
   // The last line is the perimeter. It is not a check: there is nothing to fix
@@ -869,20 +869,20 @@ export const commands: Command[] = [
     aliases: ['st'],
     group: 'tools',
     summary: 'Show what is on this machine right now: one screen, no network',
-    usage: 'colloq status [--short] [--json]',
+    usage: 'aulalab status [--short] [--json]',
     flags: [
       { name: 'short', summary: 'Two lines: the server and the outside' },
       { name: 'json', summary: 'Machine-readable' },
     ],
     destructive: false,
     delegates:
-      'native: .colloq/local-session.json, .env, .colloq.pid, ps, docker ps, web/dist, backups/',
-    examples: ['colloq status', 'colloq status --short'],
+      'native: .aulalab/local-session.json, .env, .aulalab.pid, ps, docker ps, web/dist, backups/',
+    examples: ['aulalab status', 'aulalab status --short'],
     notes:
-      'Reading only, and no network at all. The port, the address and the server pid come from the receipt of the class that is running, and only when there is no receipt — from .env: `colloq run --port 4100` writes nothing into .env. Under the "server" label stands the pid of the server, not of the supervisor: the same one doctor names as the listener on the port. Docker is asked once, with a ceiling of 0.7s — no answer means one line about docker, and the screen prints on.',
+      'Reading only, and no network at all. The port, the address and the server pid come from the receipt of the class that is running, and only when there is no receipt — from .env: `aulalab run --port 4100` writes nothing into .env. Under the "server" label stands the pid of the server, not of the supervisor: the same one doctor names as the listener on the port. Docker is asked once, with a ceiling of 0.7s — no answer means one line about docker, and the screen prints on.',
     async run(ctx) {
       if (ctx.dryRun) {
-        return ctx.sh.dry('native: status (reads the class receipt, .env, .colloq.pid, docker ps)')
+        return ctx.sh.dry('native: status (reads the class receipt, .env, .aulalab.pid, docker ps)')
       }
       const facts = await statusFacts(ctx)
       if (ctx.json) {
@@ -933,11 +933,11 @@ export const commands: Command[] = [
     name: 'doctor',
     group: 'tools',
     summary: 'Check that everything is in place before a class',
-    usage: 'colloq doctor [--json]',
+    usage: 'aulalab doctor [--json]',
     flags: [{ name: 'json', summary: 'Machine-readable' }],
     destructive: false,
     delegates: 'native: programs, docker, the port, the kernel image, files, disk space',
-    examples: ['colloq doctor', 'colloq doctor --json'],
+    examples: ['aulalab doctor', 'aulalab doctor --json'],
     notes:
       '✗ — broken, fix it; ○ — a capability is switched off, and that is not an error. Out of .env only the port and the kernel environment are printed; keys are only "present / missing". The port that gets checked is the one the class runs on (from the receipt), and its listener counts as ours by the pids of the server and of the supervisor. No network at all. Code 3 if there is at least one ✗. The last line is about the perimeter: it checks nothing and does not change the code, it says how a local class differs from a server installation.',
     async run(ctx) {

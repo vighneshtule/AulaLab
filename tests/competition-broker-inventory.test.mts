@@ -10,7 +10,7 @@ import { createCompetition } from '../server/src/competitions/store.js'
 import { putRevision, selectRevision, competitionRevision } from '../server/src/dependencies/store.js'
 
 test('broker inventory stores full pinned catalog image and installed package list',async()=>{
-  const image=`registry.test/colloq/base@sha256:${'b'.repeat(64)}`
+  const image=`registry.test/aulalab/base@sha256:${'b'.repeat(64)}`
   const catalog=path.join(TEST_ROOT,'catalog-inventory.json')
   fs.writeFileSync(catalog,JSON.stringify({schemaVersion:1,release:'r',defaultEnvironment:'base',environments:[{name:'base',image,gpu:false,current:true}]}))
   const old={COMPETITION_BACKEND:process.env.COMPETITION_BACKEND,KERNEL_BACKEND:process.env.KERNEL_BACKEND,KERNEL_ISOLATION:process.env.KERNEL_ISOLATION,KERNEL_RUNTIME_URL:process.env.KERNEL_RUNTIME_URL,KERNEL_RUNTIME_TOKEN:process.env.KERNEL_RUNTIME_TOKEN,KERNEL_CATALOG_FILE:process.env.KERNEL_CATALOG_FILE}
@@ -44,7 +44,7 @@ test('broker inventory stores full pinned catalog image and installed package li
 })
 
 test('broker selects current catalog revision when competition retained a local Docker digest',async()=>{
-  const image=`registry.test/colloq/base@sha256:${'c'.repeat(64)}`
+  const image=`registry.test/aulalab/base@sha256:${'c'.repeat(64)}`
   const catalog=path.join(TEST_ROOT,'catalog-refresh.json')
   fs.writeFileSync(catalog,JSON.stringify({schemaVersion:1,release:'r',defaultEnvironment:'base',environments:[{name:'base',image,gpu:false,current:true}]}))
   const oldBackend=process.env.COMPETITION_BACKEND,oldCatalog=process.env.KERNEL_CATALOG_FILE

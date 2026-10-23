@@ -43,5 +43,5 @@ test('a directory created before us with someone else\'s umask gets fixed instea
 })
 
 test('the database lies inside it and is closed itself', () => {
-  assert.equal(modeOf(path.join(config.dataDir, 'colloq.db')).toString(8), '600')
+  assert.equal(modeOf(path.join(config.dataDir, 'aulalab.db')).toString(8), '600')
 })

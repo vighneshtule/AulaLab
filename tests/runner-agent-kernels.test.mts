@@ -98,7 +98,7 @@ function fakeImages(events: string[]) {
 /** One step of what docker was asked, in words a test compares. */
 function step(args: string[]): string {
   if (args[0] === 'run' && args.includes('--privileged')) return 'helper'
-  if (args[0] === 'run' && args.some((arg) => arg.startsWith('colloq-runner-canary-'))) return 'canary'
+  if (args[0] === 'run' && args.some((arg) => arg.startsWith('aulalab-runner-canary-'))) return 'canary'
   if (args[0] === 'run' && args.includes(CLASS_KERNEL_LABEL)) return 'run'
   if (args[0] === 'inspect' && args[1] === '--type' && args[4]?.startsWith('{{.Id}}')) return 'inspect name'
   if (args[0] === 'inspect' && args[1] === '--format' && args[2]?.startsWith('{{.Name}}')) return 'census inspect'
@@ -130,7 +130,7 @@ function rig(partial: Partial<KernelHostOptions> = {}, shared?: Pick<Rig, 'layou
   }
   const state: Rig['state'] = { disk: 500_000, cards: [], runs: [], heard: clock.now, probes: 0, diskLow: 0, probe: async () => true }
   const host: KernelHost = new KernelHost({
-    layout, docker, images, container: 'colloq-runner', image: null, env: {},
+    layout, docker, images, container: 'aulalab-runner', image: null, env: {},
     cards: () => state.cards,
     cardRuns: () => [...state.runs, ...host.cardRuns()],
     heldGpus: () => ({}),
@@ -196,7 +196,7 @@ test('a class container starts in the order of §7.2, and is said ready with the
     role: 'room', sessionId: 's1', environment: 'base', image: revisionImage(REVISION.id), mount: path.join(r.layout.roomsDir, 's1'), extraMounts: [],
     gpu: null, memoryMb: 4096, cpus: 2, pids: 512, mode: 'blocked', profile: '1', token: TOKEN, hashSeed: 7, shm: '1g',
   }, { instanceLabel: INSTANCE_LABEL, gen: 1 }))
-  assert.ok(container.labels.includes('colloq.placement=s1:room:1') && container.labels.includes(INSTANCE_LABEL) && container.labels.includes(CLASS_KERNEL_LABEL))
+  assert.ok(container.labels.includes('aulalab.placement=s1:room:1') && container.labels.includes(INSTANCE_LABEL) && container.labels.includes(CLASS_KERNEL_LABEL))
   // Written down, under its slot's name, with what docker made of it.
   assert.ok(fs.existsSync(path.join(r.layout.placementsDir, 's1-room.json')))
   const [record] = readPlacements(r.layout)
@@ -225,7 +225,7 @@ test('the ready echo is the digest of the revision the container was made from, 
   await ready(r)
   r.events.length = 0
   // An intent of the same gen naming another pin: the live container is no other image for it, and home's check says so.
-  const repinned = `ghcr.io/colloq-edu/colloq-kernel@sha256:${'9'.repeat(64)}`
+  const repinned = `ghcr.io/vighneshtule/aulalab-kernel@sha256:${'9'.repeat(64)}`
   r.host.reconcile(reply([intent({ revision: { id: REVISION.id, ref: repinned, layers: LAYERS } })]))
   await r.host.idle()
   assert.equal(said(r.host).placements[0]!.revision, remoteRevisionDigest(REVISION.ref))
@@ -284,7 +284,7 @@ test('a GPU room takes a whole card no run holds, before its perimeter, and ever
   r.state.runs = [{ device: '0', perDevice: 2 }]
   await ready(r, [intent({ gpu: true })])
   const container = r.docker.classes.get(nameOf('s1:room'))!
-  assert.ok(container.args.includes('device=1') && container.args.includes('colloq.gpu=1') && container.args.includes('--shm-size=1g'), container.args.join(' '))
+  assert.ok(container.args.includes('device=1') && container.args.includes('aulalab.gpu=1') && container.args.includes('--shm-size=1g'), container.args.join(' '))
   assert.deepEqual(r.host.cardRuns(), [{ device: '1', perDevice: 1 }])
   assert.deepEqual(said(r.host).placements[0]!.card, { device: '1', usedMb: null })
   // The sync's cards: card 1 has every share busy, and only card 0's last share is free.
@@ -311,7 +311,7 @@ test('a GPU room takes a whole card no run holds, before its perimeter, and ever
 test('a perimeter that is not in place fails the start closed, and says why in the facts', async () => {
   for (const [code, perimeter] of [[21, 'no-iptables'], [20, 'no-dockerd'], [22, 'refused']] as const) {
     const r = rig()
-    r.docker.perimeter = { code, out: 'colloq-perimeter: no DOCKER-USER chain' }
+    r.docker.perimeter = { code, out: 'aulalab-perimeter: no DOCKER-USER chain' }
     r.host.reconcile(reply([intent()]))
     await r.host.idle()
     assert.equal(r.host.facts().perimeter, perimeter)
@@ -337,7 +337,7 @@ test('the helper runs from the agent\'s own image by its id, with home\'s floor 
   const script = r.docker.helperScripts.at(-1)!
   for (const range of ['203.0.113.0/24', '198.51.100.0/24']) assert.ok(script.includes(`-d ${range} -j ${SCOPE.chains}-DENY`), range)
   assert.ok(script.includes(`-s ${r.docker.networks.get(SCOPE.network)}`), 'the rules fence another subnet than the bridge has')
-  assert.ok(script.includes(`--comment ${SCOPE.tag}`) && !script.includes('COLLOQ-ROOMS'), 'the machine\'s rules went under home\'s names')
+  assert.ok(script.includes(`--comment ${SCOPE.tag}`) && !script.includes('AULALAB-ROOMS'), 'the machine\'s rules went under home\'s names')
   // The bridge is the agent's own, made with its labels.
   const made = r.docker.calls.find((args) => args[0] === 'network' && args[1] === 'create')!
   assert.equal(made.at(-1), SCOPE.network)
@@ -352,7 +352,7 @@ test('the helper runs from the agent\'s own image by its id, with home\'s floor 
   // The facts' mode is the machine's own floor, not the last plan's: home's mode rides each intent, and a `none` home must not
   // find every `blocked` machine short of its floor before it ever placed a class there.
   assert.equal(strict.host.facts().mode, 'blocked')
-  const own = rig({ env: { COLLOQ_ROOM_NETWORK: 'none' } })
+  const own = rig({ env: { AULALAB_ROOM_NETWORK: 'none' } })
   assert.equal(own.host.facts().mode, 'none', 'a machine whose owner keeps classes off the internet said otherwise before any intent')
 })
 
@@ -480,7 +480,7 @@ test('a removal that arrives during a start is finished by the start: what it ma
   r.host.reconcile(reply([intent({ gen: 2 })]))
   await r.host.idle()
   assert.deepEqual(said(r.host).placements.map((entry) => [entry.key, entry.gen, entry.phase]), [['s1:room', 2, 'ready']])
-  assert.ok(r.docker.classes.get(nameOf('s1:room'))!.labels.includes('colloq.placement=s1:room:2'))
+  assert.ok(r.docker.classes.get(nameOf('s1:room'))!.labels.includes('aulalab.placement=s1:room:2'))
   assert.equal(readPlacements(r.layout)[0]!.intent.gen, 2)
 })
 
@@ -537,10 +537,10 @@ test('after the agent\'s restart its class containers are adopted as they run, a
   const room = first.docker.classes.get(nameOf('s1:room'))!
   first.host.stop()
   // Left by others: a container of no placement, one of a gen no record has, and a record whose container is gone.
-  classContainer(first.docker, { name: nameOf('ghost:room'), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'colloq.placement=ghost:room:1'] })
-  first.docker.classes.get(nameOf('s1:own'))!.labels = [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'colloq.placement=s1:own:7']
+  classContainer(first.docker, { name: nameOf('ghost:room'), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'aulalab.placement=ghost:room:1'] })
+  first.docker.classes.get(nameOf('s1:own'))!.labels = [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'aulalab.placement=s1:own:7']
   // Another tree's class container on the same daemon is that agent's, never this one's.
-  const theirs = classContainer(first.docker, { name: 'colloq-class-ffffff-s9-room', labels: [CLASS_KERNEL_LABEL, 'ru.colloq.competition-instance=ffffffffffffffff', 'colloq.placement=s9:room:1'] })
+  const theirs = classContainer(first.docker, { name: 'aulalab-class-ffffff-s9-room', labels: [CLASS_KERNEL_LABEL, 'ru.aulalab.competition-instance=ffffffffffffffff', 'aulalab.placement=s9:room:1'] })
 
   const second = rig({}, first)
   await second.host.adopt()
@@ -644,7 +644,7 @@ test('the 0.23 sweeps never touch class containers: the Docker runner\'s and the
     useDockerForCompetitions(null)
   }
   assert.equal(r.docker.classes.get(nameOf('s1:room')), room, 'the Docker runner\'s sweep took a class container')
-  for (const label of ['colloq.kind=competition-run', 'colloq.kind=competition-score', 'colloq.kind=runner-check']) assert.ok(!room.labels.includes(label), label)
+  for (const label of ['aulalab.kind=competition-run', 'aulalab.kind=competition-score', 'aulalab.kind=runner-check']) assert.ok(!room.labels.includes(label), label)
 })
 
 /* ----------------------------------------------------------------- census */
@@ -750,7 +750,7 @@ test('while class containers live the perimeter is installed again every minute,
   await r.host.tick()
   assert.equal(helpers(), before + 1)
   // The helper fails: twice is a warning, the third time every class container goes and the facts say `failing`.
-  r.docker.perimeter = { code: 22, out: 'colloq-perimeter: iptables-restore refused the rules' }
+  r.docker.perimeter = { code: 22, out: 'aulalab-perimeter: iptables-restore refused the rules' }
   for (let round = 1; round <= PERIMETER_FAILURES_MAX; round++) {
     r.clock.now += KERNEL_TIMINGS.recheckMs
     await r.host.tick()
@@ -767,7 +767,7 @@ test('while class containers live the perimeter is installed again every minute,
   assert.equal(r.docker.classes.size, 0)
   assert.equal(r.host.facts().perimeter, 'failing')
   // The rules hold again: `ok`, and home's next ask starts the class anew.
-  r.docker.perimeter = { code: 0, out: 'colloq-perimeter: ok' }
+  r.docker.perimeter = { code: 0, out: 'aulalab-perimeter: ok' }
   r.clock.now += KERNEL_TIMINGS.retryMs.last
   await r.host.tick()
   await r.host.idle()
@@ -810,34 +810,34 @@ test('home silent about its classes for the idle time stops only containers idle
 
 test('the canary\'s word: ok when every check held, the failed ones named otherwise', () => {
   const all = Object.fromEntries(CANARY_CHECKS.map((check) => [check, true]))
-  assert.equal(parseCanary(`[I] noise\ncolloq-canary: ${JSON.stringify(all)}\n`), 'ok')
-  assert.equal(parseCanary(`colloq-canary: ${JSON.stringify({ ...all, hostRefused: false, ipv6Refused: 'yes' })}`), 'failed: hostRefused, ipv6Refused')
-  assert.equal(parseCanary(`colloq-canary: ${JSON.stringify({ uid: true })}`).startsWith('failed: capEff, noNewPrivs'), true)
+  assert.equal(parseCanary(`[I] noise\naulalab-canary: ${JSON.stringify(all)}\n`), 'ok')
+  assert.equal(parseCanary(`aulalab-canary: ${JSON.stringify({ ...all, hostRefused: false, ipv6Refused: 'yes' })}`), 'failed: hostRefused, ipv6Refused')
+  assert.equal(parseCanary(`aulalab-canary: ${JSON.stringify({ uid: true })}`).startsWith('failed: capEff, noNewPrivs'), true)
   assert.match(parseCanary('Traceback (most recent call last):\nPermissionError: denied'), /^failed: the canary said nothing readable \(PermissionError: denied\)$/)
-  assert.match(parseCanary('colloq-canary: {not json'), /^failed: the canary said nothing readable/)
+  assert.match(parseCanary('aulalab-canary: {not json'), /^failed: the canary said nothing readable/)
   assert.ok(parseCanary(`x\n${'y'.repeat(1000)}`).length <= 300)
 })
 
 test('the canary is a Python the class images run, and checks from the inside what §7.6 lists', (t) => {
   const python = spawnSync('python3', ['--version'])
   if (python.error || python.status !== 0) return t.skip('no python3 here')
-  const script = canaryScript({ seed: 'abc', ports: [41_001, 41_002], lan: ['192.168.1.10'], state: '/var/lib/colloq-runner' })
+  const script = canaryScript({ seed: 'abc', ports: [41_001, 41_002], lan: ['192.168.1.10'], state: '/var/lib/aulalab-runner' })
   // Parsed by Python itself, not run: what it reads exists in a class container, not here.
   const parsed = spawnSync('python3', ['-I', '-c', 'import ast, sys; ast.parse(sys.stdin.read())'], { input: script })
   assert.equal(parsed.status, 0, parsed.stderr.toString())
   for (const check of CANARY_CHECKS) assert.ok(script.includes(`r["${check}"]`), check)
-  for (const needle of ['169.254.169.254', '/var/run/docker.sock', '/var/lib/colloq-runner', '192.168.1.10', '41001', '41002', 'AF_INET6', '/workspace/canary/seed']) assert.ok(script.includes(needle), needle)
+  for (const needle of ['169.254.169.254', '/var/run/docker.sock', '/var/lib/aulalab-runner', '192.168.1.10', '41001', '41002', 'AF_INET6', '/workspace/canary/seed']) assert.ok(script.includes(needle), needle)
 })
 
 test('the canary runs with the class\'s hardening behind the class bridge, and a folder that does not take a file both ways fails it', async () => {
   const r = rig()
-  r.docker.canary = { code: 0, out: `colloq-canary: ${JSON.stringify(Object.fromEntries(CANARY_CHECKS.map((check) => [check, true])))}` }
+  r.docker.canary = { code: 0, out: `aulalab-canary: ${JSON.stringify(Object.fromEntries(CANARY_CHECKS.map((check) => [check, true])))}` }
   r.host.reconcile(reply([]))
   await r.host.idle()
   // Its own fake said every check held, and wrote nothing back into the folder: the agent's own look says no.
   assert.equal(r.host.facts().canary, 'failed: folderRoundTrip')
   const canary = r.docker.calls.find((args) => step(args) === 'canary')!
-  for (const flag of ['--user=1000:1000', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--pull=never', 'colloq.kind=runner-check', INSTANCE_LABEL]) assert.ok(canary.includes(flag), flag)
+  for (const flag of ['--user=1000:1000', '--cap-drop=ALL', '--security-opt=no-new-privileges', '--pull=never', 'aulalab.kind=runner-check', INSTANCE_LABEL]) assert.ok(canary.includes(flag), flag)
   assert.equal(canary[canary.indexOf('--network') + 1], SCOPE.network)
   // One folder in it, the canary's own: no socket, no tree of the agent's.
   assert.deepEqual(canary.flatMap((arg, i) => (canary[i - 1] === '-v' ? [arg.split(':')[1]] : [])), ['/workspace/canary'])
@@ -861,10 +861,10 @@ test('host networking is read from the agent\'s own container, and an agent off 
   await off.host.idle()
   assert.equal(off.host.facts().hostNetwork, false)
   assert.match(off.host.facts().canary, /^not run: the agent is not on the host's network/)
-  assert.ok(off.docker.calls.some((args) => args.join(' ') === 'inspect --type container --format {{.HostConfig.NetworkMode}} colloq-runner'))
+  assert.ok(off.docker.calls.some((args) => args.join(' ') === 'inspect --type container --format {{.HostConfig.NetworkMode}} aulalab-runner'))
   assert.ok(!off.docker.calls.some((args) => step(args) === 'run' || step(args) === 'canary'))
   // No container of its own (make runner-dev): a process on the host, which is that network.
-  const dev = rig({ container: null, image: 'ghcr.io/colloq-edu/colloq-server:0.25.0' })
+  const dev = rig({ container: null, image: 'ghcr.io/vighneshtule/aulalab-server:0.25.0' })
   dev.host.reconcile(reply([]))
   await dev.host.idle()
   assert.equal(dev.host.facts().hostNetwork, true)
@@ -872,7 +872,7 @@ test('host networking is read from the agent\'s own container, and an agent off 
   assert.equal(dev.host.facts().canary, 'ok')
 })
 
-test('a Colloq home on this docker takes the machine out of classes (D20): no perimeter of the machine\'s on it, no class', async () => {
+test('a Aula Lab home on this docker takes the machine out of classes (D20): no perimeter of the machine\'s on it, no class', async () => {
   // Each sign on its own: its server's container, or — a home on the host itself (make dev, the pip CLI) — only its rooms or their network.
   for (const sign of ['homeHere', 'homeRoomsHere', 'homeNetworkHere'] as const) {
     const r = rig()
@@ -880,7 +880,7 @@ test('a Colloq home on this docker takes the machine out of classes (D20): no pe
     r.host.reconcile(reply([intent()]))
     await r.host.idle()
     assert.equal(r.host.facts().sameDaemon, true, sign)
-    assert.match(r.host.facts().canary, /^not run: a Colloq home runs on this Docker/, sign)
+    assert.match(r.host.facts().canary, /^not run: a Aula Lab home runs on this Docker/, sign)
     assert.equal(said(r.host).placements[0]!.phase, 'failed', sign)
     assert.ok(!r.docker.calls.some((args) => step(args) === 'run' || step(args) === 'helper'), sign)
   }
@@ -888,13 +888,13 @@ test('a Colloq home on this docker takes the machine out of classes (D20): no pe
 
 test('a docker that does not say whether a home runs on it is taken for one: the facts keep classes off, as the start does', async () => {
   const r = rig()
-  r.docker.intercept = (args) => (args[0] === 'ps' && args.includes('label=colloq.kind=app') ? { code: 1, out: 'Error response from daemon: context deadline exceeded' } : undefined)
+  r.docker.intercept = (args) => (args[0] === 'ps' && args.includes('label=aulalab.kind=app') ? { code: 1, out: 'Error response from daemon: context deadline exceeded' } : undefined)
   r.host.reconcile(reply([intent()]))
   await r.host.idle()
   assert.equal(r.host.facts().sameDaemon, true, 'an unknown answer read as no home on this docker')
   const held = said(r.host).placements[0]!
   assert.equal(held.phase, 'failed')
-  assert.match(held.failure!.detail!, /did not say whether a Colloq home runs/)
+  assert.match(held.failure!.detail!, /did not say whether a Aula Lab home runs/)
 })
 
 test('the port is the host\'s loopback one, and nothing else is taken for it', () => {
@@ -907,9 +907,9 @@ test('the port is the host\'s loopback one, and nothing else is taken for it', (
 test('a revocation, a leave or another home removes every class container of the tree and every class folder', async () => {
   const r = await activated()
   await ready(r, [intent(), intent({ key: 's1:own' })])
-  const theirs = classContainer(r.docker, { name: 'colloq-class-ffffff-s9-room', labels: [CLASS_KERNEL_LABEL, 'ru.colloq.competition-instance=ffffffffffffffff', 'colloq.placement=s9:room:1'] })
+  const theirs = classContainer(r.docker, { name: 'aulalab-class-ffffff-s9-room', labels: [CLASS_KERNEL_LABEL, 'ru.aulalab.competition-instance=ffffffffffffffff', 'aulalab.placement=s9:room:1'] })
   // One an earlier life left that no record names: by docker's list, not the records.
-  classContainer(r.docker, { name: nameOf('old:own'), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'colloq.placement=old:own:3'] })
+  classContainer(r.docker, { name: nameOf('old:own'), labels: [CLASS_KERNEL_LABEL, INSTANCE_LABEL, 'aulalab.placement=old:own:3'] })
   await r.host.removeAll('home revoked this machine')
   assert.deepEqual([...r.docker.classes.values()], [theirs])
   assert.ok(!fs.existsSync(r.layout.roomsDir) && !fs.existsSync(r.layout.placementsDir))
@@ -1049,7 +1049,7 @@ test('an exited container made with other hardening is made anew, never started 
     room.status = 'exited'
     if (older === 'label') {
       // Its label names an earlier profile, whatever its record says.
-      room.labels = room.labels.map((label) => (label.startsWith('colloq.profile=') ? 'colloq.profile=0' : label))
+      room.labels = room.labels.map((label) => (label.startsWith('aulalab.profile=') ? 'aulalab.profile=0' : label))
     } else {
       // Its record is an earlier build's: that digest knew nothing of the profile or of the flags a machine adds.
       const file = path.join(first.layout.placementsDir, 's1-room.json')
@@ -1066,7 +1066,7 @@ test('an exited container made with other hardening is made anew, never started 
     assert.ok(second.events.includes('run') && !second.events.includes('start'), `${older}: ${second.events.join(' · ')}`)
     const made = second.docker.classes.get(nameOf('s1:room'))!
     assert.notEqual(made.id, room.id)
-    assert.ok(made.labels.includes(`colloq.profile=${profileFor('blocked')}`))
+    assert.ok(made.labels.includes(`aulalab.profile=${profileFor('blocked')}`))
   }
 })
 
@@ -1149,7 +1149,7 @@ test('a death home asked about before the census saw it is that question\'s, and
 test('three failures of the perimeter in a row means in a row: an install that held between them starts the count again', async () => {
   const r = await activated()
   await ready(r)
-  const fail = { code: 22, out: 'colloq-perimeter: iptables-restore refused the rules' }
+  const fail = { code: 22, out: 'aulalab-perimeter: iptables-restore refused the rules' }
   r.docker.perimeter = fail
   for (let round = 1; round < PERIMETER_FAILURES_MAX; round++) {
     r.clock.now += KERNEL_TIMINGS.recheckMs
@@ -1157,7 +1157,7 @@ test('three failures of the perimeter in a row means in a row: an install that h
     await r.host.idle()
   }
   // The rules hold again for the start of another class (no re-check of its own ran): the streak is broken.
-  r.docker.perimeter = { code: 0, out: 'colloq-perimeter: ok' }
+  r.docker.perimeter = { code: 0, out: 'aulalab-perimeter: ok' }
   r.clock.now += KERNEL_TIMINGS.recheckMs
   await ready(r, [intent(), intent({ key: 's2:room' })])
   r.docker.perimeter = fail
@@ -1172,7 +1172,7 @@ test('a perimeter that failed closed holds what docker would not remove, says it
   const r = await activated()
   await ready(r)
   const room = r.docker.classes.get(nameOf('s1:room'))!
-  r.docker.perimeter = { code: 22, out: 'colloq-perimeter: iptables-restore refused the rules' }
+  r.docker.perimeter = { code: 22, out: 'aulalab-perimeter: iptables-restore refused the rules' }
   // A wedged daemon (which may be why the helper fails): it refuses to remove the class container.
   let refuse = true
   r.docker.intercept = (args) => {

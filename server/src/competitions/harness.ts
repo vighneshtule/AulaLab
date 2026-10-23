@@ -442,7 +442,7 @@ def prepare_dependencies() -> str:
     # it the set shares the working folder's, as it used to — and a set of
     # 300 MB never fit into the 256 MB a 2 GB submission gives that folder.
     root = Path(os.environ.get("COMP_PACKAGES") or OUT)
-    environment = root / ".colloq-venv"
+    environment = root / ".aulalab-venv"
     # Reuse base pip to avoid copying its wheels into every temporary venv.
     try:
         venv.EnvBuilder(system_site_packages=True, with_pip=False).create(environment)
@@ -459,14 +459,14 @@ def prepare_dependencies() -> str:
     ], root)
     # An existing base python3 kernelspec may contain an absolute base Python.
     # Use a distinct spec with an absolute venv interpreter; PATH is insufficient.
-    kernel_name = "colloq-dependencies"
+    kernel_name = "aulalab-dependencies"
     jupyter_data = Path(os.environ.get("JUPYTER_DATA_DIR") or str(OUT / ".jupyter"))
     os.environ["JUPYTER_DATA_DIR"] = str(jupyter_data)
     kernel_dir = jupyter_data / "kernels" / kernel_name
     kernel_dir.mkdir(parents=True, exist_ok=True)
     (kernel_dir / "kernel.json").write_text(json.dumps({
         "argv": [str(python), "-m", "ipykernel_launcher", "-f", "{connection_file}"],
-        "display_name": "Colloq dependency environment",
+        "display_name": "Aula Lab dependency environment",
         "language": "python",
     }), encoding="utf-8")
     return kernel_name
@@ -653,7 +653,7 @@ const KERNEL_STREAMS = String.raw`# A line printed in a cell leaves the kernel b
 # participant's namespace, and a docstring would become their __doc__.
 
 
-def _colloq_lines_at_once():
+def _aulalab_lines_at_once():
     import sys
     # Bound once: a notebook that mocks time.monotonic or os.getpid for its own
     # tests must not change what happens to its output.
@@ -703,10 +703,10 @@ def _colloq_lines_at_once():
 
 
 try:
-    _colloq_lines_at_once()
+    _aulalab_lines_at_once()
 except Exception:  # noqa: BLE001
     pass
-del _colloq_lines_at_once
+del _aulalab_lines_at_once
 `
 
 /**
@@ -718,7 +718,7 @@ del _colloq_lines_at_once
  * `kaggle_metric_utilities`): the teacher must be able to say "this is for the
  * participant" unambiguously, not guess which wording will leak outside.
  */
-const COLLOQ_METRIC = `"""What the metric code imports from us."""
+const AULALAB_METRIC = `"""What the metric code imports from us."""
 
 
 class ParticipantVisibleError(Exception):
@@ -742,7 +742,7 @@ class ParticipantVisibleError(Exception):
  * which is what is done, and what has already caught a drifted seed
  * separator.
  */
-const COLLOQ_SPLIT = `"""Splitting answer rows: a copy of the @shared/competitions rule."""
+const AULALAB_SPLIT = `"""Splitting answer rows: a copy of the @shared/competitions rule."""
 
 from __future__ import annotations
 
@@ -866,8 +866,8 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent))
-from colloq_metric import ParticipantVisibleError  # noqa: E402
-from colloq_split import split_by_usage, split_rows  # noqa: E402
+from aulalab_metric import ParticipantVisibleError  # noqa: E402
+from aulalab_split import split_by_usage, split_rows  # noqa: E402
 
 SOLUTION = Path(os.environ.get("COMP_SOLUTION", "/secret/solution.csv"))
 SUBMISSION = Path(os.environ.get("COMP_SUBMISSION", "/submission/submission.csv"))
@@ -901,7 +901,7 @@ def whole_spelling(value):
 
 def load_metric():
     """The teacher's code as a module — no exec(), no shared namespace."""
-    spec = importlib.util.spec_from_file_location("colloq_teacher_metric", METRIC)
+    spec = importlib.util.spec_from_file_location("aulalab_teacher_metric", METRIC)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load metric from {METRIC}")
     module = importlib.util.module_from_spec(spec)
@@ -1332,7 +1332,7 @@ else:
 // Python: the soft half of the share (competitions/gpu.ts explains the two
 // halves; the hard one is docker-runner.ts · VramWatch). It lies in a
 // directory of its own, `site/`, because that directory goes on PYTHONPATH:
-// the whole harness there would make run_notebook, colloq_metric and the rest
+// the whole harness there would make run_notebook, aulalab_metric and the rest
 // importable by name from the participant's notebook, and shadow whatever of
 // theirs is called the same. The torch cap is the draft tried on the lab VM on
 // 13 Oct 2026 (2 × RTX 4090): with a 4096 MB share the 17th allocation of 256
@@ -1342,11 +1342,11 @@ else:
 // took the cap away; and CatBoost's GPU pool, sized as a part of the card and
 // never seen by torch, would take nearly all of it. Both are checked against
 // stand-in packages under a real python (tests/competition-gpu-runs.test.mts).
-const SITECUSTOMIZE = `"""Colloq: a submission's share of a shared video card, held inside its own Python.
+const SITECUSTOMIZE = `"""Aula Lab: a submission's share of a shared video card, held inside its own Python.
 
 Several submissions may time-share one card, and each is promised a share of
-its video memory. The runner then passes COLLOQ_GPU_MEMORY_MB (the share less
-what the CUDA context takes outside any allocator) and COLLOQ_GPU_CARD_MB (the
+its video memory. The runner then passes AULALAB_GPU_MEMORY_MB (the share less
+what the CUDA context takes outside any allocator) and AULALAB_GPU_CARD_MB (the
 card the share was cut from), and puts this directory on PYTHONPATH: Python
 imports sitecustomize in every process it starts, the notebook's kernel
 included, before a line of the participant's code runs.
@@ -1359,7 +1359,7 @@ share on their own:
 
 torch: when the notebook imports it, a callback is queued for the moment CUDA
 initialises, and the callback caps torch's caching allocator at
-COLLOQ_GPU_MEMORY_MB on device 0 (inside the container the card given to it is
+AULALAB_GPU_MEMORY_MB on device 0 (inside the container the card given to it is
 the only one). An allocation past the cap then raises torch.OutOfMemoryError
 in the participant's own cell, with the numbers in its message, instead of
 taking the memory of the other runs on the card.
@@ -1368,7 +1368,7 @@ catboost: a GPU fit takes gpu_ram_part of the card's free memory at once, 95
 per cent by default, as one pool torch never sees; on a card shared by two
 runs that is nearly the whole card, and the watchdog stops the run for it
 however small its data. Unless the participant names their own, gpu_ram_part
-becomes COLLOQ_GPU_MEMORY_MB over COLLOQ_GPU_CARD_MB: the free memory is never
+becomes AULALAB_GPU_MEMORY_MB over AULALAB_GPU_CARD_MB: the free memory is never
 more than the card, so the pool never outgrows the share, whatever the
 neighbours hold (with them holding much, it is smaller, and a participant who
 knows better names their own). It is set
@@ -1413,11 +1413,11 @@ def _mb(name):
 
 
 def _not_applied(what, error):
-    print(f"colloq: {what} not applied: {error}", file=sys.stderr)
+    print(f"aulalab: {what} not applied: {error}", file=sys.stderr)
 
 
 def _cap_torch(torch):
-    mb = _mb("COLLOQ_GPU_MEMORY_MB")
+    mb = _mb("AULALAB_GPU_MEMORY_MB")
     if mb <= 0:
         return
 
@@ -1437,8 +1437,8 @@ def _cap_torch(torch):
 
 
 def _catboost_part():
-    card = _mb("COLLOQ_GPU_CARD_MB")
-    part = _mb("COLLOQ_GPU_MEMORY_MB") / card if card > 0 else 0
+    card = _mb("AULALAB_GPU_CARD_MB")
+    part = _mb("AULALAB_GPU_MEMORY_MB") / card if card > 0 else 0
     return part if 0 < part <= 1 else None
 
 
@@ -1531,7 +1531,7 @@ class _GpuFinder:
 
 
 _HOOKS = {}
-if _mb("COLLOQ_GPU_MEMORY_MB") > 0:
+if _mb("AULALAB_GPU_MEMORY_MB") > 0:
     _HOOKS["torch"] = _cap_torch
     if _catboost_part() is not None:
         _HOOKS["catboost"] = _default_catboost
@@ -1549,8 +1549,8 @@ const FILES: ReadonlyArray<readonly [string, string]> = [
   ['score_metric.py', SCORE_METRIC],
   ['hold_export.py', HOLD_EXPORT],
   ['export_files.py', EXPORT_FILES],
-  ['colloq_metric.py', COLLOQ_METRIC],
-  ['colloq_split.py', COLLOQ_SPLIT],
+  ['aulalab_metric.py', AULALAB_METRIC],
+  ['aulalab_split.py', AULALAB_SPLIT],
   ['broker_score.py', String.raw`import json, os, runpy
 from pathlib import Path
 config = json.loads(Path('/config/request.json').read_text(encoding='utf-8'))
@@ -1576,7 +1576,7 @@ export const HARNESS_SITE = '/harness/site'
  * The source of the split module — for the suite that checks it against
  * `@shared/competitions`.
  */
-export const SPLIT_SOURCE = COLLOQ_SPLIT
+export const SPLIT_SOURCE = AULALAB_SPLIT
 
 /**
  * The harness version is the hash of its content, not a number in a constant.

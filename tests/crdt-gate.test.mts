@@ -193,13 +193,13 @@ test('forging someone else\'s output is impossible in any room', () => {
     out.set('json', JSON.stringify({ 'text/html': '<script>…' }))
     ;(cellAt(client, 0).get('outputs') as Y.Array<unknown>).push([out])
   })
-  assert.match(refused(classify(server, bytes)), /сервер/)
+  assert.match(refused(classify(server, bytes)), /server/)
 })
 
 test('a forged prompt to enter a password does not get through', () => {
   const { server, client, frame } = pair()
   const bytes = frame(() => cellAt(client, 0).set('stdin', { prompt: 'Пароль:', password: true }))
-  assert.match(refused(classify(server, bytes)), /сервер/)
+  assert.match(refused(classify(server, bytes)), /server/)
 })
 
 test('a frame cannot open a cell for its sender', () => {
@@ -212,7 +212,7 @@ test('a frame cannot open a cell for its sender', () => {
    */
   const { server, client, frame } = pair()
   const bytes = frame(() => cellAt(client, 0).set('open', true))
-  assert.match(refused(classify(server, bytes)), /ячейку открывает преподаватель/)
+  assert.match(refused(classify(server, bytes)), /only the teacher may open a cell/)
 })
 
 test('a new cell with a lock is accepted, and the server removes the lock from it', () => {
@@ -297,19 +297,19 @@ test('renaming someone else\'s cell is impossible', () => {
   // A matching name is a takeover: "Run" looks for a cell by name.
   const { server, client, frame } = pair()
   const bytes = frame(() => cellAt(client, 1).set('id', 'c1'))
-  assert.match(refused(classify(server, bytes)), /имя/)
+  assert.match(refused(classify(server, bytes)), /cell identifier cannot be changed/)
 })
 
 test('replacing a cell\'s text wholesale is impossible — it holds other people\'s cursors', () => {
   const { server, client, frame } = pair()
   const bytes = frame(() => cellAt(client, 0).set('source', new Y.Text('свой текст')))
-  assert.match(refused(classify(server, bytes)), /целиком/)
+  assert.match(refused(classify(server, bytes)), /entire cell text is being replaced/)
 })
 
 test('a section the document does not have is refused', () => {
   const { server, client, frame } = pair()
   const bytes = frame(() => client.getArray('secrets').push(['x']))
-  assert.match(refused(classify(server, bytes)), /раздел/)
+  assert.match(refused(classify(server, bytes)), /section that does not exist/)
 })
 
 /* ---------------------------------------- values of a new cell, not the path */
@@ -344,7 +344,7 @@ test('a new cell with a forged stdin does not get through', () => {
     map.set('stdin', { prompt: 'Пароль:', password: true })
     client.getArray(CELLS_KEY).push([map])
   })
-  assert.match(refused(classify(server, bytes)), /лишнее поле/)
+  assert.match(refused(classify(server, bytes)), /unexpected field.*stdin/)
 })
 
 test('a cell with a living cell\'s name is not refused, but not counted as created either', () => {
@@ -366,7 +366,7 @@ test('a cell with a living cell\'s name is not refused, but not counted as creat
 test('two new cells with one name in one frame do not get through', () => {
   const { server, client, frame } = pair()
   const bytes = frame(() => client.getArray(CELLS_KEY).push([cell('c9', 'a'), cell('c9', 'b')]))
-  assert.match(refused(classify(server, bytes)), /одним именем/)
+  assert.match(refused(classify(server, bytes)), /share the same identifier/)
 })
 
 test('a new cell that declared itself executed is reset to clean, not refused', () => {
@@ -445,7 +445,7 @@ test('a reference to content the server does not have is refused', () => {
   ahead.on('update', (u: Uint8Array) => (bytes = bytes ? Y.mergeUpdates([bytes, u]) : u))
   ahead.transact(() => (cellAt(ahead, 0).get('source') as Y.Text).delete(0, 8))
   assert.ok(bytes)
-  assert.match(refused(classify(server, bytes!)), /нет/)
+  assert.match(refused(classify(server, bytes!)), /not in this class/)
 })
 
 test('a write into a tombstone gets through', () => {
@@ -472,7 +472,7 @@ test('a frame over the ceiling is refused before parsing', () => {
     (cellAt(client, 0).get('source') as Y.Text).insert(0, 'ы'.repeat(MAX_SYNC_FRAME_BYTES)),
   )
   assert.ok(bytes.byteLength > MAX_SYNC_FRAME_BYTES)
-  assert.match(refused(classify(server, bytes)), /большой/)
+  assert.match(refused(classify(server, bytes)), /frame too large/)
 })
 
 test('garbage instead of a frame is refused, not let through', () => {
@@ -651,7 +651,7 @@ function twoBooks(): {
 } {
   const { server, client, frame } = pair()
   server.transact(() => {
-    addBook(server, 'Тетрадь.ipynb', CELLS_KEY)
+    addBook(server, 'Notebook.ipynb', CELLS_KEY)
     const second = addBook(server, 'разбор.ipynb')
     bookCells(server, second.root).push([cell('b1', 'print(3)')])
   }, 'server')

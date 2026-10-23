@@ -52,8 +52,8 @@ test('the cache marker on demos.js is the hash of demos.js itself', () => {
  * --------------------------------------------------------- link preview
  *
  * Three 1200×630 images are drawn by scripts/site-og.mts: a Russian one for
- * colloq.ru, an English one for /en/, and the same English one captioned
- * colloq.cc — the mirror substitutes it. Mistakes here are silent and
+ * example.edu, an English one for /en/, and the same English one captioned
+ * github.com/vighneshtule/AulaLab — the mirror substitutes it. Mistakes here are silent and
  * expensive: link unfurlers cache the card for days, and a page that showed
  * the wrong language or a broken image stays that way in other people's chats
  * for a long time.
@@ -61,12 +61,12 @@ test('the cache marker on demos.js is the hash of demos.js itself', () => {
 test('each page calls for its own preview image', () => {
   assert.match(
     html,
-    /property="og:image" content="https:\/\/colloq\.ru\/img\/og\.png\?v=[0-9a-f]+"/,
+    /property="og:image" content="https:\/\/aulalab\.ru\/img\/og\.png\?v=[0-9a-f]+"/,
     'the Russian page shows a non-Russian image',
   )
   assert.match(
     en,
-    /property="og:image" content="https:\/\/colloq\.ru\/img\/og-en\.png\?v=[0-9a-f]+"/,
+    /property="og:image" content="https:\/\/aulalab\.ru\/img\/og-en\.png\?v=[0-9a-f]+"/,
     'the English page shows the Russian image: the bot does not run JS, ' +
       'and the automatic language choice never reaches it',
   )
@@ -113,7 +113,7 @@ test('redrawn preview images match the published ones byte for byte', async () =
    * round), they will keep diverging: they cannot be compared by eye, and the
    * ?v= marker is computed from the file and knows nothing about script edits.
    */
-  const dir = mkdtempSync(join(tmpdir(), 'colloq-og-'))
+  const dir = mkdtempSync(join(tmpdir(), 'aulalab-og-'))
   try {
     await writeOgImages(dir)
     for (const { file } of OG_IMAGES) {

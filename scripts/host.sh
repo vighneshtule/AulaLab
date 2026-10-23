@@ -13,21 +13,21 @@
 #
 #   ./scripts/host.sh                       quick Cloudflare tunnel, the address
 #                                           is random and lives until Ctrl+C
-#   COLLOQ_HOSTNAME=seminar.sleep3r.ru      named Cloudflare tunnel
-#   COLLOQ_HOSTNAME=hse.colloq.ru           our own relay (frpc → frps)
-#   COLLOQ_DIRECT=1 COLLOQ_HOSTNAME=…       straight from this machine, no middleman
+#   AULALAB_HOSTNAME=seminar.sleep3r.ru      named Cloudflare tunnel
+#   AULALAB_HOSTNAME=hse.example.edu           our own relay (frpc → frps)
+#   AULALAB_DIRECT=1 AULALAB_HOSTNAME=…       straight from this machine, no middleman
 #
 # The first three are an outbound connection from here to the outside: no
 # public IP and no port forwarding on the router are needed. The fourth is the
 # opposite: 80 and 443 on this machine take the students themselves, caddy
-# terminates TLS and hands the request to colloq on localhost. It needs a real
+# terminates TLS and hands the request to aulalab on localhost. It needs a real
 # public address, and it is the only one with not a single foreign node on the
 # class's path.
 #
 # Why the fourth appeared. A Cloudflare tunnel always comes out at Cloudflare's
 # edge addresses, proxying cannot be taken off them (a *.cfargotunnel.com
 # record only makes sense for their proxy), and those addresses do not open
-# from Russia; that is why colloq.ru has a relay of its own. But the relay is
+# from Russia; that is why example.edu has a relay of its own. But the relay is
 # not free either: measured on a live class, two hundred students in one
 # evening brought down a VPS with 951 MB of memory. The OS kernel killed now
 # frps (209 MB), now caddy (186 MB on two hundred sockets), thirty-six times,
@@ -38,9 +38,9 @@
 #
 # What gets installed: frpc (brew install frpc) for the relay, cloudflared for
 # Cloudflare, caddy for direct mode (the script installs the last one itself).
-# With no cloudflared in PATH, colloq downloads a pinned release with a
+# With no cloudflared in PATH, aulalab downloads a pinned release with a
 # checksum check into <state>/bin (cli/src/launch-cloudflared.ts);
-# COLLOQ_CLOUDFLARED=/path names the file explicitly.
+# AULALAB_CLOUDFLARED=/path names the file explicitly.
 #
 # The lock: only a server whose every room kernel sits in a container of its
 # own goes out, which the server itself reports in the isolation field of
@@ -81,12 +81,12 @@ if command -v docker >/dev/null 2>&1; then HAVE_DOCKER=1; fi
 
 # The state is not where the application is. The directory above scripts/ is
 # the application (web/dist, kernel/, these scripts), while .env, the class
-# receipt and .colloq.pid lie in the STATE directory: that is COLLOQ_STATE_ROOT
+# receipt and .aulalab.pid lie in the STATE directory: that is AULALAB_STATE_ROOT
 # from lib.sh. In the repository it is one and the same directory, for an
 # installed package they differ, and all paths below are counted from the
 # state, not from "itself".
-SESSION_RECEIPT="$COLLOQ_STATE_ROOT/.colloq/local-session.json"
-PIDFILE="${PIDFILE:-$COLLOQ_STATE_ROOT/.colloq.pid}"
+SESSION_RECEIPT="$AULALAB_STATE_ROOT/.aulalab/local-session.json"
+PIDFILE="${PIDFILE:-$AULALAB_STATE_ROOT/.aulalab.pid}"
 
 # What to call the external address receipt with (scripts/public-url-lease.mts).
 #
@@ -112,8 +112,8 @@ fi
 # The class supervisor, by the same choice: built in the package, the source
 # next to the repository. From here it is needed for one word, cloudflared:
 # find or download it (with a checksum check) and name the path. The search
-# rule lives there, one for everyone: for `colloq start --share`, for
-# `colloq host` and for `make host`.
+# rule lives there, one for everyone: for `aulalab start --share`, for
+# `aulalab host` and for `make host`.
 if [ -f cli/launch.mjs ]; then
   LAUNCHER=(node cli/launch.mjs)
 else
@@ -131,15 +131,15 @@ RELAY_TOKEN="$(read_env RELAY_TOKEN)"
 # address has already said.
 #
 # Direct mode, however, is not expressed by the name at all, and that is not
-# an oversight: hse.colloq.ru can be served both by the relay and by this
+# an oversight: hse.example.edu can be served both by the relay and by this
 # machine; the difference is not in the name but in whether the machine has a
 # public address. That can only be asked explicitly, so direct mode has a
-# switch of its own: COLLOQ_DIRECT=1 (make host-direct HOST=…).
+# switch of its own: AULALAB_DIRECT=1 (make host-direct HOST=…).
 VIA="cloudflare"
-if [ "${COLLOQ_DIRECT:-}" = "1" ] && [ "${COLLOQ_LOCAL_SESSION:-}" != 1 ]; then
+if [ "${AULALAB_DIRECT:-}" = "1" ] && [ "${AULALAB_LOCAL_SESSION:-}" != 1 ]; then
   VIA="direct"
-elif [ -n "${COLLOQ_HOSTNAME:-}" ] && [ -n "$RELAY_DOMAIN" ] \
-   && [ "${COLLOQ_HOSTNAME%".$RELAY_DOMAIN"}" != "$COLLOQ_HOSTNAME" ]; then
+elif [ -n "${AULALAB_HOSTNAME:-}" ] && [ -n "$RELAY_DOMAIN" ] \
+   && [ "${AULALAB_HOSTNAME%".$RELAY_DOMAIN"}" != "$AULALAB_HOSTNAME" ]; then
   VIA="relay"
 fi
 
@@ -159,15 +159,15 @@ case "$VIA" in
     # RELAY_DOMAIN, for the quick tunnel Cloudflare hands out the name, while
     # here the name is what the certificate is issued for, and it cannot be
     # made up on a person's behalf.
-    [ -n "${COLLOQ_HOSTNAME:-}" ] || die \
-      "direct mode needs a name: make host-direct HOST=hse.colloq.ru"
-    case "$COLLOQ_HOSTNAME" in
+    [ -n "${AULALAB_HOSTNAME:-}" ] || die \
+      "direct mode needs a name: make host-direct HOST=hse.example.edu"
+    case "$AULALAB_HOSTNAME" in
       *.*) : ;;
-      *) die "the name must be a full one, with a dot: make host-direct HOST=hse.colloq.ru
+      *) die "the name must be a full one, with a dot: make host-direct HOST=hse.example.edu
   Only the relay completes a short name up to RELAY_DOMAIN." ;;
     esac
-    printf '%s' "$COLLOQ_HOSTNAME" | grep -qE '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$' || die \
-      "the name ${COLLOQ_HOSTNAME} has something other than a-z, digits, dots and hyphens."
+    printf '%s' "$AULALAB_HOSTNAME" | grep -qE '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$' || die \
+      "the name ${AULALAB_HOSTNAME} has something other than a-z, digits, dots and hyphens."
 
     # systemd is not nitpicking. Direct mode leaves behind a caddy service that
     # outlives this window; without systemd there would be nowhere to leave it,
@@ -182,7 +182,7 @@ case "$VIA" in
     # 80 and 443 are privileged ports, and a systemd service is installed as root too.
     [ "$(id -u)" = "0" ] || die \
       "direct mode installs the caddy service and takes 80 and 443 — root is needed.
-  Try again: sudo make host-direct HOST=${COLLOQ_HOSTNAME}"
+  Try again: sudo make host-direct HOST=${AULALAB_HOSTNAME}"
 
     # python3 is needed both here (the port check) and in scripts/dns.sh, which
     # writes the record.
@@ -198,12 +198,12 @@ case "$VIA" in
     # <state>/bin or downloads a pinned release, saying so in stderr, and hands
     # the path over in stdout. The checksum check lives there; from here we do
     # not run a copy of our own without it.
-    CLOUDFLARED="${COLLOQ_CLOUDFLARED:-$(read_env COLLOQ_CLOUDFLARED)}"
+    CLOUDFLARED="${AULALAB_CLOUDFLARED:-$(read_env AULALAB_CLOUDFLARED)}"
     if [ -z "$CLOUDFLARED" ]; then CLOUDFLARED="$(command -v cloudflared 2>/dev/null || true)"; fi
     if [ -z "$CLOUDFLARED" ]; then
       CLOUDFLARED="$("${LAUNCHER[@]}" cloudflared)" || die \
-        "there is no cloudflared, and colloq could not fetch it (the reason is above).
-  Install it yourself (brew install cloudflared) or name the file: COLLOQ_CLOUDFLARED=/path/to/cloudflared"
+        "there is no cloudflared, and aulalab could not fetch it (the reason is above).
+  Install it yourself (brew install cloudflared) or name the file: AULALAB_CLOUDFLARED=/path/to/cloudflared"
     fi
     [ -x "$CLOUDFLARED" ] || die "cloudflared at ${CLOUDFLARED} is not an executable file."
     ;;
@@ -212,8 +212,8 @@ esac
 # PORT is needed before the tunnel starts: that is the port cloudflared exposes.
 PORT="${PORT:-$(read_env PORT)}"
 PORT="${PORT:-3000}"
-CLUSTER="${COLLOQ_CLUSTER:-$(read_env COLLOQ_CLUSTER)}"
-if [ "${COLLOQ_LOCAL_SESSION:-}" = 1 ]; then CLUSTER=0; fi
+CLUSTER="${AULALAB_CLUSTER:-$(read_env AULALAB_CLUSTER)}"
+if [ "${AULALAB_LOCAL_SESSION:-}" = 1 ]; then CLUSTER=0; fi
 if [ "$CLUSTER" = 1 ]; then PORT=30080; fi
 LOCAL="http://127.0.0.1:${PORT}"
 TUNNEL_PORT="$PORT"
@@ -221,7 +221,7 @@ LOCAL_RUN_ID=""
 LEASE_FILE=""
 LEASE_OWNER=""
 LEASE_PID=""
-if [ "$CLUSTER" != 1 ] && [ "$VIA" != direct ] && { [ "${COLLOQ_LOCAL_SESSION:-}" = 1 ] || [ -f "$SESSION_RECEIPT" ]; }; then
+if [ "$CLUSTER" != 1 ] && [ "$VIA" != direct ] && { [ "${AULALAB_LOCAL_SESSION:-}" = 1 ] || [ -f "$SESSION_RECEIPT" ]; }; then
   if DISCOVERY="$("${LEASE[@]}" discover "$SESSION_RECEIPT")"; then
     IFS=$'\t' read -r LOCAL_RUN_ID LEASE_FILE LOCAL PORT DATA_DIR TUNNEL_PORT <<< "$DISCOVERY"
   else
@@ -246,7 +246,7 @@ if [ -n "$LOCAL_RUN_ID" ]; then ORIGIN_ARGS=(--http-host-header "127.0.0.1:${TUN
 # with "too few X's". The script lives on both systems (the teacher's laptop
 # and a rented machine), and wherever it failed, the seminar was left without
 # an address.
-LOG="$(mktemp -t colloq-tunnel.XXXXXX)"
+LOG="$(mktemp -t aulalab-tunnel.XXXXXX)"
 TUNNEL_PID=""
 # A temporary listener on 80 and 443 in direct mode: see the port check.
 LISTEN_PID=""
@@ -258,7 +258,7 @@ TOUCHED_ENV=""
 CLUSTER_PUBLISHED=""
 # Where k3s keeps the application data: the same state directory and the same
 # default as in scripts/cluster.sh, backup.sh and restore.sh.
-CLUSTER_STATE="${COLLOQ_STATE_DIR:-/var/lib/colloq}"
+CLUSTER_STATE="${AULALAB_STATE_DIR:-/var/lib/aulalab}"
 
 # The transports have different numbers of steps, and numbering is needed
 # everywhere: by it a person understands where the script got stuck. Hence a
@@ -468,8 +468,8 @@ assets_tar() {
 # address with anything at all; that case gets a message of its own.
 upload_assets() {
   local archive answer code files bytes
-  archive="$(mktemp -t colloq-assets.XXXXXX)"
-  answer="$(mktemp -t colloq-assets-out.XXXXXX)"
+  archive="$(mktemp -t aulalab-assets.XXXXXX)"
+  answer="$(mktemp -t aulalab-assets-out.XXXXXX)"
   if ! assets_tar "$archive"; then
     rm -f "$archive" "$answer"
     return 0
@@ -478,7 +478,7 @@ upload_assets() {
     --upload-file "$archive" \
     -H "Authorization: Bearer ${RELAY_TOKEN}" \
     -H 'Content-Type: application/gzip' \
-    "https://${COLLOQ_HOSTNAME}/.relay/assets/${COLLOQ_HOSTNAME}" || true)"
+    "https://${AULALAB_HOSTNAME}/.relay/assets/${AULALAB_HOSTNAME}" || true)"
   if [ "$code" = "200" ]; then
     files="$(sed -n 's/.*"files":[ ]*\([0-9]*\).*/\1/p' "$answer")"
     bytes="$(sed -n 's/.*"bytes":[ ]*\([0-9]*\).*/\1/p' "$answer")"
@@ -499,7 +499,7 @@ upload_assets() {
 
 # ---------------------------------------------------------------- start
 
-step "checking colloq at ${LOCAL}"
+step "checking aulalab at ${LOCAL}"
 #
 # Start nothing if it is already running. This is not thrift but a fix:
 # `docker compose up -d` recreates the kernel too, from the main compose file,
@@ -521,17 +521,17 @@ if HEALTH_BODY="$(curl -sf --max-time 5 "$HEALTH_LOCAL/api/health" 2>/dev/null)"
   say "${DIM}    already running — touching nothing${OFF}"
 elif [ "$CLUSTER" = 1 ]; then
   die "k3s application is not ready at $LOCAL. Inspect: bash scripts/cluster.sh status; bash scripts/cluster.sh logs"
-elif { command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet colloq 2>/dev/null; } \
+elif { command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet aulalab 2>/dev/null; } \
      || { [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; }; then
   #
   # The server on the host is alive (as a service or by hand) but does not
   # consider itself healthy. Almost always that is Docker switched off or a
   # kernel environment that was never built. Running `docker compose up` here
   # is not allowed: it would bring up app as well, and the port would get a
-  # second Colloq with a different database on top of the first. That was the
+  # second Aula Lab with a different database on top of the first. That was the
   # "third switch-over": three different instances in one morning.
   #
-  die "colloq at ${LOCAL} is running, but is not ready to hold a class — usually that
+  die "aulalab at ${LOCAL} is running, but is not ready to hold a class — usually that
   is Docker switched off or a kernel environment that was never built
   (make env-build NAME=<environment>).
   Check: curl -s ${LOCAL}/api/health"
@@ -542,7 +542,7 @@ else
   # There used to be `docker compose up -d` here, and it brought up the WHOLE
   # stack, including `app`. It was enough for health to answer with a failure
   # for a second (for instance, because the kernel was switched off), and next
-  # to the server already running on the host a second Colloq came up in a
+  # to the server already running on the host a second Aula Lab came up in a
   # container. Both are full Yjs authorities, both write into one database
   # (after the move to bind mounts, literally the same one), and the browser
   # lands now on one, now on the other: the notebook is now half empty, now
@@ -556,17 +556,17 @@ else
   # The advice must be doable on the machine where it was read.
   #
   # There used to be "make up / make run / make service-install" here: three
-  # targets of a Makefile that colloq installed through pip does not have at
-  # all. And this line fires precisely on `colloq host`, the command by which
+  # targets of a Makefile that aulalab installed through pip does not have at
+  # all. And this line fires precisely on `aulalab host`, the command by which
   # a class gets its link. A person read the advice, typed make and got
   # "command not found" as a second refusal in a row. The targets remain, but
   # only where there is a Makefile, and that is visible by the same sign by
   # which the script already chooses directories.
-  if [ "${COLLOQ_STATE_ROOT}" = "." ] || [ -f "$PWD/Makefile" ]; then
-    die "start the class first — colloq start (or make up for everything in
+  if [ "${AULALAB_STATE_ROOT}" = "." ] || [ -f "$PWD/Makefile" ]; then
+    die "start the class first — aulalab start (or make up for everything in
   docker, make service-install on a dedicated machine), then try again."
   fi
-  die "start the class first — colloq start — then try again."
+  die "start the class first — aulalab start — then try again."
 fi
 
 # The publishing lock: before the first action toward the outside, the same for
@@ -592,7 +592,7 @@ case "$HEALTH_BODY" in
   A public link lets anyone who has it run code on this machine, so a class
   goes online only with room kernels in Docker, one container per room
   (KERNEL_BACKEND=docker and Docker running), or behind the runtime broker.
-  Check: curl -s ${LOCAL}/api/health — restart or update colloq if the field is missing." ;;
+  Check: curl -s ${LOCAL}/api/health — restart or update aulalab if the field is missing." ;;
 esac
 
 # Who exactly holds the port. There are four cases, and all four are real:
@@ -603,14 +603,14 @@ esac
 #   container   — `make up`, the whole application in docker;
 #   host        — `make run`, the server on the machine, the kernel in docker.
 #                 That is how the project is run while the code is edited, and
-#                 .colloq.pid is its receipt;
+#                 .aulalab.pid is its receipt;
 #   other       — something else. The tunnel will stand in front of it too, but
 #                 nobody will fix its PUBLIC_URL, and that has to be said out
 #                 loud.
 #
 # The order of checks is not alphabetical but by how reliable the sign is. The
 # service is asked first: on a machine under the service there is also a
-# .colloq.pid lying around from a long-ago `make run`, and a stopped app
+# .aulalab.pid lying around from a long-ago `make run`, and a stopped app
 # container, while what has to be restarted is the form that holds the port
 # now. The `make run` receipt goes last for exactly that reason: a pid file
 # survives both a reboot and a change of form, and speaks about the past, not
@@ -624,7 +624,7 @@ if [ -n "$LOCAL_RUN_ID" ]; then
   WHO="local"
 elif [ "$CLUSTER" = 1 ]; then
   WHO="cluster"
-elif command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet colloq 2>/dev/null; then
+elif command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet aulalab 2>/dev/null; then
   WHO="service"
 elif [ -n "$HAVE_DOCKER" ] && docker compose ps app --format '{{.State}}' 2>/dev/null | grep -q running; then
   WHO="container"
@@ -634,7 +634,7 @@ fi
 
 # ------------------------------------------------- direct mode: no middleman
 #
-# Everything below works only with COLLOQ_DIRECT=1. The point of the mode in
+# Everything below works only with AULALAB_DIRECT=1. The point of the mode in
 # one sentence: there is nobody on the path from the student to this machine.
 # Neither the relay, which at 951 MB of memory went down under two hundred
 # sockets, nor Cloudflare, whose addresses do not open from Russia. The price:
@@ -688,7 +688,7 @@ ip_is_local() {
 # for the time of the check the ports are held by a tiny listener in python3,
 # which also proves that the ports are free at all and may be taken.
 listener_start() {
-  LISTEN_LOG="$(mktemp -t colloq-ports.XXXXXX)"
+  LISTEN_LOG="$(mktemp -t aulalab-ports.XXXXXX)"
   python3 - 80 443 >"$LISTEN_LOG" 2>&1 <<'PY' &
 import socket, sys, threading
 
@@ -858,20 +858,20 @@ direct_check_ports() {
   # and that has to be said in words, not by failing on the certificate ten
   # minutes later.
   #
-  # Colloq on 80 or 443 is the same port caddy asks for, and the two of them
+  # Aula Lab on 80 or 443 is the same port caddy asks for, and the two of them
   # will not fit on it together. Saying so here is cheaper than breaking an
   # already running instance by restarting caddy, which would not come up
   # anyway.
   case "$PORT" in
-    80|443) die "colloq listens on ${PORT} — and direct mode needs exactly that port for caddy.
+    80|443) die "aulalab listens on ${PORT} — and direct mode needs exactly that port for caddy.
   Move the instance to another port (PORT in .env, then make run/service-restart)
   and try again." ;;
   esac
 
-  DIRECT_IP="${COLLOQ_PUBLIC_IP:-$(public_ip || true)}"
+  DIRECT_IP="${AULALAB_PUBLIC_IP:-$(public_ip || true)}"
   [ -n "$DIRECT_IP" ] || die \
     "could not find out this machine's public address: none of the services answered.
-  Name it yourself: COLLOQ_PUBLIC_IP=<address> make host-direct HOST=${COLLOQ_HOSTNAME}"
+  Name it yourself: AULALAB_PUBLIC_IP=<address> make host-direct HOST=${AULALAB_HOSTNAME}"
   say "${DIM}    from outside this machine looks like ${DIRECT_IP}${OFF}"
 
   local on_iface=""
@@ -897,7 +897,7 @@ direct_check_ports() {
         ss -lntp 2>/dev/null | awk 'NR==1 || /:(80|443) /' >&2 || true
       die "80 or 443 on this machine are already taken — and direct mode needs exactly them.
   Stop the other web server (nginx, apache) or publish the class through a tunnel:
-  make host HOST=${COLLOQ_HOSTNAME}"
+  make host HOST=${AULALAB_HOSTNAME}"
     fi
     die "could not take 80 and 443 on this machine — see the error above."
   fi
@@ -913,7 +913,7 @@ direct_check_ports() {
   if [ -n "$held_by_caddy" ]; then
     verdict="$(ask_outside "$DIRECT_IP" 80)"
   else
-    case "$(ask_outside_http "http://${DIRECT_IP}/colloq-check")" in
+    case "$(ask_outside_http "http://${DIRECT_IP}/aulalab-check")" in
       code:204) verdict=open ;;
       code:*)   verdict=foreign ;;
       closed)   verdict=closed ;;
@@ -947,19 +947,19 @@ direct_check_ports() {
   the room to that box, and the certificate never arrives at all.
 
   If the machine does have a public address, name it directly:
-    COLLOQ_PUBLIC_IP=<address> make host-direct HOST=${COLLOQ_HOSTNAME}
-  If it does not — this is a case for a tunnel:  make host HOST=${COLLOQ_HOSTNAME}"
+    AULALAB_PUBLIC_IP=<address> make host-direct HOST=${AULALAB_HOSTNAME}
+  If it does not — this is a case for a tunnel:  make host HOST=${AULALAB_HOSTNAME}"
   fi
 
   # A refusal must name the reason and offer a way out, not just say "no".
   #
-  # COLLOQ_DIRECT_FORCE=1 lifts the refusal, and it is not a "just in case"
+  # AULALAB_DIRECT_FORCE=1 lifts the refusal, and it is not a "just in case"
   # loophole: the checking service sees the machine from Germany and Finland,
   # and there are firewalls closed to half the world and open to the
   # university network. The decision is then the person's, but they have to
   # say it out loud, not find out that the script silently went on.
-  if [ -n "$closed" ] && [ "${COLLOQ_DIRECT_FORCE:-}" = "1" ]; then
-    say "${RED}    ports${closed} are closed from outside, but COLLOQ_DIRECT_FORCE=1 — going on${OFF}"
+  if [ -n "$closed" ] && [ "${AULALAB_DIRECT_FORCE:-}" = "1" ]; then
+    say "${RED}    ports${closed} are closed from outside, but AULALAB_DIRECT_FORCE=1 — going on${OFF}"
     say "${DIM}    If the check is right, there will be no certificate: journalctl -u caddy -f${OFF}"
     closed=""
   fi
@@ -970,9 +970,9 @@ direct_check_ports() {
   open there, and 80 and 443 are not handed out at all.
 
   Publish the class through a tunnel — it goes out as an outbound connection and
-  needs no open ports:  make host HOST=${COLLOQ_HOSTNAME}
+  needs no open ports:  make host HOST=${AULALAB_HOSTNAME}
 
-  If you know for certain the ports are open and the check is lying: COLLOQ_DIRECT_FORCE=1"
+  If you know for certain the ports are open and the check is lying: AULALAB_DIRECT_FORCE=1"
   fi
 
   if [ -n "$unknown" ]; then
@@ -983,14 +983,14 @@ direct_check_ports() {
       say "${DIM}    the checking service did not answer; the address belongs to this${OFF}"
       say "${DIM}    machine, the ports are free — going on. If 80 and 443 are closed${OFF}"
       say "${DIM}    after all, caddy gets no certificate: journalctl -u caddy -f${OFF}"
-    elif [ "${COLLOQ_DIRECT_FORCE:-}" != "1" ]; then
+    elif [ "${AULALAB_DIRECT_FORCE:-}" != "1" ]; then
       die "could not ask from outside, and the address ${DIRECT_IP} does not belong to this machine.
   This is NAT, and it comes in two kinds: one to one on a cloud machine — then all
   is well; port forwarding — then 80 and 443 are closed and there will be no
   certificate. Nothing here can tell them apart.
 
-  A tunnel works in both cases:  make host HOST=${COLLOQ_HOSTNAME}
-  Certain the ports are open:    COLLOQ_DIRECT_FORCE=1 make host-direct HOST=${COLLOQ_HOSTNAME}"
+  A tunnel works in both cases:  make host HOST=${AULALAB_HOSTNAME}
+  Certain the ports are open:    AULALAB_DIRECT_FORCE=1 make host-direct HOST=${AULALAB_HOSTNAME}"
     fi
   fi
 }
@@ -998,7 +998,7 @@ direct_check_ports() {
 # ------------------------------------------------------------- step: name
 
 direct_point_dns() {
-  step "pointing ${COLLOQ_HOSTNAME} at ${DIRECT_IP}"
+  step "pointing ${AULALAB_HOSTNAME} at ${DIRECT_IP}"
   #
   # The record is written by scripts/dns.sh, the same code that puts the whole
   # zone in order. There is no copy here on purpose: the rule "delete the
@@ -1011,8 +1011,8 @@ direct_point_dns() {
   # between the machine and the room; proxying would bring back a middleman,
   # and the very one we were moving away from.
   #
-  ./scripts/dns.sh point "$COLLOQ_HOSTNAME" "$DIRECT_IP" || die \
-    "could not set the A record ${COLLOQ_HOSTNAME} → ${DIRECT_IP}.
+  ./scripts/dns.sh point "$AULALAB_HOSTNAME" "$DIRECT_IP" || die \
+    "could not set the A record ${AULALAB_HOSTNAME} → ${DIRECT_IP}.
   CF_TOKEN (Zone:Read + DNS:Edit) is needed, and CF_ZONE in .env if the token
   cannot list the zones."
 
@@ -1023,7 +1023,7 @@ direct_point_dns() {
   # class.
   local seen="" i
   for i in $(seq 1 30); do
-    [ "$(resolve_any "$COLLOQ_HOSTNAME" || true)" = "$DIRECT_IP" ] && { seen=1; break; }
+    [ "$(resolve_any "$AULALAB_HOSTNAME" || true)" = "$DIRECT_IP" ] && { seen=1; break; }
     sleep 2
   done
   if [ -n "$seen" ]; then
@@ -1065,10 +1065,10 @@ direct_caddy() {
   # the user and changing permissions on /etc/caddy. On a machine where caddy
   # already serves something, rewriting the Caddyfile would silently switch off
   # someone's site, and its owner would find out about it, not us.
-  if [ -f /etc/caddy/Caddyfile ] && ! grep -q '^# colloq:' /etc/caddy/Caddyfile; then
+  if [ -f /etc/caddy/Caddyfile ] && ! grep -q '^# aulalab:' /etc/caddy/Caddyfile; then
     die "this machine already has a /etc/caddy/Caddyfile of its own — I will not overwrite it.
   Add the site to it by hand:
-    ${COLLOQ_HOSTNAME} {
+    ${AULALAB_HOSTNAME} {
       reverse_proxy 127.0.0.1:${PORT} {
         header_up -Cf-Connecting-Ip
       }
@@ -1084,14 +1084,14 @@ direct_caddy() {
   # that is what makes the command repeatable: the name or the port changed,
   # and the file simply becomes right, without cleaning up by hand.
   cat > /etc/caddy/Caddyfile <<CONF
-# colloq: direct mode (scripts/host.sh). The file is rewritten on every run,
+# aulalab: direct mode (scripts/host.sh). The file is rewritten on every run,
 # edits by hand will be lost; edit the script.
 #
 # The certificate is issued automatically on the first request: caddy goes to
 # Let's Encrypt over HTTP-01 by itself, which is what the real 80 and 443 are
 # needed for. No DNS key is stored on the machine, and none is needed.
-${COLLOQ_HOSTNAME} {
-	# WebSockets (and Colloq is WebSockets first of all: /collab and /control)
+${AULALAB_HOSTNAME} {
+	# WebSockets (and Aula Lab is WebSockets first of all: /collab and /control)
 	# pass through reverse_proxy by themselves and need no separate setup.
 	reverse_proxy 127.0.0.1:${PORT} {
 		# The only header named out loud. caddy sets it without us too, but the
@@ -1103,7 +1103,7 @@ ${COLLOQ_HOSTNAME} {
 		# address it sees and drops whatever the client put there.
 		header_up X-Forwarded-Proto https
 		# Unknown headers, on the other hand, pass through untouched, and this
-		# one names the client when a server runs behind Colloq's own Cloudflare
+		# one names the client when a server runs behind Aula Lab's own Cloudflare
 		# tunnel (TRUST_CF_CONNECTING_IP, server/src/net/inbound.ts). Here there
 		# is no Cloudflare, so anyone who sent it would be making it up.
 		header_up -Cf-Connecting-Ip
@@ -1122,7 +1122,7 @@ CONF
 
   cat > /etc/systemd/system/caddy.service <<UNIT
 [Unit]
-Description=Caddy for colloq (direct mode)
+Description=Caddy for aulalab (direct mode)
 After=network-online.target
 Wants=network-online.target
 
@@ -1168,7 +1168,7 @@ direct_publish() {
   direct_check_ports
   direct_point_dns
   direct_caddy
-  PUBLIC="https://${COLLOQ_HOSTNAME}"
+  PUBLIC="https://${AULALAB_HOSTNAME}"
 }
 
 # ------------------------------------------------------------- opening the address
@@ -1205,8 +1205,8 @@ elif [ "$VIA" = relay ]; then
   # The subdomain is all the instance asks of the relay: frps hands out names
   # only under its own zone, so a foreign name cannot be requested even with
   # the secret.
-  SUB="${COLLOQ_HOSTNAME%".$RELAY_DOMAIN"}"
-  CONF="$(mktemp -t colloq-frpc.XXXXXX)"
+  SUB="${AULALAB_HOSTNAME%".$RELAY_DOMAIN"}"
+  CONF="$(mktemp -t aulalab-frpc.XXXXXX)"
   # The secret goes into a file, not into arguments: the command line is
   # visible to the whole machine through ps, and the relay's shared key must
   # not show up there.
@@ -1254,7 +1254,7 @@ CONF
   chmod 600 "$CONF"
   frpc -c "$CONF" >"$LOG" 2>&1 &
   TUNNEL_PID=$!
-  PUBLIC="https://${COLLOQ_HOSTNAME}"
+  PUBLIC="https://${AULALAB_HOSTNAME}"
   # Wait for confirmation from the server, not for "N seconds have passed": a
   # subdomain taken by someone or a wrong secret is a refusal that comes at
   # once, and silently going on would mean handing out a link to nowhere.
@@ -1272,8 +1272,8 @@ CONF
   for _ in $(seq 1 30); do
     grep -q 'start proxy success' "$LOG" 2>/dev/null && { ok=1; break; }
     if grep -qE 'already exists' "$LOG" 2>/dev/null; then
-      die "the subdomain ${COLLOQ_HOSTNAME} is taken — this class is open from another machine.
-  Close it there or take another name: make host HOST=<name>.colloq.ru"
+      die "the subdomain ${AULALAB_HOSTNAME} is taken — this class is open from another machine.
+  Close it there or take another name: make host HOST=<name>.example.edu"
     fi
     if grep -qiE 'login to server failed|authorization failed|authentication failed|token in login doesn' "$LOG" 2>/dev/null; then
       die "the relay did not accept the secret. Check RELAY_TOKEN in .env."
@@ -1292,7 +1292,7 @@ CONF
   # here and not at the end: the mirror must be complete by the time the link
   # goes to the chat.
   upload_assets
-elif [ -n "${COLLOQ_HOSTNAME:-}" ]; then
+elif [ -n "${AULALAB_HOSTNAME:-}" ]; then
   step "opening the named Cloudflare tunnel"
   # A named tunnel: a permanent address, but it has to be set up once (make
   # tunnel-setup). Without that cloudflared does not know where to route.
@@ -1303,9 +1303,9 @@ elif [ -n "${COLLOQ_HOSTNAME:-}" ]; then
   # link opened for nobody.
   say "${DIM}    through Cloudflare. Your own relay (Cloudflare addresses do not${OFF}"
   say "${DIM}    open from Russia) — RELAY_* in .env, see make relay-setup${OFF}"
-  "$CLOUDFLARED" tunnel --no-autoupdate run --url "$LOCAL" ${ORIGIN_ARGS[@]+"${ORIGIN_ARGS[@]}"} colloq >"$LOG" 2>&1 &
+  "$CLOUDFLARED" tunnel --no-autoupdate run --url "$LOCAL" ${ORIGIN_ARGS[@]+"${ORIGIN_ARGS[@]}"} aulalab >"$LOG" 2>&1 &
   TUNNEL_PID=$!
-  PUBLIC="https://${COLLOQ_HOSTNAME}"
+  PUBLIC="https://${AULALAB_HOSTNAME}"
 else
   step "opening the quick Cloudflare tunnel"
   "$CLOUDFLARED" tunnel --no-autoupdate --url "$LOCAL" ${ORIGIN_ARGS[@]+"${ORIGIN_ARGS[@]}"} >"$LOG" 2>&1 &
@@ -1344,13 +1344,13 @@ case "$WHO" in
   service)
     # The service is NOT restarted, and this is a fix.
     #
-    # There used to be `systemctl restart colloq` here with the explanation
+    # There used to be `systemctl restart aulalab` here with the explanation
     # "the service reads .env at startup, a new address only arrives by a
     # restart". Not true: config.publicUrl is a getter, and readPublicUrl
     # (server/src/config.ts) rereads the file at least once every two seconds,
     # the file winning over the environment variable; all links are built
     # through it on every request. The same is written in the header of
-    # deploy/colloq.service. And the restart tore down all the sockets of the
+    # deploy/aulalab.service. And the restart tore down all the sockets of the
     # room, most noticeably when `make host` is repeated in the middle of a
     # class because the tunnel fell over: the room went into reconnecting for
     # no reason at all.
@@ -1385,7 +1385,7 @@ case "$WHO" in
       sleep 1
     done
     [ -n "$ok" ] || {
-      journalctl -u colloq -n 20 --no-pager 2>/dev/null >&2 || true
+      journalctl -u aulalab -n 20 --no-pager 2>/dev/null >&2 || true
       [ -n "$said" ] || die "the service stopped answering while the address was changing. Log: make service-logs"
       die "the service answers, but writes not ${PUBLIC} into links: .env was not reread. Log: make service-logs"
     }
@@ -1407,10 +1407,10 @@ case "$WHO" in
     ;;
   *)
     # Passing by silently is not allowed: the audience would get localhost, that is, nothing.
-    say "${RED}    ${LOCAL} is held by some other process, not colloq.${OFF}"
+    say "${RED}    ${LOCAL} is held by some other process, not aulalab.${OFF}"
     # Without docker the "container" form cannot be asked at all, and `make up`
     # here is indistinguishable from someone else's process; saying so is more
-    # honest than "not colloq".
+    # honest than "not aulalab".
     [ -n "$HAVE_DOCKER" ] || say "${DIM}    (there is no docker here, so a make up container could not even be asked)${OFF}"
     say "${DIM}    Its PUBLIC_URL cannot be changed from here — restart it yourself with${OFF}"
     say "${DIM}    PUBLIC_URL=${PUBLIC}, or links to classes will lead to localhost.${OFF}"
@@ -1446,7 +1446,7 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 
-# `colloq start --share`: the summary is printed by the supervisor, in one
+# `aulalab start --share`: the summary is printed by the supervisor, in one
 # block, with the link to the class from the database, which cannot be seen
 # from here (cli/src/launch-share.ts). From here it needs one marker line: the
 # address is up, the check from outside passed or not. It does not reach the
@@ -1454,13 +1454,13 @@ done
 #
 # There is no link with the installation token here on purpose: a terminal
 # with --share often stands on the projector, and the CLI never prints the
-# token (colloq link). The panel on this computer is open at the local
+# token (aulalab link). The panel on this computer is open at the local
 # address, and the sign-in there already exists.
 #
 # Only for a local session: a variable forgotten in the shell must not hide
 # the summary for the service or the cluster.
-if [ "${COLLOQ_SHARE:-}" = 1 ] && [ "$WHO" = local ]; then
-  if [ -n "$ok" ]; then say "@colloq-share ok ${PUBLIC}"; else say "@colloq-share unverified ${PUBLIC}"; fi
+if [ "${AULALAB_SHARE:-}" = 1 ] && [ "$WHO" = local ]; then
+  if [ -n "$ok" ]; then say "@aulalab-share ok ${PUBLIC}"; else say "@aulalab-share unverified ${PUBLIC}"; fi
   wait "$TUNNEL_PID"
   exit 0
 fi
@@ -1489,9 +1489,9 @@ token_works() {
 }
 
 #
-# k3s has a third candidate: the colloq-data volume is <state>/data on the
+# k3s has a third candidate: the aulalab-data volume is <state>/data on the
 # host (scripts/release.py · render, deploy/k3s/README.md), that is,
-# /var/lib/colloq/data if COLLOQ_STATE_DIR is not named. It used to be missing
+# /var/lib/aulalab/data if AULALAB_STATE_DIR is not named. It used to be missing
 # here, and on a k3s machine the link to the panel was printed only for
 # whoever guessed to set DATA_DIR themselves, while `make vast-up` sent people
 # for it exactly here, to the output of this session. It is asked first and
@@ -1504,7 +1504,7 @@ read_setup_token() {
     t="$(docker compose exec -T app cat /data/setup-token 2>/dev/null | tr -d '\r\n' || true)"
     [ -n "$t" ] && token_works "$t" && { printf '%s' "$t"; return 0; }
   fi
-  dirs+=("${DATA_DIR:-$COLLOQ_STATE_ROOT/data}")
+  dirs+=("${DATA_DIR:-$AULALAB_STATE_ROOT/data}")
   for dir in "${dirs[@]}"; do
     t="$(cat "$dir/setup-token" 2>/dev/null | tr -d '\r\n' || true)"
     [ -n "$t" ] && token_works "$t" && { printf '%s' "$t"; return 0; }
@@ -1515,7 +1515,7 @@ SETUP_TOKEN="$(read_setup_token || true)"
 
 printf '\n'
 if [ -n "$ok" ]; then
-  say "${BOLD}Colloq is available at this link${OFF}"
+  say "${BOLD}Aula Lab is available at this link${OFF}"
 else
   say "${RED}The check from this machine did not go through.${OFF}"
   if [ "$VIA" = direct ]; then
@@ -1573,7 +1573,7 @@ if [ "$VIA" = direct ]; then
   # service, which survives a closed terminal, a dropped ssh and a reboot of
   # the machine alike.
   say "${DIM}Everything runs here, and the students come straight here too: caddy on${OFF}"
-  say "${DIM}this machine terminates TLS and passes the request to colloq at ${LOCAL}.${OFF}"
+  say "${DIM}this machine terminates TLS and passes the request to aulalab at ${LOCAL}.${OFF}"
   say "${DIM}There is no relay and no Cloudflare on this path.${OFF}"
   printf '\n'
   say "${DIM}This window can be closed: caddy is a systemd service, it lives on its own.${OFF}"
@@ -1581,14 +1581,14 @@ if [ "$VIA" = direct ]; then
   say "${DIM}Read the log:           ${OFF}journalctl -u caddy -f"
   say "${DIM}PUBLIC_URL stays in .env: the address is alive, and rolling it back to${OFF}"
   say "${DIM}localhost is pointless — unlike a tunnel, it does not die with the script.${OFF}"
-  if [ -n "$RELAY_DOMAIN" ] && [ "${COLLOQ_HOSTNAME%".$RELAY_DOMAIN"}" != "$COLLOQ_HOSTNAME" ]; then
+  if [ -n "$RELAY_DOMAIN" ] && [ "${AULALAB_HOSTNAME%".$RELAY_DOMAIN"}" != "$AULALAB_HOSTNAME" ]; then
     # This has to be said plainly: a record for a specific name is stronger
     # than the wildcard, and while it exists, the relay has nothing to do with
     # this name. Giving the name back to it means deleting the record by hand
     # (or running scripts/dns.sh, which brings the zone to the shape "wildcard
     # to the relay").
     printf '\n'
-    say "${DIM}The record ${COLLOQ_HOSTNAME} → ${DIRECT_IP} stays in the zone and overrides${OFF}"
+    say "${DIM}The record ${AULALAB_HOSTNAME} → ${DIRECT_IP} stays in the zone and overrides${OFF}"
     say "${DIM}*.${RELAY_DOMAIN}: while it is there, this name leads here, not to the relay.${OFF}"
   fi
   printf '\n'
@@ -1599,7 +1599,7 @@ if [ "$VIA" = relay ]; then
 else
   say "${DIM}Everything runs here: the students' browsers go to Cloudflare, and it goes${OFF}"
 fi
-say "${DIM}to this window. Close it (Ctrl+C) and the link stops working, while colloq${OFF}"
+say "${DIM}to this window. Close it (Ctrl+C) and the link stops working, while aulalab${OFF}"
 say "${DIM}keeps turning locally at ${LOCAL}.${OFF}"
 # About the cluster, out loud and in advance: the cleanup there is not instant
 # (an application restart), and a second Ctrl+C in the middle of it would cut

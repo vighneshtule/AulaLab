@@ -25,7 +25,7 @@ test('nothing escapes the session directory', () => {
   const escapes = [
     '../secret',
     '../../etc/passwd',
-    '../../../data/colloq.db',
+    '../../../data/aulalab.db',
     'sub/../../out',
     '/etc/passwd',
     '/../../etc/passwd',
@@ -118,7 +118,7 @@ test('a symlink pointing out of the room is neither listed nor resolved', () => 
   const id = 'ws-symlink'
   createSession(id, 'Symlink test', null)
   const dir = sessionDir(id)
-  const secret = path.join(os.tmpdir(), `colloq-secret-${process.pid}`)
+  const secret = path.join(os.tmpdir(), `aulalab-secret-${process.pid}`)
   fs.writeFileSync(secret, 'the signing key')
   fs.writeFileSync(path.join(dir, 'honest.csv'), 'a,b\n')
   fs.symlinkSync(secret, path.join(dir, 'key.txt'))

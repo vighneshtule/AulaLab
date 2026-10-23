@@ -46,10 +46,10 @@ import { formatNumber, tr } from '@shared/i18n'
  */
 
 /** The hidden module the analysis lives in. Not a name in `globals()`. */
-export const INSPECT_MODULE = '_colloq_inspect'
+export const INSPECT_MODULE = '_aulalab_inspect'
 
 /** The key the answer travels under in `user_expressions`. */
-export const INSPECT_REPORT_KEY = 'colloq'
+export const INSPECT_REPORT_KEY = 'aulalab'
 
 /**
  * The expression the kernel evaluates after the code and puts into
@@ -207,7 +207,7 @@ def _arm(budget):
             return None
 
         def bang(signum, frame):
-            raise _Timeout('colloq-inspect')
+            raise _Timeout('aulalab-inspect')
 
         old = signal.signal(signal.SIGALRM, bang)
         signal.setitimer(signal.ITIMER_REAL, budget)
@@ -305,7 +305,7 @@ def _wrap(display, sig):
 # The "top-level module name → distribution" map, computed once per kernel.
 #
 # packages_distributions() walks ALL dist-info of the environment: 84 ms and 117
-# entries on the colloq-kernel:base image (measured 20 Sep 2026). For a single
+# entries on the aulalab-kernel:base image (measured 20 Sep 2026). For a single
 # question that costs more than jedi's analysis itself (9 ms for pd), and the
 # map changes only on pip install, i.e. once a class, and not silently: a new
 # kernel rereads it.
@@ -835,7 +835,7 @@ export function inspectStaticSource(question: StaticInspectQuestion): string {
   return [
     `if getattr(__import__('sys').modules.get(${module}), 'version', None) != ` +
       `${JSON.stringify(implVersion())}: ` +
-      `exec(compile(${implLiteral()}, '<colloq-inspect>', 'exec'), ` +
+      `exec(compile(${implLiteral()}, '<aulalab-inspect>', 'exec'), ` +
       `__import__('sys').modules.setdefault(${module}, ` +
       `__import__('types').ModuleType(${module})).__dict__)`,
     `__import__('sys').modules[${module}].look(${JSON.stringify(whole)}, ${line}, ${column}, ` +
@@ -865,7 +865,7 @@ export function inspectFactsSource(expr: string, limitBytes?: number): string {
   return [
     `if getattr(__import__('sys').modules.get(${module}), 'version', None) != ` +
       `${JSON.stringify(implVersion())}: ` +
-      `exec(compile(${implLiteral()}, '<colloq-inspect>', 'exec'), ` +
+      `exec(compile(${implLiteral()}, '<aulalab-inspect>', 'exec'), ` +
       `__import__('sys').modules.setdefault(${module}, ` +
       `__import__('types').ModuleType(${module})).__dict__)`,
     `__import__('sys').modules[${module}].facts(globals(), ${JSON.stringify(expr)}, ${limit})`,
@@ -939,7 +939,7 @@ export function inspectBriefSource(expr: string): string {
   return [
     `if getattr(__import__('sys').modules.get(${module}), 'version', None) != ` +
       `${JSON.stringify(implVersion())}: ` +
-      `exec(compile(${implLiteral()}, '<colloq-inspect>', 'exec'), ` +
+      `exec(compile(${implLiteral()}, '<aulalab-inspect>', 'exec'), ` +
       `__import__('sys').modules.setdefault(${module}, ` +
       `__import__('types').ModuleType(${module})).__dict__)`,
     `__import__('sys').modules[${module}].brief(globals(), ${JSON.stringify(expr)})`,

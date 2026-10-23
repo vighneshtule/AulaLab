@@ -25,8 +25,8 @@ try {
       const path = new URL(request.url()).pathname
       if (request.isNavigationRequest()) {
         const response = await route.fetch()
-        const html = (await response.text()).replace(/<meta name="colloq-language"[^>]*>/, '')
-          .replace('</head>', `<meta name="colloq-language" content="${locale}"></head>`)
+        const html = (await response.text()).replace(/<meta name="aulalab-language"[^>]*>/, '')
+          .replace('</head>', `<meta name="aulalab-language" content="${locale}"></head>`)
         return route.fulfill({ response, body: html })
       }
       if (path === '/api/instance') return route.fulfill({ json: { language: locale } })
@@ -58,7 +58,7 @@ try {
   const errors = []
   page.on('pageerror', (error) => errors.push(error.message))
   await page.addInitScript(({ room, info }) => {
-    localStorage.setItem('colloq.room.v1', JSON.stringify({ [room]: info }))
+    localStorage.setItem('aulalab.room.v1', JSON.stringify({ [room]: info }))
   }, { room, info })
   let blocked = false
   await context.route('**/*', async (route) => {
@@ -69,7 +69,7 @@ try {
   })
   await page.goto(base.href)
   await page.getByRole('heading', { name: messages['room.ui.1210'].ru, exact: true }).waitFor({ state: 'visible' })
-  assert.equal(await page.evaluate((room) => JSON.parse(localStorage.getItem('colloq.room.v1') ?? '{}')[room] ?? null, room), null, 'a deleted room card is forgotten before its optional IndexedDB chunk arrives')
+  assert.equal(await page.evaluate((room) => JSON.parse(localStorage.getItem('aulalab.room.v1') ?? '{}')[room] ?? null, room), null, 'a deleted room card is forgotten before its optional IndexedDB chunk arrives')
   assert.ok(blocked, 'the failed optional cleanup import was exercised')
   assert.deepEqual(errors, [])
   await context.close()

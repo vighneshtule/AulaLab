@@ -98,7 +98,7 @@ const RETRY_MS = 5_000
 
 /** Snapshot timings, for the seminar that has quietly grown a 4 MB notebook. */
 const DEBUG =
-  (process.env.DEBUG ?? '').includes('colloq') || (process.env.LOG_LEVEL ?? '') === 'debug'
+  (process.env.DEBUG ?? '').includes('aulalab') || (process.env.LOG_LEVEL ?? '') === 'debug'
 
 interface Binding {
   sessionId: string

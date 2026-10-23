@@ -1,5 +1,5 @@
 /**
- * The admin surface: the teaching side of Colloq.
+ * The admin surface: the teaching side of Aula Lab.
  *
  * Students never touch anything in this file. They open a seminar link, type a
  * name and are in — that stays true. This is the other half: who may create a
@@ -1685,7 +1685,7 @@ export function providerConfigured(cfg: {
  * The cookie is HttpOnly and SameSite=Lax and is the ONLY thing that authorises
  * an admin request: a sign-in link is spent once and exchanged for it.
  */
-export const STAFF_COOKIE = 'colloq_staff'
+export const STAFF_COOKIE = 'aulalab_staff'
 
 /** Where a personal sign-in link points. The page exchanges :key for the cookie. */
 export const SIGN_IN_PATH = '/admin/k/'
@@ -1784,7 +1784,7 @@ export interface AdminErrorBody {
  * An environment is a list of packages that gets baked into a container image
  * on top of the base every kernel has. The panel calls them environments; on
  * disk each one is `kernel/environments/<name>.txt`, and in Docker each is the
- * image tag `colloq-kernel:<name>`.
+ * image tag `aulalab-kernel:<name>`.
  */
 export type EnvironmentState =
   /** Built and ready — a seminar switched to it starts in seconds. */
@@ -1821,7 +1821,7 @@ export interface AdminEnvironment {
   error: string | null
   /**
    * Which environment this image is built on top of — the line
-   * `# colloq: from <name>` in the file's header; null means on top of the
+   * `# aulalab: from <name>` in the file's header; null means on top of the
    * ordinary base, like most.
    *
    * Shown because it explains two things at once: why torch is not in the
@@ -1830,7 +1830,7 @@ export interface AdminEnvironment {
    */
   parent: string | null
   /**
-   * The environment asks for a GPU — with a `# colloq: gpu` line in its own
+   * The environment asks for a GPU — with a `# aulalab: gpu` line in its own
    * file's header or in the header of the one it is built on top of: the flag
    * is inherited together with the CUDA wheels.
    *
@@ -1842,7 +1842,7 @@ export interface AdminEnvironment {
   gpu: boolean
   /**
    * Which Python the environment asks for — `'3.12'`: by its own
-   * `# colloq: python` directive, and for a chain by the directive of its
+   * `# aulalab: python` directive, and for a chain by the directive of its
    * ROOT, because the version comes from the base image and a layer on top
    * does not change it.
    *
@@ -1916,8 +1916,8 @@ export interface SaveEnvironmentRequest {
 export const ENVIRONMENT_NAME = /^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$|^[a-z0-9]$/
 
 /**
- * Which environment this one is built on top of — the `# colloq: from <name>`
- * directive in the header, in the same form as `# colloq: gpu`.
+ * Which environment this one is built on top of — the `# aulalab: from <name>`
+ * directive in the header, in the same form as `# aulalab: gpu`.
  *
  * An environment has one layer, and any edit of the list installs all of it
  * over again. For an environment with torch that is three gigabytes of wheels
@@ -1935,7 +1935,7 @@ export const ENVIRONMENT_NAME = /^[a-z0-9][a-z0-9-]{0,30}[a-z0-9]$|^[a-z0-9]$/
  */
 export function declaresParent(source: string): string | null {
   for (const line of source.split('\n')) {
-    const found = /^#\s*colloq:\s*from\s+(\S+)\s*$/i.exec(line.trim())
+    const found = /^#\s*aulalab:\s*from\s+(\S+)\s*$/i.exec(line.trim())
     if (found) return found[1] ?? null
   }
   return null
@@ -1964,16 +1964,16 @@ export const PYTHON_VERSIONS = ['3.10', '3.11', '3.12', '3.13'] as const
 export const DEFAULT_PYTHON = '3.11'
 
 /**
- * The `# colloq: python 3.12` line in the header — the same family as
- * `# colloq: gpu` and `# colloq: from <name>`: to pip it is a comment, to us a
+ * The `# aulalab: python 3.12` line in the header — the same family as
+ * `# aulalab: gpu` and `# aulalab: from <name>`: to pip it is a comment, to us a
  * property of the environment.
  *
  * Free text does not count as a version: it goes into the base image name
  * (`python:3.12-slim-bookworm`), and "3.12 or newer" does not exist there.
  * 3.9…3.13 is what is accepted at all; the form offers PYTHON_VERSIONS.
  */
-const PYTHON_DIRECTIVE = /^#\s*colloq:\s*python\s+(\S+)\s*$/i
-const PYTHON_LINE = /^#\s*colloq:\s*python\b/i
+const PYTHON_DIRECTIVE = /^#\s*aulalab:\s*python\s+(\S+)\s*$/i
+const PYTHON_LINE = /^#\s*aulalab:\s*python\b/i
 const PYTHON_VERSION = /^3\.(?:9|1[0-3])$/
 
 /**
@@ -1981,8 +1981,8 @@ const PYTHON_VERSION = /^3\.(?:9|1[0-3])$/
  *
  * It is looked for among all comments, not only up to the first line with a
  * package: a directive added at the end of the file must work. The line is
- * compared whole — "# colloq: python do not touch" is not a directive, and
- * neither is "# colloq: python 2.7": there is no such slim image, and
+ * compared whole — "# aulalab: python do not touch" is not a directive, and
+ * neither is "# aulalab: python 2.7": there is no such slim image, and
  * silently building something else instead is worse than not seeing the
  * directive at all.
  */
@@ -1999,7 +1999,7 @@ export function declaresPython(source: string): string | null {
  * A line that LOOKS like a version directive but is not a version.
  *
  * Needed exactly so that the editor says so out loud:
- * `# colloq: python 3.8` is silently read as "nothing was said", and the
+ * `# aulalab: python 3.8` is silently read as "nothing was said", and the
  * environment is built on the default — one can find that out from the build
  * log, but not from the screen.
  */
@@ -2024,7 +2024,7 @@ export function unreadablePython(source: string): string | null {
 export function withPython(source: string, version: string): string {
   const kept = source.split('\n').filter((line) => !PYTHON_LINE.test(line.trim()))
   if (version === DEFAULT_PYTHON) return kept.join('\n')
-  return [`# colloq: python ${version}`, ...kept].join('\n')
+  return [`# aulalab: python ${version}`, ...kept].join('\n')
 }
 
 /** The base image of the chain's root. The name is assembled in one place — here. */

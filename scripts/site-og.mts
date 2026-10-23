@@ -3,7 +3,7 @@
  *
  * Under a link to the site a messenger shows an image, and until now there
  * was exactly one: site/img/og.png, drawn by hand, in Russian and captioned
- * colloq.ru. The English page had no preview at all, and on the colloq.cc
+ * example.edu. The English page had no preview at all, and on the github.com/vighneshtule/AulaLab
  * mirror a person was promised an address that is not on the image.
  *
  * The drawing is done by satori (tree → SVG with its own line layout) and
@@ -151,8 +151,7 @@ export interface OgCopy {
 
 /*
  * The Russian text is word for word what stood on the old og.png; the English
- * is from the hero of site/en/index.html, word for word: the preview promises
- * a page, and the promise must match what a person sees on opening the link.
+ * is from the hero of site/en/index.html, word for word: the preview identifies the Aula Lab project and matches the link a person opens.
  *
  * On both images the lead is shorter than in the page's hero: "слайды с
  * рукописными заметками и задания с отдельным ответом для каждого" ("slides
@@ -170,7 +169,7 @@ const RU: OgCopy = {
     { number: '02', title: 'Лекция', note: 'Объясняем на слайдах и от руки' },
     { number: '03', title: 'Консилиум', note: 'Каждый решает, обсуждаем вместе' },
   ],
-  domain: 'colloq.ru',
+  domain: 'github.com/vighneshtule/AulaLab',
 }
 
 const EN: OgCopy = {
@@ -186,7 +185,7 @@ const EN: OgCopy = {
     { number: '02', title: 'Lecture', note: 'Explain on slides and by hand' },
     { number: '03', title: 'Council', note: 'Everyone answers, the class discusses' },
   ],
-  domain: 'colloq.ru',
+  domain: 'github.com/vighneshtule/AulaLab',
 }
 
 /** What we draw and where it goes. The order matters only for the log. */
@@ -194,9 +193,9 @@ export const OG_IMAGES: Array<{ file: string; copy: OgCopy }> = [
   { file: 'og.png', copy: RU },
   { file: 'og-en.png', copy: EN },
   /* The mirror: the same English text, but the caption names the mirror. A
-     person who was given colloq.cc must see colloq.cc on the image — they read
+     person who was given github.com/vighneshtule/AulaLab must see github.com/vighneshtule/AulaLab on the image — they read
      it with their eyes and type it into the address bar. */
-  { file: 'og-cc.png', copy: { ...EN, domain: 'colloq.cc' } },
+  { file: 'og-cc.png', copy: { ...EN, domain: 'github.com/vighneshtule/AulaLab' } },
 ]
 
 type Node = { type: string; props: Record<string, unknown> }
@@ -251,7 +250,7 @@ function logo(): Node {
     },
     [
       { type: 'svg', props: { width: 28, height: 28, viewBox: '0 0 24 24', children: cells } },
-      sans('COLLOQ', {
+      sans('AULA LAB', {
         fontWeight: 900,
         fontSize: 22,
         lineHeight: 1.27,

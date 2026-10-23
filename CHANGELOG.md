@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Colloq are documented in this file. It follows
+All notable changes to Aula Lab are documented in this file. It follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html); the version lives
 in the root `package.json`.
 
@@ -13,458 +13,458 @@ tags the release. Do not edit it by hand in feature pull requests; see
 [RELEASING.md](RELEASING.md) for the release flow. The 0.1.0 section below was
 written by hand before that.
 
-## [0.27.0](https://github.com/colloq-edu/colloq/compare/v0.26.0...v0.27.0) (2026-10-22)
+## [0.27.0](https://github.com/vighneshtule/AulaLab/compare/v0.26.0...v0.27.0) (2026-10-22)
 
 
 ### Features
 
-* **competitions:** a competition's environment window downloads its pip freeze ([1e80228](https://github.com/colloq-edu/colloq/commit/1e802285e9f5f7cb6ffe11fcaefd69b68f0ba7dc))
+* **competitions:** a competition's environment window downloads its pip freeze ([1e80228](https://github.com/vighneshtule/AulaLab/commit/1e802285e9f5f7cb6ffe11fcaefd69b68f0ba7dc))
 
 
 ### Bug Fixes
 
-* **admin:** every admin screen stands on a placeholder shaped like its content while it loads ([1e80228](https://github.com/colloq-edu/colloq/commit/1e802285e9f5f7cb6ffe11fcaefd69b68f0ba7dc))
+* **admin:** every admin screen stands on a placeholder shaped like its content while it loads ([1e80228](https://github.com/vighneshtule/AulaLab/commit/1e802285e9f5f7cb6ffe11fcaefd69b68f0ba7dc))
 
 
 ### Performance
 
-* **council:** a pool attempt crosses the machine's tunnel once, with a lean entry ([#60](https://github.com/colloq-edu/colloq/issues/60)) ([a418d8f](https://github.com/colloq-edu/colloq/commit/a418d8fdc4dc01dd5441d381c7841f909945d774))
+* **council:** a pool attempt crosses the machine's tunnel once, with a lean entry ([#60](https://github.com/vighneshtule/AulaLab/issues/60)) ([a418d8f](https://github.com/vighneshtule/AulaLab/commit/a418d8fdc4dc01dd5441d381c7841f909945d774))
 
-## [0.26.0](https://github.com/colloq-edu/colloq/compare/v0.25.1...v0.26.0) (2026-10-21)
-
-
-### Features
-
-* **admin:** download an environment's pip freeze from its window ([eb8dbe9](https://github.com/colloq-edu/colloq/commit/eb8dbe92204e8369b8b1d58c65279dfdbfe38bd2))
-* **council:** the council's attempts run on a pool of workers on a class machine, each from a snapshot of the notebook's kernel, in parallel and apart from it ([c9e560f](https://github.com/colloq-edu/colloq/commit/c9e560fc182621d38023494a573f6cae5ff82861))
-
-
-### Bug Fixes
-
-* **admin:** fields in a settings row stand level whatever their captions' height ([eb8dbe9](https://github.com/colloq-edu/colloq/commit/eb8dbe92204e8369b8b1d58c65279dfdbfe38bd2))
-
-## [0.25.1](https://github.com/colloq-edu/colloq/compare/v0.25.0...v0.25.1) (2026-10-21)
-
-
-### Bug Fixes
-
-* **admin:** a competition's page shows its address with «открыть» and «скопировать», as a course's does ([#54](https://github.com/colloq-edu/colloq/issues/54)) ([2df4abb](https://github.com/colloq-edu/colloq/commit/2df4abb1ce1aeb02d9def25210c69951ca01abda))
-
-## [0.25.0](https://github.com/colloq-edu/colloq/compare/v0.24.0...v0.25.0) (2026-10-21)
+## [0.26.0](https://github.com/vighneshtule/AulaLab/compare/v0.25.1...v0.26.0) (2026-10-21)
 
 
 ### Features
 
-* **admin:** «Добавить в курс…» for a class without a course, from the classes list ([ce4f7ec](https://github.com/colloq-edu/colloq/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
-* **admin:** the classes list shows each class's environment, changed in the class settings while no kernel runs ([ce4f7ec](https://github.com/colloq-edu/colloq/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
-* **classes:** classes on machines: class notebooks and personal notebooks compute on the machines the owner opens to classes, with files both ways and failover ([f943007](https://github.com/colloq-edu/colloq/commit/f943007984cdc7021b72648465d78bfee64f5973))
-* **competitions:** a submission may get the cores of the biggest machine that runs submissions, not only this server's ([ce4f7ec](https://github.com/colloq-edu/colloq/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
-* **competitions:** download a competition's materials from its settings, for colleagues to look at ([ce4f7ec](https://github.com/colloq-edu/colloq/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
+* **admin:** download an environment's pip freeze from its window ([eb8dbe9](https://github.com/vighneshtule/AulaLab/commit/eb8dbe92204e8369b8b1d58c65279dfdbfe38bd2))
+* **council:** the council's attempts run on a pool of workers on a class machine, each from a snapshot of the notebook's kernel, in parallel and apart from it ([c9e560f](https://github.com/vighneshtule/AulaLab/commit/c9e560fc182621d38023494a573f6cae5ff82861))
 
 
 ### Bug Fixes
 
-* **admin:** the panel no longer scrolls past its bottom over the left menu or a competition's settings ([ce4f7ec](https://github.com/colloq-edu/colloq/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
-* **competitions:** every «Участвовать» leads straight to the join step, in view and focused ([ce4f7ec](https://github.com/colloq-edu/colloq/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
+* **admin:** fields in a settings row stand level whatever their captions' height ([eb8dbe9](https://github.com/vighneshtule/AulaLab/commit/eb8dbe92204e8369b8b1d58c65279dfdbfe38bd2))
 
-## [0.24.0](https://github.com/colloq-edu/colloq/compare/v0.23.0...v0.24.0) (2026-10-14)
-
-
-### Features
-
-* **rooms:** line numbers in code cells, turned on for the whole room in its rules ([#50](https://github.com/colloq-edu/colloq/issues/50)) ([cfaaa73](https://github.com/colloq-edu/colloq/commit/cfaaa730ba3b63ab49aed85f42190dec54882798))
+## [0.25.1](https://github.com/vighneshtule/AulaLab/compare/v0.25.0...v0.25.1) (2026-10-21)
 
 
 ### Bug Fixes
 
-* **runners:** console codes in the audit log, local images out of join commands, the metric pin keeps its row ([#48](https://github.com/colloq-edu/colloq/issues/48)) ([1d19fa0](https://github.com/colloq-edu/colloq/commit/1d19fa0c88c679d9abd50d8a04fd7895e74e30e6))
+* **admin:** a competition's page shows its address with “Open” and “Copy”, as a course's does ([#54](https://github.com/vighneshtule/AulaLab/issues/54)) ([2df4abb](https://github.com/vighneshtule/AulaLab/commit/2df4abb1ce1aeb02d9def25210c69951ca01abda))
 
-## [0.23.0](https://github.com/colloq-edu/colloq/compare/v0.22.0...v0.23.0) (2026-10-14)
+## [0.25.0](https://github.com/vighneshtule/AulaLab/compare/v0.24.0...v0.25.0) (2026-10-21)
 
 
 ### Features
 
-* **runners:** machines that run a home's competition submissions ([#46](https://github.com/colloq-edu/colloq/issues/46)) ([089ec7e](https://github.com/colloq-edu/colloq/commit/089ec7e72d1d3126fd40b74de2b462c155abbe6c))
+* **admin:** “Add to course…” for a class without a course, from the classes list ([ce4f7ec](https://github.com/vighneshtule/AulaLab/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
+* **admin:** the classes list shows each class's environment, changed in the class settings while no kernel runs ([ce4f7ec](https://github.com/vighneshtule/AulaLab/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
+* **classes:** classes on machines: class notebooks and personal notebooks compute on the machines the owner opens to classes, with files both ways and failover ([f943007](https://github.com/vighneshtule/AulaLab/commit/f943007984cdc7021b72648465d78bfee64f5973))
+* **competitions:** a submission may get the cores of the biggest machine that runs submissions, not only this server's ([ce4f7ec](https://github.com/vighneshtule/AulaLab/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
+* **competitions:** download a competition's materials from its settings, for colleagues to look at ([ce4f7ec](https://github.com/vighneshtule/AulaLab/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
+
+
+### Bug Fixes
+
+* **admin:** the panel no longer scrolls past its bottom over the left menu or a competition's settings ([ce4f7ec](https://github.com/vighneshtule/AulaLab/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
+* **competitions:** every “Join” leads straight to the join step, in view and focused ([ce4f7ec](https://github.com/vighneshtule/AulaLab/commit/ce4f7ec59f980c3c2978cfb428a69e19041f9e9f))
+
+## [0.24.0](https://github.com/vighneshtule/AulaLab/compare/v0.23.0...v0.24.0) (2026-10-14)
+
+
+### Features
+
+* **rooms:** line numbers in code cells, turned on for the whole room in its rules ([#50](https://github.com/vighneshtule/AulaLab/issues/50)) ([cfaaa73](https://github.com/vighneshtule/AulaLab/commit/cfaaa730ba3b63ab49aed85f42190dec54882798))
+
+
+### Bug Fixes
+
+* **runners:** console codes in the audit log, local images out of join commands, the metric pin keeps its row ([#48](https://github.com/vighneshtule/AulaLab/issues/48)) ([1d19fa0](https://github.com/vighneshtule/AulaLab/commit/1d19fa0c88c679d9abd50d8a04fd7895e74e30e6))
+
+## [0.23.0](https://github.com/vighneshtule/AulaLab/compare/v0.22.0...v0.23.0) (2026-10-14)
+
+
+### Features
+
+* **runners:** machines that run a home's competition submissions ([#46](https://github.com/vighneshtule/AulaLab/issues/46)) ([089ec7e](https://github.com/vighneshtule/AulaLab/commit/089ec7e72d1d3126fd40b74de2b462c155abbe6c))
 
 
 ### Documentation
 
-* **vast:** record the GPU runner check on the released 0.22.0 ([#44](https://github.com/colloq-edu/colloq/issues/44)) ([653b436](https://github.com/colloq-edu/colloq/commit/653b436f4c9bb4176d6d6409c7cfb1994802a94c))
+* **vast:** record the GPU runner check on the released 0.22.0 ([#44](https://github.com/vighneshtule/AulaLab/issues/44)) ([653b436](https://github.com/vighneshtule/AulaLab/commit/653b436f4c9bb4176d6d6409c7cfb1994802a94c))
 
-## [0.22.0](https://github.com/colloq-edu/colloq/compare/v0.21.0...v0.22.0) (2026-10-13)
-
-
-### Features
-
-* **competitions:** GPU slices for submission runners ([#42](https://github.com/colloq-edu/colloq/issues/42)) ([73640ec](https://github.com/colloq-edu/colloq/commit/73640ec436760085607a03051914fc831881c771))
-
-## [0.21.0](https://github.com/colloq-edu/colloq/compare/v0.20.0...v0.21.0) (2026-10-12)
+## [0.22.0](https://github.com/vighneshtule/AulaLab/compare/v0.21.0...v0.22.0) (2026-10-13)
 
 
 ### Features
 
-* **lecture:** console v4 — a magnifier the hall follows, a pointer that holds the word, sheets you can walk ([#40](https://github.com/colloq-edu/colloq/issues/40)) ([ec8d5e2](https://github.com/colloq-edu/colloq/commit/ec8d5e2d29437ae909bb5d2bc3dc783db4e6cf3d))
+* **competitions:** GPU slices for submission runners ([#42](https://github.com/vighneshtule/AulaLab/issues/42)) ([73640ec](https://github.com/vighneshtule/AulaLab/commit/73640ec436760085607a03051914fc831881c771))
 
-## [0.20.0](https://github.com/colloq-edu/colloq/compare/v0.19.0...v0.20.0) (2026-10-09)
+## [0.21.0](https://github.com/vighneshtule/AulaLab/compare/v0.20.0...v0.21.0) (2026-10-12)
 
 
 ### Features
 
-* **resources:** «Работают сейчас» — see what holds the machine's memory and stop it ([#38](https://github.com/colloq-edu/colloq/issues/38)) ([baa9409](https://github.com/colloq-edu/colloq/commit/baa9409f542e131f7cc44aa866d023c496a58275))
+* **lecture:** console v4 — a magnifier the hall follows, a pointer that holds the word, sheets you can walk ([#40](https://github.com/vighneshtule/AulaLab/issues/40)) ([ec8d5e2](https://github.com/vighneshtule/AulaLab/commit/ec8d5e2d29437ae909bb5d2bc3dc783db4e6cf3d))
 
-## [0.19.0](https://github.com/colloq-edu/colloq/compare/v0.18.0...v0.19.0) (2026-10-06)
+## [0.20.0](https://github.com/vighneshtule/AulaLab/compare/v0.19.0...v0.20.0) (2026-10-09)
+
+
+### Features
+
+* **resources:** “Running now” — see what holds the machine's memory and stop it ([#38](https://github.com/vighneshtule/AulaLab/issues/38)) ([baa9409](https://github.com/vighneshtule/AulaLab/commit/baa9409f542e131f7cc44aa866d023c496a58275))
+
+## [0.19.0](https://github.com/vighneshtule/AulaLab/compare/v0.18.0...v0.19.0) (2026-10-06)
 
 
 ### ⚠ BREAKING CHANGES
 
-* **panel:** course teachers — every teacher sees and runs only what they teach ([#36](https://github.com/colloq-edu/colloq/issues/36))
+* **panel:** course teachers — every teacher sees and runs only what they teach ([#36](https://github.com/vighneshtule/AulaLab/issues/36))
 
 ### Features
 
-* **panel:** course teachers — every teacher sees and runs only what they teach ([#36](https://github.com/colloq-edu/colloq/issues/36)) ([fc53a2e](https://github.com/colloq-edu/colloq/commit/fc53a2e716f3f2e4e2396a1cd62c863f7283e03e))
+* **panel:** course teachers — every teacher sees and runs only what they teach ([#36](https://github.com/vighneshtule/AulaLab/issues/36)) ([fc53a2e](https://github.com/vighneshtule/AulaLab/commit/fc53a2e716f3f2e4e2396a1cd62c863f7283e03e))
 
-## [0.18.0](https://github.com/colloq-edu/colloq/compare/v0.17.0...v0.18.0) (2026-10-06)
-
-
-### Features
-
-* **pages:** Markdown reads as a tab, «Изменить материалы» on the course row, rail counts on deep addresses ([#34](https://github.com/colloq-edu/colloq/issues/34)) ([b34ac79](https://github.com/colloq-edu/colloq/commit/b34ac79931edf5bd9124e73535cdfa5c3e65c04d))
-
-## [0.17.0](https://github.com/colloq-edu/colloq/compare/v0.16.1...v0.17.0) (2026-10-04)
+## [0.18.0](https://github.com/vighneshtule/AulaLab/compare/v0.17.0...v0.18.0) (2026-10-06)
 
 
 ### Features
 
-* **competitions:** «Скачать всё» for the open data, and a quieter conditions column ([#32](https://github.com/colloq-edu/colloq/issues/32)) ([01a2d22](https://github.com/colloq-edu/colloq/commit/01a2d22bd1500cb4f0ce9298cdc39115218f63f9))
+* **pages:** Markdown reads as a tab, “Edit materials” on the course row, rail counts on deep addresses ([#34](https://github.com/vighneshtule/AulaLab/issues/34)) ([b34ac79](https://github.com/vighneshtule/AulaLab/commit/b34ac79931edf5bd9124e73535cdfa5c3e65c04d))
 
-## [0.16.1](https://github.com/colloq-edu/colloq/compare/v0.16.0...v0.16.1) (2026-10-04)
+## [0.17.0](https://github.com/vighneshtule/AulaLab/compare/v0.16.1...v0.17.0) (2026-10-04)
+
+
+### Features
+
+* **competitions:** “Download all” for the open data, and a quieter conditions column ([#32](https://github.com/vighneshtule/AulaLab/issues/32)) ([01a2d22](https://github.com/vighneshtule/AulaLab/commit/01a2d22bd1500cb4f0ce9298cdc39115218f63f9))
+
+## [0.16.1](https://github.com/vighneshtule/AulaLab/compare/v0.16.0...v0.16.1) (2026-10-04)
 
 
 ### Bug Fixes
 
-* **competitions:** one phase on every screen — a passed deadline is finished, late intake is visible ([#30](https://github.com/colloq-edu/colloq/issues/30)) ([542346c](https://github.com/colloq-edu/colloq/commit/542346c004fd3be8f02ae7aba4295d2dd71d529d))
+* **competitions:** one phase on every screen — a passed deadline is finished, late intake is visible ([#30](https://github.com/vighneshtule/AulaLab/issues/30)) ([542346c](https://github.com/vighneshtule/AulaLab/commit/542346c004fd3be8f02ae7aba4295d2dd71d529d))
 
-## [0.16.0](https://github.com/colloq-edu/colloq/compare/v0.15.0...v0.16.0) (2026-10-04)
+## [0.16.0](https://github.com/vighneshtule/AulaLab/compare/v0.15.0...v0.16.0) (2026-10-04)
 
 
 ### ⚠ BREAKING CHANGES
 
-* **competitions:** late submissions, failures that never eat the limit, a hidden test ([#28](https://github.com/colloq-edu/colloq/issues/28))
+* **competitions:** late submissions, failures that never eat the limit, a hidden test ([#28](https://github.com/vighneshtule/AulaLab/issues/28))
 
 ### Features
 
-* **competitions:** late submissions, failures that never eat the limit, a hidden test ([#28](https://github.com/colloq-edu/colloq/issues/28)) ([743e405](https://github.com/colloq-edu/colloq/commit/743e4055ee040dafdb9209347394f12d2b6480fa))
+* **competitions:** late submissions, failures that never eat the limit, a hidden test ([#28](https://github.com/vighneshtule/AulaLab/issues/28)) ([743e405](https://github.com/vighneshtule/AulaLab/commit/743e4055ee040dafdb9209347394f12d2b6480fa))
 
-## [0.15.0](https://github.com/colloq-edu/colloq/compare/v0.14.0...v0.15.0) (2026-10-03)
+## [0.15.0](https://github.com/vighneshtule/AulaLab/compare/v0.14.0...v0.15.0) (2026-10-03)
 
 
 ### Features
 
-* **lecture:** speaker notes reader and editor, lecture take-over, a smooth pointer ([#27](https://github.com/colloq-edu/colloq/issues/27)) ([2eb62c9](https://github.com/colloq-edu/colloq/commit/2eb62c901e938f0bf0d8d749abe2a9341e519dfb))
+* **lecture:** speaker notes reader and editor, lecture take-over, a smooth pointer ([#27](https://github.com/vighneshtule/AulaLab/issues/27)) ([2eb62c9](https://github.com/vighneshtule/AulaLab/commit/2eb62c901e938f0bf0d8d749abe2a9341e519dfb))
 
 
 ### Bug Fixes
 
-* **scripts:** the activity sheet keeps numbers and counts only the class itself ([#25](https://github.com/colloq-edu/colloq/issues/25)) ([7367666](https://github.com/colloq-edu/colloq/commit/73676669fd48032595b2f6ef67f0ff4a7a8beab0))
+* **scripts:** the activity sheet keeps numbers and counts only the class itself ([#25](https://github.com/vighneshtule/AulaLab/issues/25)) ([7367666](https://github.com/vighneshtule/AulaLab/commit/73676669fd48032595b2f6ef67f0ff4a7a8beab0))
 
-## [0.14.0](https://github.com/colloq-edu/colloq/compare/v0.13.0...v0.14.0) (2026-10-03)
-
-
-### Features
-
-* **courses:** folders on class pages, one admin scale, the room open to all ([#23](https://github.com/colloq-edu/colloq/issues/23)) ([c3108f2](https://github.com/colloq-edu/colloq/commit/c3108f2537a8ba7b38e90bd3a2c8363fcc899329))
-
-## [0.13.0](https://github.com/colloq-edu/colloq/compare/v0.12.0...v0.13.0) (2026-10-02)
+## [0.14.0](https://github.com/vighneshtule/AulaLab/compare/v0.13.0...v0.14.0) (2026-10-03)
 
 
 ### Features
 
-* **courses:** class pages with every notebook, files and the class day ([#21](https://github.com/colloq-edu/colloq/issues/21)) ([70bc5db](https://github.com/colloq-edu/colloq/commit/70bc5dbaf0dc75e3ad4b6431c33e23536d49eb9f))
+* **courses:** folders on class pages, one admin scale, the room open to all ([#23](https://github.com/vighneshtule/AulaLab/issues/23)) ([c3108f2](https://github.com/vighneshtule/AulaLab/commit/c3108f2537a8ba7b38e90bd3a2c8363fcc899329))
 
-## [0.12.0](https://github.com/colloq-edu/colloq/compare/v0.11.1...v0.12.0) (2026-10-01)
+## [0.13.0](https://github.com/vighneshtule/AulaLab/compare/v0.12.0...v0.13.0) (2026-10-02)
 
 
 ### Features
 
-* **server:** link cards for competitions, the competitions list and courses ([c8bdc35](https://github.com/colloq-edu/colloq/commit/c8bdc3575368a15bc301727c28566f942260becf))
+* **courses:** class pages with every notebook, files and the class day ([#21](https://github.com/vighneshtule/AulaLab/issues/21)) ([70bc5db](https://github.com/vighneshtule/AulaLab/commit/70bc5dbaf0dc75e3ad4b6431c33e23536d49eb9f))
 
-## [0.11.1](https://github.com/colloq-edu/colloq/compare/v0.11.0...v0.11.1) (2026-10-01)
+## [0.12.0](https://github.com/vighneshtule/AulaLab/compare/v0.11.1...v0.12.0) (2026-10-01)
+
+
+### Features
+
+* **server:** link cards for competitions, the competitions list and courses ([c8bdc35](https://github.com/vighneshtule/AulaLab/commit/c8bdc3575368a15bc301727c28566f942260becf))
+
+## [0.11.1](https://github.com/vighneshtule/AulaLab/compare/v0.11.0...v0.11.1) (2026-10-01)
 
 
 ### Bug Fixes
 
-* **host:** colloq-host passes sign-in by proxy into the server, and the claim form prefills only an address ([87c3ca8](https://github.com/colloq-edu/colloq/commit/87c3ca8335c6ac08b50d8e8be14c6a1749c82205))
+* **host:** aulalab-host passes sign-in by proxy into the server, and the claim form prefills only an address ([87c3ca8](https://github.com/vighneshtule/AulaLab/commit/87c3ca8335c6ac08b50d8e8be14c6a1749c82205))
 
-## [0.11.0](https://github.com/colloq-edu/colloq/compare/v0.10.1...v0.11.0) (2026-10-01)
+## [0.11.0](https://github.com/vighneshtule/AulaLab/compare/v0.10.1...v0.11.0) (2026-10-01)
 
 
 ### Features
 
-* **helm:** config.sso for sign-in through Teleport or another JWT proxy ([5d935ff](https://github.com/colloq-edu/colloq/commit/5d935ff53b2ca4a1618653082238594b98f7d228))
-* **server:** sign in through a proxy that vouches with a signed JWT ([f136bb4](https://github.com/colloq-edu/colloq/commit/f136bb40d33fb437155b3b58c7ee365a99410894))
+* **helm:** config.sso for sign-in through Teleport or another JWT proxy ([5d935ff](https://github.com/vighneshtule/AulaLab/commit/5d935ff53b2ca4a1618653082238594b98f7d228))
+* **server:** sign in through a proxy that vouches with a signed JWT ([f136bb4](https://github.com/vighneshtule/AulaLab/commit/f136bb40d33fb437155b3b58c7ee365a99410894))
 
 
 ### Documentation
 
-* sign-in through your SSO, with Teleport as the worked example ([a73bdb0](https://github.com/colloq-edu/colloq/commit/a73bdb05f8c1ca92ac786efbe0d4e9d818b17d21))
+* sign-in through your SSO, with Teleport as the worked example ([a73bdb0](https://github.com/vighneshtule/AulaLab/commit/a73bdb05f8c1ca92ac786efbe0d4e9d818b17d21))
 
-## [0.10.1](https://github.com/colloq-edu/colloq/compare/v0.10.0...v0.10.1) (2026-10-01)
+## [0.10.1](https://github.com/vighneshtule/AulaLab/compare/v0.10.0...v0.10.1) (2026-10-01)
 
 
 ### Bug Fixes
 
-* **images:** Debian 13 under the app and broker, no npm in them, and a fixed setuptools in kernels ([b3996ed](https://github.com/colloq-edu/colloq/commit/b3996ed344571c173159f563ce108bd0419ac6c1))
+* **images:** Debian 13 under the app and broker, no npm in them, and a fixed setuptools in kernels ([b3996ed](https://github.com/vighneshtule/AulaLab/commit/b3996ed344571c173159f563ce108bd0419ac6c1))
 
 
 ### Documentation
 
-* what the images are built from, their SBOMs, and what a scanner finds in kernels ([845526b](https://github.com/colloq-edu/colloq/commit/845526bfcaf5f08a07fd4e17de318e0e5f4c0b1a))
+* what the images are built from, their SBOMs, and what a scanner finds in kernels ([845526b](https://github.com/vighneshtule/AulaLab/commit/845526bfcaf5f08a07fd4e17de318e0e5f4c0b1a))
 
-## [0.10.0](https://github.com/colloq-edu/colloq/compare/v0.9.0...v0.10.0) (2026-09-30)
+## [0.10.0](https://github.com/vighneshtule/AulaLab/compare/v0.9.0...v0.10.0) (2026-09-30)
 
 
 ### Features
 
-* **helm:** a chart for a customer's own Kubernetes namespace ([92f532f](https://github.com/colloq-edu/colloq/commit/92f532f99514f2401caabcf74bf1f0b55b9dd268))
-* **ops:** Prometheus metrics, JSON logs and database snapshots for platform teams ([caac299](https://github.com/colloq-edu/colloq/commit/caac299df2b0c0dce38f4b81f0cc22635415a0c6))
-* **release:** publish the Kubernetes images and chart, and test the chart on k3d ([a138dec](https://github.com/colloq-edu/colloq/commit/a138decc7572c4cdebf76ce4541c193459658941))
-* **runtime:** run in a customer's multi-node cluster, with personal notebooks on Kubernetes ([e9bcc09](https://github.com/colloq-edu/colloq/commit/e9bcc0969248618557649e8cb50115caffe69637))
+* **helm:** a chart for a customer's own Kubernetes namespace ([92f532f](https://github.com/vighneshtule/AulaLab/commit/92f532f99514f2401caabcf74bf1f0b55b9dd268))
+* **ops:** Prometheus metrics, JSON logs and database snapshots for platform teams ([caac299](https://github.com/vighneshtule/AulaLab/commit/caac299df2b0c0dce38f4b81f0cc22635415a0c6))
+* **release:** publish the Kubernetes images and chart, and test the chart on k3d ([a138dec](https://github.com/vighneshtule/AulaLab/commit/a138decc7572c4cdebf76ce4541c193459658941))
+* **runtime:** run in a customer's multi-node cluster, with personal notebooks on Kubernetes ([e9bcc09](https://github.com/vighneshtule/AulaLab/commit/e9bcc0969248618557649e8cb50115caffe69637))
 
 
 ### Bug Fixes
 
-* **k8s:** upgrades keep rooms on their kernels, and ArgoCD never prunes a room ([d5246a1](https://github.com/colloq-edu/colloq/commit/d5246a187878038070b8ab34530bda8cfcb31dfa))
-* **runtime:** competition pods mount the data claim through one volume ([0bad41e](https://github.com/colloq-edu/colloq/commit/0bad41ebb14ab3fd0a8e8cafd6dafebacba8bec9))
-* **server:** say why a competition's environment could not be pinned, and stop a false token warning on Kubernetes ([6d68f07](https://github.com/colloq-edu/colloq/commit/6d68f07bfd6ca256f36e8b9c9730a2d31b5039ab))
+* **k8s:** upgrades keep rooms on their kernels, and ArgoCD never prunes a room ([d5246a1](https://github.com/vighneshtule/AulaLab/commit/d5246a187878038070b8ab34530bda8cfcb31dfa))
+* **runtime:** competition pods mount the data claim through one volume ([0bad41e](https://github.com/vighneshtule/AulaLab/commit/0bad41ebb14ab3fd0a8e8cafd6dafebacba8bec9))
+* **server:** say why a competition's environment could not be pinned, and stop a false token warning on Kubernetes ([6d68f07](https://github.com/vighneshtule/AulaLab/commit/6d68f07bfd6ca256f36e8b9c9730a2d31b5039ab))
 
 
 ### Documentation
 
-* Colloq in your Kubernetes, for a platform and security team ([0d9e8e7](https://github.com/colloq-edu/colloq/commit/0d9e8e7395c5efb3b7545029e3b5e1e4c1504fc7))
-* the Kubernetes guide after the bank-like cluster run ([ad6ce1e](https://github.com/colloq-edu/colloq/commit/ad6ce1e29133a130f0dba6f55b7c318a392da646))
+* Aula Lab in your Kubernetes, for a platform and security team ([0d9e8e7](https://github.com/vighneshtule/AulaLab/commit/0d9e8e7395c5efb3b7545029e3b5e1e4c1504fc7))
+* the Kubernetes guide after the bank-like cluster run ([ad6ce1e](https://github.com/vighneshtule/AulaLab/commit/ad6ce1e29133a130f0dba6f55b7c318a392da646))
 
-## [0.9.0](https://github.com/colloq-edu/colloq/compare/v0.8.4...v0.9.0) (2026-09-30)
+## [0.9.0](https://github.com/vighneshtule/AulaLab/compare/v0.8.4...v0.9.0) (2026-09-30)
 
 
 ### Features
 
-* **admin:** an audit log of staff actions, and names out of prompts when the switch says so ([20570de](https://github.com/colloq-edu/colloq/commit/20570de85ddac44c0ddeda184318bda3863b4894))
-* **competitions:** keep students' contacts off public boards, and let staff remove a person ([3a866ca](https://github.com/colloq-edu/colloq/commit/3a866cae46967fa5dbbeb8ee530258f7086b14a8))
-* **host:** run the server image on a university's own machine ([a5f1fbb](https://github.com/colloq-edu/colloq/commit/a5f1fbbd63fc89f9c99a040c8d833daf0be49a45))
-* **server:** go out through a campus proxy and mirror, and cut rooms off the network on request ([274981d](https://github.com/colloq-edu/colloq/commit/274981d564b5abcf9c795ffd705ca1b5ebd038dd))
-* **server:** trust a campus proxy by range, not only a local one ([fbd2e38](https://github.com/colloq-edu/colloq/commit/fbd2e38dd5c4087b51493550ff937ce93e4c9ae0))
+* **admin:** an audit log of staff actions, and names out of prompts when the switch says so ([20570de](https://github.com/vighneshtule/AulaLab/commit/20570de85ddac44c0ddeda184318bda3863b4894))
+* **competitions:** keep students' contacts off public boards, and let staff remove a person ([3a866ca](https://github.com/vighneshtule/AulaLab/commit/3a866cae46967fa5dbbeb8ee530258f7086b14a8))
+* **host:** run the server image on a university's own machine ([a5f1fbb](https://github.com/vighneshtule/AulaLab/commit/a5f1fbbd63fc89f9c99a040c8d833daf0be49a45))
+* **server:** go out through a campus proxy and mirror, and cut rooms off the network on request ([274981d](https://github.com/vighneshtule/AulaLab/commit/274981d564b5abcf9c795ffd705ca1b5ebd038dd))
+* **server:** trust a campus proxy by range, not only a local one ([fbd2e38](https://github.com/vighneshtule/AulaLab/commit/fbd2e38dd5c4087b51493550ff937ce93e4c9ae0))
 
 
 ### Bug Fixes
 
-* **cli:** count days in the laptop's own time zone ([f570c8d](https://github.com/colloq-edu/colloq/commit/f570c8d3435f2a521335a9e1a722188a034be5d5))
-* **host:** a failing nvidia-smi is not a list of cards, and the image's backup names its own restore ([d7aaa21](https://github.com/colloq-edu/colloq/commit/d7aaa2156cc20f3b854d956c19273a0377e33f85))
-* **ops:** backups survive what student code leaves behind, and data knows its schema ([3a596e4](https://github.com/colloq-edu/colloq/commit/3a596e49300f505b85d138f77834ea221ab54e42))
-* **relay:** tell the server that a relayed student came over https ([14183e9](https://github.com/colloq-edu/colloq/commit/14183e9979f9b96eac2dd456a54971e1364ce1e3))
-* **server:** the Oracle goes through a campus proxy on Node 22 too ([ea5fce6](https://github.com/colloq-edu/colloq/commit/ea5fce6f1583394fad4040f21621db22a312ea4f))
+* **cli:** count days in the laptop's own time zone ([f570c8d](https://github.com/vighneshtule/AulaLab/commit/f570c8d3435f2a521335a9e1a722188a034be5d5))
+* **host:** a failing nvidia-smi is not a list of cards, and the image's backup names its own restore ([d7aaa21](https://github.com/vighneshtule/AulaLab/commit/d7aaa2156cc20f3b854d956c19273a0377e33f85))
+* **ops:** backups survive what student code leaves behind, and data knows its schema ([3a596e4](https://github.com/vighneshtule/AulaLab/commit/3a596e49300f505b85d138f77834ea221ab54e42))
+* **relay:** tell the server that a relayed student came over https ([14183e9](https://github.com/vighneshtule/AulaLab/commit/14183e9979f9b96eac2dd456a54971e1364ce1e3))
+* **server:** the Oracle goes through a campus proxy on Node 22 too ([ea5fce6](https://github.com/vighneshtule/AulaLab/commit/ea5fce6f1583394fad4040f21621db22a312ea4f))
 
 
 ### Documentation
 
-* a guide for running Colloq on a university's own server ([55efee6](https://github.com/colloq-edu/colloq/commit/55efee6237b4f60c143f7a78de0c5388e7e9e15e))
-* the app measured with 300 and 500 students behind nginx ([54f11de](https://github.com/colloq-edu/colloq/commit/54f11deb59d46c177a5098f08acd700287d24a52))
+* a guide for running Aula Lab on a university's own server ([55efee6](https://github.com/vighneshtule/AulaLab/commit/55efee6237b4f60c143f7a78de0c5388e7e9e15e))
+* the app measured with 300 and 500 students behind nginx ([54f11de](https://github.com/vighneshtule/AulaLab/commit/54f11deb59d46c177a5098f08acd700287d24a52))
 
-## [0.8.4](https://github.com/colloq-edu/colloq/compare/v0.8.3...v0.8.4) (2026-09-30)
-
-
-### Bug Fixes
-
-* **competitions:** name what is wrong with an answer before the metric sees it ([92f5e44](https://github.com/colloq-edu/colloq/commit/92f5e445fe14e2d4012c4df6c8dbc2f0efeeb0ec))
-
-## [0.8.3](https://github.com/colloq-edu/colloq/compare/v0.8.2...v0.8.3) (2026-09-30)
+## [0.8.4](https://github.com/vighneshtule/AulaLab/compare/v0.8.3...v0.8.4) (2026-09-30)
 
 
 ### Bug Fixes
 
-* **competitions:** keep the line printed before an out-of-memory kill, and prepare big sets on k3s ([2025b28](https://github.com/colloq-edu/colloq/commit/2025b289d67802bb7c914202a904f836e77c6719))
-* **competitions:** tidy the leftovers of the class rehearsals ([e758999](https://github.com/colloq-edu/colloq/commit/e758999b683942c531f76cdf99d521a997275511))
+* **competitions:** name what is wrong with an answer before the metric sees it ([92f5e44](https://github.com/vighneshtule/AulaLab/commit/92f5e445fe14e2d4012c4df6c8dbc2f0efeeb0ec))
 
-## [0.8.2](https://github.com/colloq-edu/colloq/compare/v0.8.1...v0.8.2) (2026-09-30)
-
-
-### Bug Fixes
-
-* **competitions:** every row its own place again, earlier submission first ([fd82459](https://github.com/colloq-edu/colloq/commit/fd8245965fb7abe9bbba99fc985b5be60fd7eb1e))
-
-## [0.8.1](https://github.com/colloq-edu/colloq/compare/v0.8.0...v0.8.1) (2026-09-29)
+## [0.8.3](https://github.com/vighneshtule/AulaLab/compare/v0.8.2...v0.8.3) (2026-09-30)
 
 
 ### Bug Fixes
 
-* **competitions:** equal scores share a place, and the quota rule says where the line is ([a8a2750](https://github.com/colloq-edu/colloq/commit/a8a2750f4fa5fffbc8703f3a6ddc4889eb158ac1))
-* **competitions:** show the executed notebook, and give a package set room of its own ([7efb42f](https://github.com/colloq-edu/colloq/commit/7efb42fe70df09fb9669e79c4ac3d826d66457a2))
-* **competitions:** take BOM and nbformat 3 notebooks, name unsupported package lines, show the hourly budget ([c605e54](https://github.com/colloq-edu/colloq/commit/c605e54c10a38b12e728f45b4c40201f7913d49c))
+* **competitions:** keep the line printed before an out-of-memory kill, and prepare big sets on k3s ([2025b28](https://github.com/vighneshtule/AulaLab/commit/2025b289d67802bb7c914202a904f836e77c6719))
+* **competitions:** tidy the leftovers of the class rehearsals ([e758999](https://github.com/vighneshtule/AulaLab/commit/e758999b683942c531f76cdf99d521a997275511))
 
-## [0.8.0](https://github.com/colloq-edu/colloq/compare/v0.7.0...v0.8.0) (2026-09-29)
+## [0.8.2](https://github.com/vighneshtule/AulaLab/compare/v0.8.1...v0.8.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **competitions:** every row its own place again, earlier submission first ([fd82459](https://github.com/vighneshtule/AulaLab/commit/fd8245965fb7abe9bbba99fc985b5be60fd7eb1e))
+
+## [0.8.1](https://github.com/vighneshtule/AulaLab/compare/v0.8.0...v0.8.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **competitions:** equal scores share a place, and the quota rule says where the line is ([a8a2750](https://github.com/vighneshtule/AulaLab/commit/a8a2750f4fa5fffbc8703f3a6ddc4889eb158ac1))
+* **competitions:** show the executed notebook, and give a package set room of its own ([7efb42f](https://github.com/vighneshtule/AulaLab/commit/7efb42fe70df09fb9669e79c4ac3d826d66457a2))
+* **competitions:** take BOM and nbformat 3 notebooks, name unsupported package lines, show the hourly budget ([c605e54](https://github.com/vighneshtule/AulaLab/commit/c605e54c10a38b12e728f45b4c40201f7913d49c))
+
+## [0.8.0](https://github.com/vighneshtule/AulaLab/compare/v0.7.0...v0.8.0) (2026-09-29)
 
 
 ### Features
 
-* **competitions:** clearer quota, own submission numbers, a readable countdown, a Kaggle-style final board ([cf242cd](https://github.com/colloq-edu/colloq/commit/cf242cda0c38afdf0029e37c856ecfd76e2188ee))
-* **competitions:** entrant names are Telegram usernames or emails ([163cf08](https://github.com/colloq-edu/colloq/commit/163cf08d152f482a3ff1acd4119e948a8de96769))
-* **competitions:** leaderboard without the counted column, rows reveal on scroll ([3ef9a71](https://github.com/colloq-edu/colloq/commit/3ef9a713177c7196cd744691c32a3fee58792f3b))
-* **vast:** pick a VM by cores and memory, give up on broken hosts ([03aecd0](https://github.com/colloq-edu/colloq/commit/03aecd0f09ed8aa572f8221bfddaa969683a0972))
+* **competitions:** clearer quota, own submission numbers, a readable countdown, a Kaggle-style final board ([cf242cd](https://github.com/vighneshtule/AulaLab/commit/cf242cda0c38afdf0029e37c856ecfd76e2188ee))
+* **competitions:** entrant names are Telegram usernames or emails ([163cf08](https://github.com/vighneshtule/AulaLab/commit/163cf08d152f482a3ff1acd4119e948a8de96769))
+* **competitions:** leaderboard without the counted column, rows reveal on scroll ([3ef9a71](https://github.com/vighneshtule/AulaLab/commit/3ef9a713177c7196cd744691c32a3fee58792f3b))
+* **vast:** pick a VM by cores and memory, give up on broken hosts ([03aecd0](https://github.com/vighneshtule/AulaLab/commit/03aecd0f09ed8aa572f8221bfddaa969683a0972))
 
 
 ### Bug Fixes
 
-* **competitions:** say why an import failed, catch empty predictions, refuse empty notebooks ([8ba33aa](https://github.com/colloq-edu/colloq/commit/8ba33aae8b68dae5b4dc9ef6d3922930c5dd2caa))
-* **dependencies:** say how big a package set is, what makes it big and what to use instead ([7a45bdd](https://github.com/colloq-edu/colloq/commit/7a45bddd881d82016f009282e8346e59de5a7bfe))
-* **server:** outlive the proxies' keep-alive so a POST never lands on a closing socket ([0c0775a](https://github.com/colloq-edu/colloq/commit/0c0775a4f6fa401d73dd7ad95778776b55fa4297))
+* **competitions:** say why an import failed, catch empty predictions, refuse empty notebooks ([8ba33aa](https://github.com/vighneshtule/AulaLab/commit/8ba33aae8b68dae5b4dc9ef6d3922930c5dd2caa))
+* **dependencies:** say how big a package set is, what makes it big and what to use instead ([7a45bdd](https://github.com/vighneshtule/AulaLab/commit/7a45bddd881d82016f009282e8346e59de5a7bfe))
+* **server:** outlive the proxies' keep-alive so a POST never lands on a closing socket ([0c0775a](https://github.com/vighneshtule/AulaLab/commit/0c0775a4f6fa401d73dd7ad95778776b55fa4297))
 
-## [0.7.0](https://github.com/colloq-edu/colloq/compare/v0.6.0...v0.7.0) (2026-09-29)
+## [0.7.0](https://github.com/vighneshtule/AulaLab/compare/v0.6.0...v0.7.0) (2026-09-29)
 
 
 ### Features
 
-* **competitions:** hold a class of fifteen sending at the deadline ([fea2d60](https://github.com/colloq-edu/colloq/commit/fea2d60d77ede13dbf2c635415f0ee41242755a0))
-* **council:** put the shown attempt into the cell, and run it ([3bc7c64](https://github.com/colloq-edu/colloq/commit/3bc7c646a2ee1cfd6ad56f56a4271425af8888d5))
-* **oracle:** a "Mine" filter, labelled switches and the hour's budget ([093d5d7](https://github.com/colloq-edu/colloq/commit/093d5d7a5cc1daf1c59847f938021b9128c58a88))
-* **resources:** set the machine's defaults in the panel, live, instead of .env ([67adcd0](https://github.com/colloq-edu/colloq/commit/67adcd01722fb589e1aa735ce504f7e5ccfd1558))
+* **competitions:** hold a class of fifteen sending at the deadline ([fea2d60](https://github.com/vighneshtule/AulaLab/commit/fea2d60d77ede13dbf2c635415f0ee41242755a0))
+* **council:** put the shown attempt into the cell, and run it ([3bc7c64](https://github.com/vighneshtule/AulaLab/commit/3bc7c646a2ee1cfd6ad56f56a4271425af8888d5))
+* **oracle:** a "Mine" filter, labelled switches and the hour's budget ([093d5d7](https://github.com/vighneshtule/AulaLab/commit/093d5d7a5cc1daf1c59847f938021b9128c58a88))
+* **resources:** set the machine's defaults in the panel, live, instead of .env ([67adcd0](https://github.com/vighneshtule/AulaLab/commit/67adcd01722fb589e1aa735ce504f7e5ccfd1558))
 
-## [0.6.0](https://github.com/colloq-edu/colloq/compare/v0.5.2...v0.6.0) (2026-09-28)
-
-
-### Features
-
-* **vast:** make vast-vm rents a VM and starts the colloq-vast image in one command ([c7722df](https://github.com/colloq-edu/colloq/commit/c7722df8bde419bd6dcae2da124fcc212233648c))
-
-
-### Bug Fixes
-
-* **vast:** unattended upgrades no longer break the GPU on a running VM ([553885f](https://github.com/colloq-edu/colloq/commit/553885f5e553aad8654c99f9a0d9b75e12892230))
-
-## [0.5.2](https://github.com/colloq-edu/colloq/compare/v0.5.1...v0.5.2) (2026-09-28)
-
-
-### Bug Fixes
-
-* **dependencies:** a PyPI hiccup no longer reports a missing package as a missing wheel ([2c86c1c](https://github.com/colloq-edu/colloq/commit/2c86c1c7f317b0f3978f24af96489ee92d16b327))
-* **dependencies:** keep the underlying cause of preparation failures for operators ([f44ecb7](https://github.com/colloq-edu/colloq/commit/f44ecb73e482d875b230f0a73617b87e6e95b0d1))
-* **dependencies:** package preparation fails on Linux unless the server runs as uid 1000 or root ([2304ef7](https://github.com/colloq-edu/colloq/commit/2304ef714336989de66f04eadcc31b5d46a89631))
-
-## [0.5.1](https://github.com/colloq-edu/colloq/compare/v0.5.0...v0.5.1) (2026-09-24)
-
-
-### Bug Fixes
-
-* **i18n:** server messages that were hard-coded in Russian now follow the instance language ([377b3df](https://github.com/colloq-edu/colloq/commit/377b3df74a53b7bb284bf147398a7b29d8fb97cd))
-
-## [0.5.0](https://github.com/colloq-edu/colloq/compare/v0.4.1...v0.5.0) (2026-09-24)
+## [0.6.0](https://github.com/vighneshtule/AulaLab/compare/v0.5.2...v0.6.0) (2026-09-28)
 
 
 ### Features
 
-* **pip:** wheels for macOS and Linux carry Node and node_modules, so only Docker is needed ([191c7bd](https://github.com/colloq-edu/colloq/commit/191c7bd07016ad0075b4af10fc35326c0851763f))
-
-## [0.4.1](https://github.com/colloq-edu/colloq/compare/v0.4.0...v0.4.1) (2026-09-23)
+* **vast:** make vast-vm rents a VM and starts the aulalab-vast image in one command ([c7722df](https://github.com/vighneshtule/AulaLab/commit/c7722df8bde419bd6dcae2da124fcc212233648c))
 
 
 ### Bug Fixes
 
-* **admin:** writes from the --share tunnel address are our own, though Host says 127.0.0.1 ([748d257](https://github.com/colloq-edu/colloq/commit/748d257b7511a25a27ec0ed917e200f088414732))
-* **pip:** the one-time npm install stays quiet unless it fails ([8a9970e](https://github.com/colloq-edu/colloq/commit/8a9970e093ff769c0b113e4b44031a4008e4bc5e))
+* **vast:** unattended upgrades no longer break the GPU on a running VM ([553885f](https://github.com/vighneshtule/AulaLab/commit/553885f5e553aad8654c99f9a0d9b75e12892230))
 
-## [0.4.0](https://github.com/colloq-edu/colloq/compare/v0.3.0...v0.4.0) (2026-09-23)
-
-
-### Features
-
-* **cli:** --share opens the tunnel's sign-in link with the token, never localhost ([91bc12a](https://github.com/colloq-edu/colloq/commit/91bc12adfdbe805b14fdf90a5a4721ef9090675a))
-* **cli:** a busy default port moves to the nearest free one ([682fbd0](https://github.com/colloq-edu/colloq/commit/682fbd03c7fbda5d5c9567681633aa8a7c089c7b))
-
-## [0.3.0](https://github.com/colloq-edu/colloq/compare/v0.2.0...v0.3.0) (2026-09-23)
-
-
-### Features
-
-* **cli:** one sign-in link with the token, like Jupyter, and the logs go to the log file ([b7155a4](https://github.com/colloq-edu/colloq/commit/b7155a4bc3b38250412e041201529be2ed3f5f84))
+## [0.5.2](https://github.com/vighneshtule/AulaLab/compare/v0.5.1...v0.5.2) (2026-09-28)
 
 
 ### Bug Fixes
 
-* **cli:** name the port that is actually taken, and say how to start on another ([e42f2ae](https://github.com/colloq-edu/colloq/commit/e42f2ae12935e7833f85f785b8ee9b002e1029ef))
+* **dependencies:** a PyPI hiccup no longer reports a missing package as a missing wheel ([2c86c1c](https://github.com/vighneshtule/AulaLab/commit/2c86c1c7f317b0f3978f24af96489ee92d16b327))
+* **dependencies:** keep the underlying cause of preparation failures for operators ([f44ecb7](https://github.com/vighneshtule/AulaLab/commit/f44ecb73e482d875b230f0a73617b87e6e95b0d1))
+* **dependencies:** package preparation fails on Linux unless the server runs as uid 1000 or root ([2304ef7](https://github.com/vighneshtule/AulaLab/commit/2304ef714336989de66f04eadcc31b5d46a89631))
 
-## [0.2.0](https://github.com/colloq-edu/colloq/compare/v0.1.0...v0.2.0) (2026-09-23)
-
-
-### Features
-
-* **admin:** planned course topics from the panel, and the logo leads to the class list ([7728f0b](https://github.com/colloq-edu/colloq/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
-* **cli:** the teacher's CLI only, and one-command sharing ([a944cf6](https://github.com/colloq-edu/colloq/commit/a944cf60995405042d3fa07b66b2413975808b18))
-* **competitions:** add pinned dependency sets and lightweight ML environment ([797218e](https://github.com/colloq-edu/colloq/commit/797218e5a1b3afc72fca75cd0932a5a188dea77e))
-* **competitions:** notebook competitions with a public and a final leaderboard ([65a3e45](https://github.com/colloq-edu/colloq/commit/65a3e4562c120c2c285c8fb29c3d91e31ebecc47))
-* council rules, live room resources and hardened room containers ([7728f0b](https://github.com/colloq-edu/colloq/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
-* **council:** a rules sheet in the teacher's console with a time limit per run and a pause between runs ([7728f0b](https://github.com/colloq-edu/colloq/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
-* **council:** an attempt cannot end the class — exit(), memory, process state, tensors ([261579b](https://github.com/colloq-edu/colloq/commit/261579b789e790674f2b85b0a588daf943a27bfe))
-* **council:** every attempt runs on personal copies of the room's data ([c761504](https://github.com/colloq-edu/colloq/commit/c7615047d0245a3d93be60bbd9296eeeefb011d1))
-* **deploy:** colloq-vast, a single image for a rented vast.ai VM ([837af10](https://github.com/colloq-edu/colloq/commit/837af10a0003271cf82e6cbf1f7d9f9bef4fa0d4))
-* **deploy:** colloq.cc mirrors colloq.ru through a Cloudflare Worker ([ab6d840](https://github.com/colloq-edu/colloq/commit/ab6d840139d80ef05a60bb245fb9837d74639991))
-* **editor:** hovering a module says what the package is ([758ab0d](https://github.com/colloq-edu/colloq/commit/758ab0da7b47a8a94e5fbe680ef68e238cf074de))
-* **editor:** hovering a variable shows its type and shape in one line ([0b704a6](https://github.com/colloq-edu/colloq/commit/0b704a60f25ebf5e61b22cea451b56127ba462ba))
-* **editor:** the signature flows by parameter instead of one per line ([87c77d3](https://github.com/colloq-edu/colloq/commit/87c77d390215fed890c300dce09fa2e8c8835b74))
-* **editor:** the signature help shows the whole answer, in a window that scrolls ([4253e9a](https://github.com/colloq-edu/colloq/commit/4253e9acd6e16d18e9891567962223281fecc2ea))
-* execute competitions through k3s broker ([869ec83](https://github.com/colloq-edu/colloq/commit/869ec83ada551128c6274edbb784e630fb80a963))
-* **files:** a context menu for files and folders; copy the path, duplicate, rename ([986a9a8](https://github.com/colloq-edu/colloq/commit/986a9a8820524f7eba62dbef54825c739e6b4ebb))
-* **kernel:** an honest word about a dead kernel, and a run limit that covers ordinary cells ([0737f1d](https://github.com/colloq-edu/colloq/commit/0737f1dc5bd40b73e6d6c975169c29de3c6b98ed))
-* **kernel:** dangerous commands do not run, and the class is told why ([f1e5be9](https://github.com/colloq-edu/colloq/commit/f1e5be976cc03b70d0850e0f81bea202fc809afd))
-* **kernel:** every notebook has a kernel of its own; students' notebooks run in a separate container without the GPU ([fb1d7c1](https://github.com/colloq-edu/colloq/commit/fb1d7c117427c92a5f338bc8d38eb16ac4f693c9))
-* **kernel:** room containers drop every privilege, cap processes and cannot reach local networks ([7728f0b](https://github.com/colloq-edu/colloq/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
-* **kernel:** the signature help answers before the import cell has run, and says why when it cannot ([8f66976](https://github.com/colloq-edu/colloq/commit/8f669761a546d0e5ea6302788bb248f5e619072c))
-* **notebook:** interactive plotly charts, drawn in a sandboxed frame ([f3ff588](https://github.com/colloq-edu/colloq/commit/f3ff5889ad80ab25eb8ea403317669f0f97b79cf))
-* **oracle:** it answers before anyone has written a line, knows the students by name, and never thinks forever ([e7f6c90](https://github.com/colloq-edu/colloq/commit/e7f6c906f065bfd156dccefdf1e673a43d6c7397))
-* **oracle:** the class oracle answers questions about the whole class, drafts included ([de2fff4](https://github.com/colloq-edu/colloq/commit/de2fff4b33d888d8815643433128ae9225e594d6))
-* **pult:** a council console that fits a phone and a 900×700 window, with a fixed reply dock ([0e3bd35](https://github.com/colloq-edu/colloq/commit/0e3bd35d29fe29302e6c0e51635a264ae641e738))
-* **pult:** a link to the console for a phone, a real window, one console for every cell ([60abce3](https://github.com/colloq-edu/colloq/commit/60abce3761960c6fa4f612f651e1e0a506a32399))
-* **room:** access is set per notebook, and students may be allowed notebooks of their own ([f21a6de](https://github.com/colloq-edu/colloq/commit/f21a6debd9c86e6794595321fbfcfa61564463bf))
-* **room:** personal notebooks get resources of their own, idle kernels go away, and the rules say what they do ([5bb87dc](https://github.com/colloq-edu/colloq/commit/5bb87dc87524ef52dbe20ea619b9638191e65051))
-* **runtime:** room memory and CPU change live on k3s without restarting the kernel ([7728f0b](https://github.com/colloq-edu/colloq/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
-* **site:** a bilingual landing with animated scenes and an install block ([ba069cc](https://github.com/colloq-edu/colloq/commit/ba069cc34dff06db71390fb947edde83ff8b7e9b))
-* **site:** link previews in English on colloq.cc and /en/, drawn by a generator ([ceabac7](https://github.com/colloq-edu/colloq/commit/ceabac748a4fd53ed6314c05e86890b118b67d12))
-* **vast:** answer the rent question with an offer number, or name it with OFFER= ([938d11c](https://github.com/colloq-edu/colloq/commit/938d11c81b2c0acd209c64628059527b1b4e7a9c))
-* **web:** one continuous splash instead of a notebook-shaped skeleton ([725d35e](https://github.com/colloq-edu/colloq/commit/725d35e01837e81556761a9ec41f22882c6134dd))
+## [0.5.1](https://github.com/vighneshtule/AulaLab/compare/v0.5.0...v0.5.1) (2026-09-24)
 
 
 ### Bug Fixes
 
-* address product audit findings across state, execution and recovery ([509453d](https://github.com/colloq-edu/colloq/commit/509453de686ccf55c60e224c691a57e5a2ed4c20))
-* **admin:** room limits use Docker's memory, not the host's ([7728f0b](https://github.com/colloq-edu/colloq/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
-* **admin:** the panel fits a phone — class list, running-now plate, environments, teachers, new class ([efc19c7](https://github.com/colloq-edu/colloq/commit/efc19c724b29fcbbf7129d3af580f6b46fac4963))
-* **editor:** the help opens on imports, module aliases and the name being called — nowhere else ([92508e5](https://github.com/colloq-edu/colloq/commit/92508e5174a6af0f146f96f42cc5d1ec78064930))
-* **gate:** the walk budget grows with the document, so a large room reconnects ([4efe54e](https://github.com/colloq-edu/colloq/commit/4efe54ec58254739316352957e6a2497b02004fd))
-* **kernel:** a test server starts no real containers unless told to ([492cc1a](https://github.com/colloq-edu/colloq/commit/492cc1aba8f2a58a78d63efc988edc84bf061f09))
-* **kernel:** the kernel badge tells the truth, and the help waits by itself ([24d11a8](https://github.com/colloq-edu/colloq/commit/24d11a8aefb5906789b78f7975df7c214faeba70))
-* **kernel:** the kernel indicator no longer blinks for the whole room on every typed letter ([8cbccfa](https://github.com/colloq-edu/colloq/commit/8cbccfae839fd8153ea5b00796736d973354103d))
-* **make:** targets write a local .env instead of copying the production template ([7728f0b](https://github.com/colloq-edu/colloq/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
-* **notebook:** the sheet follows a text cell the way it follows a code cell ([8be6d9c](https://github.com/colloq-edu/colloq/commit/8be6d9c6d8e016cf17cd7f0291e11028e4caa547))
-* **oracle:** the oracle feed never scrolls sideways; only code blocks and tables do, inside themselves ([70fed19](https://github.com/colloq-edu/colloq/commit/70fed1905de0b06bdd8d7003e1436a5438b2ce56))
-* **pult:** the remove-from-class menu opens above the council console ([9624323](https://github.com/colloq-edu/colloq/commit/9624323b3ff6b5013a37dec8b1780cd6e6c4b4c8))
-* **pult:** who, what state, where in the pile — and no flash of an empty cell ([d555ee1](https://github.com/colloq-edu/colloq/commit/d555ee1a2ee79d206368ba6f66c0e31b15cbe040))
-* **room:** a solution on the class screen outlives the council being closed ([85b77fa](https://github.com/colloq-edu/colloq/commit/85b77fa35169c7a24bfe689a4662950fe24878bd))
-* **room:** bringing a file into the room does not make it that student's personal notebook ([b9eebca](https://github.com/colloq-edu/colloq/commit/b9eebcad716344c8111787cd5b044b826ecb806b))
-* **room:** the copy slot in the cell toolbar copies the text, it no longer duplicates the cell ([ebc9aa8](https://github.com/colloq-edu/colloq/commit/ebc9aa8c0c9bca08612dc3a9603713e07e329e26))
-* **room:** the presence dots keep clear of the file menu, and the delete row drops its truncated warning ([bc31afb](https://github.com/colloq-edu/colloq/commit/bc31afb7b467a59023f4992d1b03335bd419f58b))
-* **runtime:** the teacher learns why a room cannot be scheduled ([7728f0b](https://github.com/colloq-edu/colloq/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
-* **site:** a real favicon, site name markup, robots.txt and a sitemap for search engines ([51b4019](https://github.com/colloq-edu/colloq/commit/51b4019953b5c91b19f29454cd164766219afb66))
-* **site:** drop the contact block and the join-screen demo from the landing ([6551571](https://github.com/colloq-edu/colloq/commit/65515718cf09a2b9f5046784d3bf72c9fa074fb0))
-* **vast:** a session receipt from the laptop no longer stops the machine from going public ([13f145d](https://github.com/colloq-edu/colloq/commit/13f145d0b2ff2457cd45f43d4fb1d36e6ff6b560))
-* verify scoped k3d checksum path in CI ([91f49ca](https://github.com/colloq-edu/colloq/commit/91f49caa4edab89185d477af6a70e210b46e6cf8))
+* **i18n:** server messages that were hard-coded in Russian now follow the instance language ([377b3df](https://github.com/vighneshtule/AulaLab/commit/377b3df74a53b7bb284bf147398a7b29d8fb97cd))
+
+## [0.5.0](https://github.com/vighneshtule/AulaLab/compare/v0.4.1...v0.5.0) (2026-09-24)
+
+
+### Features
+
+* **pip:** wheels for macOS and Linux carry Node and node_modules, so only Docker is needed ([191c7bd](https://github.com/vighneshtule/AulaLab/commit/191c7bd07016ad0075b4af10fc35326c0851763f))
+
+## [0.4.1](https://github.com/vighneshtule/AulaLab/compare/v0.4.0...v0.4.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* **admin:** writes from the --share tunnel address are our own, though Host says 127.0.0.1 ([748d257](https://github.com/vighneshtule/AulaLab/commit/748d257b7511a25a27ec0ed917e200f088414732))
+* **pip:** the one-time npm install stays quiet unless it fails ([8a9970e](https://github.com/vighneshtule/AulaLab/commit/8a9970e093ff769c0b113e4b44031a4008e4bc5e))
+
+## [0.4.0](https://github.com/vighneshtule/AulaLab/compare/v0.3.0...v0.4.0) (2026-09-23)
+
+
+### Features
+
+* **cli:** --share opens the tunnel's sign-in link with the token, never localhost ([91bc12a](https://github.com/vighneshtule/AulaLab/commit/91bc12adfdbe805b14fdf90a5a4721ef9090675a))
+* **cli:** a busy default port moves to the nearest free one ([682fbd0](https://github.com/vighneshtule/AulaLab/commit/682fbd03c7fbda5d5c9567681633aa8a7c089c7b))
+
+## [0.3.0](https://github.com/vighneshtule/AulaLab/compare/v0.2.0...v0.3.0) (2026-09-23)
+
+
+### Features
+
+* **cli:** one sign-in link with the token, like Jupyter, and the logs go to the log file ([b7155a4](https://github.com/vighneshtule/AulaLab/commit/b7155a4bc3b38250412e041201529be2ed3f5f84))
+
+
+### Bug Fixes
+
+* **cli:** name the port that is actually taken, and say how to start on another ([e42f2ae](https://github.com/vighneshtule/AulaLab/commit/e42f2ae12935e7833f85f785b8ee9b002e1029ef))
+
+## [0.2.0](https://github.com/vighneshtule/AulaLab/compare/v0.1.0...v0.2.0) (2026-09-23)
+
+
+### Features
+
+* **admin:** planned course topics from the panel, and the logo leads to the class list ([7728f0b](https://github.com/vighneshtule/AulaLab/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
+* **cli:** the teacher's CLI only, and one-command sharing ([a944cf6](https://github.com/vighneshtule/AulaLab/commit/a944cf60995405042d3fa07b66b2413975808b18))
+* **competitions:** add pinned dependency sets and lightweight ML environment ([797218e](https://github.com/vighneshtule/AulaLab/commit/797218e5a1b3afc72fca75cd0932a5a188dea77e))
+* **competitions:** notebook competitions with a public and a final leaderboard ([65a3e45](https://github.com/vighneshtule/AulaLab/commit/65a3e4562c120c2c285c8fb29c3d91e31ebecc47))
+* council rules, live room resources and hardened room containers ([7728f0b](https://github.com/vighneshtule/AulaLab/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
+* **council:** a rules sheet in the teacher's console with a time limit per run and a pause between runs ([7728f0b](https://github.com/vighneshtule/AulaLab/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
+* **council:** an attempt cannot end the class — exit(), memory, process state, tensors ([261579b](https://github.com/vighneshtule/AulaLab/commit/261579b789e790674f2b85b0a588daf943a27bfe))
+* **council:** every attempt runs on personal copies of the room's data ([c761504](https://github.com/vighneshtule/AulaLab/commit/c7615047d0245a3d93be60bbd9296eeeefb011d1))
+* **deploy:** aulalab-vast, a single image for a rented vast.ai VM ([837af10](https://github.com/vighneshtule/AulaLab/commit/837af10a0003271cf82e6cbf1f7d9f9bef4fa0d4))
+* **deploy:** github.com/vighneshtule/AulaLab mirrors example.edu through a Cloudflare Worker ([ab6d840](https://github.com/vighneshtule/AulaLab/commit/ab6d840139d80ef05a60bb245fb9837d74639991))
+* **editor:** hovering a module says what the package is ([758ab0d](https://github.com/vighneshtule/AulaLab/commit/758ab0da7b47a8a94e5fbe680ef68e238cf074de))
+* **editor:** hovering a variable shows its type and shape in one line ([0b704a6](https://github.com/vighneshtule/AulaLab/commit/0b704a60f25ebf5e61b22cea451b56127ba462ba))
+* **editor:** the signature flows by parameter instead of one per line ([87c77d3](https://github.com/vighneshtule/AulaLab/commit/87c77d390215fed890c300dce09fa2e8c8835b74))
+* **editor:** the signature help shows the whole answer, in a window that scrolls ([4253e9a](https://github.com/vighneshtule/AulaLab/commit/4253e9acd6e16d18e9891567962223281fecc2ea))
+* execute competitions through k3s broker ([869ec83](https://github.com/vighneshtule/AulaLab/commit/869ec83ada551128c6274edbb784e630fb80a963))
+* **files:** a context menu for files and folders; copy the path, duplicate, rename ([986a9a8](https://github.com/vighneshtule/AulaLab/commit/986a9a8820524f7eba62dbef54825c739e6b4ebb))
+* **kernel:** an honest word about a dead kernel, and a run limit that covers ordinary cells ([0737f1d](https://github.com/vighneshtule/AulaLab/commit/0737f1dc5bd40b73e6d6c975169c29de3c6b98ed))
+* **kernel:** dangerous commands do not run, and the class is told why ([f1e5be9](https://github.com/vighneshtule/AulaLab/commit/f1e5be976cc03b70d0850e0f81bea202fc809afd))
+* **kernel:** every notebook has a kernel of its own; students' notebooks run in a separate container without the GPU ([fb1d7c1](https://github.com/vighneshtule/AulaLab/commit/fb1d7c117427c92a5f338bc8d38eb16ac4f693c9))
+* **kernel:** room containers drop every privilege, cap processes and cannot reach local networks ([7728f0b](https://github.com/vighneshtule/AulaLab/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
+* **kernel:** the signature help answers before the import cell has run, and says why when it cannot ([8f66976](https://github.com/vighneshtule/AulaLab/commit/8f669761a546d0e5ea6302788bb248f5e619072c))
+* **notebook:** interactive plotly charts, drawn in a sandboxed frame ([f3ff588](https://github.com/vighneshtule/AulaLab/commit/f3ff5889ad80ab25eb8ea403317669f0f97b79cf))
+* **oracle:** it answers before anyone has written a line, knows the students by name, and never thinks forever ([e7f6c90](https://github.com/vighneshtule/AulaLab/commit/e7f6c906f065bfd156dccefdf1e673a43d6c7397))
+* **oracle:** the class oracle answers questions about the whole class, drafts included ([de2fff4](https://github.com/vighneshtule/AulaLab/commit/de2fff4b33d888d8815643433128ae9225e594d6))
+* **pult:** a council console that fits a phone and a 900×700 window, with a fixed reply dock ([0e3bd35](https://github.com/vighneshtule/AulaLab/commit/0e3bd35d29fe29302e6c0e51635a264ae641e738))
+* **pult:** a link to the console for a phone, a real window, one console for every cell ([60abce3](https://github.com/vighneshtule/AulaLab/commit/60abce3761960c6fa4f612f651e1e0a506a32399))
+* **room:** access is set per notebook, and students may be allowed notebooks of their own ([f21a6de](https://github.com/vighneshtule/AulaLab/commit/f21a6debd9c86e6794595321fbfcfa61564463bf))
+* **room:** personal notebooks get resources of their own, idle kernels go away, and the rules say what they do ([5bb87dc](https://github.com/vighneshtule/AulaLab/commit/5bb87dc87524ef52dbe20ea619b9638191e65051))
+* **runtime:** room memory and CPU change live on k3s without restarting the kernel ([7728f0b](https://github.com/vighneshtule/AulaLab/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
+* **site:** a bilingual landing with animated scenes and an install block ([ba069cc](https://github.com/vighneshtule/AulaLab/commit/ba069cc34dff06db71390fb947edde83ff8b7e9b))
+* **site:** link previews in English on github.com/vighneshtule/AulaLab and /en/, drawn by a generator ([ceabac7](https://github.com/vighneshtule/AulaLab/commit/ceabac748a4fd53ed6314c05e86890b118b67d12))
+* **vast:** answer the rent question with an offer number, or name it with OFFER= ([938d11c](https://github.com/vighneshtule/AulaLab/commit/938d11c81b2c0acd209c64628059527b1b4e7a9c))
+* **web:** one continuous splash instead of a notebook-shaped skeleton ([725d35e](https://github.com/vighneshtule/AulaLab/commit/725d35e01837e81556761a9ec41f22882c6134dd))
+
+
+### Bug Fixes
+
+* address product audit findings across state, execution and recovery ([509453d](https://github.com/vighneshtule/AulaLab/commit/509453de686ccf55c60e224c691a57e5a2ed4c20))
+* **admin:** room limits use Docker's memory, not the host's ([7728f0b](https://github.com/vighneshtule/AulaLab/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
+* **admin:** the panel fits a phone — class list, running-now plate, environments, teachers, new class ([efc19c7](https://github.com/vighneshtule/AulaLab/commit/efc19c724b29fcbbf7129d3af580f6b46fac4963))
+* **editor:** the help opens on imports, module aliases and the name being called — nowhere else ([92508e5](https://github.com/vighneshtule/AulaLab/commit/92508e5174a6af0f146f96f42cc5d1ec78064930))
+* **gate:** the walk budget grows with the document, so a large room reconnects ([4efe54e](https://github.com/vighneshtule/AulaLab/commit/4efe54ec58254739316352957e6a2497b02004fd))
+* **kernel:** a test server starts no real containers unless told to ([492cc1a](https://github.com/vighneshtule/AulaLab/commit/492cc1aba8f2a58a78d63efc988edc84bf061f09))
+* **kernel:** the kernel badge tells the truth, and the help waits by itself ([24d11a8](https://github.com/vighneshtule/AulaLab/commit/24d11a8aefb5906789b78f7975df7c214faeba70))
+* **kernel:** the kernel indicator no longer blinks for the whole room on every typed letter ([8cbccfa](https://github.com/vighneshtule/AulaLab/commit/8cbccfae839fd8153ea5b00796736d973354103d))
+* **make:** targets write a local .env instead of copying the production template ([7728f0b](https://github.com/vighneshtule/AulaLab/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
+* **notebook:** the sheet follows a text cell the way it follows a code cell ([8be6d9c](https://github.com/vighneshtule/AulaLab/commit/8be6d9c6d8e016cf17cd7f0291e11028e4caa547))
+* **oracle:** the oracle feed never scrolls sideways; only code blocks and tables do, inside themselves ([70fed19](https://github.com/vighneshtule/AulaLab/commit/70fed1905de0b06bdd8d7003e1436a5438b2ce56))
+* **pult:** the remove-from-class menu opens above the council console ([9624323](https://github.com/vighneshtule/AulaLab/commit/9624323b3ff6b5013a37dec8b1780cd6e6c4b4c8))
+* **pult:** who, what state, where in the pile — and no flash of an empty cell ([d555ee1](https://github.com/vighneshtule/AulaLab/commit/d555ee1a2ee79d206368ba6f66c0e31b15cbe040))
+* **room:** a solution on the class screen outlives the council being closed ([85b77fa](https://github.com/vighneshtule/AulaLab/commit/85b77fa35169c7a24bfe689a4662950fe24878bd))
+* **room:** bringing a file into the room does not make it that student's personal notebook ([b9eebca](https://github.com/vighneshtule/AulaLab/commit/b9eebcad716344c8111787cd5b044b826ecb806b))
+* **room:** the copy slot in the cell toolbar copies the text, it no longer duplicates the cell ([ebc9aa8](https://github.com/vighneshtule/AulaLab/commit/ebc9aa8c0c9bca08612dc3a9603713e07e329e26))
+* **room:** the presence dots keep clear of the file menu, and the delete row drops its truncated warning ([bc31afb](https://github.com/vighneshtule/AulaLab/commit/bc31afb7b467a59023f4992d1b03335bd419f58b))
+* **runtime:** the teacher learns why a room cannot be scheduled ([7728f0b](https://github.com/vighneshtule/AulaLab/commit/7728f0b4d65f075c35a8008bb95a3218d981f2fd))
+* **site:** a real favicon, site name markup, robots.txt and a sitemap for search engines ([51b4019](https://github.com/vighneshtule/AulaLab/commit/51b4019953b5c91b19f29454cd164766219afb66))
+* **site:** drop the contact block and the join-screen demo from the landing ([6551571](https://github.com/vighneshtule/AulaLab/commit/65515718cf09a2b9f5046784d3bf72c9fa074fb0))
+* **vast:** a session receipt from the laptop no longer stops the machine from going public ([13f145d](https://github.com/vighneshtule/AulaLab/commit/13f145d0b2ff2457cd45f43d4fb1d36e6ff6b560))
+* verify scoped k3d checksum path in CI ([91f49ca](https://github.com/vighneshtule/AulaLab/commit/91f49caa4edab89185d477af6a70e210b46e6cf8))
 
 
 ### Documentation
 
-* English documentation with a language switch, and a README with animated scenes ([ba326ba](https://github.com/colloq-edu/colloq/commit/ba326baa09d4fa8dfc2580fa85954859aa6ae928))
-* move the repository to colloq-edu/colloq and the English docs to colloq.cc ([d2ad173](https://github.com/colloq-edu/colloq/commit/d2ad173205ad85a77b8398ea1e3eddc595e64a15))
-* README in English and Russian with a language switch, pip install first ([4ead8f5](https://github.com/colloq-edu/colloq/commit/4ead8f531a85715ac8c75b0c4e34d63a029c5c5f))
-* **readme:** the animated scenes in Russian, and copies for the landing ([57a3e38](https://github.com/colloq-edu/colloq/commit/57a3e38753135114cad35f8a2cd0ab547bd7c329))
-* record Linux k3s competition smoke proof ([deacbd1](https://github.com/colloq-edu/colloq/commit/deacbd177170382cb19faeab5c13dca8bcac6bef))
+* English documentation with a language switch, and a README with animated scenes ([ba326ba](https://github.com/vighneshtule/AulaLab/commit/ba326baa09d4fa8dfc2580fa85954859aa6ae928))
+* move the repository to vighneshtule/aulalab and the English docs to github.com/vighneshtule/AulaLab ([d2ad173](https://github.com/vighneshtule/AulaLab/commit/d2ad173205ad85a77b8398ea1e3eddc595e64a15))
+* README in English and Russian with a language switch, pip install first ([4ead8f5](https://github.com/vighneshtule/AulaLab/commit/4ead8f531a85715ac8c75b0c4e34d63a029c5c5f))
+* **readme:** the animated scenes in Russian, and copies for the landing ([57a3e38](https://github.com/vighneshtule/AulaLab/commit/57a3e38753135114cad35f8a2cd0ab547bd7c329))
+* record Linux k3s competition smoke proof ([deacbd1](https://github.com/vighneshtule/AulaLab/commit/deacbd177170382cb19faeab5c13dca8bcac6bef))
 
-## [0.1.0](https://github.com/sleep3r/colloq/releases/tag/v0.1.0) (2026-09-13)
+## [0.1.0](https://github.com/sleep3r/aulalab/releases/tag/v0.1.0) (2026-09-13)
 
 First tagged version.
 

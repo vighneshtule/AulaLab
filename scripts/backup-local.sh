@@ -2,16 +2,16 @@
 #
 # A backup of the class on this machine: the database as one file and an
 # archive with everything the database does not hold. The counterpart of
-# `colloq restore --legacy` (scripts/restore.sh).
+# `aulalab restore --legacy` (scripts/restore.sh).
 #
 #   ./scripts/backup-local.sh    take a backup into <state>/backups/
-#   colloq backup                for the teacher, this is it
+#   aulalab backup                for the teacher, this is it
 #   make backup-legacy           in the repository, the same, as a one-line wrapper
 #
 # Why a separate file and not a recipe in the Makefile, where it has lived until
 # now. The pip wheel carries the application and scripts/; the Makefile is not
-# carried and will not be (scripts/pack.mts · SCRIPTS), and `colloq backup` in
-# an installed colloq called make and died on "command not found", on the one
+# carried and will not be (scripts/pack.mts · SCRIPTS), and `aulalab backup` in
+# an installed aulalab called make and died on "command not found", on the one
 # command with which the teacher carries the semester off the machine. The same
 # has already been done, for the same reason, with restore-legacy and with host:
 # one description, one file.
@@ -21,11 +21,11 @@
 # The APPLICATION directory is the one above scripts/: web/dist, kernel/, these
 # scripts. It arrives with the package and is wiped entirely by the next
 # `pip install -U`. The STATE directory (.env, data/, workspace/, own
-# environments, backups/) lives separately (~/.colloq or COLLOQ_HOME) and
+# environments, backups/) lives separately (~/.aulalab or AULALAB_HOME) and
 # survives updates.
 #
 # The backup is taken ENTIRELY from the state, and its address is not computed
-# here: scripts/lib.sh knows it (COLLOQ_STATE_ROOT), and there must not be a
+# here: scripts/lib.sh knows it (AULALAB_STATE_ROOT), and there must not be a
 # second answer to one question. In the repository both roots are the same
 # directory, and not a single path moved there.
 #
@@ -42,7 +42,7 @@
 # out to be a backup of another.
 #
 # VACUUM INTO reads a consistent snapshot and writes one finished file. A copy
-# of colloq.db itself does not give that: in WAL mode half a day lies in the
+# of aulalab.db itself does not give that: in WAL mode half a day lies in the
 # journal next to it, and a file copied on the fly lags by hours. Verified.
 #
 # The second file next to it is an archive with everything the database does
@@ -132,12 +132,12 @@ die() { printf '%s%s%s\n' "$RED" "$*" "$OFF" >&2; exit 1; }
 . ./scripts/lib.sh
 
 APP="$PWD"
-STATE="$(cd "$COLLOQ_STATE_ROOT" 2>/dev/null && pwd || true)"
+STATE="$(cd "$AULALAB_STATE_ROOT" 2>/dev/null && pwd || true)"
 # The braces around the name are required: it is followed by a "»", and bash
 # takes its first byte for part of the variable name and fails on "unbound
 # variable" instead of refusing for the actual reason. restore.sh writes it with
 # the same trick for the same reason.
-[ -n "$STATE" ] || die "no state directory \"${COLLOQ_STATE_ROOT}\" — check COLLOQ_HOME."
+[ -n "$STATE" ] || die "no state directory \"${AULALAB_STATE_ROOT}\" — check AULALAB_HOME."
 
 # Own environments: the former kernel/environments in the repository,
 # <state>/environments for an installed package (see the header).
@@ -150,11 +150,11 @@ cd "$STATE"
 
 # Without the database there is nothing to back up, and that has to be said out
 # loud. VACUUM INTO over a nonexistent file silently creates an empty database
-# and just as silently writes an empty "backup": for an installed colloq with
+# and just as silently writes an empty "backup": for an installed aulalab with
 # its roots out of step, this would look like a successful backup of nothing.
-[ -f data/colloq.db ] || die "no data/colloq.db in $STATE — there is nothing to back up.
-  This is the directory that holds the .env of the class; for an installed colloq
-  its address is COLLOQ_HOME."
+[ -f data/aulalab.db ] || die "no data/aulalab.db in $STATE — there is nothing to back up.
+  This is the directory that holds the .env of the class; for an installed aulalab
+  its address is AULALAB_HOME."
 
 # The environment wins; otherwise the .env of this instance, read as data.
 setting() {
@@ -175,8 +175,8 @@ fi
 
 mkdir -p backups
 stamp="$(date +%Y%m%d-%H%M%S)"
-out="backups/colloq-$stamp.db"
-files="backups/colloq-$stamp-files.tar.gz"
+out="backups/aulalab-$stamp.db"
+files="backups/aulalab-$stamp-files.tar.gz"
 # Names go by the second. VACUUM INTO refuses an existing file, which is
 # right, but it says so as "did not work, install sqlite3".
 if [ -e "$out" ] || [ -e "$out.age" ]; then
@@ -185,7 +185,7 @@ fi
 
 # How to name the backup to a person. In the repository, as before, from the
 # root: `backups/…` is the path from the directory the person stands in. For an
-# installed colloq the state lies in ~/.colloq, while the person stands
+# installed aulalab the state lies in ~/.aulalab, while the person stands
 # anywhere, and a relative name would point to a nonexistent backups/ next to
 # them, including in the "restore it back" hint, which gets copied whole.
 if [ "$STATE" = "$APP" ]; then SHOW=""; else SHOW="$STATE/"; fi
@@ -202,7 +202,7 @@ done
 # free on top.
 kb() { { du -sk "$@" 2>/dev/null || true; } | awk '{ total += $1 } END { print total + 0 }'; }
 gb() { awk -v kb="$1" 'BEGIN { printf "%.1f", kb / 1048576 }'; }
-need_kb="$(kb data/colloq.db data/colloq.db-wal)"
+need_kb="$(kb data/aulalab.db data/aulalab.db-wal)"
 [ "$#" -eq 0 ] || need_kb=$((need_kb + $(kb "$@")))
 need_kb=$((need_kb + 1048576))
 free_kb="$(df -Pk backups 2>/dev/null | awk 'NR == 2 { print $4 }' || true)"
@@ -212,10 +212,10 @@ if [ -n "$free_kb" ] && [ "$free_kb" -lt "$need_kb" ]; then
 fi
 
 # The path goes inside an SQL string, and it now comes from outside
-# (COLLOQ_HOME): a single quote in the name of the home directory would close
+# (AULALAB_HOME): a single quote in the name of the home directory would close
 # the string in the middle of the path. In SQL it is doubled.
 sql_out="$PWD/$out"
-sqlite3 data/colloq.db "VACUUM INTO '${sql_out//\'/\'\'}'" \
+sqlite3 data/aulalab.db "VACUUM INTO '${sql_out//\'/\'\'}'" \
   || die "did not work. sqlite3 is needed — brew install sqlite"
 # A copy of the database is as secret as the database itself: it holds the
 # sign-in keys for teachers and the Oracle key, if it was set in the panel.
@@ -225,9 +225,9 @@ chmod 600 "$out"
 
 made_files=""
 if [ $# -gt 0 ]; then
-  list="$(mktemp backups/.colloq-list.XXXXXX)"
-  keep="$(mktemp backups/.colloq-keep.XXXXXX)"
-  errs="$(mktemp backups/.colloq-errors.XXXXXX)"
+  list="$(mktemp backups/.aulalab-list.XXXXXX)"
+  keep="$(mktemp backups/.aulalab-keep.XXXXXX)"
+  errs="$(mktemp backups/.aulalab-errors.XXXXXX)"
   trap 'rm -f "$list" "$keep" "$errs"' EXIT
   # Messages in English, so that the refusals below can be told from the
   # harmless ones; names keep the person's own character set.
@@ -308,7 +308,7 @@ if [ -n "$RECIPIENT" ]; then
 fi
 
 printf '%sbackup:%s %s %s(%s)%s\n' "$BOLD" "$OFF" "$SHOW$out" "$DIM" "$(du -h "$out" | cut -f1)" "$OFF"
-back="colloq restore --legacy --db $SHOW$out"
+back="aulalab restore --legacy --db $SHOW$out"
 if [ -n "$made_files" ]; then
   printf '%sfiles:%s  %s %s(%s)%s\n' "$BOLD" "$OFF" "$SHOW$files" "$DIM" "$(du -h "$files" | cut -f1)" "$OFF"
   # Both files are named in one line on purpose: they have to be restored as a
@@ -323,10 +323,10 @@ fi
 # only after it is complete.
 if [ "$KEEP" -gt 0 ]; then
   n=0
-  for old in $(ls -1 backups | sed -n -E 's/^colloq-([0-9]{8}-[0-9]{6})(-files\.tar\.gz|\.db)(\.age)?$/\1/p' | sort -ru); do
+  for old in $(ls -1 backups | sed -n -E 's/^aulalab-([0-9]{8}-[0-9]{6})(-files\.tar\.gz|\.db)(\.age)?$/\1/p' | sort -ru); do
     n=$((n + 1))
     if [ "$n" -le "$KEEP" ] || [ "$old" = "$stamp" ]; then continue; fi
-    for f in "backups/colloq-$old.db" "backups/colloq-$old.db.age" "backups/colloq-$old-files.tar.gz" "backups/colloq-$old-files.tar.gz.age"; do
+    for f in "backups/aulalab-$old.db" "backups/aulalab-$old.db.age" "backups/aulalab-$old-files.tar.gz" "backups/aulalab-$old-files.tar.gz.age"; do
       if [ -f "$f" ] && [ ! -L "$f" ]; then rm -f -- "$f"; say "${DIM}removed an old backup: $SHOW$f${OFF}"; fi
     done
   done
@@ -336,11 +336,11 @@ fi
 # long been about the portable k3s backup and answers "ARCHIVE is required" to a
 # pair of files; besides, not everyone who took this backup has make. The paths
 # are from the state root, that is, from the directory where they actually lie.
-# The server image names its own way back (colloq-host restore): the pip
+# The server image names its own way back (aulalab-host restore): the pip
 # command does not exist there, and a hint that sends an operator to a missing
 # command is worse than none.
-if [ -n "${COLLOQ_RESTORE_HINT:-}" ]; then
-  say "${DIM}restore it back: ${COLLOQ_RESTORE_HINT} $SHOW$out${OFF}"
+if [ -n "${AULALAB_RESTORE_HINT:-}" ]; then
+  say "${DIM}restore it back: ${AULALAB_RESTORE_HINT} $SHOW$out${OFF}"
 else
   say "${DIM}restore it back: $back${OFF}"
 fi

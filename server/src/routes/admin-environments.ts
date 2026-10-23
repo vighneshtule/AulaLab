@@ -335,7 +335,7 @@ export function adminEnvironmentRoutes(deps: BuildDeps = liveBuilds): Router {
      * say so.
      *
      * The list of such an environment lies in the application directory,
-     * which for an installed colloq is site-packages: `rm` there either fails
+     * which for an installed aulalab is site-packages: `rm` there either fails
      * on permissions (and the person sees a bare "internal error") or removes
      * a file that the next `pip install -U` brings back. The refusal says what
      * to do instead: an edit goes into a copy of its own next to the settings
@@ -350,7 +350,7 @@ export function adminEnvironmentRoutes(deps: BuildDeps = liveBuilds): Router {
         res,
         409,
         'protected',
-        tr('server.shipsWithColloqAndCannotBeDeletedHere.06a8ea', { p0: name }),
+        tr('server.shipsWithAulaLabAndCannotBeDeletedHere.06a8ea', { p0: name }),
       )
     }
     /*

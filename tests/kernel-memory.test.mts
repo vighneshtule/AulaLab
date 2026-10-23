@@ -44,7 +44,7 @@ function withEnv(vars: Record<string, string | undefined>, body: () => void): vo
   }
 }
 
-const room = { sessionId: 'pvhu2h7f', mount: '/srv/workspace/pvhu2h7f', network: 'colloq-rooms', publish: true, gpu: null }
+const room = { sessionId: 'pvhu2h7f', mount: '/srv/workspace/pvhu2h7f', network: 'aulalab-rooms', publish: true, gpu: null }
 
 afterEach(() => {
   useDockerForPostmortem(null)
@@ -162,7 +162,7 @@ test('the postmortem reads the cgroup of a live container and explains the kerne
   assert.match(why.text, /лимит 2 ГБ/)
   assert.match(why.text, /ячейке 21/)
   // The container is queried by the room name, not by something guessed.
-  assert.ok(calls.every((args) => args.includes('colloq-room-pvhu2h7f')), JSON.stringify(calls))
+  assert.ok(calls.every((args) => args.includes('aulalab-room-pvhu2h7f')), JSON.stringify(calls))
 })
 
 test('cgroup v1 is read into the same fields', async () => {

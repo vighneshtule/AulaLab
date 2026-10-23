@@ -958,7 +958,7 @@
     <!--
       What goes to the provider and how long it thinks — next to the model and
       the key, not among the ceilings: these are two settings about ONE
-      request, and both change what leaves this Colloq.
+      request, and both change what leaves this Aula Lab.
     -->
     <Section
       title={tr('admin.request.shape')}

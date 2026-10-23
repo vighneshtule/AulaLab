@@ -25,7 +25,7 @@ const ROOM: PaletteItem[] = [
   item('run-all', 'Комната', 'Запустить всю тетрадь', undefined, 'run all выполнить'),
   item('interrupt', 'Комната', 'Остановить выполнение', undefined, 'interrupt stop прервать'),
   item('panel-files', 'Комната', 'Панель файлов и людей', '⌘B', 'files people'),
-  item('tab', 'Вкладки', 'Тетрадь.ipynb', 'Ctrl1', 'Тетрадь.ipynb'),
+  item('tab', 'Вкладки', 'Notebook.ipynb', 'Ctrl1', 'Notebook.ipynb'),
   item('file', 'Файлы', 'src/model.py'),
   item('cell-3', 'Ячейки', 'import numpy as np', '03', 'ячейка cell 3'),
   item('cell-4', 'Ячейки', 'model.fit(x, y)', '04', 'ячейка cell 4'),

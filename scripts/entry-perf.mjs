@@ -147,7 +147,7 @@ try {
     // The same event used by keyboard/Shift+Enter handoffs, targeting a cell
     // which has never been visited. No cell is edited or run by this check.
     const selectedId = ids.at(-1)
-    await page.evaluate((previous) => window.dispatchEvent(new CustomEvent('colloq:step-cell', {
+    await page.evaluate((previous) => window.dispatchEvent(new CustomEvent('aulalab:step-cell', {
       detail: { cellId: previous, direction: 1, focus: false },
     })), ids.at(-2))
     await cell(selectedId).waitFor({ state: 'visible', timeout: 60_000 })

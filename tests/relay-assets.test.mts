@@ -28,7 +28,7 @@ import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
 const HAVE_PYTHON = spawnSync('python3', ['--version']).status === 0
 const SCRIPT = path.resolve(import.meta.dirname, '..', 'scripts/relay-assets.py')
 const TOKEN = 'seminar-relay-secret-0123456789'
-const HOST = 'hse.colloq.ru'
+const HOST = 'hse.example.edu'
 
 async function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -106,7 +106,7 @@ const build = (chunk: string, extra: Array<{ name: string; data?: string }> = []
   ])
 
 async function up(): Promise<void> {
-  root = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-mirror-'))
+  root = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-mirror-'))
   const tokenFile = path.join(root, 'token')
   fs.writeFileSync(tokenFile, `${TOKEN}\n`)
   const port = await freePort()
@@ -115,7 +115,7 @@ async function up(): Promise<void> {
     ...process.env,
     ASSETS_ROOT: path.join(root, 'store'),
     ASSETS_PORT: String(port),
-    ASSETS_DOMAIN: 'colloq.ru',
+    ASSETS_DOMAIN: 'example.edu',
     ASSETS_TOKEN_FILE: tokenFile,
     ASSETS_MAX_BYTES: '65536',
   }
@@ -156,7 +156,7 @@ suite('relay static mirror', { skip: HAVE_PYTHON ? false : 'no python3' }, () =>
   })
 
   test('its own mirror and only its own: the name in the path is the one the request came by', async () => {
-    const other = await put(build('app-aaaa1111.js'), { host: HOST, target: 'other.colloq.ru' })
+    const other = await put(build('app-aaaa1111.js'), { host: HOST, target: 'other.example.edu' })
     assert.equal(other.status, 403, 'one seminar overwrote the mirror of another')
     const alien = await put(build('app-aaaa1111.js'), { host: 'hse.example.com', target: 'hse.example.com' })
     assert.equal(alien.status, 400)
@@ -287,7 +287,7 @@ suite('relay static mirror', { skip: HAVE_PYTHON ? false : 'no python3' }, () =>
     const dirs = /^DIST_DIRS=.*$/m.exec(script)
     const made = /^assets_tar\(\) \{$[\s\S]*?^\}$/m.exec(script)
     assert.ok(dirs && made, 'assets_tar can no longer be found in scripts/host.sh')
-    const fake = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-dist-'))
+    const fake = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-dist-'))
     for (const dir of ['assets', 'fonts', 'pdf']) {
       fs.mkdirSync(path.join(fake, 'web/dist', dir), { recursive: true })
     }
@@ -315,7 +315,7 @@ suite('relay static mirror', { skip: HAVE_PYTHON ? false : 'no python3' }, () =>
   })
 
   test('the cleanup removes an abandoned name and unpacking leftovers', async () => {
-    const leftover = path.join(root, '.tmp', 'hse.colloq.ru-оборванная')
+    const leftover = path.join(root, '.tmp', 'hse.example.edu-оборванная')
     fs.mkdirSync(leftover, { recursive: true })
     const давно = Date.now() / 1000 - 3 * 86400
     fs.utimesSync(leftover, давно, давно)

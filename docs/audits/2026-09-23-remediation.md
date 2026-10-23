@@ -1,63 +1,21 @@
-# Исправления по аудиту Colloq
+# Audit remediation — 23 September 2026
 
-Основание: [аудит от 22.09.2026](2026-09-22-product-audit.md). Работа выполнена в отдельном дереве `fix/product-audit`, без изменения живых данных во время разработки.
+This is a historical summary of remediation performed after the product audit on 22 September 2026. It describes that verification run, not the current state of the branch.
 
-## Реализовано
+## Implemented changes
 
-| Находки | Изменение | Основные регрессии |
-| --- | --- | --- |
-| F01 | Версия полномочий преподавателя, немедленный отзыв трёх видов сокетов, перепроверка перед сообщением, отзыв переданных пультов | `socket-authorization.test.mts` |
-| F02 | Последний снимок по ключу ресурса, отдельный порядок команд и барьеры submit/run | `controls.test.mts`, browser reconnect |
-| F03, B01 | Атомарная серверная запись до публикации Yjs; повторяемый undo; выключение агента прерывает дальнейшие действия принятого хода | `agent-consistency.test.mts`, `agent-disable.test.mts` |
-| F04–F06 | Повтор отката resize с resourceVersion; полный census; восстановление после временного отказа Docker | `runtime-recovery`, `kernel-resource-census`, `kernel-docker-recovery` |
-| F07 | Короткие временные имена, ограничения UTF-8 байтов, понятная ошибка имени | `workspace-unicode-atomic`, `tree-copy-server` |
-| F08 | Пересобраны RU/EN страницы и поисковые индексы; добавлены актуальные инструкции | `docs/build.py` |
-| F09, F13 | Результаты только в ограниченном tmpfs, ограниченный экспорт разрешённых файлов, ротация Docker-логов; heartbeat учитывает отброшенный вывод | `competition-attempts`, `competitions-runner` |
-| F10–F12 | Durable attempt/lease ID, отложенный rescore, свои каталоги/nonce, отдельная публикация проверенного CSV, ресурсные reservations | `competition-attempts`, `work-budget` |
-| F14, F16 | Полный серверный лидерборд и монотонная ревизия изменений | `competitions-api`, `competition-contracts-regression` |
-| F15 | Поколения запросов по соревнованию и личности; старые ответы не меняют текущие действия | `competitions-navigation` |
-| F17, F18 | Выбор только в режиме chosen, корректная пометка автоматического зачёта, общая мобильная пагинация | `competitions-counted-render`, `competitions-board-render` |
-| F19, F20 | Независимая личность бейслайна; ревизии данных/метрики/тетради; проверка фактически закреплённого образа | `competition-contracts-regression`, проверки provenance |
-| F21, F22 | Очистка контейнеров по инстансу, проверка принадлежности legacy-контейнера; очистка осиротевших wheel-каталогов | ownership/recovery tests |
-| F23 | Одинаковый подсчёт содержательных строк и Unicode-разделителей в UI, intake и Python | `dependency-recovery`, `dependency-capability-recovery` |
-| R01 | Ограничение работы до индексирования CRDT, интервальный индекс вместо записи на каждый clock | `crdt-classification-budget` |
-| R02 | Карточка окружения читает закреплённую ревизию | `environment-inventory` |
-| R03 | Резервирование пикового места и перепроверка перед публикацией, очистка при нехватке диска | `dependency-budget` |
-| D01 | Capability gate до upload/enqueue/recovery; отдельные состояния исполнителей; автоматический retry доступного Docker-пути | `competition-capabilities`, `runtime-worker-startup` |
+- Server-side results and state revisions became authoritative; event-feed pagination no longer changes ranking.
+- Execution attempts, permissions, routes, and inputs received separate generations or revisions.
+- Server-side file writes and AI undo confirm only changes that were actually persisted.
+- The shared local resource budget accounts for class rooms, personal kernels, dependency preparation, and competitions, including the interval before a new census.
+- `/api/health` reports executor capabilities. Staff-only `/api/instance/operations` reports queues, reservations, artifacts, retries, cleanup, and save latency/errors.
+- Nightly/manual real-Docker tests were added for dependency preparation and restore; Linux CI gained a browser reconnect smoke test.
+- Socket authorization, background worker startup, operational status, and work-budget code were split into focused modules rather than rewritten wholesale.
 
-## Архитектурные улучшения
+## Decisions and verification recorded at the time
 
-- Авторитетные результаты и версии состояния приходят с сервера; пагинация ленты не влияет на ранжирование.
-- Попытки исполнения, полномочия, маршруты и входные данные имеют отдельные поколения/ревизии.
-- Server-side файловая запись и AI-undo подтверждают только фактически сохранённые изменения.
-- Общий локальный бюджет учитывает комнаты, личные ядра, подготовку пакетов и соревнования, включая промежуток до обновления census.
-- `/api/health` показывает возможности исполнителей; staff-only `/api/instance/operations` — очереди, reservations, артефакты, retries, cleanup, задержки и ошибки сохранения.
-- Добавлены nightly/manual реальные Docker-тесты подготовки и восстановления, а также браузерный smoke reconnect для Linux CI.
-- Выделены модули авторизации сокетов, запуска фоновых workers, operational status и work budget. Большого несвязанного переписывания `control.ts` не проводилось.
+For the standard production k3s/broker setup, unavailable competition execution and package preparation were made explicit in UI, API, and startup checks until each capability was ready. A later change added separate Pods for notebooks, metrics, and dependency preparation while retaining explicit unavailability where a capability is not ready.
 
-## Решения по неоднозначным пунктам
+The reported final run had **3,771 tests: 3,746 passed, 25 skipped, 0 failed**. Two Chromium scenarios and one real Docker restore-and-run scenario passed. Typecheck and build passed. Eight pre-existing Svelte warnings remained in five untouched screens/components; no new warnings were reported in the interfaces changed by that remediation.
 
-Выключение AI-агента прекращает последующие действия уже принятого хода. Выполненные до выключения изменения остаются доступными для отмены.
-
-Для стандартного production k3s/broker реализован предусмотренный аудитом вариант явной недоступности соревнований/подготовки, включая UI, API и startup. Новый Kubernetes-исполнитель соревнований не добавлен. Docker socket в production-приложение не подключается.
-
-Последующее изменение: [исполнитель соревнований для k3s](../architecture/competition-broker.md) добавляет отдельные Pod для тетради, метрики и подготовки пакетов. Описанный выше отказ остаётся правилом, когда отдельная capability не готова.
-
-Лимит requirements — 32 непустые строки без комментариев и 8192 UTF-8 байта. Готовые наборы сохраняют точные версии; новая версия базы не подменяет старые посылки.
-
-## Проверка
-
-Промежуточный полный прогон: **3757 тестов, 3732 passed, 25 skipped, 0 failed**. Отдельно прошёл настоящий Docker-сценарий: подготовка пакетов → исполнение без сети → метрика → согласованный архив → восстановление → новый процесс → повтор с тем же образом и пакетами.
-
-Независимое финальное ревью обнаружило дополнительные границы: старый образ при перепроверке бейслайна, глобальные метки очистки, Docker-логи и двусторонний учёт ресурсов. Эти пункты включены в исправления и отдельные регрессии. Итоговые результаты после переноса записываются ниже.
-
-### Итог после исправления замечаний ревью
-
-- Полная серия: **3771 тест, 3746 passed, 25 skipped, 0 failed**.
-- Chromium: **2/2** настоящих browser-сценария прошли — общая тетрадь после offline/reconnect и перезагрузки; черновик консилиума A → B → A, прочитанный новым контекстом без IndexedDB.
-- Реальный Docker restore-and-run: **1/1**, подготовка и установка пакетов, исполнение без сети, оценка, архив, восстановление и повтор в новом процессе.
-- Независимое ревью повторно проверило четыре исправления. Дополнительная регрессия раннего выхода контейнера до первого census закрыта; **80/80** профильных проверок общего бюджета прошли. Открытых существенных замечаний в проверенном объёме не осталось.
-- Typecheck и сборка проходят. В Svelte остаются восемь существовавших предупреждений в пяти не затронутых экранах/компонентах; новых предупреждений в исправленных интерфейсах нет.
-- RU/EN документация и производные HTML/search indexes пересобраны. YAML двух новых CI workflows проверен.
-
-GitHub-hosted ночной прогон и реальные Kubernetes/GPU испытания не запускались. Локальные проверки используют реальные браузер и Docker там, где указано, а Kubernetes ошибки/гонки воспроизводятся управляемыми подставными ответами. Автоматические проверки работают на временных данных; живые пользовательские тетради не использовались.
+The report did not include GitHub-hosted nightly results or real Kubernetes/GPU trials. Kubernetes races and errors were exercised with controlled test responses.

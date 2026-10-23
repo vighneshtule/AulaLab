@@ -30,7 +30,7 @@
         { "type": "json", "path": "package-lock.json", "jsonpath": "$.packages.web.version" },
         { "type": "json", "path": "package-lock.json", "jsonpath": "$.packages.runtime.version" },
         { "type": "json", "path": "package-lock.json", "jsonpath": "$.packages.cli.version" },
-        { "type": "generic", "path": "python/colloq/_version.py" }
+        { "type": "generic", "path": "python/aulalab/_version.py" }
       ]
     }
   }

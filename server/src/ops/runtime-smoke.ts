@@ -12,7 +12,7 @@ import {
 } from '../../../shared/runtime.js'
 import type { JupyterKernel } from '../kernel/jupyter.js'
 
-const PREFIX = 'COLLOQ_RUNTIME_SMOKE='
+const PREFIX = 'AULALAB_RUNTIME_SMOKE='
 const OWNER_FILE = '.runtime-smoke-owner'
 const WORK_MS = 130000
 const CLEANUP_MS = 30000
@@ -122,7 +122,7 @@ print(${JSON.stringify(PREFIX)} + json.dumps(_report))`
 }
 function siblingHost(id: string, endpoint: RuntimeEndpoint): string {
   const target = new URL(endpoint.url)
-  const expected = `colloq-room-${createHash('sha256').update(id).digest('hex').slice(0, 40)}.`
+  const expected = `aulalab-room-${createHash('sha256').update(id).digest('hex').slice(0, 40)}.`
   if (
     target.protocol !== 'http:' ||
     target.port !== '8888' ||

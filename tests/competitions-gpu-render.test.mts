@@ -27,7 +27,7 @@ import { blindAdvice, gpuCondition } from '../web/src/lib/competition-words.js'
 let dir: string
 const components = new Map<string, Component<any>>()
 before(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-gpu-render-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-gpu-render-'))
   const local = (name: string) => pathToFileURL(path.join(dir, `${name}.mjs`)).href
   const sources: [string, string][] = [
     ['Skeleton', '../web/src/components/ui/Skeleton.svelte'],

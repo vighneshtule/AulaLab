@@ -1,5 +1,5 @@
 /**
- * COLLOQ_ROOM_NETWORK=none through the room start itself (kernel/pool.ts with
+ * AULALAB_ROOM_NETWORK=none through the room start itself (kernel/pool.ts with
  * kernel/perimeter.ts), with a docker that only answers.
  *
  * The rules follow the rooms subnet, so they reach every container at once.
@@ -28,7 +28,7 @@ type Reply = { code: number; out: string }
 /** The server in a container on `room-net`, one room container with the given state and profile label. */
 function fakeDocker(container: { name: string; state: 'exited' | 'running'; profile: string }) {
   const old = { ...process.env }, oldSpawn = cp.spawn, oldFetch = globalThis.fetch, exists = fs.existsSync
-  Object.assign(process.env, { KERNEL_BACKEND: 'docker', KERNEL_ISOLATION: 'required', KERNEL_NETWORK: 'room-net', COLLOQ_ROOM_NETWORK: 'none', COLLOQ_CONTAINER: 'colloq-app' })
+  Object.assign(process.env, { KERNEL_BACKEND: 'docker', KERNEL_ISOLATION: 'required', KERNEL_NETWORK: 'room-net', AULALAB_ROOM_NETWORK: 'none', AULALAB_CONTAINER: 'aulalab-app' })
   fs.existsSync = ((p: any) => p === '/.dockerenv' || exists(p)) as typeof fs.existsSync
   const live = new Map([[container.name, { ...container }]])
   const calls: string[][] = []
@@ -38,7 +38,7 @@ function fakeDocker(container: { name: string; state: 'exited' | 'running'; prof
     if (args[0] === 'version' || args[0] === 'image') return { code: 0, out: 'ready' }
     if (args[0] === 'ps') return { code: 0, out: '' }
     if (args[0] === 'inspect' && args[1] === '--type') {
-      return args.at(-1) === 'colloq-app' ? { code: 0, out: SERVER_IMAGE } : { code: 1, out: 'No such container' }
+      return args.at(-1) === 'aulalab-app' ? { code: 0, out: SERVER_IMAGE } : { code: 1, out: 'No such container' }
     }
     if (args[0] === 'inspect') {
       const found = live.get(args[1]!)
@@ -52,10 +52,10 @@ function fakeDocker(container: { name: string; state: 'exited' | 'running'; prof
       return { code: 0, out: '' }
     }
     if (args[0] === 'run') {
-      if (args.includes('--privileged')) return { code: 0, out: 'colloq-perimeter: ok' }
+      if (args.includes('--privileged')) return { code: 0, out: 'aulalab-perimeter: ok' }
       const name = args[args.indexOf('--name') + 1]!
-      const label = args.find((arg) => arg.startsWith('colloq.profile='))!
-      live.set(name, { name, state: 'running', profile: label.slice('colloq.profile='.length) })
+      const label = args.find((arg) => arg.startsWith('aulalab.profile='))!
+      live.set(name, { name, state: 'running', profile: label.slice('aulalab.profile='.length) })
       return { code: 0, out: name }
     }
     if (args[0] === 'start') { live.get(args[1]!)!.state = 'running'; return { code: 0, out: args[1]! } }
@@ -84,32 +84,32 @@ function fakeDocker(container: { name: string; state: 'exited' | 'running'; prof
 test('a stopped container from the previous setting is recreated with the blackhole resolver; the helper runs from the server image', async () => {
   const id = 'netchange-stopped'
   createSession(id, id)
-  const docker = fakeDocker({ name: `colloq-room-${id}`, state: 'exited', profile: '1' })
+  const docker = fakeDocker({ name: `aulalab-room-${id}`, state: 'exited', profile: '1' })
   try {
     await endpointForSession(id, 'base')
-    const removed = docker.calls.findIndex((args) => args[0] === 'rm' && args.at(-1) === `colloq-room-${id}`)
+    const removed = docker.calls.findIndex((args) => args[0] === 'rm' && args.at(-1) === `aulalab-room-${id}`)
     assert.ok(removed >= 0, 'the old container was started as it was')
     const created = docker.calls.find((args) => args[0] === 'run' && args.includes('--name'))!
     assert.ok(created.includes('--dns=192.0.2.1'), JSON.stringify(created))
-    assert.ok(created.includes('colloq.profile=1-none'), JSON.stringify(created))
+    assert.ok(created.includes('aulalab.profile=1-none'), JSON.stringify(created))
     // The block went up before the container, from the server's own image, with no DNS exception.
     const helper = docker.calls.find((args) => args[0] === 'run' && args.includes('--privileged'))!
     assert.equal(helper[helper.indexOf('--entrypoint=sh') + 1], SERVER_IMAGE)
     assert.ok(!/--dport 53/.test(helper.at(-1)!), 'none let DNS out')
-    assert.match(helper.at(-1)!, /-A COLLOQ-ROOMS-FWD -s 10\.213\.0\.0\/22 -j COLLOQ-ROOMS-DENY/)
+    assert.match(helper.at(-1)!, /-A AULALAB-ROOMS-FWD -s 10\.213\.0\.0\/22 -j AULALAB-ROOMS-DENY/)
     assert.ok(docker.calls.indexOf(helper) < docker.calls.indexOf(created), 'the room ran before its block')
-    assert.ok(!docker.calls.some((args) => args.includes('colloq-kernel:base') && args.includes('--privileged')))
+    assert.ok(!docker.calls.some((args) => args.includes('aulalab-kernel:base') && args.includes('--privileged')))
   } finally { await docker.restore(id) }
 })
 
 test('a live container from the previous setting keeps its variables: it is not recreated, the rules already apply', async () => {
   const id = 'netchange-live'
   createSession(id, id)
-  const docker = fakeDocker({ name: `colloq-room-${id}`, state: 'running', profile: '1' })
+  const docker = fakeDocker({ name: `aulalab-room-${id}`, state: 'running', profile: '1' })
   try {
     await endpointForSession(id, 'base')
     assert.ok(!docker.calls.some((args) => args[0] === 'rm'), 'a live room lost its kernel')
     assert.ok(!docker.calls.some((args) => args[0] === 'run' && args.includes('--name')))
-    assert.equal(docker.live.get(`colloq-room-${id}`)!.profile, '1')
+    assert.equal(docker.live.get(`aulalab-room-${id}`)!.profile, '1')
   } finally { await docker.restore(id) }
 })

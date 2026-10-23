@@ -5,7 +5,7 @@
  * line breaks: a stack trace in the text log arrives there as a dozen
  * unrelated entries. With LOG_FORMAT=json every console call of the server is
  * one JSON object on one line. The text log stays the default, byte for byte,
- * because people and scripts (`colloq logs`, grep in the docs) read it.
+ * because people and scripts (`aulalab logs`, grep in the docs) read it.
  *
  * log.ts patches console the moment it loads, so each mode runs in a process
  * of its own and the test reads what really reached stdout and stderr.
@@ -21,12 +21,12 @@ import { fileURLToPath } from 'node:url'
 import { jsonLine } from '../server/src/log.ts'
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-log-format-'))
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-log-format-'))
 after(() => fs.rmSync(dir, { recursive: true, force: true }))
 
 const BANNER = [
   '',
-  '  ┌ nobody owns this Colloq yet',
+  '  ┌ nobody owns this Aula Lab yet',
   '  │ open  http://localhost:3000/admin/t/SETUP-TOKEN-0123456789',
   '  └ the token alone is in data/setup-token (0600).',
   '',

@@ -36,8 +36,8 @@ TOP_LEVEL = TREES + ('release.json', 'catalog.json', 'manifest.json', 'config.en
 ARCHIVE_ORDER = ('manifest.json', 'release.json', 'catalog.json', 'config.env') + TREES
 # Entries that must be regular files: the tools read them, and a link there
 # would make them read something else.
-FILES_ONLY = frozenset(('release.json', 'catalog.json', 'manifest.json', 'config.env', 'data/colloq.db'))
-DATABASE_FILES = ('colloq.db', 'colloq.db-wal', 'colloq.db-shm')
+FILES_ONLY = frozenset(('release.json', 'catalog.json', 'manifest.json', 'config.env', 'data/aulalab.db'))
+DATABASE_FILES = ('aulalab.db', 'aulalab.db-wal', 'aulalab.db-shm')
 # What the data tree copy leaves out: the live database (copied consistently on
 # its own) and the snapshots the server keeps of it (server/src/db-snapshots.ts),
 # which are whole databases: N of them in every archive would multiply its size
@@ -54,7 +54,7 @@ WARN_LIMIT = 50
 # this are skipped with a warning instead of running out of descriptors.
 MAX_DEPTH = 256
 # What `backup.sh` names its archives; retention touches nothing else.
-ARCHIVE_NAME = re.compile(r'colloq-([0-9]{8}T[0-9]{6}Z)-(?:live|consistent)\.tar\.gz(?:\.age)?')
+ARCHIVE_NAME = re.compile(r'aulalab-([0-9]{8}T[0-9]{6}Z)-(?:live|consistent)\.tar\.gz(?:\.age)?')
 DENIED = (errno.EACCES, errno.EPERM)
 # Removed, or swapped for a link or a file, between listing and opening: a live
 # class writes while it is being copied.
@@ -64,7 +64,7 @@ KINDS = {'fifo': 'a FIFO', 'socket': 'a socket', 'device': 'a device node', 'spe
 
 
 def operation_lock(root):
-    spec = importlib.util.spec_from_file_location('colloq_state_lock', Path(__file__).with_name('state-lock.py'))
+    spec = importlib.util.spec_from_file_location('aulalab_state_lock', Path(__file__).with_name('state-lock.py'))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.acquire(root)
@@ -383,7 +383,7 @@ def measure(root, report, open_files=False):
         if tree.exists():
             walk(tree, report, ignore, count, link_note(report, name), excluded, open_files)
     # The snapshot of the database is at most the file plus its journal.
-    for path in (root / 'data/colloq.db', root / 'data/colloq.db-wal', root / 'config.env'):
+    for path in (root / 'data/aulalab.db', root / 'data/aulalab.db-wal', root / 'config.env'):
         with contextlib.suppress(FileNotFoundError):
             total += os.stat(path, follow_symlinks=False).st_size
     return total
@@ -463,8 +463,8 @@ def backup(args):
     root = Path(args.root).resolve()
     operation_lock(root)
     require(not os.path.lexists(root / RESTORE_MARKER), 'interrupted restore must be recovered before backup')
-    require((root / 'data/colloq.db').is_file(), 'application database is missing')
-    require(not (root / 'data/colloq.db').is_symlink(), 'database symlink is not allowed')
+    require((root / 'data/aulalab.db').is_file(), 'application database is missing')
+    require(not (root / 'data/aulalab.db').is_symlink(), 'database symlink is not allowed')
     release = json.loads(Path(args.release).read_text())
     output = Path(args.output).absolute()
     require(not os.path.lexists(output), 'backup output already exists')
@@ -478,7 +478,7 @@ def backup(args):
             'the filesystem of %s, and %s is free. Free space or write the backup to another disk.'
             % (human(need), output.parent, human(free)))
     report = Report(quiet=getattr(args, 'brief', False))
-    with tempfile.TemporaryDirectory(prefix='.colloq-backup-', dir=output.parent) as directory:
+    with tempfile.TemporaryDirectory(prefix='.aulalab-backup-', dir=output.parent) as directory:
         stage = Path(directory)
         guard = SpaceGuard(stage)
         digests = {}
@@ -491,10 +491,10 @@ def backup(args):
             shutil.copy2(config, stage / 'config.env')
         else:
             (stage / 'config.env').touch(mode=0o600)
-        with read_only(root / 'data/colloq.db') as source:
-            with contextlib.closing(sqlite3.connect(stage / 'data/colloq.db')) as target:
+        with read_only(root / 'data/aulalab.db') as source:
+            with contextlib.closing(sqlite3.connect(stage / 'data/aulalab.db')) as target:
                 source.backup(target)
-        quick_check(stage / 'data/colloq.db')
+        quick_check(stage / 'data/aulalab.db')
         (stage / 'release.json').write_text(json.dumps(release, indent=2) + '\n')
         (stage / 'catalog.json').write_text(json.dumps(release['catalog'], indent=2) + '\n')
         guard.check()
@@ -503,7 +503,7 @@ def backup(args):
                         createdAt=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                         fileConsistency='stopped-writers' if args.mode == 'consistent' else 'files-copied-at-different-instants',
                         dataSchemaVersion=release['dataSchemaVersion'],
-                        databaseSchemaVersion=database_schema(stage / 'data/colloq.db'),
+                        databaseSchemaVersion=database_schema(stage / 'data/aulalab.db'),
                         files=files, links=links)
         if report.skipped:
             manifest['skipped'] = dict(sorted(report.skipped.items()))
@@ -530,7 +530,7 @@ def preflight(args):
     root = Path(args.root).resolve()
     operation_lock(root)
     require(not os.path.lexists(root / RESTORE_MARKER), 'interrupted restore must be recovered before backup')
-    database = root / 'data/colloq.db'
+    database = root / 'data/aulalab.db'
     require(database.is_file() and not database.is_symlink(), 'application database is missing: ' + str(database))
     require(isinstance(json.loads(Path(args.release).read_text()).get('dataSchemaVersion'), int), 'release has no dataSchemaVersion')
     output = Path(args.output).absolute()
@@ -545,7 +545,7 @@ def preflight(args):
     free = shutil.disk_usage(parent).free
     require(free >= need, 'not enough free space for a backup: it needs about %s on the filesystem of %s (a copy '
             'of data and workspace, then the archive), and %s is free. Free space or write the backup to another disk '
-            '(OUT=/path/colloq-....tar.gz). Nothing was stopped.' % (human(need), parent, human(free)))
+            '(OUT=/path/aulalab-....tar.gz). Nothing was stopped.' % (human(need), parent, human(free)))
     report.finish()
     print('backup preflight: %s to copy, %s free on %s' % (human(size), human(free), parent), file=sys.stderr)
 
@@ -572,7 +572,7 @@ def prune(args):
 
 def check_schema(args):
     """Refuse an update or rollback to a release that does not list the database's schema."""
-    database = Path(args.root) / 'data/colloq.db'
+    database = Path(args.root) / 'data/aulalab.db'
     if database.is_file() and not database.is_symlink():
         require_database_schema(database, json.loads(Path(args.release).read_text()), 'the installed data')
 
@@ -655,7 +655,7 @@ def unpack(archive_path, stage, name):
     files.pop('manifest.json', None)
     # Archives from before links were kept have no `links` and hold none.
     require(files == manifest.get('files') and links == manifest.get('links', {}), 'archive checksum validation failed')
-    quick_check(stage / 'data/colloq.db')
+    quick_check(stage / 'data/aulalab.db')
     release = json.loads((stage / 'release.json').read_text())
     require(release['catalog'] == json.loads((stage / 'catalog.json').read_text()), 'catalog does not match release')
     require(release['dataSchemaVersion'] == manifest.get('dataSchemaVersion'), 'backup schema does not match release')
@@ -713,7 +713,7 @@ def restore(args):
         selected = json.loads(Path(args.release).read_text())
         require(manifest['dataSchemaVersion'] in selected.get('compatibleDataSchemaVersions', []),
                 'selected release is incompatible with backup data schema')
-        require_database_schema(stage / 'data/colloq.db', selected, 'this backup')
+        require_database_schema(stage / 'data/aulalab.db', selected, 'this backup')
         # Preserve the backup release/catalog without changing operator-installed release state.
         (stage / 'recovery').mkdir()
         for name in ('manifest.json', 'release.json', 'catalog.json'):
@@ -791,10 +791,10 @@ def finalize(args):
     require(state.get('dataSchemaVersion') == recovered['dataSchemaVersion'] and
             recovered['dataSchemaVersion'] in selected.get('compatibleDataSchemaVersions', []),
             'restore finalization schema mismatch')
-    require(not (root / 'data').is_symlink() and not (root / 'data/colloq.db').is_symlink(),
+    require(not (root / 'data').is_symlink() and not (root / 'data/aulalab.db').is_symlink(),
             'restore database path changed')
-    quick_check(root / 'data/colloq.db')
-    require_database_schema(root / 'data/colloq.db', selected, 'the restored data')
+    quick_check(root / 'data/aulalab.db')
+    require_database_schema(root / 'data/aulalab.db', selected, 'the restored data')
     clear_restore_marker(root)
     print('restore finalized; runtime reservations reset and writers remain stopped')
 
@@ -831,14 +831,14 @@ def main():
     p.add_argument('--release', required=True)
     args = parser.parse_args()
     if args.command == 'validate':
-        with tempfile.TemporaryDirectory(prefix='colloq-verify-') as directory:
+        with tempfile.TemporaryDirectory(prefix='aulalab-verify-') as directory:
             stage = Path(directory)
             manifest = unpack(args.archive, stage, args.name)
             if args.release:
                 selected = json.loads(Path(args.release).read_text())
                 require(manifest['dataSchemaVersion'] in selected.get('compatibleDataSchemaVersions', []),
                         'selected release is incompatible with backup data schema')
-                require_database_schema(stage / 'data/colloq.db', selected, 'this backup')
+                require_database_schema(stage / 'data/aulalab.db', selected, 'this backup')
             summary = {k: v for k, v in manifest.items() if k not in ('files', 'links')}
             summary.update(fileCount=len(manifest['files']), linkCount=len(manifest.get('links', {})))
             print(json.dumps(summary))

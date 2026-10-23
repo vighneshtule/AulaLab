@@ -39,7 +39,7 @@ const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/M
 // Classes on machines: a stand of its own (a home with a machine and a relay, Vite on the sources), nothing of the pass below.
 if (process.argv.includes('--classes-only')) process.exit(await classesCheck())
 
-const root = mkdtempSync(path.join(tmpdir(), 'colloq-ui-'))
+const root = mkdtempSync(path.join(tmpdir(), 'aulalab-ui-'))
 const ROOM = 'uicheck1'
 
 /* ------------------------------------------------------- a small PDF */
@@ -2627,7 +2627,7 @@ if (process.argv.includes('--shot')) {
  */
 const RULES_NOTICE = `/Преподаватель изменил, что можно делать/.test(document.body.textContent||'')`
 const patchRules = (rules: Record<string, string>) =>
-  `const me=JSON.parse(localStorage.getItem('colloq.identity.v1')||'{}')[${JSON.stringify(ROOM)}];` +
+  `const me=JSON.parse(localStorage.getItem('aulalab.identity.v1')||'{}')[${JSON.stringify(ROOM)}];` +
   `const r=await fetch('/api/sessions/${ROOM}/rules',{method:'PATCH',headers:{'content-type':'application/json',authorization:'Bearer '+me.token},body:JSON.stringify({rules:${JSON.stringify(rules)}})});` +
   `return r.status`
 check((await host.js(patchRules({ edit: 'host' }))) === 200, 'the room rules change from the screen', 'edit: host')
@@ -2867,7 +2867,7 @@ async function classesCheck(): Promise<number> {
   /** The room's parts of classes on machines: the bar's right corner with the chip, the staff banner, a waiting cell's note. */
   const ROOM_PARTS = `[...document.querySelectorAll('div:has(> [data-machine-chip]), [data-machine-banner], [data-waits-machine]')]`
   const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-  const scratch = mkdtempSync(path.join(tmpdir(), 'colloq-ui-classes-'))
+  const scratch = mkdtempSync(path.join(tmpdir(), 'aulalab-ui-classes-'))
   const cdpPort = Number(process.env.UI_CHECK_CDP ?? 9335)
   const vitePort = Number(process.env.UI_CHECK_VITE ?? 5274)
   const cdpUrl = `http://127.0.0.1:${cdpPort}`
@@ -2943,7 +2943,7 @@ async function classesCheck(): Promise<number> {
     note(sealedGrey && trustLocked === true, 'Z2 · the hidden test greys while classes are on', `${sealedGrey}/${trustLocked}`)
     await screens(teacher, 'connect', `[...document.querySelectorAll('[aria-labelledby=connect-machine-title] .dialog-card')]`)
     await teacher.clickText('button', ru('admin.runners.connect.mint'))
-    const command = await teacher.untilValue<string>(`[...document.querySelectorAll('pre')].map(p=>p.textContent).find(t=>t.includes('COLLOQ_RUNNER_JOIN'))`, 15_000)
+    const command = await teacher.untilValue<string>(`[...document.querySelectorAll('pre')].map(p=>p.textContent).find(t=>t.includes('AULALAB_RUNNER_JOIN'))`, 15_000)
     note(!!command && command.includes('--network host'), 'Z2 · the join command carries --network host', command?.split('\n')[0] ?? 'none')
     const code = /#([a-f0-9]{32})'/.exec(command ?? '')?.[1] ?? null
     if (!code) throw new Error('no code in the join command')

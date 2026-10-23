@@ -5,7 +5,7 @@
  * enough for a browser, not for a search engine: Google shows an icon in its
  * results only if it is an ordinary URL its crawler can download, and the
  * image is square with a side that is a multiple of 48 px (or SVG). It does
- * not take `data:` at all, and /favicon.ico answered 404 — so colloq.ru had a
+ * not take `data:` at all, and /favicon.ico answered 404 — so example.edu had a
  * grey globe in the results.
  *
  * The raster comes from resvg — the same one that draws link cards on the

@@ -666,7 +666,7 @@ test('the self-probe is evidence only when the address leaves this host', async 
   assert.equal(await leavesHost('http://10.1.2.3:3000', async () => [], own), false, 'this host\'s own LAN address')
   assert.equal(await leavesHost('https://home.example', async () => ['10.1.2.3'], own), false, 'a name that resolves here')
   assert.equal(await leavesHost('https://home.example', async () => ['169.254.10.1'], own), false, 'link-local')
-  assert.equal(await leavesHost('https://vsos.colloq.ru', async () => ['203.0.113.10'], own), true, 'an address elsewhere')
+  assert.equal(await leavesHost('https://vsos.example.edu', async () => ['203.0.113.10'], own), true, 'an address elsewhere')
   assert.equal(await leavesHost('https://nowhere.invalid', async () => [], own), false, 'a name that does not resolve')
   assert.ok(os.networkInterfaces())
   // A probe that would come straight back here is never made, and passes for nothing.
@@ -679,7 +679,7 @@ test('the self-probe is evidence only when the address leaves this host', async 
   }) as typeof fetch
   assert.equal(await probeOwnPath(Date.now(), passing, 'http://lab-gpu:3000', async () => false), false)
   assert.equal(fetched, 0)
-  assert.equal(await probeOwnPath(Date.now(), passing, 'https://vsos.colloq.ru', async () => true), true)
+  assert.equal(await probeOwnPath(Date.now(), passing, 'https://vsos.example.edu', async () => true), true)
 })
 
 /* ----------------------------------------- #17 a lease's own blobs, starved */

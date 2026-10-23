@@ -6,7 +6,7 @@ import path from 'node:path'
  * What a person sees once the class is up: one block and one link.
  *
  * It used to be: the kernel build log, server lines with timestamps, the
- * "nobody owns this Colloq yet" frame in the middle of them, and at the very
+ * "nobody owns this Aula Lab yet" frame in the middle of them, and at the very
  * end "Panel: …/admin", an address that opened the sign-in screen, not the
  * panel. The browser opened there too, and the teacher, on their own
  * computer, first of all went looking for the token.
@@ -48,7 +48,7 @@ export interface Banner {
 
 export function renderBanner(banner: Banner, home = os.homedir()): string[] {
   const title =
-    (banner.version ? `Colloq ${banner.version} is running` : 'Colloq is running') +
+    (banner.version ? `Aula Lab ${banner.version} is running` : 'Aula Lab is running') +
     (banner.detached ? ' in the background' : '')
   return [
     '',
@@ -63,7 +63,7 @@ export function renderBanner(banner: Banner, home = os.homedir()): string[] {
     `  Log    ${tilde(banner.logFile, home)}`,
     '',
     banner.detached
-      ? '  colloq logs shows the log, colloq stop saves the work and stops the class.'
+      ? '  aulalab logs shows the log, aulalab stop saves the work and stops the class.'
       : '  Ctrl+C saves the work and stops the class.',
     '',
   ]

@@ -115,7 +115,7 @@ test('the notebook import seats too, and the GitHub import refuses a foreign cou
 
   const github = await call(app.base, 'POST', '/api/admin/import', {
     cookie: boris.cookie,
-    body: { url: 'https://github.com/colloq-edu/colloq/blob/main/x.ipynb', seat: { courseId: course } },
+    body: { url: 'https://github.com/vighneshtule/AulaLab/blob/main/x.ipynb', seat: { courseId: course } },
   })
   assert.equal(github.status, 404)
 })

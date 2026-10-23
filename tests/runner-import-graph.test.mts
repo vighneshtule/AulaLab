@@ -13,7 +13,7 @@
  *
  * Each rule fails quietly: one import of db.ts at the top of a module the
  * core happens to load, and the agent opens a SQLite file in its state
- * directory on the first start; one `import { COLLOQ_VERSION }`, and every
+ * directory on the first start; one `import { AULALAB_VERSION }`, and every
  * machine is «устарел» after the next release that changed nothing they run.
  * So the graph is read from esbuild itself, with the very options and plugin
  * the server's build uses (server/scripts/build-runner.mjs), and the bundle is
@@ -53,7 +53,7 @@ const SERVER = path.join(ROOT, 'server')
  */
 const TSX = ['--import', import.meta.resolve('tsx')]
 const TSX_ENV = { TSX_TSCONFIG_PATH: path.join(ROOT, 'tsconfig.json') }
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-runner-graph-'))
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-runner-graph-'))
 process.on('exit', () => fs.rmSync(scratch, { recursive: true, force: true }))
 
 /* ------------------------------------------------------- what is forbidden */
@@ -262,7 +262,7 @@ test('the agent\'s build is the same under two releases', async () => {
     assert.ok(!one.text.includes('0.30.0'))
   }
   // The control: a bundle that does inline the version (version.ts) is told apart, so the equality above is not luck.
-  const inlined = "import { COLLOQ_VERSION } from './version.js'\nconsole.log(COLLOQ_VERSION)"
+  const inlined = "import { AULALAB_VERSION } from './version.js'\nconsole.log(AULALAB_VERSION)"
   const [one, two] = await Promise.all([runnerBundle({ source: inlined }, [releasedAs('0.30.0')]), runnerBundle({ source: inlined }, [releasedAs('1.4.2')])])
   assert.notEqual(one.sha256, two.sha256)
 })
@@ -270,20 +270,20 @@ test('the agent\'s build is the same under two releases', async () => {
 test('the built agent reads its version beside dist/ when it runs, and a machine that has not joined is refused before it touches docker or home', async () => {
   const app = path.join(scratch, 'app')
   fs.mkdirSync(path.join(app, 'dist'), { recursive: true })
-  fs.writeFileSync(path.join(app, 'package.json'), JSON.stringify({ name: '@colloq/server', version: '9.8.7', type: 'module' }))
+  fs.writeFileSync(path.join(app, 'package.json'), JSON.stringify({ name: '@aulalab/server', version: '9.8.7', type: 'module' }))
   await buildRunner(path.join(app, 'dist'), { logLevel: 'silent' })
   // The package.json next to the code wins over the environment: it is the code's own.
-  const version = spawnSync(process.execPath, [path.join(app, 'dist/runner.js'), 'version'], { encoding: 'utf8', timeout: 30_000, env: { ...process.env, COLLOQ_VERSION: '1.1.1' } })
+  const version = spawnSync(process.execPath, [path.join(app, 'dist/runner.js'), 'version'], { encoding: 'utf8', timeout: 30_000, env: { ...process.env, AULALAB_VERSION: '1.1.1' } })
   assert.equal(version.status, 0, version.stderr)
   assert.equal(version.stdout, '9.8.7\n')
   // No join and no identity on its tree: EX_CONFIG, its words on stderr, nothing on stdout.
   const tree = path.join(scratch, 'machine-tree')
-  const env: NodeJS.ProcessEnv = { ...process.env, COLLOQ_RUNNER_STATE: tree, DATA_DIR: path.join(tree, 'data') }
-  delete env.COLLOQ_RUNNER_JOIN
+  const env: NodeJS.ProcessEnv = { ...process.env, AULALAB_RUNNER_STATE: tree, DATA_DIR: path.join(tree, 'data') }
+  delete env.AULALAB_RUNNER_JOIN
   const ran = spawnSync(process.execPath, [path.join(app, 'dist/runner.js')], { encoding: 'utf8', timeout: 30_000, env })
   assert.equal(ran.status, 78, ran.stderr)
   assert.equal(ran.stdout, '')
-  assert.match(ran.stderr, /COLLOQ_RUNNER_JOIN/)
+  assert.match(ran.stderr, /AULALAB_RUNNER_JOIN/)
   // The health check's question has an answer without an agent: not joined, not syncing.
   const status = spawnSync(process.execPath, [path.join(app, 'dist/runner.js'), 'status'], { encoding: 'utf8', timeout: 30_000, env })
   assert.equal(status.status, 1, status.stderr)
@@ -547,7 +547,7 @@ test('loading the core reads no .env, writes nothing, registers no handler, patc
   const dir = path.join(scratch, 'loading')
   const dataDir = path.join(dir, 'machine-data')
   fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(path.join(dir, '.env'), `DATA_DIR=${path.join(dir, 'home-data')}\nCOLLOQ_HOME_MARKER=1\n`)
+  fs.writeFileSync(path.join(dir, '.env'), `DATA_DIR=${path.join(dir, 'home-data')}\nAULALAB_HOME_MARKER=1\n`)
   const url = (file: string) => JSON.stringify(new URL(`../server/src/${file}`, import.meta.url).href)
   const script = `
     const events = ['exit', 'beforeExit', 'SIGINT', 'SIGTERM', 'uncaughtException', 'unhandledRejection']
@@ -559,7 +559,7 @@ test('loading the core reads no .env, writes nothing, registers no handler, patc
     process.stdout.write(JSON.stringify({
       listeners: String(listeners()) === String(before.listeners),
       console: console.log === before.log && console.warn === before.warn,
-      marker: process.env.COLLOQ_HOME_MARKER ?? null,
+      marker: process.env.AULALAB_HOME_MARKER ?? null,
       competitionsDir: storage.competitionsDir,
       wrote: fs.existsSync(process.env.DATA_DIR),
     }))

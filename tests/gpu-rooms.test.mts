@@ -8,7 +8,7 @@
  * a submission on one card with no wall between their video memory — at one
  * run per card the submission is not even capped. The queue writes the card
  * into the run's row inside the take; the run's container, which carries the
- * `colloq.gpu` label the room census reads, comes seconds later (tens of
+ * `aulalab.gpu` label the room census reads, comes seconds later (tens of
  * seconds on the first GPU run after a restart). A card the owner gave back to
  * classes in that window went to the next lecture (review of 13 Oct 2026).
  * And a room that read the pool before its two docker censuses picked from a
@@ -61,7 +61,7 @@ function machine(): FakeDocker {
   process.env.KERNEL_GPUS = '0,1'
   fake.add('lecture', 'room', { gpu: '0' })
   fake.intercept = (args) => {
-    if (args[0] === 'ps' && args.includes('label=colloq.kind=competition-run')) {
+    if (args[0] === 'ps' && args.includes('label=aulalab.kind=competition-run')) {
       const now = duringCensus
       duringCensus = null
       now?.()
@@ -71,7 +71,7 @@ function machine(): FakeDocker {
     if (args[0] === 'run' && args.includes('--name')) {
       const name = args[args.indexOf('--name') + 1]!
       const card = args.includes('--gpus') ? args[args.indexOf('--gpus') + 1]!.replace(/^device=/, '') : ''
-      fake.add(name.replace(/^colloq-room-/, ''), 'room', { gpu: card })
+      fake.add(name.replace(/^aulalab-room-/, ''), 'room', { gpu: card })
       return { code: 0, out: name }
     }
     return undefined
@@ -79,7 +79,7 @@ function machine(): FakeDocker {
   const fetch = globalThis.fetch
   globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input)
-    return url.startsWith('http://colloq-room-') ? Promise.resolve(new Response('{}', { status: 200 })) : fetch(input, init)
+    return url.startsWith('http://aulalab-room-') ? Promise.resolve(new Response('{}', { status: 200 })) : fetch(input, init)
   }) as typeof fetch
   useDockerInfo(async () => ({ code: 0, out: `${512 * 1024 ** 3} 64` }))
   forgetResources()
@@ -118,7 +118,7 @@ function seminar(id: string): string {
 /** The cards `docker run` gave this room's container, as `--gpus` values. */
 function cardsGiven(fake: FakeDocker, room: string): string[] {
   return fake.calls
-    .filter((args) => args[0] === 'run' && args[args.indexOf('--name') + 1] === `colloq-room-${room}`)
+    .filter((args) => args[0] === 'run' && args[args.indexOf('--name') + 1] === `aulalab-room-${room}`)
     .map((args) => args[args.indexOf('--gpus') + 1] ?? '')
 }
 
@@ -219,7 +219,7 @@ test('a seminar refused for a card a submission still holds is told so, in both 
   // The lecture is on card 0, and card 1 — given back to classes mid-run — still carries a submission's container.
   const intercept = fake.intercept!
   fake.intercept = (args) =>
-    args[0] === 'ps' && args.includes('label=colloq.kind=competition-run') ? { code: 0, out: '1\n' } : intercept(args)
+    args[0] === 'ps' && args.includes('label=aulalab.kind=competition-run') ? { code: 0, out: '1\n' } : intercept(args)
   const room = seminar('seminar-finishing')
   await assert.rejects(endpointForSession(room, 'base-gpu'), { message: gpuRefusal('base-gpu', ['0', '1'], 0, 1) })
   assert.deepEqual(cardsGiven(fake, room), [])

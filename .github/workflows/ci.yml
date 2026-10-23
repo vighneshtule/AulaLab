@@ -58,7 +58,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      # tests/helm-chart.test.mts lints and renders deploy/helm/colloq and
+      # tests/helm-chart.test.mts lints and renders deploy/helm/aulalab and
       # skips without helm. Pinned: what the chart renders must not change
       # under the same commit because a newer helm came out.
       - uses: azure/setup-helm@v4
@@ -102,13 +102,13 @@ jobs:
           want="$(node --import tsx scripts/version.mts current)"
           python3 -m venv "$RUNNER_TEMP/venv"
           "$RUNNER_TEMP/venv/bin/pip" install --quiet python/dist/*.whl
-          # --version answers without npm install (python/colloq/__main__.py · TELLING).
-          got="$(COLLOQ_HOME="$RUNNER_TEMP/colloq-home" NO_COLOR=1 "$RUNNER_TEMP/venv/bin/colloq" --version)"
-          echo "package.json: $want · colloq --version: $got"
+          # --version answers without npm install (python/aulalab/__main__.py · TELLING).
+          got="$(AULALAB_HOME="$RUNNER_TEMP/aulalab-home" NO_COLOR=1 "$RUNNER_TEMP/venv/bin/aulalab" --version)"
+          echo "package.json: $want · aulalab --version: $got"
           test "$got" = "$want"
       - uses: actions/cache@v4
         with:
-          path: ~/.cache/colloq/node
+          path: ~/.cache/aulalab/node
           key: node-runtime-${{ hashFiles('scripts/node-runtime.json') }}
       # Platform wheels: Node and node_modules inside. All four are built here;
       # Linux x64 also runs here, the other three in wheel-smoke.
@@ -120,7 +120,7 @@ jobs:
       - name: The Linux x64 wheel runs here without a Node of its own
         run: python3 scripts/platform-wheels.py smoke --wheel python/dist/*-manylinux_2_28_x86_64.whl
       - name: Python sources compile
-        run: python3 -m py_compile python/colloq/*.py scripts/*.py
+        run: python3 -m py_compile python/aulalab/*.py scripts/*.py
       # The build rewrites two tracked files: _version.py and the pdf.js
       # worker. If they diverged from what is in the tree, the release would
       # make the commit "dirty" after the tag.

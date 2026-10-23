@@ -21,10 +21,10 @@ const intent = (kind: 'notebook' | 'metric' | 'inventory' | 'resolve' | 'verify'
 function setup(exporter: (url: string, token: string, method: 'GET' | 'POST', payload?: unknown) => Promise<unknown> = async () => ({ files: [], totalBytes: 0 }), now = Date.now()) {
   const calls: { method: string; path: string; body: any }[] = []
   const objects = new Map<string, any>()
-  objects.set('/api/v1/namespaces/colloq/persistentvolumeclaims/colloq-data', { metadata: { name: 'colloq-data' } })
+  objects.set('/api/v1/namespaces/aulalab/persistentvolumeclaims/aulalab-data', { metadata: { name: 'aulalab-data' } })
   for (const name of ['competition-job-isolation', 'competition-resolver-isolation', 'competition-proxy-isolation'])
-    objects.set(`/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/${name}`, { metadata: { name } })
-  objects.set('/api/v1/namespaces/colloq/services', { items: [] })
+    objects.set(`/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/${name}`, { metadata: { name } })
+  objects.set('/api/v1/namespaces/aulalab/services', { items: [] })
   const kube = { async request<T>(method: string, path: string, body?: any): Promise<T> {
     calls.push({ method, path, body })
     const key = path.split('?')[0]
@@ -33,7 +33,7 @@ function setup(exporter: (url: string, token: string, method: 'GET' | 'POST', pa
     if (method === 'GET') return (objects.get(key) ?? (() => { throw Object.assign(new Error('missing'), { status: 404 }) })()) as T
     if (method === 'POST') {
       const object = { ...body, metadata: { ...body.metadata, uid: `${objects.size + 1}`, creationTimestamp: new Date().toISOString() },
-        ...(body.metadata?.labels?.['colloq.dev/role'] === 'competition-proxy' ? { status: { phase: 'Running', conditions: [{ type: 'Ready', status: 'True' }] } } : {}) }
+        ...(body.metadata?.labels?.['aulalab.dev/role'] === 'competition-proxy' ? { status: { phase: 'Running', conditions: [{ type: 'Ready', status: 'True' }] } } : {}) }
       if (objects.has(`${key}/${object.metadata.name}`)) throw Object.assign(new Error('exists'), { status: 409 })
       objects.set(`${key}/${object.metadata.name}`, object)
       return object as T
@@ -42,7 +42,7 @@ function setup(exporter: (url: string, token: string, method: 'GET' | 'POST', pa
     if (method === 'PATCH') { const object = objects.get(key); Object.assign(object.metadata.annotations, body.metadata.annotations); return object as T }
     throw new Error(`Unexpected ${method} ${path}`)
   } }
-  const jobs = new CompetitionJobs({ kube, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123' }, catalog: () => catalog, secret: () => 'x'.repeat(64), exporter, now: () => now })
+  const jobs = new CompetitionJobs({ kube, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123' }, catalog: () => catalog, secret: () => 'x'.repeat(64), exporter, now: () => now })
   return { jobs, calls, objects, kube }
 }
 
@@ -127,7 +127,7 @@ test('status follows main termination, and collection is authenticated and bound
       : { files: [{ name: 'run.json', bytes: 3, sha256: 'f'.repeat(64) }], totalBytes: 3 }
   })
   await jobs.start(jobId, intent('notebook'))
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
   const pod = objects.get(key)
   pod.status = { podIP: '10.0.0.8', containerStatuses: [{ name: 'main', state: { running: { startedAt: new Date().toISOString() } } }] }
   assert.equal((await jobs.status(jobId)).progress?.cell, 2)
@@ -145,7 +145,7 @@ test('status follows main termination, and collection is authenticated and bound
 test('broker rejects exporter metadata outside the job artifact allowlist', async () => {
   const { jobs, objects } = setup(async () => ({ files: [{ name: 'score.json', bytes: 1, sha256: 'f'.repeat(64) }], totalBytes: 1 }))
   await jobs.start(jobId, intent('notebook'))
-  const pod = objects.get(`/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`)
+  const pod = objects.get(`/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`)
   pod.status = { podIP: '10.0.0.8', containerStatuses: [{ name: 'main', state: { terminated: { exitCode: 0 } } }] }
   await assert.rejects(() => jobs.collect(jobId), /metadata|artifact|allowlist/i)
 })
@@ -156,7 +156,7 @@ test('notebook collection allows bounded executed notebook alongside target CSV'
     { name: 'executed.ipynb', bytes: 9_000_000, sha256: 'e'.repeat(64) },
   ], totalBytes: 18_000_000 }))
   await jobs.start(jobId, intent('notebook'))
-  objects.get(`/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`).status = {
+  objects.get(`/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`).status = {
     podIP: '10.0.0.8', containerStatuses: [{ name: 'main', state: { terminated: { exitCode: 0 } } }],
   }
   assert.equal((await jobs.collect(jobId)).totalBytes, 18_000_000)
@@ -169,7 +169,7 @@ test('failed main asks exporter for incomplete bounded artifacts', async () => {
     return { files: [], totalBytes: 0 }
   })
   await jobs.start(jobId, intent('resolve'))
-  objects.get(`/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`).status = {
+  objects.get(`/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`).status = {
     podIP: '10.0.0.8', containerStatuses: [{ name: 'main', state: { terminated: { exitCode: 1 } } }],
   }
   assert.equal((await jobs.collect(jobId)).totalBytes, 0)
@@ -190,17 +190,17 @@ test('restart reconciliation removes only aged orphan proxy resources owned by t
   const now = Date.now()
   const { jobs, objects, calls, kube } = setup(undefined, now)
   await jobs.start(jobId, intent('resolve'))
-  objects.delete(`/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`)
-  const other = structuredClone(objects.get(`/api/v1/namespaces/colloq/pods/colloq-proxy-${jobId}`))
-  other.metadata.name = `colloq-proxy-${'f'.repeat(32)}`
-  other.metadata.labels['colloq.dev/job'] = 'f'.repeat(32)
-  other.metadata.labels['colloq.dev/instance'] = 'another-instance'
-  objects.set(`/api/v1/namespaces/colloq/pods/${other.metadata.name}`, other)
-  const later = new CompetitionJobs({ kube, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123' },
+  objects.delete(`/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`)
+  const other = structuredClone(objects.get(`/api/v1/namespaces/aulalab/pods/aulalab-proxy-${jobId}`))
+  other.metadata.name = `aulalab-proxy-${'f'.repeat(32)}`
+  other.metadata.labels['aulalab.dev/job'] = 'f'.repeat(32)
+  other.metadata.labels['aulalab.dev/instance'] = 'another-instance'
+  objects.set(`/api/v1/namespaces/aulalab/pods/${other.metadata.name}`, other)
+  const later = new CompetitionJobs({ kube, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123' },
     catalog: () => catalog, secret: () => 'x'.repeat(64), now: () => now + 180_000 })
   await later.reconcile()
-  assert.ok(!objects.has(`/api/v1/namespaces/colloq/pods/colloq-proxy-${jobId}`))
-  assert.ok(objects.has(`/api/v1/namespaces/colloq/pods/${other.metadata.name}`))
+  assert.ok(!objects.has(`/api/v1/namespaces/aulalab/pods/aulalab-proxy-${jobId}`))
+  assert.ok(objects.has(`/api/v1/namespaces/aulalab/pods/${other.metadata.name}`))
   assert.ok(calls.filter(c => c.method === 'DELETE').every(c => !c.path.includes(other.metadata.name)))
 })
 
@@ -208,8 +208,8 @@ test('reconciliation preserves a valid four-hour job beyond two hours', async ()
   const began = Date.now() - 3 * 3600_000
   const { jobs, objects, kube } = setup(undefined, began)
   await jobs.start(jobId, { ...intent('notebook'), limits: { ...limits, wallSeconds: 14400 } })
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
-  const later = new CompetitionJobs({ kube, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123' },
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
+  const later = new CompetitionJobs({ kube, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123' },
     catalog: () => catalog, secret: () => 'x'.repeat(64), now: () => began + 3 * 3600_000 })
   await later.reconcile()
   assert.ok(objects.has(key))
@@ -217,28 +217,28 @@ test('reconciliation preserves a valid four-hour job beyond two hours', async ()
 
 test('health separates execution from resolver policy readiness', async () => {
   const { jobs, objects } = setup()
-  objects.delete('/api/v1/namespaces/colloq/persistentvolumeclaims/colloq-data')
-  objects.delete('/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/competition-job-isolation')
-  objects.delete('/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/competition-resolver-isolation')
-  objects.delete('/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/competition-proxy-isolation')
-  objects.delete('/api/v1/namespaces/colloq/services')
+  objects.delete('/api/v1/namespaces/aulalab/persistentvolumeclaims/aulalab-data')
+  objects.delete('/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/competition-job-isolation')
+  objects.delete('/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/competition-resolver-isolation')
+  objects.delete('/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/competition-proxy-isolation')
+  objects.delete('/api/v1/namespaces/aulalab/services')
   assert.equal((await jobs.health()).execution.available, false)
-  objects.set('/api/v1/namespaces/colloq/persistentvolumeclaims/colloq-data', { metadata: { name: 'colloq-data' } })
-  objects.set('/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/competition-job-isolation', { metadata: { name: 'competition-job-isolation' } })
+  objects.set('/api/v1/namespaces/aulalab/persistentvolumeclaims/aulalab-data', { metadata: { name: 'aulalab-data' } })
+  objects.set('/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/competition-job-isolation', { metadata: { name: 'competition-job-isolation' } })
   assert.equal((await jobs.health()).execution.available, true)
   assert.equal((await jobs.health()).preparation.available, false)
   for (const name of ['competition-resolver-isolation', 'competition-proxy-isolation'])
-    objects.set(`/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/${name}`, { metadata: { name } })
-  objects.set('/api/v1/namespaces/colloq/services', { items: [] })
+    objects.set(`/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/${name}`, { metadata: { name } })
+  objects.set('/api/v1/namespaces/aulalab/services', { items: [] })
   assert.equal((await jobs.health()).preparation.available, true)
 })
 
 test('aged unschedulable Pod fails promptly without exposing scheduler message', async () => {
   const { jobs, objects } = setup()
   await jobs.start(jobId, intent('notebook'))
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
   const pod = objects.get(key)
-  pod.metadata.annotations['colloq.dev/started-at'] = String(Date.now() - 31_000)
+  pod.metadata.annotations['aulalab.dev/started-at'] = String(Date.now() - 31_000)
   pod.status = { phase: 'Pending', conditions: [{ type: 'PodScheduled', status: 'False', reason: 'Unschedulable',
     message: 'Insufficient memory; secret node details and exact host capacity' }] }
   const status = await jobs.status(jobId)
@@ -252,7 +252,7 @@ test('aged unschedulable Pod fails promptly without exposing scheduler message',
 test('image pull failure is infrastructure status, not a participant error', async () => {
   const { jobs, objects } = setup()
   await jobs.start(jobId, intent('notebook'))
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
   objects.get(key).status = { phase: 'Pending', containerStatuses: [{ name: 'main', state: { waiting: { reason: 'ImagePullBackOff', message: 'private registry details' } } }] }
   const status = await jobs.status(jobId)
   assert.equal(status.phase, 'failed')
@@ -264,7 +264,7 @@ test('image pull failure is infrastructure status, not a participant error', asy
 test('exporter image pull failure after main exits is reported and cleaned up', async () => {
   const { jobs, objects } = setup()
   await jobs.start(jobId, intent('notebook'))
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
   objects.get(key).status = { phase: 'Pending', containerStatuses: [
     { name: 'main', state: { terminated: { exitCode: 0, finishedAt: new Date().toISOString() } } },
     { name: 'exporter', state: { waiting: { reason: 'ImagePullBackOff' } } },
@@ -279,7 +279,7 @@ test('Pod deadline after main termination reports timeout without contacting dea
   const exporterCalls: string[] = []
   const { jobs, objects } = setup(async (_url, _token, method) => { exporterCalls.push(method); return { files: [], totalBytes: 0 } })
   await jobs.start(jobId, intent('notebook'))
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
   objects.get(key).status = { phase: 'Failed', reason: 'DeadlineExceeded', podIP: '10.0.0.8', containerStatuses: [
     { name: 'main', state: { terminated: { exitCode: 137, reason: 'Error', finishedAt: new Date().toISOString() } } },
     { name: 'exporter', state: { terminated: { exitCode: 137, reason: 'Error' } } },
@@ -296,7 +296,7 @@ test('direct collect after Pod deadline never contacts the exporter', async () =
   let exporterCalls = 0
   const { jobs, objects } = setup(async () => { exporterCalls++; return { files: [], totalBytes: 0 } })
   await jobs.start(jobId, intent('notebook'))
-  const pod = objects.get(`/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`)
+  const pod = objects.get(`/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`)
   pod.status = { phase: 'Failed', reason: 'DeadlineExceeded', podIP: '10.0.0.8', containerStatuses: [
     { name: 'main', state: { terminated: { exitCode: 137 } } },
     { name: 'exporter', state: { terminated: { exitCode: 137 } } },
@@ -308,8 +308,8 @@ test('direct collect after Pod deadline never contacts the exporter', async () =
 test('main finishing after wall limit fails even while exporter is still alive', async () => {
   const { jobs, objects } = setup()
   await jobs.start(jobId, intent('notebook'))
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
-  objects.get(key).metadata.annotations['colloq.dev/started-at'] = String(Date.now() - 121_000)
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
+  objects.get(key).metadata.annotations['aulalab.dev/started-at'] = String(Date.now() - 121_000)
   objects.get(key).status = { phase: 'Running', podIP: '10.0.0.8', containerStatuses: [
     { name: 'main', state: { terminated: { exitCode: 137, reason: 'Error', finishedAt: new Date().toISOString() } } },
     { name: 'exporter', state: { running: { startedAt: new Date().toISOString() } } },
@@ -323,8 +323,8 @@ test('main finishing after wall limit fails even while exporter is still alive',
 test('policy warmup does not consume a short main wall limit', async () => {
   const { jobs, objects } = setup()
   await jobs.start(jobId, { ...intent('notebook'), limits: { ...limits, wallSeconds: 10 } })
-  const pod = objects.get(`/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`)
-  pod.metadata.annotations['colloq.dev/started-at'] = String(Date.now() - 25_000)
+  const pod = objects.get(`/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`)
+  pod.metadata.annotations['aulalab.dev/started-at'] = String(Date.now() - 25_000)
   pod.status = { phase: 'Pending', initContainerStatuses: [{ name: 'egress-probe', state: { running: {} } }] }
   assert.equal((await jobs.status(jobId)).phase, 'queued')
   pod.status = { phase: 'Running', containerStatuses: [{ name: 'main', state: { running: { startedAt: new Date(Date.now() - 5_000).toISOString() } } }] }
@@ -334,7 +334,7 @@ test('policy warmup does not consume a short main wall limit', async () => {
 test('egress preflight refusal fails before the main container starts', async () => {
   const { jobs, objects } = setup()
   await jobs.start(jobId, intent('metric'))
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
   objects.get(key).status = { phase: 'Failed', initContainerStatuses: [
     { name: 'egress-probe', state: { terminated: { exitCode: 41 } } },
   ] }
@@ -347,7 +347,7 @@ test('egress preflight refusal fails before the main container starts', async ()
 
 test('start refuses missing job isolation before creating a Pod', async () => {
   const { jobs, objects, calls } = setup()
-  objects.delete('/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/competition-job-isolation')
+  objects.delete('/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/competition-job-isolation')
   await assert.rejects(() => jobs.start(jobId, intent('notebook')), /isolation|unavailable/i)
   assert.ok(!calls.some(c => c.method === 'POST'))
 })
@@ -366,7 +366,7 @@ test('offline jobs probe egress isolation before participant or metric code star
   for (const kind of ['notebook', 'metric', 'inventory', 'verify', 'resolve'] as const) {
     const { jobs, calls } = setup()
     await jobs.start(jobId, intent(kind))
-    const pod = calls.find(c => c.method === 'POST' && c.path.endsWith('/pods') && c.body.metadata.name === `colloq-job-${jobId}`)!.body
+    const pod = calls.find(c => c.method === 'POST' && c.path.endsWith('/pods') && c.body.metadata.name === `aulalab-job-${jobId}`)!.body
     if (kind === 'resolve') assert.equal(pod.spec.initContainers?.length ?? 0, 0)
     else {
       assert.equal(pod.spec.initContainers.length, 1)
@@ -431,12 +431,12 @@ const onGpuImage = (kind: Parameters<typeof intent>[0]) => ({ ...intent(kind), e
 const MIG = { resource: 'nvidia.com/mig-1g.10gb', count: 2 }
 function gpuSetup(config: Partial<CompetitionJobConfig> = {}, list = gpuCatalog) {
   const { kube, calls, objects } = setup()
-  const jobs = new CompetitionJobs({ kube, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123', ...config },
+  const jobs = new CompetitionJobs({ kube, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123', ...config },
     catalog: () => list, secret: () => 'x'.repeat(64) })
   return { jobs, calls, objects }
 }
 const jobPod = (calls: { method: string; path: string; body: any }[]) =>
-  calls.find(c => c.method === 'POST' && c.path.endsWith('/pods') && c.body.metadata.name === `colloq-job-${jobId}`)!.body
+  calls.find(c => c.method === 'POST' && c.path.endsWith('/pods') && c.body.metadata.name === `aulalab-job-${jobId}`)!.body
 const NO_GPU = { name: 'NVIDIA_VISIBLE_DEVICES', value: 'void' }
 
 test("a GPU environment's image runs every job on the CPU, and nothing in it can reach a card", async () => {
@@ -482,7 +482,7 @@ test('a notebook that asks for a card is refused before any Pod: by a broker wit
 })
 
 test("a notebook given a card: the units in its main container alone, the GPU rooms' placement over the students', and /dev/shm within its memory", async () => {
-  const studentToleration = { key: 'colloq/students', operator: 'Exists', effect: 'NoSchedule' } as const
+  const studentToleration = { key: 'aulalab/students', operator: 'Exists', effect: 'NoSchedule' } as const
   const gpuToleration = { key: 'nvidia.com/gpu', operator: 'Exists', effect: 'NoSchedule' } as const
   const { jobs, calls } = gpuSetup({
     gpu: MIG, gpuRuntimeClass: 'nvidia-cdi',
@@ -510,7 +510,7 @@ test("a notebook given a card: the units in its main container alone, the GPU ro
   // The device plugin names the allocated units to main; the preflight gets none.
   assert.ok(!main.env.some((e: any) => e.name === NO_GPU.name))
   assert.deepEqual(probe.env, [NO_GPU])
-  assert.equal(JSON.parse(pod.metadata.annotations['colloq.dev/intent']).gpu, true)
+  assert.equal(JSON.parse(pod.metadata.annotations['aulalab.dev/intent']).gpu, true)
 })
 
 test("a card's /dev/shm stops at the GPU room's 1 GiB, and the GPU RuntimeClass is the rooms' setting: nvidia when absent, none when empty", async () => {
@@ -539,7 +539,7 @@ test('health: a catalog of GPU images alone works, and the GPU capability exists
   const on = gpuSetup({ gpu: MIG }, gpuOnly)
   assert.deepEqual((await on.jobs.health()).gpu, { available: true, code: 'ready', reason: null })
   // A GPU job is a job first: without the data claim it cannot run either.
-  on.objects.delete('/api/v1/namespaces/colloq/persistentvolumeclaims/colloq-data')
+  on.objects.delete('/api/v1/namespaces/aulalab/persistentvolumeclaims/aulalab-data')
   const broken = await on.jobs.health()
   assert.equal(broken.execution.code, 'storage_unavailable')
   assert.deepEqual(broken.gpu, broken.execution)
@@ -550,7 +550,7 @@ test('health: a catalog of GPU images alone works, and the GPU capability exists
 })
 
 test('a GPU notebook that finds no free card goes back to the queue as gpu: the scheduler said so, or the kubelet could not hand the card over', async () => {
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
   const unschedulable = (message: string) => ({ phase: 'Pending', conditions: [{ type: 'PodScheduled', status: 'False', reason: 'Unschedulable', message }] })
   for (const [gpu, podStatus, resource] of [
     [true, unschedulable('0/3 nodes are available: 1 Insufficient nvidia.com/mig-1g.10gb, 2 Insufficient memory. preemption: 0/3 nodes are available: 3 No preemption victims found for incoming pod.'), 'gpu'],
@@ -565,7 +565,7 @@ test('a GPU notebook that finds no free card goes back to the queue as gpu: the 
     const { jobs, objects } = gpuSetup({ gpu: MIG })
     await jobs.start(jobId, { ...onGpuImage('notebook'), ...(gpu ? { gpu: true } : {}) })
     const pod = objects.get(key)
-    pod.metadata.annotations['colloq.dev/started-at'] = String(Date.now() - 31_000)
+    pod.metadata.annotations['aulalab.dev/started-at'] = String(Date.now() - 31_000)
     pod.status = structuredClone(podStatus)
     const status = await jobs.status(jobId)
     assert.equal(status.phase, 'failed', JSON.stringify(podStatus))
@@ -595,7 +595,7 @@ test('health reports the GPU notebooks the cluster runs at once: the operator\'s
   assert.equal((await gpuSetup().jobs.health()).gpuSlots, null)
   // The number is the operator's, beside the verdicts, which stay what they are.
   const down = gpuSetup({ gpu: { ...MIG, slots: 2 } })
-  down.objects.delete('/api/v1/namespaces/colloq/persistentvolumeclaims/colloq-data')
+  down.objects.delete('/api/v1/namespaces/aulalab/persistentvolumeclaims/aulalab-data')
   const health = await down.jobs.health()
   assert.equal(health.gpuSlots, 2)
   assert.equal(health.gpu?.code, 'storage_unavailable')
@@ -629,14 +629,14 @@ test('a /dev/shm ceiling of 0 gives a GPU notebook none of ours, for MPS; anothe
  * as "Wall time limit exceeded" while its image was still arriving.
  */
 test("a GPU image's Pod has its pull allowance before its own time starts, and a started job still gets exactly its limit", async () => {
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
   const pulling = { phase: 'Pending', conditions: [{ type: 'PodScheduled', status: 'True' }],
     initContainerStatuses: [{ name: 'egress-probe', state: { waiting: { reason: 'PodInitializing' } } }],
     containerStatuses: [{ name: 'main', state: { waiting: { reason: 'PodInitializing' } } }, { name: 'exporter', state: { waiting: { reason: 'PodInitializing' } } }] }
   const clocked = (config: Partial<CompetitionJobConfig> = {}) => {
     const { kube, calls, objects } = setup()
     const clock = { now: 1_000_000_000_000 }
-    const jobs = new CompetitionJobs({ kube, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123', ...config },
+    const jobs = new CompetitionJobs({ kube, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123', ...config },
       catalog: () => gpuCatalog, secret: () => 'x'.repeat(64), now: () => clock.now })
     return { jobs, calls, objects, clock }
   }
@@ -646,7 +646,7 @@ test("a GPU image's Pod has its pull allowance before its own time starts, and a
   await gpu.jobs.start(jobId, metric)
   const pod = jobPod(gpu.calls)
   assert.equal(pod.spec.activeDeadlineSeconds, 120 + 90 + 900)
-  assert.equal(pod.metadata.annotations['colloq.dev/pull-seconds'], '900')
+  assert.equal(pod.metadata.annotations['aulalab.dev/pull-seconds'], '900')
   // Still pulling at 151 seconds: queued, not a wall-time failure.
   gpu.objects.get(key).status = structuredClone(pulling)
   gpu.clock.now += 151_000
@@ -669,7 +669,7 @@ test("a GPU image's Pod has its pull allowance before its own time starts, and a
   const cpu = clocked()
   await cpu.jobs.start(jobId, { ...intent('metric'), limits: { ...limits, wallSeconds: 120 } })
   assert.equal(jobPod(cpu.calls).spec.activeDeadlineSeconds, 210)
-  assert.equal(jobPod(cpu.calls).metadata.annotations['colloq.dev/pull-seconds'], undefined)
+  assert.equal(jobPod(cpu.calls).metadata.annotations['aulalab.dev/pull-seconds'], undefined)
   cpu.objects.get(key).status = structuredClone(pulling)
   cpu.clock.now += 151_000
   assert.equal((await cpu.jobs.status(jobId)).error, 'Wall time limit exceeded')
@@ -689,7 +689,7 @@ test("a GPU image's Pod has its pull allowance before its own time starts, and a
   // A package preparation's proxy lives through the resolver's pull as well.
   const resolve = clocked({ gpuPullSeconds: 300 })
   await resolve.jobs.start(jobId, onGpuImage('resolve'))
-  const proxy = resolve.calls.find(c => c.method === 'POST' && c.path.endsWith('/pods') && c.body.metadata.name === `colloq-proxy-${jobId}`)!.body
+  const proxy = resolve.calls.find(c => c.method === 'POST' && c.path.endsWith('/pods') && c.body.metadata.name === `aulalab-proxy-${jobId}`)!.body
   assert.equal(proxy.spec.activeDeadlineSeconds, limits.wallSeconds + 90 + 300)
   assert.ok(proxy.spec.containers[0].env.some((e: any) => e.name === 'COMP_PROXY_WALL_SECONDS' && e.value === String(limits.wallSeconds + 300)))
   assert.equal(jobPod(resolve.calls).spec.activeDeadlineSeconds, limits.wallSeconds + 90 + 300)
@@ -698,12 +698,12 @@ test("a GPU image's Pod has its pull allowance before its own time starts, and a
 test("a broker restart keeps a pulling GPU image's Pod for its allowance on top of its limit", async () => {
   const began = Date.now() - 2.5 * 3600_000
   const { kube, objects } = setup(undefined, began)
-  const first = new CompetitionJobs({ kube, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123', gpuPullSeconds: 3600 },
+  const first = new CompetitionJobs({ kube, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123', gpuPullSeconds: 3600 },
     catalog: () => gpuCatalog, secret: () => 'x'.repeat(64), now: () => began })
   await first.start(jobId, { ...onGpuImage('notebook'), limits: { ...limits, wallSeconds: 6000 } })
-  const key = `/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`
+  const key = `/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`
   // 2.5 hours on: past its limit plus ten minutes, within its allowance on top.
-  const later = new CompetitionJobs({ kube, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123' },
+  const later = new CompetitionJobs({ kube, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123' },
     catalog: () => gpuCatalog, secret: () => 'x'.repeat(64), now: () => began + 2.5 * 3600_000 })
   await later.reconcile()
   assert.ok(objects.has(key))
@@ -721,13 +721,13 @@ test("the API server's no to a GPU notebook's Pod sends it back to the queue wit
     const { kube, calls } = setup()
     const posted: string[] = []
     const client = { request: async <T>(method: string, path: string, body?: any): Promise<T> => {
-      if (method === 'POST' && path.endsWith('/pods') && body?.metadata?.name === `colloq-job-${jobId}`) {
+      if (method === 'POST' && path.endsWith('/pods') && body?.metadata?.name === `aulalab-job-${jobId}`) {
         posted.push(body.metadata.name)
         throw new KubernetesError(403, 'Forbidden', undefined, refusal)
       }
       return kube.request<T>(method, path, body)
     } }
-    const jobs = new CompetitionJobs({ kube: client, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123', gpu: MIG, ...config },
+    const jobs = new CompetitionJobs({ kube: client, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123', gpu: MIG, ...config },
       catalog: () => gpuCatalog, secret: () => 'x'.repeat(64) })
     return { jobs, calls, posted }
   }
@@ -788,13 +788,13 @@ test('cancel during Pod creation cannot leave a running job behind', async () =>
   const posting = new Promise<void>(resolve => { entered = resolve })
   const gate = new Promise<void>(resolve => { release = resolve })
   const delayed = { request: async <T>(method: string, path: string, body?: unknown): Promise<T> => {
-    if (method === 'POST' && path.endsWith('/pods') && (body as any).metadata.name === `colloq-job-${jobId}`) {
+    if (method === 'POST' && path.endsWith('/pods') && (body as any).metadata.name === `aulalab-job-${jobId}`) {
       entered()
       await gate
     }
     return kube.request<T>(method, path, body)
   } }
-  const jobs = new CompetitionJobs({ kube: delayed, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123' },
+  const jobs = new CompetitionJobs({ kube: delayed, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123' },
     catalog: () => catalog, secret: () => 'x'.repeat(64) })
   const start = jobs.start(jobId, intent('notebook'))
   await posting
@@ -802,16 +802,16 @@ test('cancel during Pod creation cannot leave a running job behind', async () =>
   release()
   await assert.rejects(start, /cancelled/i)
   await cancel
-  assert.ok(!objects.has(`/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`))
+  assert.ok(!objects.has(`/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`))
 })
 
 test('restart waits for a stale owned proxy deletion before reusing its name', async () => {
   const { jobs: first, kube, objects } = setup()
   await first.start(jobId, intent('resolve'))
-  objects.delete(`/api/v1/namespaces/colloq/pods/colloq-job-${jobId}`)
+  objects.delete(`/api/v1/namespaces/aulalab/pods/aulalab-job-${jobId}`)
   let pending = 0
   const delayed = { request: async <T>(method: string, path: string, body?: unknown): Promise<T> => {
-    const key = `/api/v1/namespaces/colloq/pods/colloq-proxy-${jobId}`
+    const key = `/api/v1/namespaces/aulalab/pods/aulalab-proxy-${jobId}`
     if (method === 'DELETE' && path === key) { pending = 2; return {} as T }
     if (method === 'GET' && path === key && pending > 0) {
       pending--
@@ -819,7 +819,7 @@ test('restart waits for a stale owned proxy deletion before reusing its name', a
     }
     return kube.request<T>(method, path, body)
   } }
-  const second = new CompetitionJobs({ kube: delayed, config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage, instanceId: 'instance123' },
+  const second = new CompetitionJobs({ kube: delayed, config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage, instanceId: 'instance123' },
     catalog: () => catalog, secret: () => 'x'.repeat(64), pollMs: 1 })
   assert.equal((await second.start(jobId, intent('resolve'))).jobId, jobId)
 })
@@ -828,8 +828,8 @@ test('resolve creates a mountless proxy and a resolver restricted to that servic
   const { jobs, calls } = setup()
   await jobs.start(jobId, intent('resolve'))
   const pods = calls.filter(c => c.method === 'POST' && c.path.endsWith('/pods')).map(c => c.body)
-  const proxy = pods.find(p => p.metadata.labels['colloq.dev/role'] === 'competition-proxy')
-  const resolver = pods.find(p => p.metadata.labels['colloq.dev/role'] === 'competition-resolver')
+  const proxy = pods.find(p => p.metadata.labels['aulalab.dev/role'] === 'competition-proxy')
+  const resolver = pods.find(p => p.metadata.labels['aulalab.dev/role'] === 'competition-resolver')
   assert.ok(proxy)
   assert.ok(resolver)
   assert.equal(proxy.spec.volumes?.filter((v: any) => v.persistentVolumeClaim).length ?? 0, 0)
@@ -842,7 +842,7 @@ test('a package preparation works in /work, sized by the app for its phase, whil
     const { jobs, calls } = setup()
     // 608 MiB: the installed limit of 512 MiB and its headroom (preparation-contract.ts · preparationRoomBytes).
     await jobs.start(jobId, { ...intent(kind), limits: { ...limits, tmpfsMb: 608 } })
-    const pod = calls.find(c => c.method === 'POST' && c.path.endsWith('/pods') && c.body.metadata.name === `colloq-job-${jobId}`)!.body
+    const pod = calls.find(c => c.method === 'POST' && c.path.endsWith('/pods') && c.body.metadata.name === `aulalab-job-${jobId}`)!.body
     const main = pod.spec.containers[0]
     const room = (name: string) => pod.spec.volumes.find((v: any) => v.name === name).emptyDir
     // The program installs into COMP_OUT (preparation-python.ts · ROOM)...
@@ -860,7 +860,7 @@ test('verify reads staged wheels offline; inventory mounts no competition inputs
     await jobs.start(jobId, intent(kind))
     const pod = calls.find(c => c.method === 'POST' && c.path.endsWith('/pods'))!.body
     const main = pod.spec.containers[0]
-    assert.equal(pod.metadata.labels['colloq.dev/role'], 'competition-job')
+    assert.equal(pod.metadata.labels['aulalab.dev/role'], 'competition-job')
     assert.ok(!main.env.some((e: any) => /PROXY/i.test(e.name)))
     assert.ok(!main.volumeMounts.some((m: any) => String(m.subPath).startsWith('competitions/')))
     if (kind === 'verify') assert.ok(main.volumeMounts.some((m: any) => m.mountPath === '/wheels' && m.readOnly === true &&

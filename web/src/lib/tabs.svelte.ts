@@ -69,7 +69,7 @@ export interface Room {
   truncated?: boolean
 }
 
-const STORE_PREFIX = 'colloq.tabs.'
+const STORE_PREFIX = 'aulalab.tabs.'
 /**
  * A cap on the saved tab list — a safety fuse, not a rule.
  *

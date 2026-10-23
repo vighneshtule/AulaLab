@@ -316,7 +316,7 @@ async function machine(label: string, options: { classes?: boolean } = {}): Prom
   const proxy = await TunnelFault.start({ target: home.port })
   proxies.add(proxy)
   const classes = options.classes ?? true
-  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes, namePrefix: label, createdBy: 'colloq-host' }).code
+  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes, namePrefix: label, createdBy: 'aulalab-host' }).code
   const agent = new Agent(fleet, `${label}-${randomBytes(2).toString('hex')}`, { join: proxy.joinTarget(code), classes: true, timings: FAST, keepCalls: true })
   agent.start()
   const runnerId = await until(`${label} to join`, () => agent.identity()?.runnerId, 30_000, () => agent.log())
@@ -450,7 +450,7 @@ test('ten personal kernels on a machine, the class notebook here: one container 
   for (const { student, cell, i } of students) assert.deepEqual(await student.notebook.settled(cell), { state: 'ok', text: `студент ${i + 1}\n`, errors: [] })
   const personal = await kernelsOf(door, id)
   assert.deepEqual(personal.sort(), students.map(({ root }) => jupyterSessionPath(id, root)).sort(), 'ten personal kernels in the one container')
-  assert.deepEqual(m.agent.classContainers().filter((c) => c.labels.includes(`colloq.session=${id}`)).map((c) => c.id), [own.id], 'one personal notebooks\' container for the class (D6)')
+  assert.deepEqual(m.agent.classContainers().filter((c) => c.labels.includes(`aulalab.session=${id}`)).map((c) => c.id), [own.id], 'one personal notebooks\' container for the class (D6)')
   for (const { root } of students) assert.equal(here.kernelAt(jupyterSessionPath(id, root)) ?? null, null)
 
   // Their files come home by the machine's scans, and the class notebook here reads one of them.

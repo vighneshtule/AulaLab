@@ -25,7 +25,7 @@ HOSTNAME_ARG="${1:-}"
 command -v cloudflared >/dev/null 2>&1 || die \
   "cloudflared is not installed. brew install cloudflared — and run this again."
 
-TUNNEL="${COLLOQ_TUNNEL_NAME:-colloq}"
+TUNNEL="${AULALAB_TUNNEL_NAME:-aulalab}"
 
 # The login leaves ~/.cloudflared/cert.pem — the certificate that entitles
 # cloudflared to create tunnels and write DNS in your zone. It is not the same

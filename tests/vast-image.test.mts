@@ -1,5 +1,5 @@
 /**
- * The colloq-vast image (deploy/vast/): what must agree with the rest of the
+ * The aulalab-vast image (deploy/vast/): what must agree with the rest of the
  * code.
  *
  * The image itself is built and checked by real docker in
@@ -17,21 +17,21 @@
  *      someone forbids docker outside tests, the image comes up and refuses on
  *      the first Run;
  *   3. the kernel image name is the one pool.ts expects: the entrypoint builds
- *      and pulls `colloq-kernel:<environment>`, and a different name means
+ *      and pulls `aulalab-kernel:<environment>`, and a different name means
  *      "environment not built" in every room while the image is built;
  *   4. frpc in the image is the same version as the one installed on the relay
  *      and on the old VM path: the frp protocol has broken between versions;
  *   5. a repeated on-start (a VM reboot) does not touch a live instance: it
  *      does not recreate the container because of the line order in
- *      colloq.env and does not roll the image chosen by `colloq-host update`
+ *      aulalab.env and does not roll the image chosen by `aulalab-host update`
  *      back to the one in the template.
  *
  * And, since the image became the university path (0.9.0), what joins it to
  * the rest: the tunnel the entry point picks off Vast (never a quick one), the
  * Cloudflare header it trusts only behind its own cloudflared, the published
  * kernel it pulls and the tag publish.yml pushes, the kernels job itself (run
- * here with a stand-in docker), and the settings colloq-host carries into the
- * container. colloq-host's own behaviour is tests/vast-host.test.mts.
+ * here with a stand-in docker), and the settings aulalab-host carries into the
+ * container. aulalab-host's own behaviour is tests/vast-host.test.mts.
  */
 import './_env.mts'
 import test from 'node:test'
@@ -80,9 +80,9 @@ test('the server accepts the kernel backend the entrypoint starts it with', () =
 test('the entrypoint prepares kernel images under the name the Docker pool runs', () => {
   const pool = read('server/src/kernel/pool.ts')
   const prefix = /const IMAGE_PREFIX = '([^']+)'/.exec(pool)?.[1]
-  assert.equal(prefix, 'colloq-kernel')
-  assert.match(ENTRYPOINT, /-t "colloq-kernel:\$link"/)
-  assert.match(ENTRYPOINT, /docker tag "\$ref" "colloq-kernel:\$link"/)
+  assert.equal(prefix, 'aulalab-kernel')
+  assert.match(ENTRYPOINT, /-t "aulalab-kernel:\$link"/)
+  assert.match(ENTRYPOINT, /docker tag "\$ref" "aulalab-kernel:\$link"/)
 })
 
 test('the image pins the same frp version as the relay and the VM path', () => {
@@ -100,26 +100,26 @@ test('the image pins the same frp version as the relay and the VM path', () => {
 })
 
 test('the vast shell scripts parse', () => {
-  for (const file of ['entrypoint.sh', 'colloq-host', 'onstart.sh', 'smoke.sh']) {
+  for (const file of ['entrypoint.sh', 'aulalab-host', 'onstart.sh', 'smoke.sh']) {
     const result = spawnSync('bash', ['-n', path.join(ROOT, 'deploy/vast', file)], { encoding: 'utf8' })
     assert.equal(result.status, 0, `${file}: ${result.stderr}`)
   }
 })
 
 test('a repeated on-start leaves a running instance and its image alone', () => {
-  const host = read('deploy/vast/colloq-host')
+  const host = read('deploy/vast/aulalab-host')
   // The settings fingerprint decides whether to recreate the container.
   // write_env moves every rewritten key to the end of the file, ensure_gpu
   // appends KERNEL_GPUS last — the same values arrive in a different order,
   // and without sort the second boot of a GPU machine took down the live
   // server (checked with a docker stub).
   const sum = /\nconfig_sum\(\) \{\n([^\n]*)/.exec(host)?.[1] ?? ''
-  assert.match(sum, /sort "\$ENV_FILE"/, 'config_sum should hash colloq.env sorted, not in file order')
-  // COLLOQ_IMAGE from on-start only seeds /etc/colloq/image; after an update
+  assert.match(sum, /sort "\$ENV_FILE"/, 'config_sum should hash aulalab.env sorted, not in file order')
+  // AULALAB_IMAGE from on-start only seeds /etc/aulalab/image; after an update
   // the file belongs to update, otherwise a reboot would roll the version back.
   const image = /\nimage\(\) \{\n([\s\S]*?)\n\}/.exec(host)?.[1] ?? ''
-  assert.match(image, /elif \[ ! -s "\$IMAGE_FILE" \] && \[ -n "\$\{COLLOQ_IMAGE:-\}" \]/,
-    'COLLOQ_IMAGE should only seed /etc/colloq/image, never overwrite it')
+  assert.match(image, /elif \[ ! -s "\$IMAGE_FILE" \] && \[ -n "\$\{AULALAB_IMAGE:-\}" \]/,
+    'AULALAB_IMAGE should only seed /etc/aulalab/image, never overwrite it')
 })
 
 // ------------------------------------------------ the university path (0.9.0)
@@ -158,33 +158,33 @@ test('off Vast, auto opens no quick tunnel: without an address it is none, said 
   assert.equal(r.status, 0, r.stderr)
   assert.equal(r.stdout, 'none http://localhost:3000')
   assert.match(r.stderr, /no public address: PUBLIC_URL is not set, and no tunnel is configured/)
-  r = pick({ COLLOQ_TUNNEL: 'none' })
+  r = pick({ AULALAB_TUNNEL: 'none' })
   assert.equal(r.stdout, 'none http://localhost:3000')
   assert.match(r.stderr, /no public address/)
   // A university's proxy in front.
-  r = pick({ PUBLIC_URL: 'https://colloq.example.edu' })
-  assert.equal(r.stdout, 'none https://colloq.example.edu')
+  r = pick({ PUBLIC_URL: 'https://aulalab.example.edu' })
+  assert.equal(r.stdout, 'none https://aulalab.example.edu')
   assert.equal(r.stderr, '')
   // Vast keeps its old default, by the on-start's flag or Vast's own variable.
-  assert.equal(pick({ COLLOQ_ON_VAST: '1' }).stdout, 'cloudflare ')
-  assert.equal(pick({ COLLOQ_ON_VAST: '1' }).stderr, '')
+  assert.equal(pick({ AULALAB_ON_VAST: '1' }).stdout, 'cloudflare ')
+  assert.equal(pick({ AULALAB_ON_VAST: '1' }).stderr, '')
   assert.equal(pick({ VAST_CONTAINERLABEL: 'C.51006376' }).stdout, 'cloudflare ')
   // Asked for in so many words, the quick tunnel opens anywhere.
-  assert.equal(pick({ COLLOQ_TUNNEL: 'cloudflare' }).stdout, 'cloudflare ')
+  assert.equal(pick({ AULALAB_TUNNEL: 'cloudflare' }).stdout, 'cloudflare ')
   // The configured tunnels are chosen as before, on Vast or not.
-  assert.equal(pick({ COLLOQ_HOSTNAME: 'class1', RELAY_DOMAIN: 'relay.example.org', RELAY_ADDR: '192.0.2.7', RELAY_TOKEN: 't' }).stdout,
+  assert.equal(pick({ AULALAB_HOSTNAME: 'class1', RELAY_DOMAIN: 'relay.example.org', RELAY_ADDR: '192.0.2.7', RELAY_TOKEN: 't' }).stdout,
     'relay https://class1.relay.example.org')
-  assert.equal(pick({ CLOUDFLARE_TUNNEL_TOKEN: 't', COLLOQ_HOSTNAME: 'class.example.org' }).stdout, 'cloudflare https://class.example.org')
+  assert.equal(pick({ CLOUDFLARE_TUNNEL_TOKEN: 't', AULALAB_HOSTNAME: 'class.example.org' }).stdout, 'cloudflare https://class.example.org')
 })
 
 test('the server trusts CF-Connecting-IP behind the container\'s own cloudflared, and only there', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-vast-server-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-vast-server-'))
   try {
     fs.writeFileSync(path.join(dir, 'node'), '#!/bin/sh\nenv > "$DUMP"\n', { mode: 0o755 })
     const seen = (mode: string, env: Record<string, string> = {}) => {
       const dump = path.join(dir, `env-${mode}-${Object.keys(env).length}`)
       const r = runLifted(['start_server'],
-        `APP='${dir}'; NET=colloq; STATE=/s; HOST_STATE=/h; PORT=3000; SERVER_PID=""; MODE='${mode}'\nstart_server; wait "$SERVER_PID"\n`,
+        `APP='${dir}'; NET=aulalab; STATE=/s; HOST_STATE=/h; PORT=3000; SERVER_PID=""; MODE='${mode}'\nstart_server; wait "$SERVER_PID"\n`,
         { DUMP: dump, ...env }, `${dir}:`)
       assert.equal(r.status, 0, r.stderr)
       const line = fs.readFileSync(dump, 'utf8').split('\n').find((l) => l.startsWith('TRUST_CF_CONNECTING_IP='))
@@ -202,24 +202,24 @@ test('the entry point pulls the tag publish.yml pushes, and builds what was neve
   const ref = (env: Record<string, string>, link = 'base', edited = '0') =>
     runLifted(['kernel_pull_ref'], `kernel_pull_ref '${link}' '${edited}'\n`, { VERSION: '0.9.0', ...env }).stdout
   // The same shape as publish.yml's "$repo:v$VERSION-$name".
-  assert.equal(ref({}), 'ghcr.io/colloq-edu/colloq-kernel:v0.9.0-base')
-  assert.equal(ref({}, 'kaggle-base'), 'ghcr.io/colloq-edu/colloq-kernel:v0.9.0-kaggle-base')
-  assert.equal(ref({ COLLOQ_KERNEL_REPO: 'ghcr.io/a-fork/colloq-kernel' }), 'ghcr.io/a-fork/colloq-kernel:v0.9.0-base')
+  assert.equal(ref({}), 'ghcr.io/vighneshtule/aulalab-kernel:v0.9.0-base')
+  assert.equal(ref({}, 'kaggle-base'), 'ghcr.io/vighneshtule/aulalab-kernel:v0.9.0-kaggle-base')
+  assert.equal(ref({ AULALAB_KERNEL_REPO: 'ghcr.io/a-fork/aulalab-kernel' }), 'ghcr.io/a-fork/aulalab-kernel:v0.9.0-base')
   // A development image has no published tag to look for.
   assert.equal(ref({ VERSION: '0.0.0-dev' }), '')
   // A list the operator redefined (or a parent of it) is never swapped for the shipped one.
   assert.equal(ref({}, 'base', '1'), '')
   // An operator's own registry is asked as it always was; `none` builds everything.
-  assert.equal(ref({ KERNEL_IMAGE_REPO: 'registry.example/colloq-kernel' }, 'mycourse', '1'), 'registry.example/colloq-kernel:v0.9.0-mycourse')
+  assert.equal(ref({ KERNEL_IMAGE_REPO: 'registry.example/aulalab-kernel' }, 'mycourse', '1'), 'registry.example/aulalab-kernel:v0.9.0-mycourse')
   assert.equal(ref({ KERNEL_IMAGE_REPO: 'none' }), '')
-  assert.equal(ref({ KERNEL_IMAGE_TAG: 'v0.9.0-rc.1' }), 'ghcr.io/colloq-edu/colloq-kernel:v0.9.0-rc.1-base')
+  assert.equal(ref({ KERNEL_IMAGE_TAG: 'v0.9.0-rc.1' }), 'ghcr.io/vighneshtule/aulalab-kernel:v0.9.0-rc.1-base')
   const publish = read('.github/workflows/publish.yml')
   assert.match(publish, /ref="\$repo:v\$VERSION-\$name"/)
   // The default the entry point uses is the one the image is built with.
-  assert.match(DOCKERFILE, /^ARG COLLOQ_KERNEL_REPO=ghcr\.io\/colloq-edu\/colloq-kernel$/m)
-  assert.match(DOCKERFILE, /COLLOQ_KERNEL_REPO=\$\{COLLOQ_KERNEL_REPO\}/)
-  assert.match(publish, /COLLOQ_KERNEL_REPO=\$\{\{ steps\.image\.outputs\.kernels \}\}/)
-  assert.match(publish, /echo "kernels=ghcr\.io\/\$\{OWNER,,\}\/colloq-kernel"/)
+  assert.match(DOCKERFILE, /^ARG AULALAB_KERNEL_REPO=ghcr\.io\/vighneshtule\/aulalab-kernel$/m)
+  assert.match(DOCKERFILE, /AULALAB_KERNEL_REPO=\$\{AULALAB_KERNEL_REPO\}/)
+  assert.match(publish, /AULALAB_KERNEL_REPO=\$\{\{ steps\.image\.outputs\.kernels \}\}/)
+  assert.match(publish, /echo "kernels=ghcr\.io\/\$\{OWNER,,\}\/aulalab-kernel"/)
   // Offline, nothing is pulled or built: the check comes before either.
   const prepare = shellFunction(ENTRYPOINT, 'prepare_kernels')
   assert.ok(prepare.indexOf('if offline; then') < prepare.indexOf('kernel_pull_ref'), 'offline must be decided before any pull')
@@ -251,7 +251,7 @@ test('the kernels job publishes base and kaggle-base, parents first, checked bef
   assert.match(job, /\n {4}if: vars\.PUBLISH_IMAGES == 'true'\n/)
   assert.match(job, /\n {10}ENVIRONMENTS: base kaggle-base\n/)
   assert.doesNotMatch(job.slice(0, job.indexOf('run: |')), /base-gpu/)
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-kernels-job-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-kernels-job-'))
   try {
     fs.writeFileSync(path.join(dir, 'job.sh'), jobScript(publish, 'kernels'))
     fs.mkdirSync(path.join(dir, 'bin'))
@@ -275,14 +275,14 @@ exit 0
         cwd: ROOT,
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: { PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`, LOG: log, PUBLISHED: published, OWNER: 'Colloq-Edu',
-          VERSION: '0.9.0', COMMIT: 'c0ffee', SOURCE_URL: 'https://github.com/colloq-edu/colloq', ENVIRONMENTS: 'base kaggle-base',
+        env: { PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`, LOG: log, PUBLISHED: published, OWNER: 'Aula Lab-Edu',
+          VERSION: '0.9.0', COMMIT: 'c0ffee', SOURCE_URL: 'https://github.com/vighneshtule/AulaLab', ENVIRONMENTS: 'base kaggle-base',
           RUNNER_TEMP: dir },
       })
       assert.equal(r.status, 0, r.stdout + r.stderr)
       return fs.readFileSync(log, 'utf8').trim().split('\n')
     }
-    const repo = 'ghcr.io/colloq-edu/colloq-kernel'
+    const repo = 'ghcr.io/vighneshtule/aulalab-kernel'
     let calls = run('')
     const builds = calls.filter((c) => c.startsWith('buildx build'))
     assert.equal(builds.length, 4, calls.join('\n'))
@@ -292,21 +292,21 @@ exit 0
       // No python directive in base.txt: the Dockerfile's own default, no second copy of its name.
       assert.doesNotMatch(b, /PARENT=/)
     }
-    assert.match(baseLoad!, /--load -t colloq-kernel:base kernel$/)
-    assert.match(basePush!, /--push --provenance=mode=max --sbom=true --metadata-file \S+ -t ghcr\.io\/colloq-edu\/colloq-kernel:v0\.9\.0-base kernel$/)
+    assert.match(baseLoad!, /--load -t aulalab-kernel:base kernel$/)
+    assert.match(basePush!, /--push --provenance=mode=max --sbom=true --metadata-file \S+ -t ghcr\.io\/vighneshtule\/aulalab-kernel:v0\.9\.0-base kernel$/)
     // kaggle-base stands on the base image just published, pinned by its digest.
     for (const b of [kaggleLoad!, kagglePush!]) assert.ok(b.includes(`--build-arg PARENT=${repo}@sha256:${'0'.repeat(63)}1`), b)
-    assert.match(kagglePush!, /-t ghcr\.io\/colloq-edu\/colloq-kernel:v0\.9\.0-kaggle-base kernel$/)
+    assert.match(kagglePush!, /-t ghcr\.io\/vighneshtule\/aulalab-kernel:v0\.9\.0-kaggle-base kernel$/)
     for (const b of builds) {
       assert.match(b, /--label org\.opencontainers\.image\.version=0\.9\.0 /)
-      assert.match(b, /--label colloq\.environment=(base|kaggle-base) /)
+      assert.match(b, /--label aulalab\.environment=(base|kaggle-base) /)
     }
     // Each image is run once before its push: kaggle-base by the kernel/locks check, with no network.
     const runs = calls.filter((c) => c.startsWith('run '))
     assert.equal(runs.length, 2)
     assert.ok(calls.indexOf(runs[0]!) < calls.indexOf(basePush!))
     assert.ok(calls.indexOf(runs[1]!) < calls.indexOf(kagglePush!))
-    assert.match(runs[1]!, /--network none .*scripts\/check-kaggle-base\.py:\/check\.py:ro colloq-kernel:kaggle-base python \/check\.py$/)
+    assert.match(runs[1]!, /--network none .*scripts\/check-kaggle-base\.py:\/check\.py:ro aulalab-kernel:kaggle-base python \/check\.py$/)
     // A rerun skips what is published and builds the rest on it.
     calls = run(`${repo}:v0.9.0-base`)
     assert.equal(calls.filter((c) => c.includes('KERNEL_ENV=base ')).length, 0, calls.join('\n'))
@@ -320,7 +320,7 @@ test('the kernels job refuses kaggle-gpu through its parent: GPU images stay loc
   // parent, before any build: the CUDA wheels stay off a runner's disk and
   // out of every pull (the job's own comment says why), and a GPU machine
   // builds the chain itself on first boot (KERNEL_PRELOAD=base,base-gpu,kaggle-gpu).
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-kernels-gpu-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-kernels-gpu-'))
   try {
     fs.writeFileSync(path.join(dir, 'job.sh'), jobScript(read('.github/workflows/publish.yml'), 'kernels'))
     fs.mkdirSync(path.join(dir, 'bin'))
@@ -330,8 +330,8 @@ test('the kernels job refuses kaggle-gpu through its parent: GPU images stay loc
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`, OWNER: 'colloq-edu', VERSION: '0.9.0', COMMIT: 'c0ffee',
-        SOURCE_URL: 'https://github.com/colloq-edu/colloq', ENVIRONMENTS: 'base kaggle-gpu', RUNNER_TEMP: dir },
+      env: { PATH: `${path.join(dir, 'bin')}:${process.env.PATH}`, OWNER: 'vighneshtule', VERSION: '0.9.0', COMMIT: 'c0ffee',
+        SOURCE_URL: 'https://github.com/vighneshtule/AulaLab', ENVIRONMENTS: 'base kaggle-gpu', RUNNER_TEMP: dir },
     })
     assert.notEqual(r.status, 0, r.stdout + r.stderr)
     assert.match(r.stdout + r.stderr, /::error::base-gpu is a GPU environment; this job publishes CPU environments only/)
@@ -339,21 +339,21 @@ test('the kernels job refuses kaggle-gpu through its parent: GPU images stay loc
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
 })
 
-test('the server image is pushed as colloq-vast and colloq-server in one build', () => {
+test('the server image is pushed as aulalab-vast and aulalab-server in one build', () => {
   const publish = read('.github/workflows/publish.yml')
-  assert.match(publish, /server="ghcr\.io\/\$\{OWNER,,\}\/colloq-server"/)
+  assert.match(publish, /server="ghcr\.io\/\$\{OWNER,,\}\/aulalab-server"/)
   assert.match(publish, /tags="\$name:\$VERSION,\$server:\$VERSION"/)
   assert.match(publish, /tags="\$tags,\$name:latest,\$server:latest"/)
   // A version published before the name existed gets it copied, not rebuilt.
   assert.match(publish, /docker buildx imagetools create -t "\$SERVER:\$VERSION" "\$NAME@\$digest"/)
 })
 
-test('colloq-host carries the settings of the university contract into the container', () => {
-  const host = read('deploy/vast/colloq-host')
+test('aulalab-host carries the settings of the university contract into the container', () => {
+  const host = read('deploy/vast/aulalab-host')
   const keys = /\nAPP_KEYS="([^"]*)"/.exec(host)?.[1]?.split(/\s+/) ?? []
   for (const key of ['TRUSTED_PROXIES', 'TRUST_CF_CONNECTING_IP', 'SHARED_ADDRESSES', 'HSTS', 'HTTPS_PROXY', 'HTTP_PROXY',
     'NO_PROXY', 'https_proxy', 'http_proxy', 'no_proxy', 'NODE_EXTRA_CA_CERTS', 'DEPENDENCY_INDEX_URL', 'DEPENDENCY_FILES_HOSTS',
-    'COLLOQ_ROOM_NETWORK', 'KERNEL_BLOCKED_CIDRS', 'BACKUP_KEEP', 'COLLOQ_HELPER_IMAGE', 'COLLOQ_OFFLINE', 'COLLOQ_ON_VAST',
+    'AULALAB_ROOM_NETWORK', 'KERNEL_BLOCKED_CIDRS', 'BACKUP_KEEP', 'AULALAB_HELPER_IMAGE', 'AULALAB_OFFLINE', 'AULALAB_ON_VAST',
     // Sign-in by proxy (server/src/sso/identity.ts): a VM behind Teleport needs every one of them.
     'AUTH_JWT_JWKS_URL', 'AUTH_JWT_JWKS_FILE', 'AUTH_JWT_HEADER', 'AUTH_JWT_ISSUER', 'AUTH_JWT_AUDIENCE', 'AUTH_JWT_ALGORITHMS',
     'AUTH_JWT_LEEWAY_SECONDS', 'AUTH_JWT_SUBJECT_CLAIM', 'AUTH_JWT_NAME_CLAIM', 'AUTH_JWT_EMAIL_CLAIM', 'AUTH_JWT_ROLES_CLAIM',
@@ -367,15 +367,15 @@ test('colloq-host carries the settings of the university contract into the conta
   }
   // The Vast on-start names the two Vast-only behaviours itself.
   const onstart = read('deploy/vast/onstart.sh')
-  assert.match(onstart, /^export COLLOQ_ON_VAST=1$/m)
-  assert.match(onstart, /^export COLLOQ_FREEZE_UPDATES=1$/m)
-  assert.ok(onstart.indexOf('export COLLOQ_FREEZE_UPDATES=1') < onstart.indexOf('exec /usr/local/sbin/colloq-host up'))
+  assert.match(onstart, /^export AULALAB_ON_VAST=1$/m)
+  assert.match(onstart, /^export AULALAB_FREEZE_UPDATES=1$/m)
+  assert.ok(onstart.indexOf('export AULALAB_FREEZE_UPDATES=1') < onstart.indexOf('exec /usr/local/sbin/aulalab-host up'))
 })
 
 test('the vast files name only the environments that exist', () => {
   const shipped = fs.readdirSync(path.join(ROOT, 'kernel/environments')).filter((f) => f.endsWith('.txt')).map((f) => f.slice(0, -4))
   assert.deepEqual(shipped.sort(), ['base', 'base-gpu', 'kaggle-base', 'kaggle-gpu'])
-  for (const file of ['deploy/vast/onstart.sh', 'deploy/vast/README.md', 'deploy/vast/entrypoint.sh', 'deploy/vast/colloq-host']) {
+  for (const file of ['deploy/vast/onstart.sh', 'deploy/vast/README.md', 'deploy/vast/entrypoint.sh', 'deploy/vast/aulalab-host']) {
     const text = read(file)
     assert.doesNotMatch(text, /base,gpu\b|KERNEL_MEM_GPU\b|\bgpu stands on\b|kernel\/environments\/(cv|gpu|pvz-geo)\.txt/, file)
   }

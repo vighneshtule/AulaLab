@@ -579,7 +579,7 @@
              system outline — and this is the first field every student sees.
              With its own set of classes it got the border AND the global
              `:focus-visible` outline at once, that is, it looked different from
-             every other Colloq field. Size and ground are overridden by
+             every other Aula Lab field. Size and ground are overridden by
              utilities: `.field` lives in the components layer, utilities above
              it. -->
         <input

@@ -99,7 +99,7 @@ export function ownPidsLimit(env: NodeJS.ProcessEnv = process.env): number {
 
 /**
  * What one container's hardened profile is made of on this server: the
- * ceiling of its role, and the mode and profile label of COLLOQ_ROOM_NETWORK.
+ * ceiling of its role, and the mode and profile label of AULALAB_ROOM_NETWORK.
  * pool.ts · runArgs builds its argv from these very numbers, so its flags are
  * `roomHardeningArgs` of the same role by construction.
  */
@@ -155,8 +155,8 @@ export class RoomPerimeterError extends Error {
  * Where the rooms are and how to recognise them: the network name, and whether
  * to create it ourselves.
  *
- * On the host (`make dev`, `colloq start`, `make run`) the network is ours,
- * `colloq-rooms`. In a container (`make up`, vast) rooms live on the network
+ * On the host (`make dev`, `aulalab start`, `make run`) the network is ours,
+ * `aulalab-rooms`. In a container (`make up`, vast) rooms live on the network
  * the server shares with them (KERNEL_NETWORK); whoever launched us creates
  * it, and we read the subnet from docker.
  */
@@ -242,7 +242,7 @@ export interface HelperImageOptions {
   env?: NodeJS.ProcessEnv
   /** Whether the server itself runs in a container: `/.dockerenv`, the marker pool.ts uses too. */
   inContainer?: () => boolean
-  /** This container's name as docker knows it, when COLLOQ_CONTAINER does not say. */
+  /** This container's name as docker knows it, when AULALAB_CONTAINER does not say. */
   hostname?: () => string
 }
 
@@ -257,17 +257,17 @@ const IMAGE_ID = /^(?:sha256:)?[a-f0-9]{64}$/
  * edits in the panel, pip options included. One poisoned package in a list
  * would run as root on the host at the next room start. So, in order:
  *
- *   1. COLLOQ_HELPER_IMAGE, when the operator names one (a digest-pinned
+ *   1. AULALAB_HELPER_IMAGE, when the operator names one (a digest-pinned
  *      minimal image with sh and nsenter). It must already be on the machine:
  *      the helper never pulls.
  *   2. The server's own image, when the server runs in a container (the Vast
  *      image, `make up`): built by CI, not editable from the panel, certainly
  *      present, and it has nsenter. Found the way the image's entry point
- *      finds itself (deploy/vast/entrypoint.sh · locate_self): COLLOQ_CONTAINER,
+ *      finds itself (deploy/vast/entrypoint.sh · locate_self): AULALAB_CONTAINER,
  *      else the hostname, which docker sets to the container ID.
  *   3. Today's choice on a teacher's own machine, where the server runs on
  *      the host and has no image: the room's kernel image, else any
- *      colloq-kernel. The teacher who edits the lists is the machine's owner
+ *      aulalab-kernel. The teacher who edits the lists is the machine's owner
  *      there.
  *
  * Images from the first two come back as their ID, exactly the bytes that
@@ -284,23 +284,23 @@ export async function helperImage(
   options: HelperImageOptions = {},
 ): Promise<string | null> {
   const env = options.env ?? process.env
-  const override = (env.COLLOQ_HELPER_IMAGE ?? '').trim()
+  const override = (env.AULALAB_HELPER_IMAGE ?? '').trim()
   if (override) {
     const found = await docker(['image', 'inspect', '--format', '{{.Id}}', override], 10_000)
     const id = found.out.trim()
     if (found.code !== 0 || !IMAGE_ID.test(id)) {
-      throw new RoomPerimeterError(`COLLOQ_HELPER_IMAGE=${override} is not on this Docker; docker pull it first`, 'server.roomPerimeter.noHelperImage')
+      throw new RoomPerimeterError(`AULALAB_HELPER_IMAGE=${override} is not on this Docker; docker pull it first`, 'server.roomPerimeter.noHelperImage')
     }
     return id
   }
   if ((options.inContainer ?? (() => fs.existsSync('/.dockerenv')))()) {
     if (ownImage) return ownImage
-    const self = (env.COLLOQ_CONTAINER ?? '').trim() || (options.hostname ?? os.hostname)()
+    const self = (env.AULALAB_CONTAINER ?? '').trim() || (options.hostname ?? os.hostname)()
     const found = await docker(['inspect', '--type', 'container', '--format', '{{.Image}}', self], 10_000)
     const id = found.out.trim()
     if (found.code !== 0 || !IMAGE_ID.test(id)) {
       throw new RoomPerimeterError(
-        `this server's container "${self}" is not visible to Docker; set COLLOQ_CONTAINER to its name, or COLLOQ_HELPER_IMAGE`,
+        `this server's container "${self}" is not visible to Docker; set AULALAB_CONTAINER to its name, or AULALAB_HELPER_IMAGE`,
         'server.roomPerimeter.noHelperImage',
       )
     }
@@ -311,7 +311,7 @@ export async function helperImage(
     const own = await docker(['image', 'inspect', preferred, '--format', '{{.Id}}'], 10_000)
     if (own.code === 0) return preferred
   }
-  const any = await docker(['images', 'colloq-kernel', '--format', '{{.Repository}}:{{.Tag}}'], 10_000)
+  const any = await docker(['images', 'aulalab-kernel', '--format', '{{.Repository}}:{{.Tag}}'], 10_000)
   if (any.code !== 0) return null
   return any.out.split('\n').map((line) => line.trim()).find((line) => line && !line.endsWith(':<none>')) ?? null
 }
@@ -371,7 +371,7 @@ function perimeterPlan(mode: 'blocked' | 'none', subnets: string[], exempt: stri
   if (mode === 'none') {
     if ((cidrs.length || ignored.length || invalid.length) && !ignoredAnnounced) {
       ignoredAnnounced = true
-      console.warn('[kernel] COLLOQ_ROOM_NETWORK=none refuses everything a room starts; KERNEL_BLOCKED_CIDRS has nothing to add')
+      console.warn('[kernel] AULALAB_ROOM_NETWORK=none refuses everything a room starts; KERNEL_BLOCKED_CIDRS has nothing to add')
     }
     return { subnets, exempt, mode }
   }
@@ -396,10 +396,10 @@ async function applyPerimeter(
     if (!openAnnounced) {
       openAnnounced = true
       console.warn(
-        '[kernel] COLLOQ_ROOM_NETWORK=open: room kernels can reach this machine, its LAN and cloud metadata. Remove the line to block local addresses.',
+        '[kernel] AULALAB_ROOM_NETWORK=open: room kernels can reach this machine, its LAN and cloud metadata. Remove the line to block local addresses.',
       )
       if ((process.env.KERNEL_BLOCKED_CIDRS ?? '').trim()) {
-        console.warn('[kernel] COLLOQ_ROOM_NETWORK=open lifts every block, KERNEL_BLOCKED_CIDRS included')
+        console.warn('[kernel] AULALAB_ROOM_NETWORK=open lifts every block, KERNEL_BLOCKED_CIDRS included')
       }
       // Open means open: a ban installed by a previous run is removed. If that
       // fails (the helper is not allowed here anyway, or has no image to run
@@ -426,16 +426,16 @@ async function applyPerimeter(
   inflight = (async () => {
     try {
       const img = await helperImage(docker, image, options)
-      if (!img) throw new RoomPerimeterError('no colloq-kernel image to run the firewall helper from')
+      if (!img) throw new RoomPerimeterError('no aulalab-kernel image to run the firewall helper from')
       const res = await docker(helperArgs(img, perimeterScript(plan)), 60_000)
-      if (res.code !== 0 || !/colloq-perimeter: ok/.test(res.out)) {
+      if (res.code !== 0 || !/aulalab-perimeter: ok/.test(res.out)) {
         const said = res.out.split('\n').filter((line) => line.trim()).slice(-2).join(' · ')
         throw new RoomPerimeterError((said || `exit ${res.code}`).slice(0, 300))
       }
       if (!applied || applied.key !== key) {
         const what =
           plan.mode === 'none'
-            ? 'no outbound traffic (COLLOQ_ROOM_NETWORK=none)'
+            ? 'no outbound traffic (AULALAB_ROOM_NETWORK=none)'
             : plan.extra?.length
               ? `local addresses and ${plan.extra.length} extra range(s) blocked (KERNEL_BLOCKED_CIDRS)`
               : 'local addresses blocked'

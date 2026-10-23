@@ -1,15 +1,15 @@
 /**
- * The Colloq distribution: what goes into the pip wheel.
+ * The Aula Lab distribution: what goes into the pip wheel.
  *
- *   npx tsx scripts/pack.mts          build afresh and put it into python/colloq/_app
+ *   npx tsx scripts/pack.mts          build afresh and put it into python/aulalab/_app
  *   npx tsx scripts/pack.mts --skip-build   pack what has already been built
  *   make pack · make wheel
  *
  * Why this exists at all. The teacher's machine has no repository, no make and
- * no tsx: `pip install colloq` and `colloq`. So everything that today is
+ * no tsx: `pip install aulalab` and `aulalab`. So everything that today is
  * computed from the sources (the frontend build, the tree fingerprint, npm run
  * calls) must be computed HERE, once, and arrive ready. The sign of "arrived
- * ready" is the .colloq-dist.json file at the application root: on seeing it,
+ * ready" is the .aulalab-dist.json file at the application root: on seeing it,
  * the launch builds nothing and does not call npm at all.
  *
  * The layout inside app/ repeats the repository, and that is not decoration.
@@ -25,10 +25,10 @@
  *   · cli/src/launch-config.ts:104: STATIC_DIR is <root>/web/dist.
  *
  * The ops scripts (scripts/) travel with everything else, and not "just in
- * case". `colloq host <name>`, the only command by which a class gets its
+ * case". `aulalab host <name>`, the only command by which a class gets its
  * link, is `make host`, and that calls scripts/host.sh. While they were not in
- * the package, publishing died in an installed colloq: no make, no script,
- * `colloq start --host` fell over with code 127, the receipt got
+ * the package, publishing died in an installed aulalab: no make, no script,
+ * `aulalab start --host` fell over with code 127, the receipt got
  * hosting: 'failed', and the person read "local work continues" and went to
  * class with a session nobody could see from outside. Exactly what is called
  * travels: host.sh with what it sources and runs, and the backup/restore pair
@@ -37,8 +37,8 @@
  * What this universal wheel deliberately lacks: node_modules. Two of the
  * server's dependencies are native (better-sqlite3 and @resvg/resvg-js), and a
  * wheel with them is a platform wheel. Instead, a package.json with the
- * server's production dependencies sits next to the app, and `colloq` installs
- * them on the first run (python/colloq/__main__.py). The platform wheels are
+ * server's production dependencies sits next to the app, and `aulalab` installs
+ * them on the first run (python/aulalab/__main__.py). The platform wheels are
  * built on top of this one by scripts/platform-wheels.py: they add Node and
  * node_modules for macOS and Linux, and pip prefers them where they fit.
  *
@@ -46,7 +46,7 @@
  * --packages=external, and from outside they need only dotenv and
  * better-sqlite3 (the latter only for launch.mjs, as a deferred import:
  * --share reads the list of classes from the database), and both are among
- * the server's dependencies anyway. colloq.mjs needs nothing at all: --help
+ * the server's dependencies anyway. aulalab.mjs needs nothing at all: --help
  * works before npm install. There is no need to check this by eye: the build
  * itself compares the list of external names with what package.json will
  * install, and fails if someone has added a new library to the CLI.
@@ -73,7 +73,7 @@ const { values } = parseArgs({
 
 const outDir = path.resolve(root, values.out ?? 'dist-pkg')
 const appDir = path.join(outDir, 'app')
-const pythonApp = path.join(root, 'python/colloq/_app')
+const pythonApp = path.join(root, 'python/aulalab/_app')
 
 /**
  * The build date comes from outside, not from Date.now().
@@ -83,7 +83,7 @@ const pythonApp = path.join(root, 'python/colloq/_app')
  * reproducibly passes SOURCE_DATE_EPOCH (that is what it is called
  * everywhere, from Debian to pypa) or --date; whoever builds for themselves
  * gets the current time, and that is exactly what they want to see in
- * `colloq --version`.
+ * `aulalab --version`.
  */
 const builtAt = values.date
   ? new Date(values.date).toISOString()
@@ -154,7 +154,7 @@ const dependencies = (serverPkg.dependencies ?? {}) as Record<string, string>
 // ---------------------------------------------------------------- build
 
 if (!values['skip-build']) {
-  // The same pipeline that colloq run calls today: web/dist with compression
+  // The same pipeline that aulalab run calls today: web/dist with compression
   // and server/dist. The difference is that here it runs ONCE, on our side,
   // not at the teacher's during class.
   run('npm', ['run', 'build:optimized'])
@@ -183,7 +183,7 @@ fs.writeFileSync(path.join(outDir, '.gitignore'), '*\n')
  * The bundle's entry point.
  *
  * main.ts runs itself only if argv[1] ends in cli/src/main.ts or .js
- * (main.ts:788): a bundle named colloq.mjs does not pass this check and
+ * (main.ts:788): a bundle named aulalab.mjs does not pass this check and
  * silently exits with zero. So the distribution has its own entry point,
  * cli/src/bin.ts, which simply calls cli(). While it is not in the tree, we
  * build the same one on the fly from stdin: the package does not depend on it,
@@ -213,7 +213,7 @@ const cliBundle = await build({
           loader: 'ts' as const,
         },
       }),
-  outfile: path.join(appDir, 'cli/colloq.mjs'),
+  outfile: path.join(appDir, 'cli/aulalab.mjs'),
   bundle: true,
   platform: 'node',
   format: 'esm',
@@ -318,22 +318,22 @@ for (const name of ['LICENSE', 'THIRD_PARTY_NOTICES.md']) {
  * live without.
  */
 const SCRIPTS: Record<string, string> = {
-  // The only command by which a class gets its link: colloq host and
-  // colloq start --host are this script.
+  // The only command by which a class gets its link: aulalab host and
+  // aulalab start --host are this script.
   'host.sh': 'publishing the class to the outside',
   // Sourced by host.sh, dns.sh and restore.sh: reading .env and the state root.
   'lib.sh': 'shared .env reading and the state directory',
-  // Direct mode (colloq host --direct) writes the A record with it.
+  // Direct mode (aulalab host --direct) writes the A record with it.
   'dns.sh': 'records in the Cloudflare zone',
   // host.sh hands it the address on an installation with k3s; it also starts
   // and stops the services that backup and restore wait for.
   'cluster.sh': 'k3s installation: address, services, state',
-  // The whole pair for colloq backup/restore: the commands themselves and
+  // The whole pair for aulalab backup/restore: the commands themselves and
   // their helpers.
   //
   // The local backup is the only one a teacher needs: a portable k3s backup
   // can be taken only where the cluster runs. The recipe lived in the
-  // Makefile, and `colloq backup` from the wheel died on "make: command not
+  // Makefile, and `aulalab backup` from the wheel died on "make: command not
   // found"; now it is a script, and it travels here.
   'backup-local.sh': 'a backup of the class on this machine: database and files',
   'backup.sh': 'portable backup',
@@ -363,20 +363,20 @@ for (const [name, why] of Object.entries(SCRIPTS)) {
  * package.json up the tree), but both directories are code in other people's
  * hands: someone only has to copy app/server separately, and a .js file
  * without "type" is read as CommonJS, while it is ESM. Also, app/cli holds
- * version: `colloq --version` reads it from cli/package.json relative to the
+ * version: `aulalab --version` reads it from cli/package.json relative to the
  * application root (cli/src/main.ts:229).
  */
 writeJson(path.join(appDir, 'package.json'), {
-  name: 'colloq',
+  name: 'aulalab',
   version,
   private: true,
   type: 'module',
-  description: 'Colloq — the built application. colloq installs its dependencies on the first run.',
+  description: 'Aula Lab — the built application. aulalab installs its dependencies on the first run.',
   dependencies,
 })
-writeJson(path.join(appDir, 'cli/package.json'), { name: 'colloq', version, type: 'module' })
+writeJson(path.join(appDir, 'cli/package.json'), { name: 'aulalab', version, type: 'module' })
 writeJson(path.join(appDir, 'server/package.json'), {
-  name: '@colloq/server',
+  name: '@aulalab/server',
   version,
   private: true,
   type: 'module',
@@ -385,7 +385,7 @@ writeJson(path.join(appDir, 'server/package.json'), {
 // ---------------------------------------------------------------- stamp
 
 const parts = [
-  'cli/colloq.mjs',
+  'cli/aulalab.mjs',
   'cli/launch.mjs',
   'cli/public-url-lease.mjs',
   'server/dist',
@@ -397,15 +397,15 @@ const parts = [
   .filter((item) => fs.existsSync(path.join(appDir, item)))
   .map((item) => ({ path: item, ...weigh(path.join(appDir, item)) }))
 
-writeJson(path.join(appDir, '.colloq-dist.json'), {
-  name: 'colloq',
+writeJson(path.join(appDir, '.aulalab-dist.json'), {
+  name: 'aulalab',
   version,
   builtAt,
   builtBy: 'scripts/pack.mts',
   node: process.version,
   /* Where to look, for whoever reads this file instead of guessing. */
   layout: {
-    cli: 'cli/colloq.mjs',
+    cli: 'cli/aulalab.mjs',
     launch: 'cli/launch.mjs',
     lease: 'cli/public-url-lease.mjs',
     server: 'server/dist/server.js',
@@ -413,7 +413,7 @@ writeJson(path.join(appDir, '.colloq-dist.json'), {
     kernel: 'kernel',
     scripts: 'scripts',
   },
-  /* node_modules are installed on the spot: see the header of this file and python/colloq/__main__.py. */
+  /* node_modules are installed on the spot: see the header of this file and python/aulalab/__main__.py. */
   install: { manager: 'npm', args: ['install', '--omit=dev'], cwd: '.' },
   parts,
 })
@@ -430,20 +430,20 @@ writeJson(path.join(appDir, '.colloq-dist.json'), {
  * "works" while doing nothing. So here the bundle is called for real and
  * required to say something.
  *
- * COLLOQ_HOME is redirected to a temporary directory: without that the check
- * would create a real ~/.colloq for whoever builds, class state where nobody
+ * AULALAB_HOME is redirected to a temporary directory: without that the check
+ * would create a real ~/.aulalab for whoever builds, class state where nobody
  * asked for it.
  */
-const probeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-pack-'))
+const probeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-pack-'))
 try {
-  const probe = spawnSync(process.execPath, [path.join(appDir, 'cli/colloq.mjs'), '--help'], {
+  const probe = spawnSync(process.execPath, [path.join(appDir, 'cli/aulalab.mjs'), '--help'], {
     cwd: appDir,
     encoding: 'utf8',
     timeout: 60000,
     env: {
       ...process.env,
-      COLLOQ_APP_DIR: appDir,
-      COLLOQ_HOME: probeHome,
+      AULALAB_APP_DIR: appDir,
+      AULALAB_HOME: probeHome,
       NO_COLOR: '1',
     },
   })
@@ -454,16 +454,16 @@ try {
         'It looks like the entry point does not call cli(): see cli/src/bin.ts and the tail of cli/src/main.ts.',
     )
   /*
-   * And the version is the very one in the root package.json. `colloq
+   * And the version is the very one in the root package.json. `aulalab
    * --version` reads app/cli/package.json, written above; the check catches the
    * day someone changes where it reads from, and the wheel ships with "0.0.0"
    * from the fallback branch.
    */
-  const said = spawnSync(process.execPath, [path.join(appDir, 'cli/colloq.mjs'), '--version'], {
+  const said = spawnSync(process.execPath, [path.join(appDir, 'cli/aulalab.mjs'), '--version'], {
     cwd: appDir,
     encoding: 'utf8',
     timeout: 60000,
-    env: { ...process.env, COLLOQ_APP_DIR: appDir, COLLOQ_HOME: probeHome, NO_COLOR: '1' },
+    env: { ...process.env, AULALAB_APP_DIR: appDir, AULALAB_HOME: probeHome, NO_COLOR: '1' },
   })
   if (said.status !== 0 || (said.stdout ?? '').trim() !== version)
     throw new Error(
@@ -479,7 +479,7 @@ try {
 if (!values['no-python']) {
   /*
    * The wheel is built from python/, and the application must lie INSIDE the
-   * package: hatchling puts into the wheel what lies under colloq/, and that is
+   * package: hatchling puts into the wheel what lies under aulalab/, and that is
    * where _app lies. The directory is wiped entirely rather than topped up:
    * otherwise stale asset hashes from the previous build would remain, and the
    * wheel would drag both sets along.
@@ -495,13 +495,13 @@ if (!values['no-python']) {
   // carries. Should packing lose the marker or the header, every `make wheel`
   // would dirty the tree, and the next release would leave _version.py at the
   // old number.
-  fs.writeFileSync(path.join(root, 'python/colloq/_version.py'), pythonVersionFile(version))
+  fs.writeFileSync(path.join(root, 'python/aulalab/_version.py'), pythonVersionFile(version))
 }
 
 // ---------------------------------------------------------------- report
 
 const total = weigh(appDir)
-console.log(`\nColloq ${version} — distribution built: ${appDir}`)
+console.log(`\nAulaLab ${version} — distribution built: ${appDir}`)
 for (const part of parts)
   console.log(
     `  ${part.path.padEnd(24)} ${String(part.files).padStart(5)} files  ${human(part.bytes)}`,

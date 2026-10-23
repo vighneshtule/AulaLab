@@ -315,7 +315,7 @@ const seminarIn = (text: string): string | null => /\bseminar\s+([A-Za-z0-9_-]{4
 /** Until the class is gone from the machine: no live placement row, no class container of it in its docker. */
 async function goneFromMachine(sessionId: string): Promise<void> {
   await until(`class ${sessionId} off the machine`, () => livePlacement(sessionId, 'room') === null && livePlacement(sessionId, 'own') === null && livePlacement(sessionId, 'council') === null &&
-    !machine.classContainers().some((c) => c.labels.includes(`colloq.session=${sessionId}`) && c.status !== 'exited'), 30_000, () => home.classLines.slice(-6).join('\n'))
+    !machine.classContainers().some((c) => c.labels.includes(`aulalab.session=${sessionId}`) && c.status !== 'exited'), 30_000, () => home.classLines.slice(-6).join('\n'))
 }
 
 const seminarPosts = () => home.requests.filter((one) => one.method === 'POST' && one.path === '/api/admin/seminars').length
@@ -334,7 +334,7 @@ before(async () => {
   rotateLinkKey(owner.id)
   ownerId = owner.id
   ownerToken = readSetupToken()
-  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'vast', createdBy: 'colloq-host' }).code
+  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'vast', createdBy: 'aulalab-host' }).code
   // It reads its host to have twelve cores (AgentOptions.cpus), so that the class's room and personal containers and its council's
   // pool, a core a worker, fit beside each other on a CI runner of four.
   machine = new Agent(fleet, `load-${randomBytes(2).toString('hex')}`, { join: home.joinTarget(code), classes: true, cpus: 12 })
@@ -540,7 +540,7 @@ test('a short class on the machine: its own seminar made, the class held and the
   assert.ok(n.value.answered > 0 && n.value.answered <= n.value.asked)
 
   // Each echo was typed at the prompt: the shell never had to hold one behind the last («команда ждёт свободной оболочки»).
-  const waiting = tr('server.colloqTheCommandIsWaitingForThe.0e6b42', { p0: 'Teacher (class-load)' })
+  const waiting = tr('server.aulalabTheCommandIsWaitingForThe.0e6b42', { p0: 'Teacher (class-load)' })
   assert.ok(!JSON.stringify(sum.machine.roomNotes).includes(waiting), JSON.stringify(sum.machine.roomNotes))
 
   // The authorization change closed the staff's sockets, and they came back as the web app's do: the chip was watched to the end.
@@ -593,7 +593,7 @@ test('one Ctrl+C under npx tsx reaches the rig twice: it is one press, and the s
   const id = seminarIn(printed(run))
   assert.ok(id, printed(run))
   // Its personal notebooks compute on the machine meanwhile, the class notebook here.
-  assert.ok(machine.classContainers().some((c) => c.labels.includes(`colloq.session=${id}`) && c.labels.includes('colloq.role=own') && c.status === 'running'))
+  assert.ok(machine.classContainers().some((c) => c.labels.includes(`aulalab.session=${id}`) && c.labels.includes('aulalab.role=own') && c.status === 'running'))
 
   // The relay holds every byte 60 ms each way: the delete's answer comes later than npm's copy of the press.
   relay.delay(60)

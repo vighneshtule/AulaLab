@@ -295,7 +295,7 @@ let shared: Agent | null = null
  */
 async function classMachine(): Promise<Agent> {
   if (shared) return shared
-  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'vast', createdBy: 'colloq-host' }).code
+  const code = mintRemoteCode({ machines: 1, hours: 1, trusted: false, approvedSlots: null, classes: true, namePrefix: 'vast', createdBy: 'aulalab-host' }).code
   const agent = new Agent(fleet, `c-${randomBytes(2).toString('hex')}`, { join: home.joinTarget(code), classes: true })
   agent.start()
   const runnerId = await until('the machine to join', () => agent.identity()?.runnerId, 30_000, () => agent.log())
@@ -723,18 +723,18 @@ test('C12 · a 300 MB write stays «на машине» with a line in the kerne
 
   // pip install -t .: a package tree as pip leaves it, its RECORD last. It stays on the machine as one row, never uploaded.
   const record = (rel: string, body: string): string => `${rel},sha256=${createHash('sha256').update(body).digest('base64url')},${Buffer.byteLength(body)}`
-  const parts = { init: 'from .core import answer', core: 'answer = 42', meta: 'Name: colloqpkg\nVersion: 1.0' }
+  const parts = { init: 'from .core import answer', core: 'answer = 42', meta: 'Name: aulalabpkg\nVersion: 1.0' }
   const lines = [
-    record('colloqpkg/__init__.py', parts.init),
-    record('colloqpkg/core.py', parts.core),
-    record('colloqpkg-1.0.dist-info/METADATA', parts.meta),
-    'colloqpkg-1.0.dist-info/RECORD,,',
+    record('aulalabpkg/__init__.py', parts.init),
+    record('aulalabpkg/core.py', parts.core),
+    record('aulalabpkg-1.0.dist-info/METADATA', parts.meta),
+    'aulalabpkg-1.0.dist-info/RECORD,,',
   ]
   const pip = lead.notebook.add([
-    `WRITE colloqpkg/__init__.py ${parts.init}`,
-    `WRITE colloqpkg/core.py ${parts.core}`,
-    `WRITE colloqpkg-1.0.dist-info/METADATA ${parts.meta.replace('\n', '\\n')}`,
-    `WRITE colloqpkg-1.0.dist-info/RECORD ${lines.join('\\n')}\\n`,
+    `WRITE aulalabpkg/__init__.py ${parts.init}`,
+    `WRITE aulalabpkg/core.py ${parts.core}`,
+    `WRITE aulalabpkg-1.0.dist-info/METADATA ${parts.meta.replace('\n', '\\n')}`,
+    `WRITE aulalabpkg-1.0.dist-info/RECORD ${lines.join('\\n')}\\n`,
   ].join('\n'))
   lead.control.send({ t: 'run', cellId: pip })
   await lead.notebook.ok(pip)
@@ -745,9 +745,9 @@ test('C12 · a 300 MB write stays «на машине» with a line in the kerne
   const rows = packages.files.filter((entry) => entry.kind === 'packages')
   const bytes = Buffer.byteLength(parts.init) + Buffer.byteLength(parts.core) + Buffer.byteLength(parts.meta)
   assert.deepEqual(rows.map((entry) => [entry.path, entry.bytes, entry.count, entry.onMachine]), [['.packages', bytes, 2, { bytes, why: 'package' }]], 'one row for the tree pip made')
-  assert.deepEqual(packages.files.filter((entry) => entry.path.startsWith('colloqpkg')).map((entry) => entry.path), [], 'none of its files in the tree')
+  assert.deepEqual(packages.files.filter((entry) => entry.path.startsWith('aulalabpkg')).map((entry) => entry.path), [], 'none of its files in the tree')
   assert.ok(await files.filesSettled(id, 15_000))
-  assert.equal(fs.existsSync(path.join(sessionDir(id), 'colloqpkg')), false, 'nothing of it here')
+  assert.equal(fs.existsSync(path.join(sessionDir(id), 'aulalabpkg')), false, 'nothing of it here')
   assert.equal(uploadsOf(machine, id), 1, 'no upload for it')
   // And the owner reads only the package tree as left on the machine: the checkpoint brought here is counted there no more.
   let lastLag: unknown = null
@@ -808,7 +808,7 @@ test('C13 · a kernel writes a notebook\'s file: refused, the notebook stays the
   await quiet(machine, id, lead.notebook)
   const cells = bookCells(lead.notebook.doc, CELLS_KEY).length
 
-  // The kernel overwrites the notebook's file there, as `open('Тетрадь.ipynb', 'w')` would.
+  // The kernel overwrites the notebook's file there, as `open('Notebook.ipynb', 'w')` would.
   const forged = '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}'
   const refusedBefore = files.counts.refused
   const write = lead.notebook.add(`WRITE ${book} ${forged}`)

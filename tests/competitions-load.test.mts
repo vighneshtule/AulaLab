@@ -118,7 +118,7 @@ const notebook = (tag: string) => JSON.stringify({
   nbformat: 4,
   nbformat_minor: 5,
   metadata: {},
-  cells: [{ cell_type: 'code', source: `# colloq-test: {"hold": 120}\n# ${tag}`, outputs: [], metadata: {}, execution_count: null }],
+  cells: [{ cell_type: 'code', source: `# aulalab-test: {"hold": 120}\n# ${tag}`, outputs: [], metadata: {}, execution_count: null }],
 })
 
 async function join(name: string, slug = 'load'): Promise<{ cookie: string; id: string }> {
@@ -152,7 +152,7 @@ const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
  * classroom Wi-Fi, reduced to one call.
  */
 function slowUpload(cookie: string, tag: string): { finish: () => void; response: Promise<{ status: number; body: any }> } {
-  const boundary = `----colloq-load-${Math.random().toString(16).slice(2)}`
+  const boundary = `----aulalab-load-${Math.random().toString(16).slice(2)}`
   const head = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${tag}.ipynb"\r\nContent-Type: application/octet-stream\r\n\r\n`)
   const whole = Buffer.concat([head, Buffer.from(notebook(tag)), Buffer.from(`\r\n--${boundary}--\r\n`)])
   const cut = head.length + 16

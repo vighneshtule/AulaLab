@@ -182,14 +182,14 @@ import './broker-runner.js'
  * The container name — it is what the container is killed by and what it is
  * looked up by in the docker log.
  *
- * The prefix is shared with rooms (`colloq-`), so that all of the instance's
+ * The prefix is shared with rooms (`aulalab-`), so that all of the instance's
  * belongings are found with one `docker ps`. A random tail rather than an
  * attempt number: the previous submission's container may still be living
  * out its last milliseconds when a retry starts, and `docker run` with a
  * taken name refuses outright.
  */
 export function containerName(submissionId: string, kind: RunKind, token: string): string {
-  return `colloq-comp-${submissionId}-${token}-${kind === 'metric' ? 'score' : 'run'}`
+  return `aulalab-comp-${submissionId}-${token}-${kind === 'metric' ? 'score' : 'run'}`
 }
 
 const newToken = (): string => randomBytes(4).toString('hex')
@@ -1839,7 +1839,7 @@ function metricPinOfHistory(competitionId: string): { revisionId: string | null 
 
 /**
  * The current kaggle-base on this server: the image under its name
- * (`colloq-kernel:kaggle-base`, or the broker catalog's), recorded as a
+ * (`aulalab-kernel:kaggle-base`, or the broker catalog's), recorded as a
  * revision on demand when `record` (dependencies/revisions.ts ·
  * captureRevision, which records an image once however many ask, and only
  * finds the revision of one recorded already); without one, the newest

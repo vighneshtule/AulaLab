@@ -300,7 +300,7 @@ async function readGpus(): Promise<GpuCard[]> {
  * What each entry of KERNEL_GPUS is: the card's name and its video memory.
  *
  * `readGpus` above answers "what cards does this machine have" for the class
- * form, and inside the colloq-vast container it answers nothing: nvidia-smi is
+ * form, and inside the aulalab-vast container it answers nothing: nvidia-smi is
  * not in the app's image (deploy/vast/README.md lists it as a known gap).
  * Runner cards need more than a picture. A card's memory decides the share
  * every submission on it is promised AND held to (competitions/gpu-math.ts ·
@@ -626,7 +626,7 @@ async function rooms(instanceCpus: number, runtimeRooms?: RuntimeRoom[]): Promis
     // And by this server's containers only: a slot on a machine holds none
     // of its memory (docs/architecture/remote-classes.md §6.10, «0 МБ здесь»).
     // It never reaches the census above by construction: a machine's class
-    // containers carry `colloq.kind=class-kernel` on the machine's own daemon,
+    // containers carry `aulalab.kind=class-kernel` on the machine's own daemon,
     // and a machine on this daemon takes no classes (D20). A class with its
     // room on a machine and a container of it still running here holds this
     // server's memory with that container, and is counted for it.
@@ -650,7 +650,7 @@ async function rooms(instanceCpus: number, runtimeRooms?: RuntimeRoom[]): Promis
  * The machine as the server sees it right now.
  *
  * Under the test backend the numbers are made up, and made up plausibly:
- * exactly the machine Colloq rents, a 3090 with 72 GB of memory. Without this
+ * exactly the machine Aula Lab rents, a 3090 with 72 GB of memory. Without this
  * the seminar form could be neither viewed nor tested on a developer's
  * laptop: there is no `nvidia-smi` there, and "Resources" would be drawn only
  * halfway.

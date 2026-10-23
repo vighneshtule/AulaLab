@@ -14,7 +14,7 @@
 import type { ReasoningEffort } from '@shared/admin'
 import { isReasoningEffort } from '@shared/admin'
 
-const KEY = 'colloq.oracle.effort'
+const KEY = 'aulalab.oracle.effort'
 
 /**
  * What is chosen in this browser. Any read error means "as on the instance":

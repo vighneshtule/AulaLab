@@ -11,7 +11,7 @@ import type { Component } from 'svelte'
 let dir: string
 const components = new Map<string, Component<any>>()
 before(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-counted-render-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-counted-render-'))
   for (const name of ['Badge', 'StageStrip', 'DependencyBundleCard', 'SubmissionEnvironment', 'SubmissionRow', 'SubmissionCard']) {
     const source = await readFile(new URL(`../web/src/components/competitions/${name}.svelte`, import.meta.url), 'utf8')
     let code = compile(source, { filename: `${name}.svelte`, generate: 'server' }).js.code

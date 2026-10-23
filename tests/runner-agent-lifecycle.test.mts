@@ -1,7 +1,7 @@
 /**
  * A machine's agent across its lives: a restart, a revocation, a drain, a
  * leave, a stop, and the commands the packaging runs against it (runner
- * status, drain, leave: deploy/vast/colloq-host and entrypoint.sh).
+ * status, drain, leave: deploy/vast/aulalab-host and entrypoint.sh).
  *
  * What is held here: after a restart the agent removes its containers,
  * uploads the outcomes it had written down and reports nothing else (home
@@ -54,8 +54,8 @@ function agentFor(home: FakeHome, options: Partial<AgentOptions> = {}) {
     join: { home: home.url, code: CODE },
     build: 'dev',
     version: '0.24.0',
-    container: 'colloq-runner',
-    image: 'ghcr.io/colloq-edu/colloq-server:0.24.0',
+    container: 'aulalab-runner',
+    image: 'ghcr.io/vighneshtule/aulalab-server:0.24.0',
     docker,
     runner: seam,
     machine: () => PICTURE,
@@ -114,7 +114,7 @@ test('after a restart: its containers removed, the outcomes it wrote down upload
     // Swept before anything else: the runs by the runner's labels, the checks by the agent's.
     assert.equal(seam.sweeps, 1)
     // The checks of this tree only: another agent's on the same daemon are its own (images.ts · INSTANCE_LABEL).
-    assert.ok(docker.calls.some((args) => args[0] === 'ps' && args.includes('label=colloq.kind=runner-check') && args.includes(`label=${INSTANCE_LABEL}`)))
+    assert.ok(docker.calls.some((args) => args[0] === 'ps' && args.includes('label=aulalab.kind=runner-check') && args.includes(`label=${INSTANCE_LABEL}`)))
     assert.ok(!docker.calls.some((args) => args[0] === 'ps' && !args.includes(`label=${INSTANCE_LABEL}`)), 'a sweep looked past this tree')
     assert.ok(!fs.existsSync(path.join(layout.leasesDir, `${unfinished.attemptId}.json`)), 'a lease without its outcome survived the restart')
     assert.ok(!fs.existsSync(path.join(competitionsDir, 'compabcd', 's', unfinished.submissionId)))
@@ -153,7 +153,7 @@ test('a 401 is the owner\'s revocation: the hidden test is purged, Docker\'s res
   try {
     assert.deepEqual({ reason: exit.reason, code: exit.code }, { reason: 'revoked', code: 0 })
     assert.deepEqual(fs.readdirSync(path.join(competitionsDir, '.sealed')), [])
-    assert.ok(docker.calls.some((args) => args.join(' ') === 'update --restart=no colloq-runner'))
+    assert.ok(docker.calls.some((args) => args.join(' ') === 'update --restart=no aulalab-runner'))
     assert.ok(readIdentity(layout)!.revokedAt !== undefined)
     assert.equal(JSON.parse(fs.readFileSync(layout.statusFile, 'utf8')).state, 'revoked')
 
@@ -163,9 +163,9 @@ test('a 401 is the owner\'s revocation: the hidden test is purged, Docker\'s res
     const second = await again.agent.run()
     assert.equal(second.reason, 'revoked')
     assert.equal(home.calls.length, before)
-    assert.ok(again.docker.calls.some((args) => args.join(' ') === 'update --restart=no colloq-runner'))
+    assert.ok(again.docker.calls.some((args) => args.join(' ') === 'update --restart=no aulalab-runner'))
 
-    // With a new code in COLLOQ_RUNNER_JOIN: the revoked identity is put aside, and the machine joins anew.
+    // With a new code in AULALAB_RUNNER_JOIN: the revoked identity is put aside, and the machine joins anew.
     home.onSync = () => ({ json: syncReply(), delayMs: 20 })
     const fresh = agentFor(home, { join: { home: home.url, code: NEW_CODE } })
     const third = fresh.agent.run()
@@ -317,7 +317,7 @@ test('drain over the agent\'s socket: nothing new is taken, offers are withdrawn
     assert.equal(leaving.length, 1)
     assert.deepEqual(leaving[0]!.attempts, [])
     assert.ok(readIdentity(layout)!.leftAt !== undefined)
-    assert.ok(docker.calls.some((args) => args.join(' ') === 'update --restart=no colloq-runner'))
+    assert.ok(docker.calls.some((args) => args.join(' ') === 'update --restart=no aulalab-runner'))
     // Draining is not written down: a machine started again takes work (and this one left, so it stays gone).
     assert.equal(JSON.parse(fs.readFileSync(layout.statusFile, 'utf8')).state, 'left')
   } finally {
@@ -398,19 +398,19 @@ test('`runner status` reads the running agent\'s status: 0 while joined and sync
 test('the command line refuses a machine started without what it needs, before it touches docker or home', async () => {
   const errors: string[] = []
   const io = { out: () => undefined, err: (text: string) => errors.push(text) }
-  const base: NodeJS.ProcessEnv = { ...process.env, COLLOQ_RUNNER_STATE: TEST_ROOT }
-  delete base.COLLOQ_RUNNER_JOIN
+  const base: NodeJS.ProcessEnv = { ...process.env, AULALAB_RUNNER_STATE: TEST_ROOT }
+  delete base.AULALAB_RUNNER_JOIN
   delete base.DATA_HOST_DIR
   // No join and no identity.
   assert.equal(await main([], base, io), 78)
-  assert.match(errors.join(''), /COLLOQ_RUNNER_JOIN/)
+  assert.match(errors.join(''), /AULALAB_RUNNER_JOIN/)
   // A join that is not https://<home>#<code>.
-  assert.equal(await main([], { ...base, COLLOQ_RUNNER_JOIN: 'https://home.example/path#short' }, io), 78)
+  assert.equal(await main([], { ...base, AULALAB_RUNNER_JOIN: 'https://home.example/path#short' }, io), 78)
   // DATA_DIR outside the tree: the layout would not be where the mounts say.
-  assert.equal(await main([], { ...base, COLLOQ_RUNNER_STATE: path.join(TEST_ROOT, 'elsewhere'), COLLOQ_RUNNER_JOIN: `https://home.example#${CODE}` }, io), 78)
+  assert.equal(await main([], { ...base, AULALAB_RUNNER_STATE: path.join(TEST_ROOT, 'elsewhere'), AULALAB_RUNNER_JOIN: `https://home.example#${CODE}` }, io), 78)
   assert.match(errors.join(''), /DATA_DIR/)
   // DATA_HOST_DIR: a machine's paths are the host's own.
-  assert.equal(await main([], { ...base, COLLOQ_RUNNER_JOIN: `https://home.example#${CODE}`, DATA_HOST_DIR: '/host/data' }, io), 78)
+  assert.equal(await main([], { ...base, AULALAB_RUNNER_JOIN: `https://home.example#${CODE}`, DATA_HOST_DIR: '/host/data' }, io), 78)
   assert.match(errors.join(''), /DATA_HOST_DIR/)
   // `join` takes exactly a URL and a code; anything else is a usage error.
   assert.equal(await main(['join', 'https://home.example'], base, io), 64)
@@ -436,7 +436,7 @@ test('`runner leave` with no agent running revokes the machine with the identity
   // The one-off container: the same tree and environment, the agent's container stopped.
   const docker = fakeAgentDocker()
   const seam = new FakeSeam()
-  const code = await main(['leave'], { ...process.env, COLLOQ_RUNNER_STATE: TEST_ROOT, COLLOQ_RUNNER_JOIN: `${home.url}#${NEW_CODE}`, COLLOQ_RUNNER_IMAGE: 'ghcr.io/colloq-edu/colloq-server:0.24.0', COLLOQ_RUNNER_CONTAINER: '' }, { out: () => undefined, err: (text) => errors.push(text) }, { docker, runner: seam })
+  const code = await main(['leave'], { ...process.env, AULALAB_RUNNER_STATE: TEST_ROOT, AULALAB_RUNNER_JOIN: `${home.url}#${NEW_CODE}`, AULALAB_RUNNER_IMAGE: 'ghcr.io/vighneshtule/aulalab-server:0.24.0', AULALAB_RUNNER_CONTAINER: '' }, { out: () => undefined, err: (text) => errors.push(text) }, { docker, runner: seam })
   try {
     assert.equal(code, 0, errors.join(''))
     // The written-down decline went first, then the leaving sync with nothing held; never a join with the new code.
@@ -444,12 +444,12 @@ test('`runner leave` with no agent running revokes the machine with the identity
     assert.ok(order.indexOf('outcome') >= 0 && order.indexOf('outcome') < order.indexOf('sync:leaving'), order.join(' '))
     assert.ok(!order.includes('join'))
     assert.ok(readIdentity(layout)!.leftAt !== undefined)
-    // Its containers swept first. No COLLOQ_RUNNER_CONTAINER here (colloq-host turns the machine's restart policy off itself before
+    // Its containers swept first. No AULALAB_RUNNER_CONTAINER here (aulalab-host turns the machine's restart policy off itself before
     // a one-off leave): no container of its own, so nothing is updated or inspected by a name that could be anyone's (§13c note 20).
     assert.ok(seam.sweeps >= 1)
     assert.ok(!docker.calls.some((args) => args[0] === 'update' || args[0] === 'inspect'), docker.calls.map((args) => args.join(' ')).join('\n'))
     // Gone already: a second leave has nothing to do.
-    assert.equal(await main(['leave'], { ...process.env, COLLOQ_RUNNER_STATE: TEST_ROOT }, { out: () => undefined, err: () => undefined }), 0)
+    assert.equal(await main(['leave'], { ...process.env, AULALAB_RUNNER_STATE: TEST_ROOT }, { out: () => undefined, err: () => undefined }), 0)
   } finally {
     await home.close()
   }
@@ -507,16 +507,16 @@ test('an outcome past its lease\'s ceiling at home, which has given it up, is di
   }
 })
 
-test('without COLLOQ_RUNNER_IMAGE the cards are probed with the image the agent\'s own container runs, as docker says', async () => {
+test('without AULALAB_RUNNER_IMAGE the cards are probed with the image the agent\'s own container runs, as docker says', async () => {
   const home = await fakeHome()
-  const { agent, docker } = agentFor(home, { image: null, container: 'colloq-runner' })
+  const { agent, docker } = agentFor(home, { image: null, container: 'aulalab-runner' })
   const running = agent.run()
   try {
     await waitFor(() => docker.calls.some((args) => args[0] === 'run' && args.includes('nvidia-smi')), 'the card probe')
-    assert.ok(docker.calls.some((args) => args.join(' ') === 'inspect -f {{.Config.Image}} colloq-runner'))
+    assert.ok(docker.calls.some((args) => args.join(' ') === 'inspect -f {{.Config.Image}} aulalab-runner'))
     const probe = docker.calls.find((args) => args[0] === 'run' && args.includes('nvidia-smi'))!
     assert.equal(probe[probe.indexOf('--gpus') + 1], 'all')
-    assert.ok(probe.includes('ghcr.io/colloq-edu/colloq-server:0.24.0'))
+    assert.ok(probe.includes('ghcr.io/vighneshtule/aulalab-server:0.24.0'))
   } finally {
     await agent.stop()
     await running
@@ -563,7 +563,7 @@ test('revoked by its owner while it drains for a leave, the machine has left: `r
   let revoked = false
   const answer = home.onSync
   home.onSync = (body, call) => (revoked ? { status: 401, json: { error: 'unauthorized' } } : answer(body, call))
-  // A new code waits in COLLOQ_RUNNER_JOIN: a revoked machine that is not leaving would join with it.
+  // A new code waits in AULALAB_RUNNER_JOIN: a revoked machine that is not leaving would join with it.
   const { agent, seam } = agentFor(home, { join: { home: home.url, code: NEW_CODE } })
   seam.next = 'wait'
   const server = await serveControl(agent, layout.socket)
@@ -588,7 +588,7 @@ test('revoked by its owner while it drains for a leave, the machine has left: `r
   }
 })
 
-test('with no container of its own (COLLOQ_RUNNER_CONTAINER unset), a revoked machine updates and inspects no container by name', async () => {
+test('with no container of its own (AULALAB_RUNNER_CONTAINER unset), a revoked machine updates and inspects no container by name', async () => {
   const home = await fakeHome()
   joinedBefore(home)
   home.onSync = () => ({ status: 401, json: { error: 'unauthorized' } })
@@ -768,7 +768,7 @@ test('a start whose sweep the daemon does not answer gives up no lease of an ear
   let asked = 0
   let removals = 0
   docker.intercept = (args) => {
-    if (args[0] !== 'ps' || !args.includes('label=colloq.kind=competition-run')) return
+    if (args[0] !== 'ps' || !args.includes('label=aulalab.kind=competition-run')) return
     asked++
     if (busy) return { code: 1, out: 'Error response from daemon: context deadline exceeded' }
     return { code: 0, out: stillRuns ? 'abcdef012345\n' : '' }

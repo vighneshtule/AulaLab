@@ -546,7 +546,7 @@ export type EpochCollector = (sessionId: string, role: RoomRole, seq: number, in
 
 /** The container of a slot of this server's, as kernel/pool.ts names it (containerFor). */
 function homeContainer(sessionId: string, role: RoomRole): string {
-  return role === 'room' ? `colloq-room-${sessionId}` : `colloq-room-${sessionId}-${role}`
+  return role === 'room' ? `aulalab-room-${sessionId}` : `aulalab-room-${sessionId}-${role}`
 }
 
 function docker(args: string[], timeoutMs: number): Promise<{ code: number; out: string }> {

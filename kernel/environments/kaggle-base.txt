@@ -1,6 +1,6 @@
-# Colloq: lightweight Kaggle-style CPU stack, verified without network.
+# Aula Lab: lightweight Kaggle-style CPU stack, verified without network.
 # This is not the official Kaggle image.
-# colloq: from base
+# aulalab: from base
 numpy==2.4.6
 pandas==3.0.6
 scipy==1.17.1

@@ -382,7 +382,7 @@ function session(boards: Record<string, CouncilBoard>, kernels: Record<string, C
 }
 
 before(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-classes-council-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-classes-council-'))
   const stub = async (name: string, body: string) => {
     const file = path.join(dir, `${name}.mjs`)
     await writeFile(file, body)

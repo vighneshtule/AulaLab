@@ -34,7 +34,7 @@
  * container reads the notebook it mounts at /submission for the directive the
  * home's stand-in runner reads (competitions/fake-runner.ts):
  *
- *     # colloq-test: {"status": "cell_error", "cell": 1, "detail": "…"}
+ *     # aulalab-test: {"status": "cell_error", "cell": 1, "detail": "…"}
  *
  * and answers `exec … export_files.py status|file` the way the real harness's
  * files would read: progress.json while the notebook runs, then run.json, the
@@ -53,7 +53,7 @@
  * ends once FAKE_DOCKER_GATES/<name> exists).
  *
  * A CLASS CONTAINER IS A FAKE JUPYTER OF ITS OWN (remote-classes.md §17.2). A
- * `run -d` labelled colloq.kind=class-kernel — room-spec.ts ·
+ * `run -d` labelled aulalab.kind=class-kernel — room-spec.ts ·
  * machineRoomRunArgs, as the agent's kernel host lays it out — starts
  * tests/_fake-jupyter.mjs as a process on 127.0.0.1:0, working in the class
  * folder the run mounts at /workspace/<id> (read-only under the council's
@@ -71,13 +71,13 @@
  * label is), `ps` with and without `-a` by any labels, `stats`, `update`,
  * `exec` of the cgroup's script and of `rm -rf` in its own filesystem, `logs`,
  * `cp`, `port`, `start`, `rm`. Its kernels' exports of a council epoch go to
- * that filesystem's /tmp/colloq-epoch/<seq>, and a council container's
- * Jupyter loads epochs from its /colloq/epochs and runs attempts in its
- * /colloq/scratch (tests/_fake-jupyter.mjs · --epoch-dir, --epochs-dir,
+ * that filesystem's /tmp/aulalab-epoch/<seq>, and a council container's
+ * Jupyter loads epochs from its /aulalab/epochs and runs attempts in its
+ * /aulalab/scratch (tests/_fake-jupyter.mjs · --epoch-dir, --epochs-dir,
  * --scratch-dir). Besides
  * them: the class bridge (`network create`, `inspect`, `ls` by label), the
  * perimeter's helper (`run --privileged … sh -c`, which says
- * `colloq-perimeter: ok`), the council scratch space's helper (its line done
+ * `aulalab-perimeter: ok`), the council scratch space's helper (its line done
  * as root would do it to the folder: emptied, 1733 — the owner stays this
  * process's — or listed), the admission canary (its checks read off its own
  * script, every one held, its folder round-tripped), and a card probe
@@ -102,7 +102,7 @@ const GATES = process.env.FAKE_DOCKER_GATES
 const OWNER = process.env.FAKE_DOCKER_OWNER
 /** Where class containers' Jupyters write down their calls, when the test keeps them (FAKE_DOCKER_CALLS: a folder). */
 const CALLS = process.env.FAKE_DOCKER_CALLS
-const DIRECTIVE = /^\s*#\s*colloq-test:\s*(\{.*\})\s*$/m
+const DIRECTIVE = /^\s*#\s*aulalab-test:\s*(\{.*\})\s*$/m
 const FAKE_JUPYTER = path.join(path.dirname(fileURLToPath(import.meta.url)), '_fake-jupyter.mjs')
 
 // Every answer leaves through process.exit(), and a pipe write on macOS is asynchronous: blocking writes, or a 64 KB export arrives cut short (tests/_cli.mts says the same).
@@ -131,10 +131,10 @@ fs.mkdirSync(NETWORKS, { recursive: true })
 fs.appendFileSync(path.join(STATE, 'calls.log'), `${JSON.stringify({ at: Date.now(), pid: process.pid, args })}\n`)
 
 /** The class kernels' kind label (room-spec.ts · CLASS_KERNEL_LABEL) and the perimeter helper's (perimeter-core.ts · helperArgs). */
-const CLASS_KIND = 'colloq.kind=class-kernel'
-const PERIMETER_KIND = 'colloq.kind=room-perimeter'
+const CLASS_KIND = 'aulalab.kind=class-kernel'
+const PERIMETER_KIND = 'aulalab.kind=room-perimeter'
 /** The council scratch space's helper (runner-agent/council.ts · SCRATCH_HELPER_LABEL). */
-const SCRATCH_KIND = 'colloq.kind=council-scratch'
+const SCRATCH_KIND = 'aulalab.kind=council-scratch'
 /** The networks every daemon has. */
 const BUILTIN_NETWORKS = new Set(['bridge', 'host', 'none', 'default'])
 const MIB = 1024 * 1024
@@ -524,7 +524,7 @@ function resultFiles(c) {
     ? [{ cell_type: 'code', source: 'print(data)', metadata: {}, execution_count: 1, outputs: [{ output_type: 'stream', name: 'stdout', text: (read ?? raised ?? Buffer.alloc(0)).toString('utf8') }] }]
     : (JSON.parse(notebook.toString('utf8')).cells ?? []).map((cell, index) => ({ ...cell, ...(cell.cell_type === 'code' ? { execution_count: index + 1, outputs: [] } : {}) }))
   // The harness snapshots the notebook as each cell starts: a run cut short still has one to salvage.
-  files['executed.ipynb'] = Buffer.from(JSON.stringify({ nbformat: 4, nbformat_minor: 5, metadata: { colloq: 'fake-docker' }, cells: executedCells }))
+  files['executed.ipynb'] = Buffer.from(JSON.stringify({ nbformat: 4, nbformat_minor: 5, metadata: { aulalab: 'fake-docker' }, cells: executedCells }))
   const finished = phase === 'finished'
   files['progress.json'] = Buffer.from(JSON.stringify({
     phase: finished ? 'finished' : 'cell', cell: finished ? finalCell(c) : runningCell(c), cells: c.cells,
@@ -540,8 +540,8 @@ function resultFiles(c) {
     if (sample) {
       // The stand-in's answer, byte for byte (fake-runner.ts · run): its metric reads the directive from the head.
       const stamp = createHash('sha256').update(notebook).digest('hex').slice(0, 16)
-      const head = Object.keys(c.directive).length ? `# colloq-test: ${JSON.stringify(c.directive)}\n` : ''
-      answer = Buffer.concat([Buffer.from(head, 'utf8'), sample, Buffer.from(`\n# colloq-run: ${stamp}\n`, 'utf8'), read ?? Buffer.alloc(0)])
+      const head = Object.keys(c.directive).length ? `# aulalab-test: ${JSON.stringify(c.directive)}\n` : ''
+      answer = Buffer.concat([Buffer.from(head, 'utf8'), sample, Buffer.from(`\n# aulalab-run: ${stamp}\n`, 'utf8'), read ?? Buffer.alloc(0)])
       files['submission.csv'] = answer
     }
   }
@@ -642,17 +642,17 @@ async function startJupyter(c) {
   if (c.token) argv.push('--token', c.token)
   if (c.readOnly) argv.push('--read-only')
   // Its kernels' exports go to the container's own /tmp (COUNCIL_EPOCH_DIR), which `cp` copies out and `exec … rm` removes.
-  argv.push('--epoch-dir', path.join(privateRoot(c.name), 'tmp', 'colloq-epoch'))
+  argv.push('--epoch-dir', path.join(privateRoot(c.name), 'tmp', 'aulalab-epoch'))
   // A council container's two folders of its own (council.ts · councilMounts): its workers load epochs from the one, attempts work in the other.
-  const epochs = (c.mounts ?? []).find((mount) => mount.target === '/colloq/epochs')
-  const scratch = (c.mounts ?? []).find((mount) => mount.target === '/colloq/scratch')
+  const epochs = (c.mounts ?? []).find((mount) => mount.target === '/aulalab/epochs')
+  const scratch = (c.mounts ?? []).find((mount) => mount.target === '/aulalab/scratch')
   if (epochs) argv.push('--epochs-dir', epochs.source)
   if (scratch) argv.push('--scratch-dir', scratch.source)
   // The workers' gate (council.ts · councilGate, §9.6): its module's folder and the IPython config that loads it, both
   // mounted, make every kernel of the container born gated, as the config does in a real one.
-  const gate = (c.mounts ?? []).find((mount) => mount.target === '/colloq/gate')
+  const gate = (c.mounts ?? []).find((mount) => mount.target === '/aulalab/gate')
   const gateConfig = (c.mounts ?? []).find((mount) => mount.target === '/etc/ipython/ipython_kernel_config.py')
-  if (gate && gateConfig && fs.existsSync(path.join(gate.source, 'colloq_gate.py')) && fs.existsSync(gateConfig.source)) argv.push('--gate')
+  if (gate && gateConfig && fs.existsSync(path.join(gate.source, 'aulalab_gate.py')) && fs.existsSync(gateConfig.source)) argv.push('--gate')
   if (OWNER) argv.push('--owner', OWNER)
   // Its calls written down where `rm` leaves them (FAKE_DOCKER_CALLS, the agent's keepCalls): one file per container, every life of it.
   if (CALLS) {
@@ -881,7 +881,7 @@ async function run() {
   if (spec.labels.includes(CLASS_KIND)) return classRun(spec)
   if (spec.labels.includes(PERIMETER_KIND)) return perimeterRun(spec)
   if (spec.labels.includes(SCRATCH_KIND)) return scratchRun(spec)
-  if (spec.name?.startsWith('colloq-runner-canary-')) return canaryRun(spec)
+  if (spec.name?.startsWith('aulalab-runner-canary-')) return canaryRun(spec)
   // The card probe and the GPU smoke test, on a daemon with no card: what docker says there.
   if (spec.gpus !== null) return finish(125, '', 'docker: Error response from daemon: could not select device driver "" with capabilities: [[gpu]].')
   finish(125, '', `docker: fake docker runs only submission, class, perimeter and canary containers: ${args.join(' ')}`)
@@ -948,7 +948,7 @@ async function classRun(spec) {
     writeJson(path.join(STATE, 'knobs.json'), { ...asked, classRun: { ...asked.classRun, times: asked.classRun.times - 1 } })
     return finish(125, '', CLASS_RUN_FAILURES[asked.classRun.failure] ?? CLASS_RUN_FAILURES.other)
   }
-  const session = labelMap(spec.labels)['colloq.session'] ?? ''
+  const session = labelMap(spec.labels)['aulalab.session'] ?? ''
   const folder = spec.volumes.find((mount) => mount.target === `/workspace/${session}`)
   if (!folder) return finish(125, '', `docker: fake docker: a class container mounts its class folder at /workspace/${session}`)
   // A bind mount's missing source is made, as docker makes it.
@@ -972,10 +972,10 @@ async function classRun(spec) {
 function perimeterRun(spec) {
   if (!image(spec.image)) return finish(125, '', `docker: Error response from daemon: No such image: ${spec.image}.`)
   const said = knobs().perimeter ?? 'ok'
-  if (said === 'no-dockerd') return finish(20, 'colloq-perimeter: no dockerd process to enter')
-  if (said === 'no-iptables') return finish(21, 'colloq-perimeter: no iptables in the host\'s namespace')
-  if (said === 'fail') return finish(1, 'iptables: No chain/target/match by that name.\ncolloq-perimeter: failed')
-  finish(0, 'colloq-perimeter: ok')
+  if (said === 'no-dockerd') return finish(20, 'aulalab-perimeter: no dockerd process to enter')
+  if (said === 'no-iptables') return finish(21, 'aulalab-perimeter: no iptables in the host\'s namespace')
+  if (said === 'fail') return finish(1, 'iptables: No chain/target/match by that name.\naulalab-perimeter: failed')
+  finish(0, 'aulalab-perimeter: ok')
 }
 
 /**
@@ -1000,7 +1000,7 @@ function scratchRun(spec) {
   } finally {
     fs.chmodSync(folder, /chmod 1733/.test(script) ? 0o1733 : mode)
   }
-  finish(0, `${listed}colloq-scratch: ok`)
+  finish(0, `${listed}aulalab-scratch: ok`)
 }
 
 /**
@@ -1024,7 +1024,7 @@ function canaryRun(spec) {
   if ('folderRead' in verdict) verdict.folderRead = seed !== null
   if ('folderWritten' in verdict) verdict.folderWritten = seed !== null
   if (knobs().canary === 'fail' && 'metadataRefused' in verdict) verdict.metadataRefused = false
-  finish(0, `colloq-canary: ${JSON.stringify(verdict)}`)
+  finish(0, `aulalab-canary: ${JSON.stringify(verdict)}`)
 }
 
 /** `start`: a class container's fresh process (a fresh Python, its folder and packages kept); one running already is left as it is. */
@@ -1137,7 +1137,7 @@ function update() {
     const c = container(ref)
     if (!c) {
       // A class container that is gone says so, as docker does; the agent's own container and the runs had this fake's silent yes.
-      if (ref.startsWith('colloq-class-') || /^[a-f0-9]{64}$/.test(ref)) errors.push(`Error response from daemon: No such container: ${ref}`)
+      if (ref.startsWith('aulalab-class-') || /^[a-f0-9]{64}$/.test(ref)) errors.push(`Error response from daemon: No such container: ${ref}`)
       else done.push(ref)
       continue
     }
@@ -1281,7 +1281,7 @@ async function rm() {
 /**
  * `cp` between the host and a class container: a path inside its mounts is
  * the mounted folder's (the class folder, the council's epochs and scratch),
- * any other its own filesystem (`/tmp/colloq-epoch/…`). Docker's rule for
+ * any other its own filesystem (`/tmp/aulalab-epoch/…`). Docker's rule for
  * folders: copied into a folder that exists, as one that does not.
  */
 function cp() {

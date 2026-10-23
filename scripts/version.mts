@@ -1,5 +1,5 @@
 /**
- * Colloq's version: one number and all its copies.
+ * Aula Lab's version: one number and all its copies.
  *
  *   node --import tsx scripts/version.mts current
  *   node --import tsx scripts/version.mts check [--tag vX.Y.Z]
@@ -11,11 +11,11 @@
  * removed, only kept equal:
  *
  *   · package.json of the workspaces and of shared/ — npm requires the field in
- *     each, and `colloq --version` in a working copy reads cli/package.json
+ *     each, and `aulalab --version` in a working copy reads cli/package.json
  *     specifically;
  *   · package-lock.json — it records the versions of the root and of every
  *     workspace, and `npm ci` checks the lock against the manifests;
- *   · python/colloq/_version.py — hatchling takes the wheel version from it, and
+ *   · python/aulalab/_version.py — hatchling takes the wheel version from it, and
  *     the sdist, which is built without node, needs it as well;
  *   · .release-please-manifest.json — the last released version, for
  *     release-please.
@@ -47,7 +47,7 @@ import { parseArgs } from 'node:util'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
-export const PYTHON_VERSION_FILE = 'python/colloq/_version.py'
+export const PYTHON_VERSION_FILE = 'python/aulalab/_version.py'
 export const CHANGELOG_FILE = 'CHANGELOG.md'
 export const LOCK_FILE = 'package-lock.json'
 export const RELEASE_PLEASE_CONFIG = 'release-please-config.json'
@@ -415,7 +415,7 @@ export function simulateRelease(read: Reader, next: string): { files: Map<string
 
   files.set(RELEASE_PLEASE_MANIFEST, stringify({ '.': next }))
   const changelog = current(CHANGELOG_FILE) ?? ''
-  const entry = `## [${next}](https://github.com/example/colloq/compare/v0...v${next}) (2026-01-01)\n\n### Bug Fixes\n\n* something`
+  const entry = `## [${next}](https://github.com/example/aulalab/compare/v0...v${next}) (2026-01-01)\n\n### Bug Fixes\n\n* something`
   const at = changelog.search(RELEASE_PLEASE_INSERT_AT)
   files.set(
     CHANGELOG_FILE,

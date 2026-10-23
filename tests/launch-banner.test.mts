@@ -9,7 +9,7 @@ import path from 'node:path'
 import { logTail, renderBanner, teacherLink, tilde } from '../cli/src/launch-banner.js'
 
 function tmp(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-banner-'))
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-banner-'))
 }
 
 test('the link carries the setup token, and falls back to the panel without one', () => {
@@ -31,24 +31,24 @@ test('the banner is the link, where the files are, and how to stop', () => {
   const text = renderBanner(
     {
       link: 'http://localhost:3000/admin/t/abc',
-      workspaceDir: '/home/t/colloq/workspace',
-      logFile: '/home/t/colloq/.colloq.log',
+      workspaceDir: '/home/t/aulalab/workspace',
+      logFile: '/home/t/aulalab/.aulalab.log',
       detached: false,
       version: '0.2.1',
     },
     '/home/t',
   ).join('\n')
-  assert.match(text, /Colloq 0\.2\.1 is running\n/)
+  assert.match(text, /AulaLab 0\.2\.1 is running\n/)
   assert.match(text, /^ {4}http:\/\/localhost:3000\/admin\/t\/abc$/m)
-  assert.match(text, /Files {2}~\/colloq\/workspace/)
-  assert.match(text, /Log {4}~\/colloq\/\.colloq\.log/)
+  assert.match(text, /Files {2}~\/aulalab\/workspace/)
+  assert.match(text, /Log {4}~\/aulalab\/\.aulalab\.log/)
   assert.match(text, /Ctrl\+C/)
   const background = renderBanner(
     { link: 'x', workspaceDir: '/w', logFile: '/l', detached: true },
     '/home/t',
   ).join('\n')
-  assert.match(background, /Colloq is running in the background/)
-  assert.match(background, /colloq stop/)
+  assert.match(background, /AulaLab is running in the background/)
+  assert.match(background, /aulalab stop/)
   assert.doesNotMatch(background, /Ctrl\+C/)
 })
 

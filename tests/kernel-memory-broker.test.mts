@@ -76,7 +76,7 @@ before(async () => {
       const id = decodeURIComponent((req.url ?? '').split('/').pop() ?? '')
       return res.end(
         JSON.stringify({
-          url: `http://colloq-room-${id}.colloq.svc:8888`,
+          url: `http://aulalab-room-${id}.aulalab.svc:8888`,
           token: 't'.repeat(64),
           instanceId: `pod-${id}`,
           environment: body.environment,

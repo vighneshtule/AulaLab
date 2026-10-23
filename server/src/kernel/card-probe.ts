@@ -15,7 +15,7 @@
  * inventory of KERNEL_GPUS, its cache and its watch; the parsers are
  * re-exported from there, so nothing that imports them changes.
  *
- * WHY A CONTAINER. Inside the colloq-vast container nvidia-smi is not in the
+ * WHY A CONTAINER. Inside the aulalab-vast container nvidia-smi is not in the
  * app's image (deploy/vast/README.md lists it as a known gap), and neither is
  * it in a machine's agent; yet a card's memory decides the share every
  * submission on it is promised AND held to (competitions/gpu-math.ts ·
@@ -151,13 +151,13 @@ export function parseCardFacts(out: string): GpuCardFacts | null {
 
 /* ---------------------------------------------------- the probe container */
 
-/** Kernel images are `colloq-kernel:<environment>` (kernel/pool.ts · IMAGE_PREFIX). */
-const KERNEL_IMAGE = 'colloq-kernel'
+/** Kernel images are `aulalab-kernel:<environment>` (kernel/pool.ts · IMAGE_PREFIX). */
+const KERNEL_IMAGE = 'aulalab-kernel'
 
 /**
  * A kernel image to start the probe from, among those already on the
  * machine: `base-gpu` first, it is surely there on a machine with cards. Never
- * pulled (`--pull=never` below): `colloq-kernel` is not on any registry, and a
+ * pulled (`--pull=never` below): `aulalab-kernel` is not on any registry, and a
  * pull attempt is half a minute of nothing.
  */
 export async function kernelProbeImage(docker: DockerRead): Promise<string | null> {

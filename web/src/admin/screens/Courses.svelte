@@ -1591,7 +1591,7 @@
                     class="admin-link shrink-0 text-danger"
                     disabled={orphanBusy === page.id}
                     onclick={() => {
-                      if (!window.confirm(tr("admin.permanently.delete.page.p.it.cannot.be.restored.through.colloq", { p0: addressOf(page) }))) return
+                      if (!window.confirm(tr("admin.permanently.delete.page.p.it.cannot.be.restored.through.aulalab", { p0: addressOf(page) }))) return
                       void actOnOrphan(page.id, () => adminApi.erasePublication(page.id))
                     }}
                   >

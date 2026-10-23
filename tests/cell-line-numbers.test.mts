@@ -93,7 +93,7 @@ test('the gutter arrives with the lazily loaded CodeMirror, narrowed like everyt
   for (const name of ['lineNumbers', 'highlightActiveLineGutter']) {
     assert.equal((view.match(new RegExp(`\\b${name},`, 'g')) ?? []).length, 2, `${name} is not narrowed`)
   }
-  assert.match(EDITOR, /import\('\.\/cm-theme'\)\.then\(\(\{ cellNumbers, colloqTheme \}\) => \(\{ cellNumbers, colloqTheme \}\)\)/)
+  assert.match(EDITOR, /import\('\.\/cm-theme'\)\.then\(\(\{ cellNumbers, aulalabTheme \}\) => \(\{ cellNumbers, aulalabTheme \}\)\)/)
 })
 
 test('the numbers live in a compartment of their own, built with the value of the moment', () => {
@@ -104,7 +104,7 @@ test('the numbers live in a compartment of their own, built with the value of th
   assert.match(EDITOR, /numbers\.of\(numberExtensions\(cm, numbersOn\)\)/)
   // The compartment stands above the shared theme: listed earlier, it wins.
   assert.ok(
-    EDITOR.indexOf('numbers.of(numberExtensions(') < EDITOR.indexOf('cm.theme.colloqTheme,'),
+    EDITOR.indexOf('numbers.of(numberExtensions(') < EDITOR.indexOf('cm.theme.aulalabTheme,'),
     'the cells’ dressing is listed after the shared theme and loses to it',
   )
   assert.match(BUILD, /const numbers = new cm\.state\.Compartment\(\)/)
@@ -205,7 +205,7 @@ test('the numbers are faint, and the caret line’s darker, only in the cell bei
 test('the file editor never meets the cells’ dressing', () => {
   // The shared theme is what the file editor builds on, and it has no number
   // rules of its own: a gutter rule there would win over the file's.
-  assert.match(THEME, /export const colloqTheme: Extension = \[theme, syntaxHighlighting\(highlight\)\]/)
+  assert.match(THEME, /export const aulalabTheme: Extension = \[theme, syntaxHighlighting\(highlight\)\]/)
   const shared = body(THEME, 'const theme = EditorView.theme({')
   assert.doesNotMatch(shared, /cm-lineNumbers|cm-activeLineGutter|cm-gutterElement/)
   for (const file of ['web/src/components/editor/editor-theme.ts', 'web/src/components/editor/FileEditor.svelte']) {

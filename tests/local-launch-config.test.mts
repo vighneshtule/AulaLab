@@ -47,10 +47,10 @@ test('local configuration preserves data paths, ignores old public URL, and dist
   assert.equal(config.url, 'http://localhost:4300')
   assert.equal(config.dataDir, '/my/data')
   assert.equal(config.workspaceDir, '/example/files')
-  assert.equal(config.env.COLLOQ_STOP_KERNELS_ON_EXIT, '0')
+  assert.equal(config.env.AULALAB_STOP_KERNELS_ON_EXIT, '0')
   assert.equal(config.env.BIND_ADDR, '127.0.0.1')
   assert.equal(config.env.WORKSPACE_HOST_DIR, '')
-  assert.equal(config.env.COLLOQ_LOCAL_SESSION, '1')
+  assert.equal(config.env.AULALAB_LOCAL_SESSION, '1')
   assert.equal(launchConfig('/example', parseLaunchArgs(['--port', '4400']), {}).env.PORT, '4400')
 })
 
@@ -75,7 +75,7 @@ test('the server counts days in the laptop\'s own time zone unless TZ says other
 })
 
 test('source fingerprint catches content changes, ignores generated files, and verifies both output bundles', () => {
-  const root = mkdtempSync(join(tmpdir(), 'colloq-launch-config-'))
+  const root = mkdtempSync(join(tmpdir(), 'aulalab-launch-config-'))
   try {
     for (const dir of ['web/src', 'server/src', 'shared', 'web/dist', 'server/dist'])
       mkdirSync(join(root, dir), { recursive: true })

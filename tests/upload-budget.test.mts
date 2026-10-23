@@ -150,7 +150,7 @@ test('a cross-site POST into the seminar folder does not go through', async () =
 /** Cut off an upload in the middle of the body: the headers went out, the file is half sent. */
 function cutOff(id: string): Promise<void> {
   return new Promise((resolve) => {
-    const boundary = '----colloqcut'
+    const boundary = '----aulalabcut'
     const req = http.request(
       `${base}/api/sessions/${id}/files`,
       {

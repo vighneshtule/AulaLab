@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# DNS records for colloq.ru.
+# DNS records for example.edu.
 #
 # The script brings the zone to the required shape instead of topping it up
 # with records. The difference is not cosmetic: the domain came from Reg.ru
@@ -12,17 +12,17 @@
 #
 # The main point of it all: **grey cloud everywhere**. Orange means that the
 # visitor goes to Cloudflare's edge addresses, and those do not open from
-# Russia: the landing page on colloq.sleep3r.ru did not load right up to the
-# day proxying was taken off it. The colloq.ru apex came proxied, and that is
+# Russia: the landing page on aulalab.sleep3r.ru did not load right up to the
+# day proxying was taken off it. The example.edu apex came proxied, and that is
 # fixed here.
 #
 # The token is taken from the .env of the main repository; it needs Zone:Read
-# and DNS:Edit on the colloq.ru zone.
+# and DNS:Edit on the example.edu zone.
 #
 # There are two entry points:
 #
 #   scripts/dns.sh                         bring the whole zone into shape:
-#                                          landing page, www and *.colloq.ru to the relay
+#                                          landing page, www and *.example.edu to the relay
 #   scripts/dns.sh point <name> <address>  one A record: name → machine address
 #
 # The second did not appear for convenience. The direct mode `make host-direct`
@@ -44,7 +44,7 @@ if [[ "${1:-}" == point ]]; then
   POINT_ADDR=${3:?scripts/dns.sh point <name> <address>}
 fi
 
-# ../.env, not ../colloq/.env: the script came from a neighbouring repository,
+# ../.env, not ../aulalab/.env: the script came from a neighbouring repository,
 # where the main clone lay next to it. Here it lies one level up, and the old
 # path did not exist in any clone: instead of "no file" a person read "a token
 # with Zone:Read is needed" and went off to check the permissions of a token
@@ -57,58 +57,58 @@ fi
 # front of a builtin as temporary and removes it on return, while read_env is
 # called later and by then needs the real settings file.
 #
-# COLLOQ_HOME wins over "one level up": for colloq installed through pip, one
+# AULALAB_HOME wins over "one level up": for aulalab installed through pip, one
 # level up holds only the application directory (read-only and wiped by an
 # update), while the .env with CF_TOKEN is in the state directory. Without the
 # variable everything is as before: ../.env, that is, the repository root.
-ENV_FILE="${COLLOQ_HOME:-..}/.env"
+ENV_FILE="${AULALAB_HOME:-..}/.env"
 . ./lib.sh
 
-DOMAIN=${DOMAIN:-colloq.ru}
+DOMAIN=${DOMAIN:?set DOMAIN to a domain you control}
 # Where the seminars point. The same address as RELAY_ADDR on the instances,
 # and it is taken from the same place: from .env, not from a hard-coded string.
 #
 # The hard-coded default here was a trap: the script did not read RELAY_ADDR
 # from .env at all, and after the relay moved, any run to "put the zone in
 # order" (and that is the only way to get a name back after host-direct)
-# silently returned `*.colloq.ru` to the old address, that is, sent every
+# silently returned `*.example.edu` to the old address, that is, sent every
 # seminar to a dead machine. No address, no record: this is said out loud
 # below.
 RELAY="${RELAY_ADDR:-$(read_env RELAY_ADDR)}"
 # Whose page on GitHub Pages: the CNAME target for www.
-PAGES_HOST=${PAGES_HOST:-colloq-edu.github.io}
+PAGES_HOST=${PAGES_HOST:-vighneshtule.github.io}
 
-if [[ -z "${CF_TOKEN_COLLOQ:-}" ]]; then
+if [[ -z "${CF_TOKEN_AULALAB:-}" ]]; then
   # `|| true` inside read_env: the file exists but has no such line; that is
   # "a token is needed", not a silent exit via set -e without a single word on
   # the screen.
-  CF_TOKEN_COLLOQ=$(read_env CF_TOKEN)
+  CF_TOKEN_AULALAB=$(read_env CF_TOKEN)
 fi
-: "${CF_TOKEN_COLLOQ:?a token with Zone:Read and DNS:Edit on ${DOMAIN} is needed}"
+: "${CF_TOKEN_AULALAB:?a token with Zone:Read and DNS:Edit on ${DOMAIN} is needed}"
 
 # The zone ID lies in the same .env, on the line next to the token, but it was
 # read only from the environment. Because of that it was never used: the zone
 # was looked up with a request, and to a token without the right to list zones
 # the script answered "this token cannot see the zone", while its id was right
 # at hand.
-if [[ -z "${CF_ZONE_COLLOQ:-}" ]]; then
-  CF_ZONE_COLLOQ=$(read_env CF_ZONE)
+if [[ -z "${CF_ZONE_AULALAB:-}" ]]; then
+  CF_ZONE_AULALAB=$(read_env CF_ZONE)
 fi
 
 API=https://api.cloudflare.com/client/v4
-AUTH=(-H "Authorization: Bearer $CF_TOKEN_COLLOQ" -H "content-type: application/json")
+AUTH=(-H "Authorization: Bearer $CF_TOKEN_AULALAB" -H "content-type: application/json")
 
 RED=$'\033[31m'; OFF=$'\033[0m'
 die() { printf '%s%s%s\n' "$RED" "$*" "$OFF" >&2; exit 1; }
 
 # zone_id_for NAME: which zone this name lives in.
 #
-# Asking `?name=hse.colloq.ru` is useless: there is no such zone, and
+# Asking `?name=hse.example.edu` is useless: there is no such zone, and
 # Cloudflare answers that not with an error but with an empty list. So the
 # token's list of zones is taken, and from it the longest one that the
-# requested name ends with: for hse.colloq.ru that is colloq.ru, and the same
+# requested name ends with: for hse.example.edu that is example.edu, and the same
 # rule works for someone else's zone, if one day an instance stands outside
-# colloq.ru.
+# example.edu.
 #
 # And no status parameter. Its allowed values are active, pending and the
 # like; "all" is not among them, and Cloudflare again does not complain about
@@ -117,10 +117,10 @@ die() { printf '%s%s%s\n' "$RED" "$*" "$OFF" >&2; exit 1; }
 zone_id_for() {
   local want=$1 id=""
   # An explicitly named zone wins over the search, but only if it is that very
-  # zone: CF_ZONE of colloq.ru for a name in someone else's zone is not a hint
+  # zone: CF_ZONE of example.edu for a name in someone else's zone is not a hint
   # but a mistake that writes the record in the wrong place.
-  if [[ -n "${CF_ZONE_COLLOQ:-}" && ( "$want" == "$DOMAIN" || "$want" == *".$DOMAIN" ) ]]; then
-    printf '%s' "$CF_ZONE_COLLOQ"
+  if [[ -n "${CF_ZONE_AULALAB:-}" && ( "$want" == "$DOMAIN" || "$want" == *".$DOMAIN" ) ]]; then
+    printf '%s' "$CF_ZONE_AULALAB"
     return 0
   fi
   id=$(curl -s "${AUTH[@]}" "$API/zones?per_page=200" | WANT="$want" python3 -c '

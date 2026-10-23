@@ -207,10 +207,10 @@ async function cell(kernel: JupyterKernel, code: string): Promise<{ status: stri
   return { status, seen, errors }
 }
 
-/** A silent service run's report, key `colloq`: what the guard, the help and the council read. */
+/** A silent service run's report, key `aulalab`: what the guard, the help and the council read. */
 async function report(kernel: JupyterKernel, code: string, expression: string): Promise<{ status?: string; data?: Record<string, string>; ename?: string } | undefined> {
   let raw: unknown
-  await kernel.execute(code, { ...handlers(), onUserExpressions: (values) => (raw = values.colloq) }, { silent: true, storeHistory: false, userExpressions: { colloq: expression } })
+  await kernel.execute(code, { ...handlers(), onUserExpressions: (values) => (raw = values.aulalab) }, { silent: true, storeHistory: false, userExpressions: { aulalab: expression } })
   return raw as { status?: string; data?: Record<string, string>; ename?: string } | undefined
 }
 
@@ -549,8 +549,8 @@ test('a class container on the fake docker is a fake Jupyter of its own under ho
   const bridge = await m.docker(networkCreateArgs(MACHINE_ROOM_SUBNET, scope))
   assert.equal(bridge.code, 0, bridge.out)
   assert.equal((await m.docker(subnets)).out, MACHINE_ROOM_SUBNET)
-  assert.equal((await m.docker(['network', 'ls', '-q', '--filter', 'label=colloq.kind=class-network'])).out, bridge.out.slice(0, 12), 'the bridge made, and it alone')
-  assert.equal((await m.docker(['network', 'ls', '-q', '--filter', 'label=colloq.kind=room-network'])).out, '')
+  assert.equal((await m.docker(['network', 'ls', '-q', '--filter', 'label=aulalab.kind=class-network'])).out, bridge.out.slice(0, 12), 'the bridge made, and it alone')
+  assert.equal((await m.docker(['network', 'ls', '-q', '--filter', 'label=aulalab.kind=room-network'])).out, '')
 
   // Started with the argv the agent lays out (room-spec.ts · machineRoomRunArgs): a container id, a port on the loopback.
   fs.mkdirSync(path.join(m.root, 'rooms', sessionId), { recursive: true })
@@ -566,11 +566,11 @@ test('a class container on the fake docker is a fake Jupyter of its own under ho
   assert.equal((await fetch(`${url}/api/status`)).status, 403, 'and only with it')
 
   // The kernel host's questions (kernels.ts · byName, listed, the census): in docker's own --format, a missing name said so.
-  const byName = await m.docker(['inspect', '--type', 'container', '--format', '{{.Id}}\t{{.State.Status}}\t{{index .Config.Labels "colloq.placement"}}\t{{index .Config.Labels "colloq.profile"}}', name])
+  const byName = await m.docker(['inspect', '--type', 'container', '--format', '{{.Id}}\t{{.State.Status}}\t{{index .Config.Labels "aulalab.placement"}}\t{{index .Config.Labels "aulalab.profile"}}', name])
   assert.equal(byName.out, `${id}\trunning\t${sessionId}:room:1\t${profileFor('blocked')}`)
-  const listed = await m.docker(['ps', '-a', '--no-trunc', '--filter', 'label=colloq.kind=class-kernel', '--filter', `label=${m.instanceLabel}`, '--format', '{{.ID}}\t{{.State}}\t{{.Label "colloq.placement"}}'])
+  const listed = await m.docker(['ps', '-a', '--no-trunc', '--filter', 'label=aulalab.kind=class-kernel', '--filter', `label=${m.instanceLabel}`, '--format', '{{.ID}}\t{{.State}}\t{{.Label "aulalab.placement"}}'])
   assert.equal(listed.out, `${id}\trunning\t${sessionId}:room:1`)
-  assert.equal((await m.docker(['ps', '-aq', '--filter', 'label=colloq.kind=room-kernel'])).out, '', 'a class container is never a home\'s room')
+  assert.equal((await m.docker(['ps', '-aq', '--filter', 'label=aulalab.kind=room-kernel'])).out, '', 'a class container is never a home\'s room')
   const census = await m.docker(['inspect', '--format', '{{.Name}}\t{{.State.Status}}\t{{.HostConfig.Memory}}\t{{.HostConfig.NanoCpus}}', name, `${name}-gone`])
   assert.equal(census.code, 1)
   assert.match(census.out, new RegExp(`^/${name}\\trunning\\t${2048 * 1024 * 1024}\\t2000000000$`, 'm'))
@@ -590,7 +590,7 @@ test('a class container on the fake docker is a fake Jupyter of its own under ho
   await refused(['ps', '-a', '--format', '{{.Nmes}}'], /can't evaluate field Nmes/)
   await refused(['ps', '-a', '--filter', 'status=running'], /--filter status=running is not in this fake/)
   await refused(['network', 'ls', '--filter', 'nosuch=x'], /invalid filter 'nosuch'/)
-  assert.equal((await m.docker(['inspect', '--format', '{{index .Config.Labels "colloq.none"}}|{{.Config.Labels.none}}', name])).out, '|<no value>')
+  assert.equal((await m.docker(['inspect', '--format', '{{index .Config.Labels "aulalab.none"}}|{{.Config.Labels.none}}', name])).out, '|<no value>')
   const usage = '{{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}'
   assert.equal((await m.docker(['stats', '--no-stream', '--format', usage, name])).out, `${name}\t120MiB / 2048MiB\t0.30%`)
   m.classStats(name, { usedMb: 900, cpuPercent: 87.5 })
@@ -642,9 +642,9 @@ test('a class container on the fake docker is a fake Jupyter of its own under ho
   assert.equal(fs.readFileSync(path.join(out, 'out.txt'), 'utf8'), 'hi')
   fs.mkdirSync(path.join(out, 'epoch'))
   fs.writeFileSync(path.join(out, 'epoch', 'manifest.json'), '{}')
-  assert.match((await m.docker(['cp', path.join(out, 'epoch', 'manifest.json'), `${name}:/tmp/colloq-epoch/1/`])).out, /does not exist/, 'a folder named with a slash must be there')
-  assert.equal((await m.docker(['cp', path.join(out, 'epoch'), `${name}:/tmp/colloq-epoch`])).code, 0)
-  assert.equal((await m.docker(['cp', `${name}:/tmp/colloq-epoch/manifest.json`, path.join(out, 'back.json')])).code, 0)
+  assert.match((await m.docker(['cp', path.join(out, 'epoch', 'manifest.json'), `${name}:/tmp/aulalab-epoch/1/`])).out, /does not exist/, 'a folder named with a slash must be there')
+  assert.equal((await m.docker(['cp', path.join(out, 'epoch'), `${name}:/tmp/aulalab-epoch`])).code, 0)
+  assert.equal((await m.docker(['cp', `${name}:/tmp/aulalab-epoch/manifest.json`, path.join(out, 'back.json')])).code, 0)
   assert.equal(fs.readFileSync(path.join(out, 'back.json'), 'utf8'), '{}')
   fs.rmSync(out, { recursive: true, force: true })
 
@@ -660,7 +660,7 @@ test('a class container on the fake docker is a fake Jupyter of its own under ho
   // Removed: gone from every list, their processes ended, nothing of them left on the machine but the folder.
   const pids = m.classContainers().map((c) => c.pid)
   assert.equal((await m.docker(['rm', '-f', id, council.id])).code, 0)
-  assert.equal((await m.docker(['ps', '-aq', '--filter', 'label=colloq.kind=class-kernel'])).out, '')
+  assert.equal((await m.docker(['ps', '-aq', '--filter', 'label=aulalab.kind=class-kernel'])).out, '')
   assert.deepEqual(pids.map(alive), [false, false])
   assert.equal(m.classContainers().length, 0)
   assert.ok(fs.existsSync(path.join(m.root, 'rooms', sessionId, 'out.txt')))
@@ -724,8 +724,8 @@ test('the agent\'s kernel host drives the fake docker as it drives docker: start
   assert.deepEqual(host.facts(), { hostNetwork: true, perimeter: 'ok', mode: 'blocked', canary: 'ok', sameDaemon: false })
   const calls = m.dockerCalls().map((call) => call.args)
   assert.ok(calls.some((args) => args[0] === 'network' && args[1] === 'create'), 'the class bridge was made')
-  assert.ok(calls.some((args) => args[0] === 'run' && args.includes('--privileged') && args.includes('colloq.kind=room-perimeter')), 'the perimeter\'s helper ran')
-  assert.ok(calls.some((args) => args[0] === 'run' && args.some((arg) => arg.startsWith('colloq-runner-canary-'))), 'the canary ran')
+  assert.ok(calls.some((args) => args[0] === 'run' && args.includes('--privileged') && args.includes('aulalab.kind=room-perimeter')), 'the perimeter\'s helper ran')
+  assert.ok(calls.some((args) => args[0] === 'run' && args.some((arg) => arg.startsWith('aulalab-runner-canary-'))), 'the canary ran')
   const container = m.classContainer(sessionId, 'room')!
   assert.equal(held.container, container.id)
   assert.equal(held.revision, remoteRevisionDigest(kernel.registryRef), 'the ready echo names the revision it started from')
@@ -978,13 +978,13 @@ test('the fake Jupyter answers each hidden module\'s report by its module, and t
 
     // The guard's report is the guard's alone; the help and the council read their own, as the server parses them.
     assert.equal((await report(kernel, 'pass', GUARD_REPORT_EXPR))?.ename, 'KeyError', 'a process without the guard cannot evaluate its report')
-    const brief = await report(kernel, `__import__('sys').modules['_colloq_inspect'].brief(globals(), 'df')`, INSPECT_REPORT_EXPR)
+    const brief = await report(kernel, `__import__('sys').modules['_aulalab_inspect'].brief(globals(), 'df')`, INSPECT_REPORT_EXPR)
     assert.deepEqual(JSON.parse(brief!.data!['text/plain']!), { found: true, brief: { type: 'DataFrame', dims: '1460 × 81' } })
-    const entry = await report(kernel, `__import__('sys').modules["_colloq_council"].enter(globals(), 1, {})`, COUNCIL_REPORT_EXPR)
+    const entry = await report(kernel, `__import__('sys').modules["_aulalab_council"].enter(globals(), 1, {})`, COUNCIL_REPORT_EXPR)
     assert.equal(JSON.parse(entry!.data!['text/plain']!).copied, 1)
-    const exported = await report(kernel, `__import__('sys').modules["_colloq_council"].export(globals(), "/tmp/colloq-epoch/1", 1, {})`, COUNCIL_REPORT_EXPR)
+    const exported = await report(kernel, `__import__('sys').modules["_aulalab_council"].export(globals(), "/tmp/aulalab-epoch/1", 1, {})`, COUNCIL_REPORT_EXPR)
     assert.deepEqual(JSON.parse(exported!.data!['text/plain']!).carried, ['x'], 'the export placeholder carries the kernel\'s bindings')
-    const loaded = await report(kernel, `__import__('sys').modules["_colloq_council"].load(globals(), "manifest", "body", {})`, COUNCIL_REPORT_EXPR)
+    const loaded = await report(kernel, `__import__('sys').modules["_aulalab_council"].load(globals(), "manifest", "body", {})`, COUNCIL_REPORT_EXPR)
     assert.equal(JSON.parse(loaded!.data!['text/plain']!).oomScoreAdj, 1000)
 
     // The knobs, over HTTP as a test in another process turns them: an interrupt held and let go, a slow comeback.

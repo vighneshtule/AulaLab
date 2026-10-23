@@ -31,7 +31,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { db } from '../../db.js'
-import { COLLOQ_VERSION } from '../../version.js'
+import { AULALAB_VERSION } from '../../version.js'
 import {
   REMOTE_ATTEMPTS_MAX,
   REMOTE_BUILD_DEV,
@@ -64,7 +64,7 @@ db.exec(`
    * A machine. \`state\` is the owner's word and the machine's own leave:
    * active, draining (the owner's «Осушить», or a quarantine), revoked (the
    * owner's «Отключить»: its secret is refused from then on), left (it revoked
-   * itself on colloq-host runner leave). Whether it is heard, outdated or
+   * itself on aulalab-host runner leave). Whether it is heard, outdated or
    * silent is worked out on this server's clock (liveness.ts), never stored.
    */
   CREATE TABLE IF NOT EXISTS remote_runners (
@@ -289,7 +289,7 @@ export function useHomeRunnerBuild(build: string | null): void {
 
 /** Home's release as the sync reply names it (REMOTE_VERSION): «устарела: на ней 0.23.0, на сервере 0.24.0». */
 export function homeVersion(): string {
-  return REMOTE_VERSION.test(COLLOQ_VERSION) ? COLLOQ_VERSION : '0.0.0-dev'
+  return REMOTE_VERSION.test(AULALAB_VERSION) ? AULALAB_VERSION : '0.0.0-dev'
 }
 
 /* ---------------------------------------------------------------- machines */
@@ -591,7 +591,7 @@ export function resumeRunnerClasses(id: string, now = Date.now()): { runner: Run
 /* ------------------------------------------------------- enrollment codes */
 
 /**
- * How many machines one code enrolls. colloq-host runner-code takes up to a
+ * How many machines one code enrolls. aulalab-host runner-code takes up to a
  * hundred (a fleet for an exam), the panel's dialog offers fewer; one bound
  * for both doors, so the code the console mints is never refused by the
  * function the panel uses.
@@ -610,7 +610,7 @@ export interface MintCode {
   namePrefix?: string | null
   /** Its machines take classes («Принимать занятия», D2); never together with `trusted` (D3). Off unless asked. */
   classes?: boolean
-  /** The staff member, or `colloq-host` for a code minted on the instance's console (ops/runner-code.ts). */
+  /** The staff member, or `aulalab-host` for a code minted on the instance's console (ops/runner-code.ts). */
   createdBy: string
 }
 
@@ -735,7 +735,7 @@ export function codeJoins(codeSha256: string): number {
  * ENDING A CODE (the owner's «Отменить», and «Отключить все»). A code is a
  * door for its machines and its hours, and until it is spent or expires
  * whoever holds it enrolls a fresh machine — trusted, if the code was: it
- * sits in clear in every machine's COLLOQ_RUNNER_JOIN, in a Vast on-start
+ * sits in clear in every machine's AULALAB_RUNNER_JOIN, in a Vast on-start
  * script, in a chat. Disconnecting the machines left it open, and only
  * sqlite on the host closed it. Ended, it has no use left and has expired
  * now: the row stays (the dialog still counts what it enrolled, and the
@@ -890,7 +890,7 @@ export function saveWantedCompetitions(runnerId: string, wanted: ReadonlyMap<str
   db.prepare('UPDATE remote_runners SET wanted = ? WHERE id = ?').run(JSON.stringify(value), runnerId)
 }
 
-/** The machine revoked itself (colloq-host runner leave): its secret is refused from now on. */
+/** The machine revoked itself (aulalab-host runner leave): its secret is refused from now on. */
 export function markRunnerLeft(id: string, now = Date.now()): void {
   db.prepare("UPDATE remote_runners SET state = 'left', revoked_at = ? WHERE id = ? AND state IN ('active', 'draining')").run(now, id)
 }

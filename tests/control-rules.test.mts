@@ -188,7 +188,7 @@ test('whoever owns the running cell can stop it, or the teacher can', () => {
 /* ------------------------------------------- and all this with the defaults */
 
 test("in a room where nothing was decided, nothing in a student's work is refused", () => {
-  // A rule that refuses everyone is not a rule. The default is Colloq as it
+  // A rule that refuses everyone is not a rule. The default is Aula Lab as it
   // has been: the whole room can work in the notebook and in the shell.
   const id = room({})
   const messages: ControlClientMessage[] = [

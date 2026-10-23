@@ -4,7 +4,7 @@
  *
  * The university's A100 is cut into MIG slices, two or four of them, while
  * there are more seminars in a day. All that ties a slice to a room is the
- * `colloq.gpu` label on its container: a map in memory dies with the server,
+ * `aulalab.gpu` label on its container: a map in memory dies with the server,
  * while the container of yesterday's class lives on. Hence three rules that
  * break silently and that are pinned down here: a room with its own container
  * gets THE SAME slice (otherwise the container is recreated and the seminar's
@@ -202,14 +202,14 @@ function valueOf(args: string[], flag: string): string | null {
   return at >= 0 ? (args[at + 1] ?? null) : null
 }
 
-const room = { sessionId: 'seminar1', env: 'gpu', mount: '/srv/workspace/seminar1', network: 'colloq-rooms', publish: true }
+const room = { sessionId: 'seminar1', env: 'gpu', mount: '/srv/workspace/seminar1', network: 'aulalab-rooms', publish: true }
 
 test('a GPU room gets the device, the label and shared memory', () => {
   const args = runArgs({ ...room, gpu: 'MIG-GPU-a1b2/1/0' })
   assert.equal(valueOf(args, '--gpus'), 'device=MIG-GPU-a1b2/1/0')
   // The label is the only thing that survives a server restart, so it is the
   // answer to the question "who holds the slice".
-  assert.ok(args.includes('colloq.gpu=MIG-GPU-a1b2/1/0'), 'there is no label with the slice')
+  assert.ok(args.includes('aulalab.gpu=MIG-GPU-a1b2/1/0'), 'there is no label with the slice')
   // docker's default of 64 MB breaks a DataLoader with several workers.
   assert.ok(args.includes('--shm-size=1g'), 'there is no --shm-size')
 })
@@ -218,23 +218,23 @@ test('an ordinary room starts exactly as before', () => {
   const args = runArgs({ ...room, env: 'cv', gpu: null })
   assert.ok(!args.includes('--gpus'), 'an ordinary room was given a device')
   assert.ok(
-    !args.some((arg) => arg.startsWith('--shm-size') || arg.startsWith('colloq.gpu=')),
+    !args.some((arg) => arg.startsWith('--shm-size') || arg.startsWith('aulalab.gpu=')),
     'an ordinary room got something extra',
   )
   // Everything from before is in place: the image by environment name, only
   // this room's folder, the host loopback and the limits.
-  assert.equal(args[args.length - 1], 'colloq-kernel:cv')
+  assert.equal(args[args.length - 1], 'aulalab-kernel:cv')
   assert.equal(valueOf(args, '-v'), '/srv/workspace/seminar1:/workspace/seminar1')
   assert.equal(valueOf(args, '-p'), '127.0.0.1:0:8888')
   // The memory default since 13 Sep 2026 is 4g for a plain environment
   // (admin/resource-settings.ts), written in megabytes like every limit.
   assert.ok(args.includes('--memory=4096m') && args.includes('--cpus=2'))
-  assert.ok(args.includes('colloq.session=seminar1'))
+  assert.ok(args.includes('aulalab.session=seminar1'))
 })
 
 test('in network mode the port is not published at all', () => {
-  const args = runArgs({ ...room, network: 'colloq', publish: false, gpu: null })
-  assert.equal(valueOf(args, '--network'), 'colloq')
+  const args = runArgs({ ...room, network: 'aulalab', publish: false, gpu: null })
+  assert.equal(valueOf(args, '--network'), 'aulalab')
   assert.ok(!args.includes('-p'), "the room's Jupyter was exposed on the host")
 })
 

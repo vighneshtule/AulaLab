@@ -265,11 +265,11 @@ async function route(home: FakeHome, call: Call, url: URL, req: http.IncomingMes
   const file = /^attempts\/([a-f0-9]{32})\/files\/(submission\.csv|executed\.ipynb)$/.exec(rest)
   if (file && call.method === 'PUT') {
     // The upload's headers, as home's router checks them before a byte of the body (upload.ts · parseRemoteUploadMeta).
-    const meta = { name: file[2], encoding: req.headers['content-encoding'], sha256: req.headers['x-colloq-sha256'], bytes: req.headers['x-colloq-bytes'] }
+    const meta = { name: file[2], encoding: req.headers['content-encoding'], sha256: req.headers['x-aulalab-sha256'], bytes: req.headers['x-aulalab-bytes'] }
     const refused = conforming(home, call, () => parseRemoteUploadMeta(meta))
     if (refused) return refused
     const gunzipped = zlib.gunzipSync(call.raw)
-    const declared = { sha256: String(req.headers['x-colloq-sha256'] ?? ''), bytes: Number(req.headers['x-colloq-bytes'] ?? -1) }
+    const declared = { sha256: String(req.headers['x-aulalab-sha256'] ?? ''), bytes: Number(req.headers['x-aulalab-bytes'] ?? -1) }
     if (sha256(gunzipped) !== declared.sha256 || gunzipped.length !== declared.bytes) return { status: 422, json: { error: 'mismatch' } }
     if (home.onUpload) {
       const answer = await home.onUpload({ attemptId: file[1]!, name: file[2]!, ...declared, file: gunzipped }, call)
@@ -297,7 +297,7 @@ export function serveBlob(body: Buffer | undefined, range: string | undefined): 
 
 /* ------------------------------------------------------------- leases */
 
-export const REVISION = { id: 'a'.repeat(32), ref: `ghcr.io/colloq-edu/colloq-kernel@sha256:${'1'.repeat(64)}` }
+export const REVISION = { id: 'a'.repeat(32), ref: `ghcr.io/vighneshtule/aulalab-kernel@sha256:${'1'.repeat(64)}` }
 export const DIFF_IDS = [`sha256:${'2'.repeat(64)}`, `sha256:${'3'.repeat(64)}`]
 export const LAYERS = layersFingerprint('linux', 'amd64', DIFF_IDS)
 
@@ -324,7 +324,7 @@ export function makeLease(partial: Partial<RemoteLease> & { data: string }): Rem
     seq: ++leaseSeq,
     competitionId: 'compabcd',
     submissionId,
-    container: `colloq-comp-${submissionId}-${hex(4)}-run`,
+    container: `aulalab-comp-${submissionId}-${hex(4)}-run`,
     deadlineMs: 30 * 60_000,
     revision: { id: REVISION.id, ref: REVISION.ref, layers: LAYERS },
     harness: HARNESS_REVISION,
@@ -379,8 +379,8 @@ export interface FakeAgentDocker {
   selfNetwork: string
   selfImage: string
   /**
-   * A Colloq home on this daemon (D20), by each sign the agent looks for: its
-   * server's container (`colloq.kind=app`), its rooms (`room-kernel`), its
+   * A Aula Lab home on this daemon (D20), by each sign the agent looks for: its
+   * server's container (`aulalab.kind=app`), its rooms (`room-kernel`), its
    * rooms' network (`room-network`) — the last two are all a home on the host
    * itself (make dev, the pip CLI) leaves on the daemon.
    */
@@ -420,7 +420,7 @@ export interface FakeClassContainer {
 /** A class container the fake daemon holds, as an earlier life of the agent would have left it (adoption). */
 export function classContainer(docker: FakeAgentDocker, input: { name: string; labels: string[]; env?: Record<string, string>; status?: FakeClassContainer['status']; memoryMb?: number; cpus?: number }): FakeClassContainer {
   const made: FakeClassContainer = {
-    id: hex(32), name: input.name, args: [], labels: input.labels, env: input.env ?? {}, mounts: [], image: 'colloq-revision:x',
+    id: hex(32), name: input.name, args: [], labels: input.labels, env: input.env ?? {}, mounts: [], image: 'aulalab-revision:x',
     status: input.status ?? 'running', port: docker.nextPort++, memoryMb: input.memoryMb ?? 4096, cpus: input.cpus ?? 2,
     startedAt: Date.now(), oomKilled: false, exit: 0, kills: 0, usedMb: 100, cpuPercent: 1, cardMb: null, logs: [],
   }
@@ -433,7 +433,7 @@ function classOf(docker: FakeAgentDocker, ref: string): FakeClassContainer | und
   return docker.classes.get(ref.replace(/^\//, '')) ?? [...docker.classes.values()].find((found) => ref.length >= 12 && found.id.startsWith(ref))
 }
 
-const CLASS_KIND = 'colloq.kind=class-kernel'
+const CLASS_KIND = 'aulalab.kind=class-kernel'
 
 /** What the fake daemon says to a call about class containers, the bridge, the helper or the canary; null — not such a call. */
 function classAnswer(docker: FakeAgentDocker, args: string[]): DockerResult | null {
@@ -452,7 +452,7 @@ function classAnswer(docker: FakeAgentDocker, args: string[]): DockerResult | nu
     docker.scratchRuns.push({ folder, script })
     return docker.scratchFails ?? scratchHelperDoes(folder, script)
   }
-  if (command === 'run' && args.some((arg) => arg.startsWith('colloq-runner-canary-'))) {
+  if (command === 'run' && args.some((arg) => arg.startsWith('aulalab-runner-canary-'))) {
     if (docker.canary) return docker.canary
     // Every check held, and the folder took the file both ways: the seed the agent wrote, read back as the canary's.
     const mount = flagValue('-v')?.split(':')[0]
@@ -460,7 +460,7 @@ function classAnswer(docker: FakeAgentDocker, args: string[]): DockerResult | nu
       try { fs.writeFileSync(path.join(mount, 'canary'), fs.readFileSync(path.join(mount, 'seed'))) } catch { /* no folder: the agent says so */ }
     }
     const checks = ['uid', 'capEff', 'noNewPrivs', 'noDockerSocket', 'noAgentFiles', 'metadataRefused', 'hostRefused', 'lanRefused', 'ipv6Refused', 'loopbackRefused', 'folderRead', 'folderWritten']
-    return { code: 0, out: `colloq-canary: ${JSON.stringify(Object.fromEntries(checks.map((check) => [check, true])))}` }
+    return { code: 0, out: `aulalab-canary: ${JSON.stringify(Object.fromEntries(checks.map((check) => [check, true])))}` }
   }
   if (command === 'run' && args.includes(CLASS_KIND)) {
     if (docker.runFails) return docker.runFails
@@ -493,8 +493,8 @@ function classAnswer(docker: FakeAgentDocker, args: string[]): DockerResult | nu
     found.startedAt = Date.now()
     return { code: 0, out: args[1]! }
   }
-  if (command === 'ps' && args.includes('label=colloq.kind=app')) return { code: 0, out: docker.homeHere ? hex(6) : '' }
-  if (command === 'ps' && args.includes('label=colloq.kind=room-kernel')) return { code: 0, out: docker.homeRoomsHere ? hex(6) : '' }
+  if (command === 'ps' && args.includes('label=aulalab.kind=app')) return { code: 0, out: docker.homeHere ? hex(6) : '' }
+  if (command === 'ps' && args.includes('label=aulalab.kind=room-kernel')) return { code: 0, out: docker.homeRoomsHere ? hex(6) : '' }
   // Every `ps` by labels lists the class containers that have them all, as a daemon would: a sweep by the wrong labels would find them.
   const wanted = command === 'ps' ? args.flatMap((arg, i) => (args[i - 1] === '--filter' && arg.startsWith('label=') ? [arg.slice('label='.length)] : [])) : []
   const listed = [...docker.classes.values()].filter((found) => wanted.length > 0 && wanted.every((label) => found.labels.includes(label)))
@@ -502,12 +502,12 @@ function classAnswer(docker: FakeAgentDocker, args: string[]): DockerResult | nu
     const format = flagValue('--format')
     const lines = listed.map((found) => {
       if (!format) return found.id
-      const placement = found.labels.find((label) => label.startsWith('colloq.placement='))?.slice('colloq.placement='.length) ?? ''
-      return format.replace('{{.ID}}', found.id).replace('{{.State}}', found.status).replace('{{.Label "colloq.placement"}}', placement)
+      const placement = found.labels.find((label) => label.startsWith('aulalab.placement='))?.slice('aulalab.placement='.length) ?? ''
+      return format.replace('{{.ID}}', found.id).replace('{{.State}}', found.status).replace('{{.Label "aulalab.placement"}}', placement)
     })
     return { code: 0, out: lines.join('\n') }
   }
-  if (command === 'network' && args[1] === 'ls') return { code: 0, out: docker.homeNetworkHere && args.includes('label=colloq.kind=room-network') ? hex(6) : '' }
+  if (command === 'network' && args[1] === 'ls') return { code: 0, out: docker.homeNetworkHere && args.includes('label=aulalab.kind=room-network') ? hex(6) : '' }
   if (command === 'network' && args[1] === 'inspect') {
     const subnet = docker.networks.get(args[2]!)
     return subnet === undefined ? { code: 1, out: `Error response from daemon: network ${args[2]} not found` } : { code: 0, out: `${subnet} ` }
@@ -529,7 +529,7 @@ function classAnswer(docker: FakeAgentDocker, args: string[]): DockerResult | nu
     return {
       code: 0,
       out: format.replace('{{.Id}}', found.id).replace('{{.State.Status}}', found.status)
-        .replace('{{index .Config.Labels "colloq.placement"}}', label('colloq.placement')).replace('{{index .Config.Labels "colloq.profile"}}', label('colloq.profile')),
+        .replace('{{index .Config.Labels "aulalab.placement"}}', label('aulalab.placement')).replace('{{index .Config.Labels "aulalab.profile"}}', label('aulalab.profile')),
     }
   }
   if (command === 'inspect' && args[1] === '--format' && args[2]!.startsWith('{{.Name}}')) {
@@ -580,7 +580,7 @@ function classAnswer(docker: FakeAgentDocker, args: string[]): DockerResult | nu
   }
   if (command === 'rm') {
     const refs = args.slice(1).filter((arg) => !arg.startsWith('-'))
-    const ours = refs.filter((ref) => classOf(docker, ref) !== undefined || ref.startsWith('colloq-class-'))
+    const ours = refs.filter((ref) => classOf(docker, ref) !== undefined || ref.startsWith('aulalab-class-'))
     if (ours.length === 0) return null
     const missing: string[] = []
     for (const ref of ours) {
@@ -606,7 +606,7 @@ function scratchHelperDoes(folder: string, script: string): DockerResult {
     const names = fs.readdirSync(folder)
     if (/-exec rm -rf/.test(script)) for (const name of names) fs.rmSync(path.join(folder, name), { recursive: true, force: true })
     const listed = /-print0/.test(script) ? `${names.map((name) => `/s/${name}\0`).join('')}\n` : ''
-    return { code: 0, out: `${listed}colloq-scratch: ok` }
+    return { code: 0, out: `${listed}aulalab-scratch: ok` }
   } finally {
     fs.chmodSync(folder, /chmod 1733/.test(script) ? 0o1733 : mode)
   }
@@ -630,7 +630,7 @@ export function fakeAgentDocker(): FakeAgentDocker {
       if (command === 'rmi') docker.images.delete(args[1]!)
       return { code: 0, out: '' }
     }
-    if (command === 'inspect' && args[1] === '-f') return { code: 0, out: 'ghcr.io/colloq-edu/colloq-server:0.24.0' }
+    if (command === 'inspect' && args[1] === '-f') return { code: 0, out: 'ghcr.io/vighneshtule/aulalab-server:0.24.0' }
     if (command === 'image' && args[1] === 'inspect') {
       const image = docker.images.get(args[2]!)
       if (!image) return { code: 1, out: `Error: No such image: ${args[2]}` }
@@ -660,7 +660,7 @@ export function fakeAgentDocker(): FakeAgentDocker {
   docker.statfs = null
   docker.intercept = null
   docker.classes = new Map()
-  docker.perimeter = { code: 0, out: 'colloq-perimeter: ok' }
+  docker.perimeter = { code: 0, out: 'aulalab-perimeter: ok' }
   docker.helperScripts = []
   docker.scratchRuns = []
   docker.scratchFails = null

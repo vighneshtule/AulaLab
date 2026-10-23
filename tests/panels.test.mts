@@ -103,7 +103,7 @@ function opened(...paths: string[]) {
 
 test('closing the third file of four lands on the second, not the first', () => {
   const tabs = opened('a.py', 'b.py', 'c.py')
-  const board = 'Тетрадь.ipynb'
+  const board = 'Notebook.ipynb'
   assert.deepEqual(tabs.row(board), [board, 'a.py', 'b.py', 'c.py'])
 
   assert.equal(tabs.close('c.py', board), false)
@@ -148,7 +148,7 @@ test('the shared document does not close for oneself: one can only leave it', ()
  * that is not there; a file that no longer exists; and a hall watching a lecture.
  */
 
-const BOOK = 'Тетрадь.ipynb'
+const BOOK = 'Notebook.ipynb'
 
 function room(alive: string[], board: string | null = null, firstBook: string | null = BOOK): Room {
   return { alive: new Set(alive), firstBook, board }
@@ -244,7 +244,7 @@ test('a vanished file takes its tab with it on the next list too, even after the
 test('an entry from the previous version is read, and garbage means "we remember nothing"', () => {
   tabStore.clear()
   // It used to remember just a list of paths; such entries already sit in browsers.
-  tabStore.set('colloq.tabs.old', JSON.stringify([BOOK, 'разбор.py']))
+  tabStore.set('aulalab.tabs.old', JSON.stringify([BOOK, 'разбор.py']))
   const old = new Tabs('old')
   assert.deepEqual(old.mine, [BOOK, 'разбор.py'])
   old.settle(room([BOOK, 'разбор.py']))
@@ -255,7 +255,7 @@ test('an entry from the previous version is read, and garbage means "we remember
    * empty centre, while this one has to be returned to the notebook, not dropped
    * into that very empty room.
    */
-  tabStore.set('colloq.tabs.junk', '{not json')
+  tabStore.set('aulalab.tabs.junk', '{not json')
   const junk = new Tabs('junk')
   assert.deepEqual(junk.mine, [])
   junk.settle(room([BOOK]))
@@ -272,7 +272,7 @@ test('a manual reload starts the count afresh, a reload on refusal does not', ()
     assert.equal(mayReload(), false)
 
     // The page loaded because of a refusal: the mark is set, the count holds.
-    store.set('colloq.refused.auto', '1')
+    store.set('aulalab.refused.auto', '1')
     beginVisit()
     assert.equal(mayReload(), false, 'a reload on refusal reset the count')
 

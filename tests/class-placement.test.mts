@@ -850,27 +850,27 @@ test('home’s floor and numbers go out as the contract has them: an open home s
   const id = rig.room()
   void rig.place(id)
   await flush()
-  const saved = { network: process.env.COLLOQ_ROOM_NETWORK, cidrs: process.env.KERNEL_BLOCKED_CIDRS }
+  const saved = { network: process.env.AULALAB_ROOM_NETWORK, cidrs: process.env.KERNEL_BLOCKED_CIDRS }
   try {
     process.env.KERNEL_BLOCKED_CIDRS = '203.0.113.0/24'
-    process.env.COLLOQ_ROOM_NETWORK = 'open'
+    process.env.AULALAB_ROOM_NETWORK = 'open'
     let [intent] = agentReads(rig.placements.wantedPlacements(m.id))
     assert.equal(intent.network, 'blocked')
     assert.deepEqual(intent.blockedCidrs, ['203.0.113.0/24'])
-    process.env.COLLOQ_ROOM_NETWORK = 'none'
+    process.env.AULALAB_ROOM_NETWORK = 'none'
     ;[intent] = agentReads(rig.placements.wantedPlacements(m.id))
     assert.equal(intent.network, 'none')
     assert.deepEqual(intent.blockedCidrs, [])
     assert.ok(intent.hashSeed >= 1)
     // More ranges than an intent may carry: no slot is kept on a machine.
-    process.env.COLLOQ_ROOM_NETWORK = 'blocked'
+    process.env.AULALAB_ROOM_NETWORK = 'blocked'
     process.env.KERNEL_BLOCKED_CIDRS = Array.from({ length: 65 }, (_, i) => `198.${i}.0.0/16`).join(',')
     rig.tick()
     assert.equal(placementRow(id, 'room')?.state, 'lost')
     assert.equal(placementRow(id, 'room')?.reason, 'blocked')
   } finally {
-    if (saved.network === undefined) delete process.env.COLLOQ_ROOM_NETWORK
-    else process.env.COLLOQ_ROOM_NETWORK = saved.network
+    if (saved.network === undefined) delete process.env.AULALAB_ROOM_NETWORK
+    else process.env.AULALAB_ROOM_NETWORK = saved.network
     if (saved.cidrs === undefined) delete process.env.KERNEL_BLOCKED_CIDRS
     else process.env.KERNEL_BLOCKED_CIDRS = saved.cidrs
   }

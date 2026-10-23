@@ -1,4 +1,4 @@
-# Releasing Colloq
+# Releasing Aula Lab
 
 Releases are made by [release-please](https://github.com/googleapis/release-please).
 Nobody bumps the version by hand, the maintainer included:
@@ -35,17 +35,17 @@ understands too (`0.3.0-rc.1` becomes the wheel version `0.3.0rc1`).
 | Copy | `package-lock.json`: the root `version` and `packages[""]` | release-please (`release-type: node`) |
 | Copy | `package-lock.json`: `packages["server" / "web" / "runtime" / "cli"]` | release-please, `extra-files` (JSON path) |
 | Copy | `server/`, `web/`, `runtime/`, `cli/`, `shared/package.json` | release-please, `extra-files` (JSON path) |
-| Copy | `python/colloq/_version.py` (hatchling reads the wheel version from here) | release-please, `extra-files` (the line marked `x-release-please-version`), and `scripts/pack.mts`, which writes the same text |
+| Copy | `python/aulalab/_version.py` (hatchling reads the wheel version from here) | release-please, `extra-files` (the line marked `x-release-please-version`), and `scripts/pack.mts`, which writes the same text |
 | Copy | `.release-please-manifest.json` (the last released version) | release-please |
 | Derived | Teaching panel wordmark (`v0.1.0` next to the logo) | Vite `define` at build time |
-| Derived | Server: `GET /api/health` → `"version"`, and the `colloq X ready` log line | JSON import, inlined by esbuild |
-| Derived | `colloq --version` in the pip package | `scripts/pack.mts` writes `app/cli/package.json` |
+| Derived | Server: `GET /api/health` → `"version"`, and the `aulalab X ready` log line | JSON import, inlined by esbuild |
+| Derived | `aulalab --version` in the pip package | `scripts/pack.mts` writes `app/cli/package.json` |
 | Derived | Git tag `vX.Y.Z` and the GitHub Release | release-please creates them; `publish.yml` checks the tag |
 | Derived | Images `…:vX.Y.Z` and `release.json` for k3s | `scripts/release-build.py` defaults to `v` + `package.json` at the source commit and rejects any other `--version` |
-| Derived | vast.ai image `ghcr.io/<owner>/colloq-vast:X.Y.Z` | `publish.yml` |
-| Derived | Kubernetes images `ghcr.io/<owner>/colloq-app:vX.Y.Z`, `colloq-runtime:vX.Y.Z` and the kernels `colloq-kernel:vX.Y.Z-<env>` | `publish.yml` (jobs `app-images` and `kernels`) |
-| Derived | GPU kernels `colloq-kernel:vX.Y.Z-base-gpu` and `-kaggle-gpu` | `make kernel-publish` on a machine with a card, at release time ([GPU kernels](#gpu-kernels-at-release-time)) |
-| Derived | Helm chart `oci://ghcr.io/<owner>/charts/colloq:X.Y.Z`: `version` and `appVersion` in its `Chart.yaml`, the digests and the kernel catalog in its `values.yaml` | `publish.yml` (job `chart`, `scripts/chart-values.py`) writes them into the packaged chart from the tag, whatever the source tree carries |
+| Derived | vast.ai image `ghcr.io/<owner>/aulalab-vast:X.Y.Z` | `publish.yml` |
+| Derived | Kubernetes images `ghcr.io/<owner>/aulalab-app:vX.Y.Z`, `aulalab-runtime:vX.Y.Z` and the kernels `aulalab-kernel:vX.Y.Z-<env>` | `publish.yml` (jobs `app-images` and `kernels`) |
+| Derived | GPU kernels `aulalab-kernel:vX.Y.Z-base-gpu` and `-kaggle-gpu` | `make kernel-publish` on a machine with a card, at release time ([GPU kernels](#gpu-kernels-at-release-time)) |
+| Derived | Helm chart `oci://ghcr.io/<owner>/charts/aulalab:X.Y.Z`: `version` and `appVersion` in its `Chart.yaml`, the digests and the kernel catalog in its `values.yaml` | `publish.yml` (job `chart`, `scripts/chart-values.py`) writes them into the packaged chart from the tag, whatever the source tree carries |
 
 `make version` prints the version and fails if anything disagrees; CI runs the
 same check (`node --import tsx scripts/version.mts check`) on every pull request,
@@ -81,9 +81,9 @@ request title with `!`, so that the changelog marks it as breaking.
 
 Where the number goes:
 
-- The server stamps it into `colloq.db` (`PRAGMA user_version`) before any
+- The server stamps it into `aulalab.db` (`PRAGMA user_version`) before any
   migration runs, and never lowers it. A server that finds a higher stamp
-  refuses to start and names both numbers; `COLLOQ_ALLOW_SCHEMA_DOWNGRADE=1`
+  refuses to start and names both numbers; `AULALAB_ALLOW_SCHEMA_DOWNGRADE=1`
   starts it anyway, for an operator who has checked that the newer migration is
   harmless for this release. A database from before the stamp existed carries
   0, which counts as 1.
@@ -96,7 +96,7 @@ Where the number goes:
 
 The way back from a refused rollback is the backup the update took before it
 changed anything (`scripts/restore.sh --archive … --release …`, or
-`colloq-host restore` on the server image), not an override.
+`aulalab-host restore` on the server image), not an override.
 
 ## How the next version is chosen
 
@@ -269,12 +269,12 @@ accident.
 
    If a variable is unset or has any other value, its job is skipped.
 2. **PyPI API token.** Create a token on pypi.org (*Account settings → API
-   tokens*), scoped to the project `colloq` once it exists, and store it as the
+   tokens*), scoped to the project `aulalab` once it exists, and store it as the
    secret `PYPI_API_TOKEN` of the **`pypi` environment**, not of the
    repository: only the approved PyPI job can read it.
 
    ```
-   gh secret set PYPI_API_TOKEN -R colloq-edu/colloq --env pypi
+   gh secret set PYPI_API_TOKEN -R vighneshtule/aulalab --env pypi
    ```
 
    Trusted Publishing (no stored token) was the first plan and is still
@@ -282,7 +282,7 @@ accident.
    `workflow_dispatch` rather than calling it as a reusable workflow, which
    PyPI does not support — the one reusable attempt (v0.2.0) was refused with
    `invalid-publisher`. To switch, add a publisher on pypi.org with Owner
-   `colloq-edu` (the GitHub owner, not the PyPI login), Repository `colloq`,
+   `vighneshtule` (the GitHub owner, not the PyPI login), Repository `aulalab`,
    Workflow `publish.yml`, Environment `pypi`; then give the job
    `id-token: write` and drop `password:`.
 3. **GitHub environment `pypi`** (Settings → Environments). Add yourself as a
@@ -296,10 +296,10 @@ accident.
 
    | Package | Pushed by |
    | --- | --- |
-   | `colloq-vast`, `colloq-server` | `image` |
-   | `colloq-kernel` | `kernels` (and `make kernel-publish` for the GPU kernels) |
-   | `colloq-app`, `colloq-runtime` | `app-images` |
-   | `charts/colloq` (the Helm chart) | `chart` |
+   | `aulalab-vast`, `aulalab-server` | `image` |
+   | `aulalab-kernel` | `kernels` (and `make kernel-publish` for the GPU kernels) |
+   | `aulalab-app`, `aulalab-runtime` | `app-images` |
+   | `charts/aulalab` (the Helm chart) | `chart` |
 
    After the first release with `PUBLISH_IMAGES`, make each of them public **in
    the web interface**: the organization's page → *Packages* → the package →
@@ -360,14 +360,14 @@ it runs only when called from *Release Please*, or by hand for an existing tag.
 
 | Job | What it does | Gate |
 | --- | --- | --- |
-| `build` | Checks that the tag, `package.json`, every copy and the changelog agree. Checks that the workflow publishing the tag is the one committed in it (the same `.github` as the tag). Runs the typecheck and tests. Runs `make wheel` with `SOURCE_DATE_EPOCH` set to the commit time, installs the wheel in a clean venv, checks `colloq --version`, and checks that the build left the tree clean. Then builds the four [platform wheels](#platform-wheels) and runs the Linux x64 one. | always |
+| `build` | Checks that the tag, `package.json`, every copy and the changelog agree. Checks that the workflow publishing the tag is the one committed in it (the same `.github` as the tag). Runs the typecheck and tests. Runs `make wheel` with `SOURCE_DATE_EPOCH` set to the commit time, installs the wheel in a clean venv, checks `aulalab --version`, and checks that the build left the tree clean. Then builds the four [platform wheels](#platform-wheels) and runs the Linux x64 one. | always |
 | `smoke` | Installs each of the other three platform wheels into a clean venv on its own runner (`macos-15`, `macos-15-intel`, `ubuntu-24.04-arm`) and runs it. | always |
 | `github-release` | Attaches every wheel and `python-SHA256SUMS` to the release that release-please created, once `smoke` has passed. Refuses if there is no release: it never creates one, because the notes are release-please's. Marks `-rc.N` versions as pre-releases. Keeps files that are already attached. | always |
 | `pypi` | Downloads the wheels **attached to the release**, checks that each one is listed in `python-SHA256SUMS` and matches it, and uploads them with the `pypi` environment secret `PYPI_API_TOKEN`. | `vars.PUBLISH_PYPI == 'true'`, plus approval in the `pypi` environment |
-| `image` | Builds `deploy/vast/Dockerfile` for linux/amd64, with provenance, an SBOM and OCI labels. Pushes `ghcr.io/<owner>/colloq-vast:X.Y.Z` and `colloq-server:X.Y.Z` (one build, one digest), and also `:latest` for non-pre-releases. Skips the build if that version already exists. | `vars.PUBLISH_IMAGES == 'true'` |
-| `kernels` | Builds the room kernels of `base` and `kaggle-base` (`kernel/Dockerfile`, parents first), runs each once without network, and pushes `ghcr.io/<owner>/colloq-kernel:vX.Y.Z-<env>`. Skips a tag that exists and takes its digest. Hands the digests to `chart` as a job output. The GPU kernels are not built here: [GPU kernels](#gpu-kernels-at-release-time). | `vars.PUBLISH_IMAGES == 'true'` |
-| `app-images` | Builds the root `Dockerfile`'s targets `production` and `broker` for linux/amd64 on one node base pinned by digest, with provenance, an SBOM and OCI labels, and pushes `ghcr.io/<owner>/colloq-app:vX.Y.Z` and `colloq-runtime:vX.Y.Z` (no `:latest`: the chart installs by digest). Skips a tag that exists and takes its digest. Hands the digests to `chart` as job outputs. | `vars.PUBLISH_IMAGES == 'true'` |
-| `chart` | After `app-images` and `kernels`: `scripts/chart-values.py` writes their digests and the kernel catalog (the same catalog code as `release.json`) into `deploy/helm/colloq/values.yaml`, and the version into `Chart.yaml`; then `helm lint`, `helm package`, and a check that the package renders every digest. Refuses if the tag has no release, before pushing anything. Pushes `oci://ghcr.io/<owner>/charts/colloq:X.Y.Z` unless that version exists (then it pulls the published package instead), and attaches `colloq-X.Y.Z.tgz` and `values-X.Y.Z.yaml` to the release, keeping files that are already there. | `vars.PUBLISH_IMAGES == 'true'` |
+| `image` | Builds `deploy/vast/Dockerfile` for linux/amd64, with provenance, an SBOM and OCI labels. Pushes `ghcr.io/<owner>/aulalab-vast:X.Y.Z` and `aulalab-server:X.Y.Z` (one build, one digest), and also `:latest` for non-pre-releases. Skips the build if that version already exists. | `vars.PUBLISH_IMAGES == 'true'` |
+| `kernels` | Builds the room kernels of `base` and `kaggle-base` (`kernel/Dockerfile`, parents first), runs each once without network, and pushes `ghcr.io/<owner>/aulalab-kernel:vX.Y.Z-<env>`. Skips a tag that exists and takes its digest. Hands the digests to `chart` as a job output. The GPU kernels are not built here: [GPU kernels](#gpu-kernels-at-release-time). | `vars.PUBLISH_IMAGES == 'true'` |
+| `app-images` | Builds the root `Dockerfile`'s targets `production` and `broker` for linux/amd64 on one node base pinned by digest, with provenance, an SBOM and OCI labels, and pushes `ghcr.io/<owner>/aulalab-app:vX.Y.Z` and `aulalab-runtime:vX.Y.Z` (no `:latest`: the chart installs by digest). Skips a tag that exists and takes its digest. Hands the digests to `chart` as job outputs. | `vars.PUBLISH_IMAGES == 'true'` |
+| `chart` | After `app-images` and `kernels`: `scripts/chart-values.py` writes their digests and the kernel catalog (the same catalog code as `release.json`) into `deploy/helm/aulalab/values.yaml`, and the version into `Chart.yaml`; then `helm lint`, `helm package`, and a check that the package renders every digest. Refuses if the tag has no release, before pushing anything. Pushes `oci://ghcr.io/<owner>/charts/aulalab:X.Y.Z` unless that version exists (then it pulls the published package instead), and attaches `aulalab-X.Y.Z.tgz` and `values-X.Y.Z.yaml` to the release, keeping files that are already there. | `vars.PUBLISH_IMAGES == 'true'` |
 
 Only `image`, `kernels`, `app-images` and `chart` hold `packages: write`, and
 only `github-release` and `chart` hold `contents: write`.
@@ -380,7 +380,7 @@ request's title passes it.
 
 A release carries five wheels. The universal one, `py3-none-any`, needs Node.js
 22+ on the machine and installs the server's `node_modules` on the first run.
-The four platform wheels bring both with them, so after `pip install colloq`
+The four platform wheels bring both with them, so after `pip install aulalab`
 only Docker is needed:
 
 | Wheel tag | Who gets it |
@@ -394,7 +394,7 @@ wheel everywhere else (macOS 13, Alpine, other architectures).
 `scripts/platform-wheels.py build` (or `make wheels`) builds all four on one
 machine from the universal wheel: Node.js from the archive pinned in
 `scripts/node-runtime.json` (checked by sha256), and `node_modules` from
-`npm ci --omit=dev -w @colloq/server --os --cpu --libc` against the root
+`npm ci --omit=dev -w @aulalab/server --os --cpu --libc` against the root
 `package-lock.json`. No install script runs; every native binary is checked
 against the target's architecture before it goes into a wheel.
 `scripts/platform-wheels.py smoke --wheel <file>` installs a wheel into a clean
@@ -412,7 +412,7 @@ files of old versions.
 ### GPU kernels, at release time
 
 `base-gpu` and `kaggle-gpu` are published with every release too, as
-`ghcr.io/<owner>/colloq-kernel:vX.Y.Z-base-gpu` and `-kaggle-gpu`, but not by
+`ghcr.io/<owner>/aulalab-kernel:vX.Y.Z-base-gpu` and `-kaggle-gpu`, but not by
 `publish.yml`. A standard GitHub-hosted Linux runner is documented with 14 GB
 of SSD and has no GPU. `kaggle-gpu` alone is 12.7 GB unpacked (`base-gpu`
 9.9 GB); built, loaded for its check and pushed from the cache the way the
@@ -425,7 +425,7 @@ So publishing them is one command on a machine with a card, after the release's
 **Publish** run has finished:
 
 ```sh
-git clone --branch vX.Y.Z https://github.com/colloq-edu/colloq && cd colloq
+git clone --branch vX.Y.Z https://github.com/vighneshtule/AulaLab && cd aulalab
 echo "$GHCR_TOKEN" | docker login ghcr.io -u <you> --password-stdin   # a token with write:packages
 make kernel-publish ENV=base-gpu,kaggle-gpu
 ```
@@ -436,13 +436,13 @@ The machine needs an NVIDIA card with driver 580 or newer (the CUDA 13 wheels
 Docker. A Vast VM is the usual choice: `make vast-vm HOST=builder DISK=150`
 rents one with Docker, the toolkit and a card. Give it a name of its own, not
 a class's, since the idle instance it starts takes that name on the relay;
-`colloq-host stop` stops it. The build takes about nine minutes and pushes
+`aulalab-host stop` stops it. The build takes about nine minutes and pushes
 about 4 GB.
 
 `scripts/kernel-publish.sh` does what the `kernels` job does for the CPU lists:
 
 - the same tags and labels (`org.opencontainers.image.version`,
-  `colloq.environment`);
+  `aulalab.environment`);
 - parents first, with `kaggle-gpu` built on the digest just pushed for
   `base-gpu`;
 - a run before every push: the imports every kernel needs, the
@@ -452,8 +452,8 @@ about 4 GB.
 A tag that is already published is never built again, so a rerun after a
 failed push picks up where it stopped. It refuses a checkout that is not the
 release tag, or that has changes under `kernel/`. Each image is loaded for its
-check under a name of the run's own (`colloq-kernel-publish:…`), removed when
-the run ends, and never as `colloq-kernel:<env>`: an instance on the same
+check under a name of the run's own (`aulalab-kernel-publish:…`), removed when
+the run ends, and never as `aulalab-kernel:<env>`: an instance on the same
 builder may build or pull that name at any moment, and a check must run the
 image that is about to be pushed.
 
@@ -465,7 +465,7 @@ submissions run a GPU competition; a kernel built on the instance runs at home
 only (`docs/architecture/remote-runners.md`).
 
 **An instance that built its GPU kernels itself keeps them.** The entry point
-takes any image already called `colloq-kernel:<env>` as ready and never pulls
+takes any image already called `aulalab-kernel:<env>` as ready and never pulls
 over it. So an instance that built `base-gpu` (or `kaggle-gpu`) before
 `make kernel-publish` ran for its version stays on its own build, with no
 registry digest, and its GPU competitions keep running at home only, however
@@ -473,9 +473,9 @@ long the published kernels have existed. To move it onto them, between
 classes:
 
 ```sh
-docker image tag colloq-kernel:base-gpu colloq-kernel:base-gpu-built-here   # the old build, kept under another name
-docker image rm colloq-kernel:base-gpu                                      # the name alone: rooms still on it keep their image
-colloq-host stop && colloq-host start                                       # the start pulls the published base-gpu
+docker image tag aulalab-kernel:base-gpu aulalab-kernel:base-gpu-built-here   # the old build, kept under another name
+docker image rm aulalab-kernel:base-gpu                                      # the name alone: rooms still on it keep their image
+aulalab-host stop && aulalab-host start                                       # the start pulls the published base-gpu
 ```
 
 `kaggle-gpu` the same way, both names removed before the restart (its parent
@@ -483,39 +483,39 @@ is pulled first), and both in `KERNEL_PRELOAD`: only the kernels listed there
 are prepared at start. An environment whose list the instance has edited is
 built there again instead, as it always was: the published image holds the
 shipped list. The log says `[kernels] pulling
-ghcr.io/<owner>/colloq-kernel:vX.Y.Z-base-gpu`, and afterwards
-`docker image inspect -f '{{.RepoDigests}}' colloq-kernel:base-gpu` names the
+ghcr.io/<owner>/aulalab-kernel:vX.Y.Z-base-gpu`, and afterwards
+`docker image inspect -f '{{.RepoDigests}}' aulalab-kernel:base-gpu` names the
 registry digest. Once the published one is in use, `docker image rm
-colloq-kernel:base-gpu-built-here` frees the disk the old build took.
+aulalab-kernel:base-gpu-built-here` frees the disk the old build took.
 
 ### Verify a release
 
 ```sh
 gh release view v0.3.0                                  # notes and assets
 git log -1 --format='%an <%ae>%n%B' v0.3.0              # your name, no trailers
-pip install colloq==0.3.0 && colloq --version           # if PyPI is on
-docker buildx imagetools inspect ghcr.io/<owner>/colloq-vast:0.3.0   # if images are on
-docker buildx imagetools inspect ghcr.io/<owner>/colloq-kernel:v0.3.0-kaggle-gpu   # after make kernel-publish
-docker buildx imagetools inspect ghcr.io/<owner>/colloq-app:v0.3.0
-helm show chart oci://ghcr.io/<owner>/charts/colloq --version 0.3.0  # version and appVersion 0.3.0
-helm template colloq oci://ghcr.io/<owner>/charts/colloq --version 0.3.0 \
+pip install aulalab==0.3.0 && aulalab --version           # if PyPI is on
+docker buildx imagetools inspect ghcr.io/<owner>/aulalab-vast:0.3.0   # if images are on
+docker buildx imagetools inspect ghcr.io/<owner>/aulalab-kernel:v0.3.0-kaggle-gpu   # after make kernel-publish
+docker buildx imagetools inspect ghcr.io/<owner>/aulalab-app:v0.3.0
+helm show chart oci://ghcr.io/<owner>/charts/aulalab --version 0.3.0  # version and appVersion 0.3.0
+helm template aulalab oci://ghcr.io/<owner>/charts/aulalab --version 0.3.0 \
   --set ingress.enabled=false | grep -E 'image:|@sha256'           # every image by digest
 curl -s https://<your-host>/api/health | jq .version    # a running instance
 ```
 
-The version also appears in the teaching panel, next to the Colloq wordmark in
+The version also appears in the teaching panel, next to the Aula Lab wordmark in
 the sidebar.
 
 ## The k3s immutable release (optional)
 
 The k3s path is a preview: no release has been published with these files yet,
-and production installs use the server image (`colloq-vast`) with
-`deploy/vast/colloq-host`. `.github/workflows/release.yml` ("Publish immutable
+and production installs use the server image (`aulalab-vast`) with
+`deploy/vast/aulalab-host`. `.github/workflows/release.yml` ("Publish immutable
 release") produces what `scripts/cluster.sh` installs on a k3s VM:
 
 - digest-pinned app, broker and kernel images;
 - `release.json`;
-- `colloq-deploy.tar.gz`;
+- `aulalab-deploy.tar.gz`;
 - `SHA256SUMS`.
 
 It is a separate, manual step after the release, not part of it. Two of its
@@ -537,7 +537,7 @@ The names are the files in `kernel/environments/` at the tag; a name without a
 file fails the build before anything is pushed.
 
 The workflow runs the same version check. It then builds and pushes
-`ghcr.io/<owner>/colloq-{app,runtime,kernel}` and attaches its files to the
+`ghcr.io/<owner>/aulalab-{app,runtime,kernel}` and attaches its files to the
 release. A tag that `publish.yml` has already pushed (the app, the broker and the
 CPU kernels of every release with `PUBLISH_IMAGES`) is taken as it is, digest and
 all, and only the rest is built (`base-gpu`, for example): rebuilding would move
@@ -557,7 +557,7 @@ defaults to `v` + the `package.json` version at `--source-commit`, and the
 script rejects any other value.
 
 ```sh
-python3 scripts/release-build.py --registry ghcr.io/<owner>/colloq \
+python3 scripts/release-build.py --registry ghcr.io/<owner>/aulalab \
   --source-commit "$(git rev-parse v0.3.0^{commit})" --k3s-version <tested k3s>
 ```
 
@@ -592,11 +592,11 @@ the app and runs on its node. On failure the log ends with the namespace's Pods,
 events and logs. A flaky run is re-run from its page (*Re-run jobs*).
 
 The same check against a cluster of your own: install the chart into a
-namespace you can throw away and label it `colloq.dev/e2e=disposable` (the
+namespace you can throw away and label it `aulalab.dev/e2e=disposable` (the
 script claims the instance, so it refuses a namespace without that label), then
 
 ```sh
-KUBECONFIG=/path/to/that/cluster.kubeconfig K8S_E2E_NAMESPACE=colloq-e2e \
+KUBECONFIG=/path/to/that/cluster.kubeconfig K8S_E2E_NAMESPACE=aulalab-e2e \
   node --import tsx scripts/k8s-e2e.mts
 ```
 
@@ -638,7 +638,7 @@ KUBECONFIG=/path/to/that/cluster.kubeconfig K8S_E2E_NAMESPACE=colloq-e2e \
 
   This is also how to publish an earlier tag after turning on `PUBLISH_PYPI` or
   `PUBLISH_IMAGES`. A tag from before the Helm chart (before 0.10.0) has no
-  `deploy/helm/colloq`: its `chart` job fails saying so, and everything else is
+  `deploy/helm/aulalab`: its `chart` job fails saying so, and everything else is
   published.
 - **The `chart` job says the chart's `values.yaml` has no `<path>`.** The chart
   moved a value the release writes. `scripts/chart-values.py` refuses rather
@@ -647,7 +647,7 @@ KUBECONFIG=/path/to/that/cluster.kubeconfig K8S_E2E_NAMESPACE=colloq-e2e \
   list and `tests/k8s-release.test.mts`, or the chart) in a `fix:` and release
   the patch version. The failed version keeps its images and has no chart; the
   patch version publishes both. (`tests/k8s-release.test.mts` runs the script
-  on `deploy/helm/colloq` in every CI run, so this should not reach a tag.)
+  on `deploy/helm/aulalab` in every CI run, so this should not reach a tag.)
 - **A push to GHCR is refused with `permission_denied` or `denied`.** The
   package exists but this repository cannot write to it: add the repository
   under the package's *Package settings* → *Manage Actions access* with the
@@ -658,7 +658,7 @@ KUBECONFIG=/path/to/that/cluster.kubeconfig K8S_E2E_NAMESPACE=colloq-e2e \
   - PyPI: yank the version on pypi.org. A yanked version stays installable only
     with an exact pin, and its file can never be replaced.
   - vast.ai image: point `:latest` back to the previous version with
-    `docker buildx imagetools create -t ghcr.io/<owner>/colloq-vast:latest ghcr.io/<owner>/colloq-vast:<previous>`.
+    `docker buildx imagetools create -t ghcr.io/<owner>/aulalab-vast:latest ghcr.io/<owner>/aulalab-vast:<previous>`.
   - Helm chart: a pushed chart version cannot be replaced, and clusters that
     installed it keep it. Tell operators the version to go back to
     (`helm rollback`, or the previous version in their GitOps repository); the

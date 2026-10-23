@@ -456,7 +456,7 @@ test('opening a council takes an epoch between the teacher\'s cells, the workers
   assert.equal(exported.store_history, false)
   // The machine is asked to hold it, from the notebook kernel's own container there.
   const [intent] = epochs.epochIntentsFor('r1')
-  assert.deepEqual(intent?.from, { container: CONTAINER, dir: `/tmp/colloq-epoch/${epoch.seq}` })
+  assert.deepEqual(intent?.from, { container: CONTAINER, dir: `/tmp/aulalab-epoch/${epoch.seq}` })
   assert.equal(room.console()?.state, 'starting', 'the pool said it was ready before its machine held the epoch')
   room.holdWanted()
   assert.ok(await until(() => room.pool()!.workers.every((worker) => worker.seeded === epoch.seq)), JSON.stringify(room.pool()))
@@ -1294,7 +1294,7 @@ test('only the bytes a machine lacks count toward what ships: the buffers of an 
 })
 
 /** The silent run that removes an export's folder from its kernel's container (council-isolation.ts · exportDropExpression). */
-const dropOf = (seq: number) => `__import__('shutil').rmtree("/tmp/colloq-epoch/${seq}", ignore_errors=True)`
+const dropOf = (seq: number) => `__import__('shutil').rmtree("/tmp/aulalab-epoch/${seq}", ignore_errors=True)`
 
 test('an export too big to ship to the pool\'s machine goes from the container it lies in, which nobody will read, and the next export writes every buffer again', async (t) => {
   let extra = 0
@@ -2795,7 +2795,7 @@ test('a cut that eats a gated worker\'s entry\'s reply while the attempt behind 
   assert.ok(await until(() => fake.online(worker!) > 0 && shellTo(worker, 'kernel_info_request') > asked), 'the reconnect asked nothing')
   fake.release('a')
   assert.ok(await until(() => doneStates.has(attempt.last()?.state ?? '')), JSON.stringify(attempt.last()))
-  assert.deepEqual([attempt.last()?.state, attempt.said()], ['ok', `${tr('server.colloqInputIsNotSupportedInCouncil.fd07fb')}5 \n1\n`])
+  assert.deepEqual([attempt.last()?.state, attempt.said()], ['ok', `${tr('server.aulalabInputIsNotSupportedInCouncil.fd07fb')}5 \n1\n`])
   assert.equal(countsIn(worker), 1)
 })
 

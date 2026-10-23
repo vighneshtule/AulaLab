@@ -126,7 +126,7 @@ test('a note from the previous build is read: it has no snapshot, and that is no
   store.clear()
   quota = Number.POSITIVE_INFINITY
   store.set(
-    'colloq.refused',
+    'aulalab.refused',
     JSON.stringify({
       sessionId: 'room1',
       kind: 'stale',

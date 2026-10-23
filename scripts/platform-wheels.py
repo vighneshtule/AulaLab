@@ -2,7 +2,7 @@
 """Platform wheels: the universal wheel plus Node and ready node_modules.
 
   python3 scripts/platform-wheels.py build [--target darwin-arm64 ...]
-  python3 scripts/platform-wheels.py smoke --wheel python/dist/colloq-…-macosx_14_0_arm64.whl
+  python3 scripts/platform-wheels.py smoke --wheel python/dist/aulalab-…-macosx_14_0_arm64.whl
   make wheels
 
 Why. The universal wheel (make wheel) asks the teacher for Node 22+ and, on
@@ -11,7 +11,7 @@ access to GitHub. Jupyter asks for none of that; Python is enough. A platform
 wheel carries everything itself: Node (pinned in scripts/node-runtime.json,
 checked by sha256) and the server's node_modules, installed by `npm ci` from
 the root package-lock.json, so exactly the versions the tests ran against.
-After `pip install colloq` on macOS and Linux x64/arm64, only Docker is left.
+After `pip install aulalab` on macOS and Linux x64/arm64, only Docker is left.
 
 All four wheels are built on one machine. The server has two native
 dependencies, and both ship as prebuilt binaries rather than being compiled:
@@ -61,7 +61,7 @@ from typing import Dict, NoReturn, Optional, Tuple
 
 ROOT = Path(__file__).resolve().parent.parent
 PIN = ROOT / "scripts" / "node-runtime.json"
-APP = "colloq/_app"
+APP = "aulalab/_app"
 
 
 @dataclass(frozen=True)
@@ -208,7 +208,7 @@ def prune(modules: Path, target: Target) -> None:
     A wheel cannot hold symlinks: zip does not store them, and pip would write
     a file containing the link target instead. There are two kinds here:
     node_modules/.bin (launchers of other packages' CLIs) and the workspace
-    link @colloq/server -> ../../server.
+    link @aulalab/server -> ../../server.
 
     better-sqlite3 loads only prebuilds/<target>.node. The SQLite sources
     (deps, src, binding.gyp) are for compiling, and the other platforms'
@@ -219,7 +219,7 @@ def prune(modules: Path, target: Target) -> None:
             link.unlink()
         elif link.is_dir():
             shutil.rmtree(link)
-    shutil.rmtree(modules / "@colloq", ignore_errors=True)
+    shutil.rmtree(modules / "@aulalab", ignore_errors=True)
     # @types can be nested too (openai/node_modules/@types).
     for types in sorted(modules.rglob("@types"), reverse=True):
         if types.is_dir() and types.parent.name == "node_modules":
@@ -312,7 +312,7 @@ def repack(
             mode = (info.external_attr >> 16) & 0o777
             files[info.filename] = (source.read(info), mode or 0o644)
         wheel_meta = source.read(dist_info + "/WHEEL").decode("utf-8")
-    for required in (APP + "/package.json", APP + "/.colloq-dist.json"):
+    for required in (APP + "/package.json", APP + "/.aulalab-dist.json"):
         if required not in files:
             fail("%s: no %s; was it built by make wheel?" % (universal.name, required))
 
@@ -323,19 +323,19 @@ def repack(
             mode = 0o755 if path.stat().st_mode & 0o111 else 0o644
             files["%s/node_modules/%s" % (APP, path.relative_to(modules).as_posix())] = (path.read_bytes(), mode)
     # The "node_modules are installed" stamp is the very one the shim writes
-    # after npm install (python/colloq/__main__.py: _wanted, _ready): version
+    # after npm install (python/aulalab/__main__.py: _wanted, _ready): version
     # and dependencies from _app/package.json. With it the first run installs
     # nothing.
     app_pkg = json.loads(files[APP + "/package.json"][0])
     wanted = {"version": app_pkg.get("version"), "dependencies": app_pkg.get("dependencies", {})}
     files[APP + "/.node-modules.json"] = (json.dumps(wanted, ensure_ascii=False, indent=2).encode(), 0o644)
-    dist = json.loads(files[APP + "/.colloq-dist.json"][0])
+    dist = json.loads(files[APP + "/.aulalab-dist.json"][0])
     dist["bundled"] = {
         "target": target.name,
         "node": node_version,
         "nodeModules": "npm ci --omit=dev from package-lock.json (scripts/platform-wheels.py)",
     }
-    files[APP + "/.colloq-dist.json"] = (
+    files[APP + "/.aulalab-dist.json"] = (
         (json.dumps(dist, ensure_ascii=False, indent=2) + "\n").encode(),
         0o644,
     )
@@ -383,8 +383,8 @@ def build(args: argparse.Namespace) -> None:
     out = Path(args.out) if args.out else universal.parent
     targets = [TARGETS[name] for name in (args.target or list(TARGETS))]
     epoch = int(os.environ.get("SOURCE_DATE_EPOCH") or 315532800)
-    cache = Path(args.cache or os.environ.get("COLLOQ_NODE_CACHE") or Path.home() / ".cache/colloq/node")
-    with tempfile.TemporaryDirectory(prefix="colloq-wheels-") as scratch:
+    cache = Path(args.cache or os.environ.get("AULALAB_NODE_CACHE") or Path.home() / ".cache/aulalab/node")
+    with tempfile.TemporaryDirectory(prefix="aulalab-wheels-") as scratch:
         for target in targets:
             say("%s:" % target.name)
             node, node_license, node_version = node_runtime(target, cache)
@@ -402,12 +402,12 @@ def smoke(args: argparse.Namespace) -> None:
     """Install the wheel into a clean venv and run it on this machine.
 
     The system Node is kept off PATH: the wheel has to work with its own.
-    Checks: the shim picks the bundled Node, `colloq --version` answers (shim
+    Checks: the shim picks the bundled Node, `aulalab --version` answers (shim
     -> Node -> CLI), both native modules load, and the server comes up to
     /api/health with the stand-in kernel backend, without Docker.
     """
     wheel = Path(args.wheel).resolve()
-    with tempfile.TemporaryDirectory(prefix="colloq-smoke-") as scratch:
+    with tempfile.TemporaryDirectory(prefix="aulalab-smoke-") as scratch:
         base = Path(scratch)
         venv.EnvBuilder(with_pip=True).create(str(base / "venv"))
         bindir = base / "venv" / ("Scripts" if os.name == "nt" else "bin")
@@ -416,14 +416,14 @@ def smoke(args: argparse.Namespace) -> None:
         env = {
             "PATH": path,
             "HOME": str(base / "home"),
-            "COLLOQ_HOME": str(base / "colloq"),
+            "AULALAB_HOME": str(base / "aulalab"),
             "NO_COLOR": "1",
         }
         version = subprocess.run(
-            [str(bindir / "colloq"), "--version"], env=env, stdout=subprocess.PIPE, text=True, check=True
+            [str(bindir / "aulalab"), "--version"], env=env, stdout=subprocess.PIPE, text=True, check=True
         ).stdout.strip()
         site = subprocess.run(
-            [str(bindir / "python"), "-c", "import colloq, os; print(os.path.dirname(colloq.__file__))"],
+            [str(bindir / "python"), "-c", "import aulalab, os; print(os.path.dirname(aulalab.__file__))"],
             stdout=subprocess.PIPE,
             text=True,
             check=True,
@@ -435,7 +435,7 @@ def smoke(args: argparse.Namespace) -> None:
         # The shim must choose its own Node, not one found at a well-known
         # path: /opt/homebrew/bin/node on a build machine would silently stand in.
         chosen = subprocess.run(
-            [str(bindir / "python"), "-c", "from colloq.__main__ import find_node; print(find_node())"],
+            [str(bindir / "python"), "-c", "from aulalab.__main__ import find_node; print(find_node())"],
             env=env,
             stdout=subprocess.PIPE,
             text=True,
@@ -494,7 +494,7 @@ def smoke(args: argparse.Namespace) -> None:
                 server.kill()
                 fail("the server did not answer /api/health:\n%s" % (server.communicate()[0] or "")[-4000:])
             if health.get("version") != version:
-                fail("/api/health says version %r, colloq --version says %r" % (health.get("version"), version))
+                fail("/api/health says version %r, aulalab --version says %r" % (health.get("version"), version))
             # The database is better-sqlite3 inside the server; the workspace is the files.
             for part in ("database", "workspace"):
                 if health.get(part) is not True:
@@ -506,17 +506,17 @@ def smoke(args: argparse.Namespace) -> None:
                     server.wait(timeout=20)
                 except subprocess.TimeoutExpired:
                     server.kill()
-        say("  %s: colloq %s · node %s · /api/health ok" % (wheel.name, version, said))
+        say("  %s: aulalab %s · node %s · /api/health ok" % (wheel.name, version, said))
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Colloq platform wheels: Node and node_modules inside.")
+    parser = argparse.ArgumentParser(description="Aula Lab platform wheels: Node and node_modules inside.")
     commands = parser.add_subparsers(dest="command", required=True)
     make = commands.add_parser("build", help="build them from the universal wheel (make wheel)")
     make.add_argument("--wheel", help="the universal wheel; by default the only one in python/dist")
     make.add_argument("--target", action="append", choices=sorted(TARGETS), help="a target; all by default")
     make.add_argument("--out", help="where to put them; next to the universal wheel by default")
-    make.add_argument("--cache", help="cache of Node archives; ~/.cache/colloq/node by default")
+    make.add_argument("--cache", help="cache of Node archives; ~/.cache/aulalab/node by default")
     check = commands.add_parser("smoke", help="install a wheel into a clean venv and run it")
     check.add_argument("--wheel", required=True)
     check.add_argument("--port", type=int, default=39317)

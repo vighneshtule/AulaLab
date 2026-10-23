@@ -113,9 +113,9 @@ jobs:
             --registry "$prefix" --environments "$ENVIRONMENTS" --source-commit "$(git rev-parse HEAD)" \
             --gpu-toolkit-version "$GPU_TOOLKIT_VERSION" --gpu-device-plugin-image "$GPU_DEVICE_PLUGIN_IMAGE"
           python3 scripts/release.py validate --release release.json
-          tar -czf colloq-deploy.tar.gz release.json scripts/cluster.sh scripts/release.py scripts/state-lock.py \
+          tar -czf aulalab-deploy.tar.gz release.json scripts/cluster.sh scripts/release.py scripts/state-lock.py \
             scripts/backup.sh scripts/runtime-backup.py scripts/restore.sh scripts/host.sh scripts/lib.sh deploy/k3s
-          sha256sum release.json colloq-deploy.tar.gz > SHA256SUMS
+          sha256sum release.json aulalab-deploy.tar.gz > SHA256SUMS
       - name: Attach release artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -131,4 +131,4 @@ jobs:
           fi
           # No --clobber: an existing file with the same name is a refusal,
           # not a replacement.
-          gh release upload "$VERSION" release.json colloq-deploy.tar.gz SHA256SUMS
+          gh release upload "$VERSION" release.json aulalab-deploy.tar.gz SHA256SUMS

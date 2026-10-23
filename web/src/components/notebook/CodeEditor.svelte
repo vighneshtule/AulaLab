@@ -3,7 +3,7 @@
   import { editorPhrases } from '@/lib/editor-locale'
   /*
    * CodeMirror, its two language modes and the Yjs binding are the largest
-   * thing Colloq ships, and no screen before the notebook can use a line of it.
+   * thing Aula Lab ships, and no screen before the notebook can use a line of it.
    * It is fetched the first time a cell mounts, never at app start, and one
    * shared promise means a notebook with forty cells still fetches it once.
    *
@@ -100,7 +100,7 @@
           }),
         ),
         import('y-codemirror.next').then(({ yCollab }) => ({ yCollab })),
-        import('./cm-theme').then(({ cellNumbers, colloqTheme }) => ({ cellNumbers, colloqTheme })),
+        import('./cm-theme').then(({ cellNumbers, aulalabTheme }) => ({ cellNumbers, aulalabTheme })),
       ],
     )
     return { autocomplete, commands, md, py, language, state, view, collab, theme }
@@ -511,7 +511,7 @@
    * Two seconds is "had time to look up", not "now there is always a yellow
    * stripe here": the mark answers the question "where have I been taken", and
    * after the answer it gets in the way of reading. The fade in cm-theme.ts
-   * (`colloq-landed`) lasts just as long, and the numbers must match: here the
+   * (`aulalab-landed`) lasts just as long, and the numbers must match: here the
    * decoration is removed, there it fades.
    */
   const LANDING_MS = 2000
@@ -1811,7 +1811,7 @@
           numbers.of(numberExtensions(cm, numbersOn)),
           hintSlot.of(hint ? placeholderExt(hint) : []),
           localeSlot.of(EditorState.phrases.of(editorPhrases())),
-          cm.theme.colloqTheme,
+          cm.theme.aulalabTheme,
           cm.view.EditorView.contentAttributes.of({ 'aria-label': label }),
           /*
            * The sheet's ceiling: a paste that does not fit is refused as a

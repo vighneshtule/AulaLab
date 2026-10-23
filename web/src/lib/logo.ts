@@ -1,5 +1,5 @@
 /**
- * The Colloq mark is a 3×3 grid of cells.
+ * The Aula Lab mark is a 3×3 grid of cells.
  *
  * One pattern is the brand and never varies. A seminar gets its own pattern
  * derived from its session id, which is what makes four open seminars

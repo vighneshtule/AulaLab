@@ -270,7 +270,7 @@
           </div>
           {#if minted.loopback}
             <!-- The commands carry this server's own loopback (PUBLIC_URL of
-                 localhost or 127.x), as colloq-host runner-code warns too: a
+                 localhost or 127.x), as aulalab-host runner-code warns too: a
                  machine anywhere else would dial itself and never join. -->
             <p class="flex items-start gap-2 border-l-[3px] border-danger bg-danger/[0.06] px-3 py-2.5 text-2xs font-semibold text-danger" role="alert">
               <Icon name="alert" size={14} class="mt-0.5 shrink-0" />

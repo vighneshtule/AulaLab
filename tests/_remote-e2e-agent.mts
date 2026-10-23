@@ -8,8 +8,8 @@
  * its tree's data/ (main.ts · configured); the home in the test's process has
  * a DATA_DIR of its own. So each agent gets its own environment, built from
  * nothing (never the test process's, which holds the home's secrets and its
- * KERNEL_BACKEND=test): COLLOQ_RUNNER_JOIN with the home's loopback address and
- * an owner's code, COLLOQ_RUNNER_STATE and DATA_DIR in its own temporary tree,
+ * KERNEL_BACKEND=test): AULALAB_RUNNER_JOIN with the home's loopback address and
+ * an owner's code, AULALAB_RUNNER_STATE and DATA_DIR in its own temporary tree,
  * NODE_ENV=development as the image's entry point sets it, and a PATH that
  * starts with the fake (tests/_remote-e2e-docker.mjs), so it is the `docker`
  * every spawn finds — /usr/bin and /bin after it, never the directories a
@@ -30,7 +30,7 @@
  *
  * A CLASS MACHINE (remote-classes.md §7, §17.2) is the same agent with what a
  * class kernel host needs of its daemon: an image of its own for the
- * perimeter's helper (COLLOQ_RUNNER_IMAGE, the form `make runner-dev` has, or
+ * perimeter's helper (AULALAB_RUNNER_IMAGE, the form `make runner-dev` has, or
  * its own container seeded with a network mode), the machine's own settings in
  * its environment, and the fake docker's class containers — each a fake
  * Jupyter process (tests/_fake-jupyter.mjs) that outlives the agent, as a
@@ -155,7 +155,7 @@ export interface Fleet {
 
 export function createFleet(): Fleet {
   // os.tmpdir(), not a deeper folder: each agent listens on a Unix socket in its tree, and macOS caps such a path at 104 bytes.
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-e2e-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-e2e-'))
   const bin = path.join(root, 'bin')
   const gates = path.join(root, 'gates')
   fs.mkdirSync(bin)
@@ -165,8 +165,8 @@ export function createFleet(): Fleet {
   const registry = path.join(root, 'registry.json')
   fs.writeFileSync(registry, '{}')
   process.on('exit', () => {
-    // COLLOQ_E2E_KEEP=1 keeps the machines' trees, logs and docker calls for a look after a red run.
-    if (process.env.COLLOQ_E2E_KEEP) {
+    // AULALAB_E2E_KEEP=1 keeps the machines' trees, logs and docker calls for a look after a red run.
+    if (process.env.AULALAB_E2E_KEEP) {
       process.stderr.write(`# remote-e2e: the machines' trees are kept in ${root}\n`)
       return
     }
@@ -304,20 +304,20 @@ export interface FakeJupyterDoor {
 }
 
 export interface AgentOptions {
-  /** COLLOQ_RUNNER_JOIN: `http://127.0.0.1:<port>#<code>`. */
+  /** AULALAB_RUNNER_JOIN: `http://127.0.0.1:<port>#<code>`. */
   join: string
   /** Another build than the sources' `dev` (a 64-hex digest). */
   build?: string
   /**
    * A class machine's agent: an image of its own in its fake docker,
-   * RUNNER_IMAGE, named by COLLOQ_RUNNER_IMAGE — what the perimeter's helper
+   * RUNNER_IMAGE, named by AULALAB_RUNNER_IMAGE — what the perimeter's helper
    * runs from (kernels.ts · helperImage) when the agent has no container of
    * its own. The 0.23 scenarios start agents without it, as before.
    */
   classes?: boolean
-  /** The agent's own container (COLLOQ_RUNNER_CONTAINER), seeded running in its fake docker with this network mode (`host`, as colloq-host starts it). */
+  /** The agent's own container (AULALAB_RUNNER_CONTAINER), seeded running in its fake docker with this network mode (`host`, as aulalab-host starts it). */
   container?: { network: string }
-  /** The machine's own settings (COLLOQ_ROOM_NETWORK, KERNEL_BLOCKED_CIDRS, KERNEL_ROOM_SUBNET, …), added to the agent's environment. */
+  /** The machine's own settings (AULALAB_ROOM_NETWORK, KERNEL_BLOCKED_CIDRS, KERNEL_ROOM_SUBNET, …), added to the agent's environment. */
   env?: Record<string, string>
   /**
    * The agent's own timings, shortened for a scenario that cannot wait them
@@ -355,13 +355,13 @@ export interface AgentTimings {
 }
 
 /** The environment variable that carries an agent's shortened timings to this module run as its entry. */
-const AGENT_TIMINGS = 'COLLOQ_E2E_AGENT_TIMINGS'
+const AGENT_TIMINGS = 'AULALAB_E2E_AGENT_TIMINGS'
 /** The one that carries the CPUs it reads its host to have (AgentOptions.cpus). */
-const AGENT_CPUS = 'COLLOQ_E2E_AGENT_CPUS'
+const AGENT_CPUS = 'AULALAB_E2E_AGENT_CPUS'
 const HERE = fileURLToPath(import.meta.url)
 
 /** The image a class machine's agent runs as, in its fake docker: the perimeter's helper runs from it. */
-export const RUNNER_IMAGE = 'colloq-runner:e2e'
+export const RUNNER_IMAGE = 'aulalab-runner:e2e'
 
 /** One machine: its tree, its fake Docker, and the agent process when it runs. */
 export class Agent {
@@ -393,7 +393,7 @@ export class Agent {
   /**
    * The agent's own image (RUNNER_IMAGE) in the fake docker, and its own
    * container when it has one: what a machine's daemon holds before its agent
-   * starts, as colloq-host leaves it.
+   * starts, as aulalab-host leaves it.
    */
   private seedRunner(): void {
     const images = path.join(this.dockerState, 'images')
@@ -409,9 +409,9 @@ export class Agent {
     }))
   }
 
-  /** The agent's own container's name, when it has one (COLLOQ_RUNNER_CONTAINER). */
+  /** The agent's own container's name, when it has one (AULALAB_RUNNER_CONTAINER). */
   get ownContainer(): string {
-    return `colloq-runner-${this.name}`
+    return `aulalab-runner-${this.name}`
   }
 
   /** The environment of the agent and of its fake docker: built from nothing (see the header). */
@@ -423,10 +423,10 @@ export class Agent {
       TMPDIR: os.tmpdir(),
       LANG: 'en_US.UTF-8',
       NODE_ENV: 'development',
-      COLLOQ_RUNNER_JOIN: this.options.join,
-      COLLOQ_RUNNER_STATE: this.root,
+      AULALAB_RUNNER_JOIN: this.options.join,
+      AULALAB_RUNNER_STATE: this.root,
       DATA_DIR: path.join(this.root, 'data'),
-      ...(this.options.container ? { COLLOQ_RUNNER_CONTAINER: this.ownContainer } : this.options.classes ? { COLLOQ_RUNNER_IMAGE: RUNNER_IMAGE } : {}),
+      ...(this.options.container ? { AULALAB_RUNNER_CONTAINER: this.ownContainer } : this.options.classes ? { AULALAB_RUNNER_IMAGE: RUNNER_IMAGE } : {}),
       FAKE_DOCKER_STATE: this.dockerState,
       FAKE_DOCKER_REGISTRY: this.fleet.registry,
       FAKE_DOCKER_GATES: this.fleet.gates,
@@ -480,7 +480,7 @@ export class Agent {
   }
 
   /**
-   * SIGTERM, as `docker stop` sends it (colloq-host runner update, docker
+   * SIGTERM, as `docker stop` sends it (aulalab-host runner update, docker
    * stop -t 90): the agent's own stop — its last sync, the runs handed back,
    * the class containers left running (§7.3) — and its exit, waited for.
    */
@@ -492,7 +492,7 @@ export class Agent {
 
   /**
    * One of the agent's own commands beside the running one (main.ts:
-   * `leave`, `drain`, `status`), as colloq-host runs it in the machine's
+   * `leave`, `drain`, `status`), as aulalab-host runs it in the machine's
    * container: the same tree and environment, the running agent reached
    * through its control socket. Its exit code and everything it printed.
    */
@@ -552,7 +552,7 @@ export class Agent {
 
   /** The agent's INSTANCE_LABEL, as images.ts derives it from its DATA_DIR: the label its class containers carry. */
   get instanceLabel(): string {
-    return `ru.colloq.competition-instance=${createHash('sha256').update(path.resolve(path.join(this.root, 'data'))).digest('hex').slice(0, 16)}`
+    return `ru.aulalab.competition-instance=${createHash('sha256').update(path.resolve(path.join(this.root, 'data'))).digest('hex').slice(0, 16)}`
   }
 
   /** status.json, as `runner status` reads it. */
@@ -627,9 +627,9 @@ export class Agent {
     return this.allContainers().filter((c) => c.kind === 'class') as FakeClassContainer[]
   }
 
-  /** The class container of one slot, by its labels (colloq.session, colloq.role); null — none. */
+  /** The class container of one slot, by its labels (aulalab.session, aulalab.role); null — none. */
   classContainer(sessionId: string, role: 'room' | 'own' | 'council'): FakeClassContainer | null {
-    return this.classContainers().find((c) => c.labels.includes(`colloq.session=${sessionId}`) && c.labels.includes(`colloq.role=${role}`)) ?? null
+    return this.classContainers().find((c) => c.labels.includes(`aulalab.session=${sessionId}`) && c.labels.includes(`aulalab.role=${role}`)) ?? null
   }
 
   /** The class folder's copy on this machine (runner-agent/room-files.ts · roomFolder, <state>/rooms/<id>): what its containers mount. */
@@ -771,9 +771,9 @@ if ((process.env[AGENT_TIMINGS] || process.env[AGENT_CPUS]) && process.argv[1] &
     ...timings,
     ...(timings.classes ? { classes: { timings: timings.classes } } : {}),
     // The host's CPUs as the test said them (AgentOptions.cpus), the rest of the picture as the agent reads it (sync.ts · machine).
-    ...(cpus > 0 ? { machine: () => ({ ...readMachine(process.env.COLLOQ_RUNNER_STATE!), cpus }) } : {}),
+    ...(cpus > 0 ? { machine: () => ({ ...readMachine(process.env.AULALAB_RUNNER_STATE!), cpus }) } : {}),
   }
   const io = { out: (text: string) => void process.stdout.write(text), err: (text: string) => void process.stderr.write(text) }
-  process.stderr.write(`colloq-runner e2e: shortened timings ${JSON.stringify(timings)}${cpus > 0 ? `, the host's CPUs ${cpus}` : ''}\n`)
+  process.stderr.write(`aulalab-runner e2e: shortened timings ${JSON.stringify(timings)}${cpus > 0 ? `, the host's CPUs ${cpus}` : ''}\n`)
   process.exit(await main(['run'], process.env, io, seams as unknown as Parameters<typeof main>[3]))
 }

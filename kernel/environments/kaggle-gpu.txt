@@ -1,4 +1,4 @@
-# Colloq: the kaggle-base stack on CUDA PyTorch, for neural networks in classes and competitions.
+# Aula Lab: the kaggle-base stack on CUDA PyTorch, for neural networks in classes and competitions.
 # This is not the official Kaggle image.
 #
 # It is built on base-gpu (torch and torchvision as CUDA wheels) and inherits
@@ -11,7 +11,7 @@
 # Above the kaggle-base pins: seaborn, which base-gpu lacks (it is a root, not
 # built on base), and OpenCV and timm for images. Built on the host like
 # base-gpu: publish.yml keeps GPU images out.
-# colloq: from base-gpu
+# aulalab: from base-gpu
 numpy==2.4.6
 pandas==3.0.6
 scipy==1.17.1

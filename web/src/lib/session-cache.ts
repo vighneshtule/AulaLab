@@ -8,7 +8,7 @@ import type { SessionInfo } from '@shared/protocol'
  * This is a cache, never a source of truth — the name shown in the header comes
  * from the CRDT the moment the document replays.
  */
-const ROOM_KEY = 'colloq.room.v1'
+const ROOM_KEY = 'aulalab.room.v1'
 
 type RoomMap = Record<string, SessionInfo>
 

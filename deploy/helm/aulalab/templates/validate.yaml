@@ -1,0 +1,188 @@
+{{- /*
+Renders nothing. A value the app or the broker would refuse at start stops the
+render here, with the reason, instead of leaving a Pod in CrashLoopBackOff
+behind a green sync.
+*/ -}}
+{{- $values := .Values -}}
+{{- $imagePattern := "^(?:[a-z0-9]+(?:[.-][a-z0-9]+)*(?::[0-9]{1,5})?/)?[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)*@sha256:[a-f0-9]{64}$" -}}
+{{- $namePattern := "^(?:[a-z0-9][a-z0-9-]{0,30}[a-z0-9]|[a-z0-9])$" -}}
+
+{{- /* Images. The app and runtime references are checked where they are rendered. */ -}}
+{{- $_ := include "aulalab.appImage" . -}}
+{{- $_ := include "aulalab.runtimeImage" . -}}
+{{- $names := dict -}}
+{{- $current := dict -}}
+{{- range $index, $env := $values.catalog.environments -}}
+{{- if not (regexMatch $namePattern (toString $env.name)) -}}
+{{- fail (printf "catalog.environments[%d].name %q: lowercase letters, digits and dashes, at most 32 characters" $index (toString $env.name)) -}}
+{{- end -}}
+{{- if not $env.image -}}
+{{- fail (printf "catalog.environments[%d].image (%s) is empty. The chart in the source tree carries no image digests: install the published chart (oci://ghcr.io/vighneshtule/charts/aulalab), or set every catalog image to a digest-pinned reference." $index $env.name) -}}
+{{- end -}}
+{{- $image := include "aulalab.rewriteImage" (dict "ref" $env.image "registry" $values.global.imageRegistry) -}}
+{{- if or (gt (len $image) 512) (not (regexMatch $imagePattern $image)) -}}
+{{- fail (printf "catalog.environments[%d].image %q must be a lowercase registry reference pinned by digest (registry/path@sha256:...)" $index $image) -}}
+{{- end -}}
+{{- $_ := set $names $env.name (add1 (get $names $env.name | default 0)) -}}
+{{- if $env.current -}}{{- $_ := set $current $env.name (add1 (get $current $env.name | default 0)) -}}{{- end -}}
+{{- if and (hasKey $env "current") (not $env.current) -}}{{- $_ := set $current (printf "%s/false" $env.name) true -}}{{- end -}}
+{{- end -}}
+{{- range $name, $count := $names -}}
+{{- /* A lone revision is current unless it says otherwise (shared/runtime.ts · parseRuntimeCatalog). */ -}}
+{{- $isCurrent := int (get $current $name | default 0) -}}
+{{- if and (eq (int $count) 1) (hasKey $current (printf "%s/false" $name)) -}}
+{{- fail (printf "catalog environment %s has one revision marked current: false: nothing would be current" $name) -}}
+{{- end -}}
+{{- if and (gt (int $count) 1) (ne $isCurrent 1) -}}
+{{- fail (printf "catalog environment %s has %d revisions: exactly one of them needs current: true" $name (int $count)) -}}
+{{- end -}}
+{{- end -}}
+{{- if not (hasKey $names $values.catalog.defaultEnvironment) -}}
+{{- fail (printf "catalog.defaultEnvironment %q is not one of catalog.environments" $values.catalog.defaultEnvironment) -}}
+{{- end -}}
+
+{{- /* Ingress. */ -}}
+{{- if $values.ingress.enabled -}}
+{{- if not $values.ingress.host -}}
+{{- fail "ingress.host is required with ingress.enabled (Aula Lab sits at the root of its own host); or set ingress.enabled=false for a Service-only install and config.publicUrl to the address people open" -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* Rooms: the same grammar and bounds as the broker's (runtime/src/config.ts). */ -}}
+{{- $memory := include "aulalab.mebibytes" $values.rooms.memory | int -}}
+{{- if or (lt $memory 64) (gt $memory 262144) -}}
+{{- fail (printf "rooms.memory %q: whole Mi or Gi from 64Mi to 256Gi, e.g. 4Gi" (toString $values.rooms.memory)) -}}
+{{- end -}}
+{{- $ephemeral := include "aulalab.mebibytes" $values.rooms.ephemeralStorage | int -}}
+{{- if or (lt $ephemeral 64) (gt $ephemeral 1048576) -}}
+{{- fail (printf "rooms.ephemeralStorage %q: whole Mi or Gi from 64Mi to 1024Gi" (toString $values.rooms.ephemeralStorage)) -}}
+{{- end -}}
+{{- if $values.rooms.maxMemory -}}
+{{- $max := include "aulalab.mebibytes" $values.rooms.maxMemory | int -}}
+{{- if or (lt $max 64) (gt $max 262144) -}}
+{{- fail (printf "rooms.maxMemory %q: whole Mi or Gi from 64Mi to 256Gi" (toString $values.rooms.maxMemory)) -}}
+{{- end -}}
+{{- if gt $memory $max -}}
+{{- fail (printf "rooms.memory (%s) exceeds rooms.maxMemory (%s): the broker refuses to start" (toString $values.rooms.memory) (toString $values.rooms.maxMemory)) -}}
+{{- end -}}
+{{- end -}}
+{{- $cpu := toString $values.rooms.cpu -}}
+{{- if not (regexMatch "^(?:[1-9][0-9]*(?:\\.[0-9]{1,3})?|0\\.[0-9]{1,3}|[1-9][0-9]*m)$" $cpu) -}}
+{{- fail (printf "rooms.cpu %q: cores as a Kubernetes quantity, e.g. \"2\" or \"1500m\"" $cpu) -}}
+{{- end -}}
+{{- if hasSuffix "m" $cpu -}}
+{{- if gt (trimSuffix "m" $cpu | int) 64000 -}}{{- fail "rooms.cpu: at most 64 cores" -}}{{- end -}}
+{{- else if gt (float64 $cpu) 64.0 -}}
+{{- fail "rooms.cpu: at most 64 cores" -}}
+{{- end -}}
+
+{{- /* A GPU for competition submissions: Kubernetes' rule for an extended resource, as the broker checks it (runtime/src/pod-policy.ts · parseExtendedResource). */ -}}
+{{- with $values.gpu.competitions.resource -}}
+{{- if or (not (regexMatch "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/[A-Za-z0-9]([-A-Za-z0-9_.]{0,61}[A-Za-z0-9])?$" .)) (contains "kubernetes.io/" .) (hasPrefix "requests." .) -}}
+{{- fail (printf "gpu.competitions.resource %q: the extended resource your GPU device plugin offers, e.g. nvidia.com/gpu or nvidia.com/mig-1g.10gb" .) -}}
+{{- end -}}
+{{- $count := int $values.gpu.competitions.count -}}
+{{- if or (lt $count 1) (gt $count 8) -}}
+{{- fail (printf "gpu.competitions.count %v: 1 to 8 units of %s per submission" $values.gpu.competitions.count .) -}}
+{{- end -}}
+{{- with $values.gpu.competitions.slots -}}
+{{- if or (lt (int .) 1) (gt (int .) 256) -}}
+{{- fail (printf "gpu.competitions.slots %v: 1 to 256 GPU submissions at once, or null" .) -}}
+{{- end -}}
+{{- end -}}
+{{- $shm := int $values.gpu.competitions.shmMb -}}
+{{- if or (lt $shm 0) (gt $shm 65536) -}}
+{{- fail (printf "gpu.competitions.shmMb %v: 0 to 65536 MiB (0: no /dev/shm of ours, for MPS)" $values.gpu.competitions.shmMb) -}}
+{{- end -}}
+{{- end -}}
+{{- $pull := int $values.gpu.competitions.pullSeconds -}}
+{{- if or (lt $pull 0) (gt $pull 3600) -}}
+{{- fail (printf "gpu.competitions.pullSeconds %v: 0 to 3600 seconds" $values.gpu.competitions.pullSeconds) -}}
+{{- end -}}
+
+{{- /* Keys that belong to the chart and the broker. */ -}}
+{{- range $key, $_ := $values.commonLabels -}}
+{{- if or (hasPrefix "app.kubernetes.io/" $key) (hasPrefix "aulalab.dev/" $key) (hasPrefix "helm.sh/" $key) -}}
+{{- fail (printf "commonLabels.%s: app.kubernetes.io/*, aulalab.dev/* and helm.sh/* labels are set by the chart" $key) -}}
+{{- end -}}
+{{- end -}}
+{{- range $key, $_ := $values.rooms.podLabels -}}
+{{- if or (hasPrefix "app.kubernetes.io/" $key) (hasPrefix "aulalab.dev/" $key) (hasPrefix "aulalab." $key) -}}
+{{- fail (printf "rooms.podLabels.%s: app.kubernetes.io/* and aulalab.* labels of broker Pods are the broker's and the chart's" $key) -}}
+{{- end -}}
+{{- end -}}
+{{- range $key, $_ := $values.rooms.podAnnotations -}}
+{{- if hasPrefix "aulalab.dev/" $key -}}
+{{- fail (printf "rooms.podAnnotations.%s: aulalab.dev/* annotations are the broker's" $key) -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* Secrets. */ -}}
+{{- if $values.config.existingSecret -}}
+{{- if or $values.config.ai.apiKey $values.config.sessionSecret -}}
+{{- fail (printf "config.existingSecret (%s) replaces aulalab-app-config: put OPENAI_API_KEY and SESSION_SECRET into that Secret and leave config.ai.apiKey and config.sessionSecret empty" $values.config.existingSecret) -}}
+{{- end -}}
+{{- end -}}
+{{- range $name, $secret := dict "secrets.runtimeToken" $values.secrets.runtimeToken "secrets.roomSecret" $values.secrets.roomSecret -}}
+{{- if $secret.value -}}
+{{- if $secret.existingSecret -}}
+{{- fail (printf "%s: set either existingSecret or value, not both" $name) -}}
+{{- end -}}
+{{- if or (not (regexMatch "^[A-Za-z0-9_-]{43,128}$" $secret.value)) (lt (len (uniq (splitList "" $secret.value))) 8) -}}
+{{- fail (printf "%s.value: 43 to 128 characters of [A-Za-z0-9_-] from at least 32 random bytes, e.g. openssl rand -hex 32" $name) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- if and $values.metrics.token $values.metrics.existingSecret -}}
+{{- fail "metrics: set either existingSecret or token, not both" -}}
+{{- end -}}
+{{- if and $values.metrics.token (not (regexMatch "^[!-~]{16,512}$" $values.metrics.token)) -}}
+{{- fail "metrics.token: 16 to 512 printable characters without spaces" -}}
+{{- end -}}
+{{- if and $values.metrics.serviceMonitor.enabled (not $values.metrics.enabled) -}}
+{{- fail "metrics.serviceMonitor.enabled needs metrics.enabled: without METRICS_TOKEN the app answers /metrics with 404" -}}
+{{- end -}}
+
+{{- /* Outbound. */ -}}
+{{- if and $values.outbound.extraCa.pem $values.outbound.extraCa.existingConfigMap -}}
+{{- fail "outbound.extraCa: set either pem or existingConfigMap, not both" -}}
+{{- end -}}
+{{- with $values.outbound.extraCa.pem -}}
+{{- if or (not (contains "-----BEGIN CERTIFICATE-----" .)) (gt (len .) 1048576) -}}
+{{- fail "outbound.extraCa.pem must be a PEM bundle (-----BEGIN CERTIFICATE-----) of at most 1 MiB" -}}
+{{- end -}}
+{{- end -}}
+{{- with $values.dependencies.indexUrl -}}
+{{- /* The rules of shared/dependency-source.ts: https, a host or IPv4 address, no credentials, query or fragment. */ -}}
+{{- if not (regexMatch "^https://[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[0-9]{1,5})?(/[^?#@\\s]*)?$" (lower .)) -}}
+{{- fail (printf "dependencies.indexUrl %q must be an https:// URL of a host or IPv4 address, without credentials, query or fragment" .) -}}
+{{- end -}}
+{{- end -}}
+{{- range $entry := splitList "," (regexReplaceAll "\\s+" (toString $values.dependencies.filesHosts) ",") -}}
+{{- if and $entry (not (regexMatch "^(https://)?[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[0-9]{1,5})?/*$" (lower $entry))) -}}
+{{- fail (printf "dependencies.filesHosts: %q is not a host or host:port" $entry) -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* The competition instance is named after the namespace, as the k3s installer did. */ -}}
+{{- if not (regexMatch "^[a-z0-9-]{1,63}$" .Release.Namespace) -}}
+{{- fail (printf "namespace %q is not a DNS label" .Release.Namespace) -}}
+{{- end -}}
+
+{{- /* Sign-in by proxy: one source of keys, and an inline JWKS that is a JWKS. */ -}}
+{{- $sso := $values.config.sso -}}
+{{- if and $sso.jwksUrl $sso.jwks -}}
+{{- fail "config.sso: set jwksUrl or jwks, not both (the app would refuse both and leave sign-in by proxy off)" -}}
+{{- end -}}
+{{- if $sso.jwks -}}
+{{- $doc := fromJson $sso.jwks -}}
+{{- if or (not (kindIs "map" $doc)) (not (hasKey $doc "keys")) -}}
+{{- fail "config.sso.jwks must be a JWKS document: {\"keys\": [...]}, as the proxy serves it" -}}
+{{- end -}}
+{{- end -}}
+{{- if and $sso.jwksUrl (not (regexMatch "^https://" $sso.jwksUrl)) -}}
+{{- fail (printf "config.sso.jwksUrl %q must be an https URL: whoever can change the keys in flight signs in as anybody" $sso.jwksUrl) -}}
+{{- end -}}
+{{- if and (or $sso.jwksUrl $sso.jwks) (not $sso.audience) -}}
+{{- fail "config.sso.audience is required: the aud the proxy writes for this application (Teleport: the app's uri, e.g. http://aulalab-app.aulalab.svc:3000), or * to accept tokens meant for any application" -}}
+{{- end -}}

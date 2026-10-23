@@ -33,7 +33,7 @@ const OLD_RUNNER = 'oldtrstd'
 {
   const dir = process.env.DATA_DIR!
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 })
-  const old = new Database(path.join(dir, 'colloq.db'))
+  const old = new Database(path.join(dir, 'aulalab.db'))
   // The data schema of 0.24.0, so that this release's stamp finds nothing to raise (db.ts · stampDataSchema).
   old.pragma('user_version = 2')
   old.exec(`

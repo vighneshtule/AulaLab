@@ -5,7 +5,7 @@ import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { SMOKE_METRIC_CODE, SMOKE_SAMPLE_SUBMISSION, SMOKE_SOLUTION, smokeNotebook } from './competition-k3s-fixtures.mts'
 
-assert.equal(fs.readFileSync('/data/.colloq-k3s-smoke-fixture', 'utf8'), 'colloq-k3s-smoke-v1')
+assert.equal(fs.readFileSync('/data/.aulalab-k3s-smoke-fixture', 'utf8'), 'aulalab-k3s-smoke-v1')
 assert.equal(process.env.KERNEL_BACKEND, 'broker')
 const { RuntimeClient } = await import('../server/src/kernel/runtime-client.js')
 const { BrokerCompetitionRunner } = await import('../server/src/competitions/broker-runner.js')
@@ -14,10 +14,10 @@ const competitions = await import('../server/src/competitions/store.js')
 const storage = await import('../server/src/competitions/storage.js')
 const { closeDatabase } = await import('../server/src/db.js')
 
-const catalog = JSON.parse(fs.readFileSync('/etc/colloq/catalog.json', 'utf8'))
+const catalog = JSON.parse(fs.readFileSync('/etc/aulalab/catalog.json', 'utf8'))
 const base = catalog.environments.find((item: { name: string }) => item.name === 'base')
 assert.ok(base?.image?.includes('@sha256:'))
-const client = new RuntimeClient({ url: 'http://colloq-runtime:8787', tokenFile: '/run/secrets/runtime-token' })
+const client = new RuntimeClient({ url: 'http://aulalab-runtime:8787', tokenFile: '/run/secrets/runtime-token' })
 const runner = new BrokerCompetitionRunner(client, { catalog: () => catalog, pollMs: 250 })
 const metricCode = SMOKE_METRIC_CODE
 try {
@@ -53,7 +53,7 @@ try {
   assert.equal(score.public, 0)
   assert.equal(score.private, 0)
   let preparation: unknown = null
-  if (process.env.COLLOQ_K3S_SMOKE_PREPARE === '1') {
+  if (process.env.AULALAB_K3S_SMOKE_PREPARE === '1') {
     const { ensureCompetitionRevision } = await import('../server/src/dependencies/revisions.js')
     const { prepareBrokerDependencies } = await import('../server/src/dependencies/broker-preparation.js')
     const revision = await ensureCompetitionRevision(competition)
@@ -65,7 +65,7 @@ try {
     assert.ok(prepared.packages.some((item: { name: string }) => item.name === 'python-slugify'))
     preparation = { packages: prepared.packages.length, contentHash: prepared.contentHash }
   }
-  console.log('COLLOQ_K3S_SMOKE_RESULT=' + JSON.stringify({ competitionId: competition.id, submissionId: submission.id,
+  console.log('AULALAB_K3S_SMOKE_RESULT=' + JSON.stringify({ competitionId: competition.id, submissionId: submission.id,
     attemptId, notebook: run.status, metric: score.status, public: score.public, private: score.private,
     preparation }))
 } finally { closeDatabase() }

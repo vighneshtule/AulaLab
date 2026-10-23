@@ -495,11 +495,11 @@ const theme = EditorView.theme({
     height: '3px',
     borderRadius: '50%',
     backgroundColor: 'rgb(var(--faint))',
-    animation: 'colloq-signature-wait 1200ms ease-in-out infinite',
+    animation: 'aulalab-signature-wait 1200ms ease-in-out infinite',
   },
   '.cm-signature-wait i:nth-child(2)': { animationDelay: '160ms' },
   '.cm-signature-wait i:nth-child(3)': { animationDelay: '320ms' },
-  '@keyframes colloq-signature-wait': {
+  '@keyframes aulalab-signature-wait': {
     '0%, 100%': { opacity: '0.25' },
     '50%': { opacity: '1' },
   },
@@ -592,23 +592,23 @@ const theme = EditorView.theme({
    */
   '.cm-landed': {
     borderRadius: '2px',
-    animation: 'colloq-landed 2000ms ease-out 1',
+    animation: 'aulalab-landed 2000ms ease-out 1',
   },
-  '@keyframes colloq-landed': {
+  '@keyframes aulalab-landed': {
     '0%': { backgroundColor: 'rgb(var(--warning) / 0.28)' },
     '55%': { backgroundColor: 'rgb(var(--warning) / 0.28)' },
     '100%': { backgroundColor: 'transparent' },
   },
 })
 
-export const colloqTheme: Extension = [theme, syntaxHighlighting(highlight)]
+export const aulalabTheme: Extension = [theme, syntaxHighlighting(highlight)]
 
 /**
  * Line numbers in a cell, drawn only where the room turned them on
  * (shared/rules.ts · lineNumbers).
  *
  * A theme of its own rather than more rules in the one above, and that is
- * load-bearing. The file editor builds on `colloqTheme` and lists its own
+ * load-bearing. The file editor builds on `aulalabTheme` and lists its own
  * gutter after it (editor-theme.ts), and at equal specificity the extension
  * listed first wins: gutter rules up there would quietly redraw the file's
  * number column. This one travels in the same compartment as the gutter

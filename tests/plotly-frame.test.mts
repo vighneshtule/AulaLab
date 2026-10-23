@@ -109,7 +109,7 @@ test('plotly styling is let in, foreign navigation is not', () => {
 
 test('an origin gets into the header only if it passes an allowlist of shapes', () => {
   assert.equal(frameOrigin('http://localhost:5173'), 'http://localhost:5173')
-  assert.equal(frameOrigin('https://hse.colloq.ru'), 'https://hse.colloq.ru')
+  assert.equal(frameOrigin('https://hse.example.edu'), 'https://hse.example.edu')
   // The value goes into Content-Security-Policy, where a semicolon and a newline
   // are not junk but a SECOND directive. Hence a shape check rather than escaping.
   assert.equal(frameOrigin('https://ok.ru; script-src *'), null)
@@ -163,7 +163,7 @@ test('the frame loader checks the source of a message, not its origin', () => {
    * compared, and that is enough — a foreign frame will not become our `window.parent`.
    */
   assert.match(FRAME_HTML, /e\.source!==window\.parent/)
-  assert.match(FRAME_HTML, /msg\.colloq!==TAG/)
+  assert.match(FRAME_HTML, /msg\.aulalab!==TAG/)
   // A transparent background, against a white flash: the notebook draws the backdrop.
   assert.match(FRAME_HTML, /background:transparent/)
 })

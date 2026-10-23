@@ -33,7 +33,7 @@ export async function operationalStatus(){
   disk:diskUsage(),
   queues:{competitions:{...queueCensus('competition_queue','enqueued_at','waiting',['running']),retries:retries.retries,execution:competitionExecutionDiagnostics()},preparations:queueCensus('dependency_bundles','created_at','queued',['resolving','downloading','verifying'])},
   preparation:dependencyPreparationDiagnostics(),persistence:persistenceDiagnostics(),runtimeRecovery:kernelRecoveryDiagnostics(),
-  // The consistent copies of colloq.db in the data volume: how often, how
+  // The consistent copies of aulalab.db in the data volume: how often, how
   // many, and the newest by name, time and size (db-snapshots.ts).
   snapshots:databaseSnapshotStatus(config.dataDir),
  }

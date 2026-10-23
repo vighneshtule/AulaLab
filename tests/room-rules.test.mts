@@ -4,7 +4,7 @@
  * These pin the two rules that are actually enforced today, and the shape of
  * the defaults — because the defaults are a promise too: a seminar created
  * before rules existed, and a seminar whose teacher never opened the settings,
- * must behave exactly as Colloq always has.
+ * must behave exactly as Aula Lab always has.
  */
 import './_env.mts'
 import { test } from 'node:test'

@@ -509,7 +509,7 @@ test('an upload refused in the middle of its body is answered, marked: never a r
     return out
   }
   // Not gzip at all: gunzip refuses its first bytes, with sixteen megabytes still to come.
-  const notGzip = await streamed({ 'content-encoding': 'gzip', 'x-colloq-sha256': 'a'.repeat(64), 'x-colloq-bytes': String(16 * 1024 * 1024) }, noise, 256)
+  const notGzip = await streamed({ 'content-encoding': 'gzip', 'x-aulalab-sha256': 'a'.repeat(64), 'x-aulalab-bytes': String(16 * 1024 * 1024) }, noise, 256)
   assert.equal(notGzip.status, 422)
   assert.equal(notGzip.headers.get(REMOTE_MARKER_HEADER), REMOTE_MARKER)
   assert.equal(parseRemoteErrorReply(await notGzip.json()).error, 'mismatch')
@@ -521,7 +521,7 @@ test('an upload refused in the middle of its body is answered, marked: never a r
     at += part.length
     return new Uint8Array(part)
   }
-  const longer = await streamed({ 'content-encoding': 'gzip', 'x-colloq-sha256': 'b'.repeat(64), 'x-colloq-bytes': '1000' }, slices, Math.ceil(big.length / (64 * 1024)))
+  const longer = await streamed({ 'content-encoding': 'gzip', 'x-aulalab-sha256': 'b'.repeat(64), 'x-aulalab-bytes': '1000' }, slices, Math.ceil(big.length / (64 * 1024)))
   assert.equal(longer.status, 413)
   assert.equal(longer.headers.get(REMOTE_MARKER_HEADER), REMOTE_MARKER)
   assert.equal(parseRemoteErrorReply(await longer.json()).error, 'too_large')
@@ -531,7 +531,7 @@ test('an upload refused in the middle of its body is answered, marked: never a r
   assert.equal(cancelRemote(queueRow(lease.submissionId)!, 'teacher'), true)
   const started = Date.now()
   pulled = 0
-  const late = await streamed({ 'content-encoding': 'gzip', 'x-colloq-sha256': 'c'.repeat(64), 'x-colloq-bytes': '100' }, noise, 1024)
+  const late = await streamed({ 'content-encoding': 'gzip', 'x-aulalab-sha256': 'c'.repeat(64), 'x-aulalab-bytes': '100' }, noise, 1024)
   assert.equal(late.status, 409)
   // Counted in chunks, not milliseconds, which a loaded runner stretches: a body home does not read stops at what the
   // sockets' buffers hold, a few megabytes, while one it drained would have been sent whole before the answer.
@@ -548,7 +548,7 @@ test('two uploads of one file at once write a file each: what is kept is one who
   const content = Buffer.from(Array.from({ length: 4096 }, (_, i) => `${i},${createHash('sha256').update(String(i)).digest('hex')}\n`).join(''))
   const gz = zlib.gzipSync(content)
   const sha = createHash('sha256').update(content).digest('hex')
-  const headers = { authorization: `Bearer ${m.credential}`, 'content-encoding': 'gzip', 'x-colloq-sha256': sha, 'x-colloq-bytes': String(content.length) }
+  const headers = { authorization: `Bearer ${m.credential}`, 'content-encoding': 'gzip', 'x-aulalab-sha256': sha, 'x-aulalab-bytes': String(content.length) }
   /** A PUT whose body is sent as `first`, then the rest when the test says so. */
   const streamed = (first: Buffer) => {
     let finish: (more: Buffer | null) => void = () => {}
@@ -632,7 +632,7 @@ test('uploads past their limit are told to come back, and below the disk floor t
   })
   const held = fetch(`${m.home}/api/runners/v1/attempts/${lease.attemptId}/files/executed.ipynb`, {
     method: 'PUT',
-    headers: { authorization: `Bearer ${m.credential}`, 'content-encoding': 'gzip', 'x-colloq-sha256': 'c'.repeat(64), 'x-colloq-bytes': '100' },
+    headers: { authorization: `Bearer ${m.credential}`, 'content-encoding': 'gzip', 'x-aulalab-sha256': 'c'.repeat(64), 'x-aulalab-bytes': '100' },
     body,
     duplex: 'half',
   } as RequestInit)

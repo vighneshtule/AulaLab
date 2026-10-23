@@ -217,9 +217,9 @@ before(async () => {
          */
         if (!service && code.includes('REFUSE')) {
           reply(ws, msg.header, 'error', {
-            ename: 'ColloqRefused',
+            ename: 'AulaLabRefused',
             evalue: 'В попытке нельзя завершать ядро: оно общее для всей комнаты.',
-            traceback: ['Traceback (most recent call last)', 'File "<colloq-council>", line 1'],
+            traceback: ['Traceback (most recent call last)', 'File "<aulalab-council>", line 1'],
           })
         }
         if (!service && code.includes('STARVE')) {
@@ -255,7 +255,7 @@ before(async () => {
             ? {
                 user_expressions: answer
                   ? {
-                      colloq: {
+                      aulalab: {
                         status: 'ok',
                         data: { 'text/plain': JSON.stringify(answer) },
                         metadata: {},
@@ -810,7 +810,7 @@ test('an entry without confirmation does not let the attempt into the kernel and
   const failure = outputs[0] as { kind: string; ename: string; evalue: string; traceback: string[] }
   assert.equal(failure.kind, 'error')
   assert.match(failure.evalue, /Не удалось подготовить личные копии/)
-  // No traceback: `<colloq-council>` frames are not the student's code and
+  // No traceback: `<aulalab-council>` frames are not the student's code and
   // will not help them.
   assert.deepEqual(failure.traceback, [])
   assert.doesNotMatch(failure.evalue, /\n/, 'the refusal is no longer a single line')
@@ -885,7 +885,7 @@ test('a variable that did not fit the copy budget is named in a line before the 
  * In ipykernel `exit`/`quit` go to `shell.ask_exit()`, that is, to the end of
  * the process; reproduced on a live kernel — after such an attempt nobody has
  * `data`. The isolation replaces `ask_exit` with a refusal, and it must land
- * on the card as one human line: `<colloq-council>` frames are not the
+ * on the card as one human line: `<aulalab-council>` frames are not the
  * student's code.
  */
 test('an isolation refusal lands on the card as one line, without a traceback', async () => {

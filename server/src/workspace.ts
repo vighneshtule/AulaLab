@@ -9,7 +9,7 @@ import { MAX_DEPTH, MAX_PATH, MAX_SEGMENT, MAX_SEGMENT_BYTES, segmentBytes, base
 
 export const workspaceFs = createAnchoredFilesystem(config.workspaceDir, {
   allowUnsafeDevelopment: process.env.NODE_ENV !== 'production' &&
-    (process.env.NODE_ENV === 'test' || process.env.COLLOQ_UNSAFE_DEV_FILES === '1'),
+    (process.env.NODE_ENV === 'test' || process.env.AULALAB_UNSAFE_DEV_FILES === '1'),
 })
 
 /**
@@ -77,7 +77,7 @@ const TEMP_FILE = /^\..+\.(?:uploading|saving)-[0-9a-z][0-9a-z-]{5,}$/i
  * so that a crash in the middle leaves what the sweep below removes.
  */
 export function tempNameIn(dir: string): string {
-  return path.join(dir, `.colloq.uploading-${randomUUID()}`)
+  return path.join(dir, `.aulalab.uploading-${randomUUID()}`)
 }
 
 /**
@@ -981,7 +981,7 @@ export function copyFile(sessionId: string, from: string, to: string): TreeResul
     // path all mean "nothing to copy".
     return 'missing'
   }
-  const tmp = path.join(path.dirname(target), `.colloq.saving-${randomUUID()}`)
+  const tmp = path.join(path.dirname(target), `.aulalab.saving-${randomUUID()}`)
   let out: number | null = null
   try {
     out = workspaceFs.openSync(tmp, 'wx')
@@ -1147,7 +1147,7 @@ export function writeText(sessionId: string, rel: string, text: string): boolean
   if (!full) return false
   const tmp = path.join(
     path.dirname(full),
-    `.colloq.saving-${randomUUID()}`,
+    `.aulalab.saving-${randomUUID()}`,
   )
   try {
     workspaceFs.mkdirSync(path.dirname(full), { recursive: true })

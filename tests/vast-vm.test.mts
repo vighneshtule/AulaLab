@@ -68,7 +68,7 @@ if (call.method === 'POST' && call.url.endsWith('/bundles/')) {
 type Call = { method: string; url: string; body: string | null }
 
 function rig() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-vast-vm-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-vast-vm-'))
   const bin = path.join(dir, 'bin')
   fs.mkdirSync(bin)
   fs.writeFileSync(path.join(bin, 'curl'), FAKE_CURL, { mode: 0o755 })
@@ -77,7 +77,7 @@ function rig() {
   const envFile = path.join(dir, '.env')
   fs.writeFileSync(envFile, `VAST_TOKEN=test-token\nVAST_SSH_KEY=${key}\nVAST_DISK=70\nVAST_MAX_PRICE=0.9\n`)
   const onstart = path.join(dir, 'onstart.sh')
-  fs.writeFileSync(onstart, 'export COLLOQ_IMAGE="ghcr.io/colloq-edu/colloq-vast:0.21.0"\nexport COLLOQ_HOSTNAME=""\n')
+  fs.writeFileSync(onstart, 'export AULALAB_IMAGE="ghcr.io/vighneshtule/aulalab-vast:0.21.0"\nexport AULALAB_HOSTNAME=""\n')
   const log = path.join(dir, 'curl.log')
   const run = (vars: Record<string, string> = {}) => {
     fs.rmSync(log, { force: true })

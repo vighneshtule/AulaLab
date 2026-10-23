@@ -48,9 +48,9 @@
  *   LOAD_COUNCIL_SEC  how long section 5 lasts   default 10
  *   LOAD_INK          pen frames per second in section 6 (0: skip it) default 0
  *   LOAD_INK_SEC      how long section 6 lasts   default 10
- *   LOAD_SERVER_PID   pid of the server process (systemctl show -p MainPID colloq)
+ *   LOAD_SERVER_PID   pid of the server process (systemctl show -p MainPID aulalab)
  *   LOAD_SETUP_TOKEN  the setup token, if there is no file nearby (a remote instance)
- *   LOAD_STAFF_COOKIE a ready `colloq_staff=...` cookie, if there is no token at all
+ *   LOAD_STAFF_COOKIE a ready `aulalab_staff=...` cookie, if there is no token at all
  *   LOAD_STAFF_JOIN   1: join with the staff cookie, past the new-participant limit
  *   LOAD_ECHO         1: repeat other people's presence to the server, as tabs
  *                     did before presence.ts · ownChanges (see below) default 0
@@ -214,7 +214,7 @@ async function signInAsStaff(): Promise<string | null> {
   const given = (process.env.LOAD_STAFF_COOKIE ?? '').trim()
   if (given) {
     staffCookie = given.split(';')[0]
-    return staffCookie.startsWith('colloq_staff=') ? null : 'LOAD_STAFF_COOKIE is not a colloq_staff= cookie'
+    return staffCookie.startsWith('aulalab_staff=') ? null : 'LOAD_STAFF_COOKIE is not a aulalab_staff= cookie'
   }
   const tokenFile = resolve(process.env.DATA_DIR ?? join(ROOT, 'data'), 'setup-token')
   let token = (process.env.LOAD_SETUP_TOKEN ?? '').trim()
@@ -235,7 +235,7 @@ async function signInAsStaff(): Promise<string | null> {
     })
     if (!res.ok) return `sign-in refused (${res.status})`
     staffCookie = (res.headers.get('set-cookie') ?? '').split(';')[0]
-    return staffCookie.startsWith('colloq_staff=') ? null : 'no staff cookie was issued'
+    return staffCookie.startsWith('aulalab_staff=') ? null : 'no staff cookie was issued'
   } catch (err) {
     return err instanceof Error ? err.message : 'sign-in failed'
   }
@@ -1214,7 +1214,7 @@ async function drain(armed: Armed): Promise<number> {
 /* ------------------------------------------------------------------- table */
 
 say()
-say(bold('  colloq load') + dim(`  ${new Date().toISOString()}  ·  ${BASE}  ·  own seminar ${SID}`))
+say(bold('  aulalab load') + dim(`  ${new Date().toISOString()}  ·  ${BASE}  ·  own seminar ${SID}`))
 say(
   dim(
     `  ${STUDENTS} students over ${RAMP_SEC}s · idle ${IDLE_SEC}s · storm ${STORM_SEC}s (${TYPISTS}×${KEYS}/s)` +

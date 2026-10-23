@@ -118,7 +118,7 @@ test('a change of address invalidates the remembered pty name', () => {
 
 test('incarnation identity changes when a Pod is replaced behind the same Service URL', async () => {
   const { endpointIdentity } = await import('../server/src/kernel/jupyter.js')
-  const first = { url: 'http://room.colloq.svc:8888', token: 'private', instanceId: 'uid-one' }
+  const first = { url: 'http://room.aulalab.svc:8888', token: 'private', instanceId: 'uid-one' }
   assert.notEqual(endpointIdentity(first), endpointIdentity({ ...first, instanceId: 'uid-two' }))
   assert.equal(endpointIdentity(first), endpointIdentity({ ...first, token: 'rotated' }))
 })

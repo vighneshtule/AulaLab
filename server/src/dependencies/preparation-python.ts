@@ -58,7 +58,7 @@ def literal(host):
 
 def goes_direct(host, port):
     # NO_PROXY read as curl and Python read it: '*', a domain with everything under
-    # it, host:port, ranges for literal addresses; plus Colloq's own destinations.
+    # it, host:port, ranges for literal addresses; plus Aula Lab's own destinations.
     address = literal(host)
     if address is not None and any(address in network for network in LOCAL_NETWORKS if network.version == address.version): return True
     if address is None and ('.' not in host or any(host == suffix or host.endswith('.' + suffix) for suffix in LOCAL_SUFFIXES)): return True
@@ -283,7 +283,7 @@ def emit(value):
             body = (json.dumps(event, separators=(',', ':')) + '\n').encode('utf-8')
             if not progress.exists() or progress.stat().st_size + len(body) <= 128 * 1024:
                 with progress.open('ab') as output: output.write(body)
-    print('__COLLOQ_DEP__' + json.dumps(value, separators=(',', ':')), flush=True)
+    print('__AULALAB_DEP__' + json.dumps(value, separators=(',', ':')), flush=True)
 
 def base_versions(base):
     # Versions as the base reports them, for texts: "numpy in the base is 2.4.6".

@@ -1,5 +1,5 @@
 /**
- * Database snapshots: consistent copies of colloq.db in <DATA_DIR>/snapshots.
+ * Database snapshots: consistent copies of aulalab.db in <DATA_DIR>/snapshots.
  *
  * In a customer's Kubernetes the backup is a volume snapshot taken whenever
  * the platform decides, and a volume snapshot of a live WAL database is a
@@ -53,7 +53,7 @@ after(() => {
 
 afterEach(() => stopDatabaseSnapshots())
 
-function scratch(prefix = 'colloq-snapshots-'): string {
+function scratch(prefix = 'aulalab-snapshots-'): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix))
   dirs.push(dir)
   return dir
@@ -62,7 +62,7 @@ function scratch(prefix = 'colloq-snapshots-'): string {
 /** A data directory with a WAL database holding `rows` notes, stamped with schema 1. */
 function instance(rows = 50): { dataDir: string; db: Database.Database } {
   const dataDir = scratch()
-  const db = new Database(path.join(dataDir, 'colloq.db'))
+  const db = new Database(path.join(dataDir, 'aulalab.db'))
   handles.push(db)
   db.pragma('journal_mode = WAL')
   db.exec('CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT NOT NULL)')
@@ -84,7 +84,7 @@ const mode = (file: string) => fs.statSync(file).mode & 0o777
 function inspect(file: string, { inPlace = false } = {}): { rows: number; version: number; integrity: string; tables: string[] } {
   let probe = file
   if (!inPlace) {
-    probe = path.join(scratch('colloq-snapshot-probe-'), 'probe.db')
+    probe = path.join(scratch('aulalab-snapshot-probe-'), 'probe.db')
     fs.copyFileSync(file, probe)
   }
   const copy = new Database(probe)
@@ -173,7 +173,7 @@ test('a snapshot is a complete, consistent copy: 0600 in a 0700 folder, named by
     logged.restore()
   }
   assert.ok(outcome.ok, JSON.stringify(outcome))
-  assert.match(outcome.name, /^colloq-\d{8}T\d{6}Z\.db$/)
+  assert.match(outcome.name, /^aulalab-\d{8}T\d{6}Z\.db$/)
   const dir = path.join(dataDir, 'snapshots')
   const file = path.join(dir, outcome.name)
   assert.equal(mode(dir), 0o700)
@@ -243,18 +243,18 @@ test('retention keeps the newest DB_SNAPSHOT_KEEP periodic copies, and never tou
   const { dataDir, db } = instance()
   const dir = path.join(dataDir, 'snapshots')
   fs.mkdirSync(dir, { mode: 0o700 })
-  for (const day of ['01', '02', '03', '04']) fs.writeFileSync(path.join(dir, `colloq-202609${day}T000000Z.db`), 'old', { mode: 0o600 })
+  for (const day of ['01', '02', '03', '04']) fs.writeFileSync(path.join(dir, `aulalab-202609${day}T000000Z.db`), 'old', { mode: 0o600 })
   // Opened once with the sqlite3 shell: its journal leaves with it.
-  fs.writeFileSync(path.join(dir, 'colloq-20260901T000000Z.db-wal'), 'wal')
+  fs.writeFileSync(path.join(dir, 'aulalab-20260901T000000Z.db-wal'), 'wal')
   fs.writeFileSync(path.join(dir, 'pre-schema-1-to-2-20260801T000000Z.db'), 'before an upgrade', { mode: 0o600 })
   fs.writeFileSync(path.join(dir, 'notes-by-the-operator.txt'), 'keep me')
   // What a volume mounted with an fsGroup does to every file at each mount.
-  fs.chmodSync(path.join(dir, 'colloq-20260904T000000Z.db'), 0o660)
+  fs.chmodSync(path.join(dir, 'aulalab-20260904T000000Z.db'), 0o660)
   fs.chmodSync(path.join(dir, 'pre-schema-1-to-2-20260801T000000Z.db'), 0o660)
   fs.chmodSync(path.join(dir, 'notes-by-the-operator.txt'), 0o644)
   // A copy cut short by a killed process.
-  fs.writeFileSync(path.join(dir, 'colloq-20260905T000000Z.db.partial'), 'half')
-  fs.writeFileSync(path.join(dir, 'colloq-20260905T000000Z.db.partial-journal'), 'half')
+  fs.writeFileSync(path.join(dir, 'aulalab-20260905T000000Z.db.partial'), 'half')
+  fs.writeFileSync(path.join(dir, 'aulalab-20260905T000000Z.db.partial-journal'), 'half')
 
   const logged = capture('log')
   let outcome
@@ -264,26 +264,26 @@ test('retention keeps the newest DB_SNAPSHOT_KEEP periodic copies, and never tou
     logged.restore()
   }
   assert.ok(outcome.ok, JSON.stringify(outcome))
-  assert.equal(outcome.name, 'colloq-20260910T000000Z.db')
-  assert.deepEqual(outcome.removed.sort(), ['colloq-20260901T000000Z.db', 'colloq-20260902T000000Z.db'])
+  assert.equal(outcome.name, 'aulalab-20260910T000000Z.db')
+  assert.deepEqual(outcome.removed.sort(), ['aulalab-20260901T000000Z.db', 'aulalab-20260902T000000Z.db'])
   assert.deepEqual(fs.readdirSync(dir).sort(), [
-    'colloq-20260903T000000Z.db',
-    'colloq-20260904T000000Z.db',
-    'colloq-20260910T000000Z.db',
+    'aulalab-20260903T000000Z.db',
+    'aulalab-20260904T000000Z.db',
+    'aulalab-20260910T000000Z.db',
     'notes-by-the-operator.txt',
     'pre-schema-1-to-2-20260801T000000Z.db',
   ])
   assert.match(logged.lines.join('\n'), /removed 2 older, keeping 3/)
   // Every kept copy is back to 0600; a file that is not a snapshot is not ours to change.
-  assert.equal(mode(path.join(dir, 'colloq-20260904T000000Z.db')), 0o600)
+  assert.equal(mode(path.join(dir, 'aulalab-20260904T000000Z.db')), 0o600)
   assert.equal(mode(path.join(dir, 'pre-schema-1-to-2-20260801T000000Z.db')), 0o600)
   assert.equal(mode(path.join(dir, 'notes-by-the-operator.txt')), 0o644)
 
-  assert.deepEqual(pruneSnapshots(dataDir, 1).sort(), ['colloq-20260903T000000Z.db', 'colloq-20260904T000000Z.db'])
+  assert.deepEqual(pruneSnapshots(dataDir, 1).sort(), ['aulalab-20260903T000000Z.db', 'aulalab-20260904T000000Z.db'])
   assert.deepEqual(
     listSnapshots(dataDir).map((file) => [file.name, file.kind]),
     [
-      ['colloq-20260910T000000Z.db', 'periodic'],
+      ['aulalab-20260910T000000Z.db', 'periodic'],
       ['pre-schema-1-to-2-20260801T000000Z.db', 'pre-schema'],
     ],
   )
@@ -311,7 +311,7 @@ test('a snapshot that cannot be written is a warning and a counter, never a cras
     warned.restore()
   }
   assert.equal(warned.lines.length, 2)
-  for (const line of warned.lines) assert.match(line, /^\[db\] WARNING: snapshot colloq-\d{8}T\d{6}Z\.db failed: .+ The database itself is untouched/)
+  for (const line of warned.lines) assert.match(line, /^\[db\] WARNING: snapshot aulalab-\d{8}T\d{6}Z\.db failed: .+ The database itself is untouched/)
   const status = databaseSnapshotStatus(dataDir)
   assert.equal(status.failures, before + 2)
   assert.ok(status.lastFailureAt !== null && Date.now() - status.lastFailureAt < 5000)
@@ -345,7 +345,7 @@ test('the schedule takes one every interval, keeps DB_SNAPSHOT_KEEP of them, and
   try {
     const nextAt = startDatabaseSnapshots(db, dataDir, { everyMs: 50, keep: 2, problems: [] }, { firstDelayMs: 0, now })
     assert.equal(typeof nextAt, 'number')
-    assert.match(logged.lines[0] ?? '', /^\[db\] snapshots of colloq\.db every 50 ms into .+snapshots, keeping 2; the next at \d{4}-/)
+    assert.match(logged.lines[0] ?? '', /^\[db\] snapshots of aulalab\.db every 50 ms into .+snapshots, keeping 2; the next at \d{4}-/)
     await waitFor(() => taken >= 4 && !databaseSnapshotStatus(dataDir).running, 'four snapshots')
     assert.equal(typeof databaseSnapshotStatus(dataDir).nextAt, 'number')
     await stopDatabaseSnapshots()
@@ -356,7 +356,7 @@ test('the schedule takes one every interval, keeps DB_SNAPSHOT_KEEP of them, and
   const kept = listSnapshots(dataDir)
   assert.deepEqual(
     kept.map((file) => file.name),
-    [after, after - 1].map((n) => `colloq-${snapshotStamp(new Date(Date.UTC(2026, 8, 1) + n * 3_600_000))}.db`),
+    [after, after - 1].map((n) => `aulalab-${snapshotStamp(new Date(Date.UTC(2026, 8, 1) + n * 3_600_000))}.db`),
   )
   assert.equal(databaseSnapshotStatus(dataDir).nextAt, null)
   await new Promise((resolve) => setTimeout(resolve, 200))
@@ -376,14 +376,14 @@ test('after a restart the next snapshot is counted from the newest one on disk, 
 
     // Taken ten minutes ago: the next one fifty minutes from now.
     const recent = new Date(Date.now() - 10 * 60_000)
-    fs.writeFileSync(path.join(dir, `colloq-${snapshotStamp(recent)}.db`), 'recent', { mode: 0o600 })
+    fs.writeFileSync(path.join(dir, `aulalab-${snapshotStamp(recent)}.db`), 'recent', { mode: 0o600 })
     nextAt = startDatabaseSnapshots(db, dataDir, { everyMs: hour, keep: 7, problems: [] })!
     const stamped = Math.floor(recent.getTime() / 1000) * 1000
     assert.equal(nextAt, stamped + hour)
 
     // Overdue by an hour: only the minute a start needs.
     for (const name of fs.readdirSync(dir)) fs.rmSync(path.join(dir, name))
-    fs.writeFileSync(path.join(dir, `colloq-${snapshotStamp(new Date(Date.now() - 2 * hour))}.db`), 'old', { mode: 0o600 })
+    fs.writeFileSync(path.join(dir, `aulalab-${snapshotStamp(new Date(Date.now() - 2 * hour))}.db`), 'old', { mode: 0o600 })
     nextAt = startDatabaseSnapshots(db, dataDir, { everyMs: hour, keep: 7, problems: [] })!
     assert.ok(Math.abs(nextAt - (Date.now() + 60_000)) < 2000, `${nextAt - Date.now()} ms`)
   } finally {
@@ -498,10 +498,10 @@ process.exit(0)
 }
 
 function legacyRoot(version: number): string {
-  const root = scratch('colloq-schema-raise-')
+  const root = scratch('aulalab-schema-raise-')
   fs.mkdirSync(path.join(root, 'data'), { mode: 0o700 })
   fs.mkdirSync(path.join(root, 'workspace'))
-  const legacy = new Database(path.join(root, 'data', 'colloq.db'))
+  const legacy = new Database(path.join(root, 'data', 'aulalab.db'))
   legacy.exec("CREATE TABLE sessions (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at INTEGER NOT NULL); INSERT INTO sessions VALUES ('s1', 'kept', 1)")
   legacy.pragma(`user_version = ${version}`)
   legacy.close()
@@ -529,7 +529,7 @@ test('db.ts copies the database before the first migration when it raises the sc
 
   // The live database went on: new stamp, migrated. Read in place: the probe
   // exited without closing it, so the migrations are still in its WAL.
-  const live = inspect(path.join(root, 'data', 'colloq.db'), { inPlace: true })
+  const live = inspect(path.join(root, 'data', 'aulalab.db'), { inPlace: true })
   assert.equal(live.version, target)
   assert.ok(live.tables.includes('participants'))
 
@@ -542,7 +542,7 @@ test('db.ts copies the database before the first migration when it raises the sc
 test('an ordinary start takes no snapshot: a new database, and one from before the stamp', () => {
   // A file from before the stamp is schema 1: opening it under schema 1 raises
   // nothing. Under a later schema it is a raise like any other (next test).
-  for (const [root, target] of [[scratch('colloq-schema-fresh-'), null], [legacyRoot(0), 1]] as const) {
+  for (const [root, target] of [[scratch('aulalab-schema-fresh-'), null], [legacyRoot(0), 1]] as const) {
     fs.mkdirSync(path.join(root, 'data'), { recursive: true, mode: 0o700 })
     const r = openWithSchema(root, target)
     assert.equal(r.status, 0, r.out)

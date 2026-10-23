@@ -7,18 +7,18 @@
  *
  * The scripts run for real (bash, python3) against a made-up Vast (a `curl`
  * that answers the API from a JSON file, renting and destroying in it) and a
- * made-up `ssh` that answers for colloq-host on the VMs: no request leaves the
+ * made-up `ssh` that answers for aulalab-host on the VMs: no request leaves the
  * machine and nothing is rented. kernel-publish runs with a stand-in docker and
  * git; the Makefile is asked with `make -n`, which prints and runs nothing.
  *
  * What is held here:
  *
- *   1. a machine is rented as a VM labelled colloq-runner, with an on-start
+ *   1. a machine is rented as a VM labelled aulalab-runner, with an on-start
  *      that carries the home and the code and no relay token, and is ready when
- *      `colloq-host runner status` says it has joined, never by /api/health;
+ *      `aulalab-host runner status` says it has joined, never by /api/health;
  *   2. COUNT copies rent one after another, so no two go for the same offer,
  *      and one refused for an offer that vanished searches again;
- *   3. the fleet commands touch the colloq-runner instances and nothing else,
+ *   3. the fleet commands touch the aulalab-runner instances and nothing else,
  *      say each machine's home, and with URL= touch that home's alone; down
  *      leaves before it destroys, and says so when a machine could not; an
  *      update runs detached on the machine and is polled, and leaves alone a
@@ -48,7 +48,7 @@ const PUBLISH = path.join(ROOT, 'scripts/kernel-publish.sh')
 const read = (file: string) => fs.readFileSync(path.join(ROOT, file), 'utf8')
 
 const CODE = '0123456789abcdef0123456789abcdef'
-const HOME = 'https://vsos.colloq.ru'
+const HOME = 'https://vsos.example.edu'
 
 /** VM offers, cheapest first, the way the API answers. */
 const OFFERS = [101, 102, 103].map((id, i) => ({
@@ -100,7 +100,7 @@ if (call.method === 'POST' && where === 'bundles/') {
 `
 
 /*
- * The made-up ssh: colloq-host on VMs that have joined their homes. The
+ * The made-up ssh: aulalab-host on VMs that have joined their homes. The
  * on-start a copy uploads is kept, and so is every script sent to `bash -s`.
  * A host in FAKE_SSH_FAIL fails whatever it is asked. What each machine says
  * lives in FAKE_MACHINES, a JSON file by host: its home and its agent's status
@@ -125,31 +125,31 @@ while (i < args.length) {
   break
 }
 const host = (args[i] || '').replace(/^root@/, ''); const command = args.slice(i + 1).join(' ')
-const input = command.includes('cat > /etc/colloq/onstart.sh') || command.startsWith('bash -s') ? fs.readFileSync(0, 'utf8') : ''
+const input = command.includes('cat > /etc/aulalab/onstart.sh') || command.startsWith('bash -s') ? fs.readFileSync(0, 'utf8') : ''
 fs.appendFileSync(process.env.FAKE_LOG, JSON.stringify({ tool: 'ssh', host, port, command, input }) + '\\n')
-if ((process.env.FAKE_SSH_FAIL || '').split(',').includes(host)) { process.stderr.write('[colloq-host] ERROR: the agent did not answer\\n'); process.exit(1) }
+if ((process.env.FAKE_SSH_FAIL || '').split(',').includes(host)) { process.stderr.write('[aulalab-host] ERROR: the agent did not answer\\n'); process.exit(1) }
 const file = process.env.FAKE_MACHINES
 const m = (file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {})[host] || {}
 const out = (s) => process.stdout.write(s)
 if (command.startsWith('systemctl is-system-running')) out('running\\n')
-else if (input.includes('colloq-runner-fleet: survey')) out('home ' + (m.home || '') + '\\nasked ' + (m.asked || '${ASKED}') + '\\nstatus ' + (m.status || '') + '\\n')
-else if (input.includes('colloq-runner-fleet: start the update')) out('colloq-host runner update' + (command.slice('bash -s --'.length) ? ' ' + command.slice('bash -s --'.length).trim() : '') + ' runs detached on this machine\\n')
-else if (input.includes('colloq-runner-fleet: poll the update')) {
+else if (input.includes('aulalab-runner-fleet: survey')) out('home ' + (m.home || '') + '\\nasked ' + (m.asked || '${ASKED}') + '\\nstatus ' + (m.status || '') + '\\n')
+else if (input.includes('aulalab-runner-fleet: start the update')) out('aulalab-host runner update' + (command.slice('bash -s --'.length) ? ' ' + command.slice('bash -s --'.length).trim() : '') + ' runs detached on this machine\\n')
+else if (input.includes('aulalab-runner-fleet: poll the update')) {
   const steps = m.polls || ['exit 0']
   const counter = file + '.polled.' + host
   const n = fs.existsSync(counter) ? Number(fs.readFileSync(counter, 'utf8')) : 0
   const step = steps[Math.min(n, steps.length - 1)]
   fs.writeFileSync(counter, String(n + 1))
   if (step === 'drop') { process.stderr.write('Connection to ' + host + ' closed by remote host.\\n'); process.exit(255) }
-  if (step === 'running') out('[colloq-host] draining colloq-runner\\n\\x1f' + (n + 1) + ' running\\n')
+  if (step === 'running') out('[aulalab-host] draining aulalab-runner\\n\\x1f' + (n + 1) + ' running\\n')
   else if (step === 'gone') out('\\x1f' + n + ' gone\\n')
-  else out('[colloq-host] colloq-runner has joined its home\\n\\x1f' + (n + 1) + ' ' + step + '\\n')
+  else out('[aulalab-host] aulalab-runner has joined its home\\n\\x1f' + (n + 1) + ' ' + step + '\\n')
 }
-else if (command.includes('colloq-host runner status')) {
+else if (command.includes('aulalab-host runner status')) {
   if (m.unjoined) process.exit(1)
   if (!command.includes('>/dev/null')) out('{"joined":true}\\n')
 }
-else if (command.includes('colloq-host runner leave')) out('[colloq-host] left: the home no longer counts on this machine\\n')
+else if (command.includes('aulalab-host runner leave')) out('[aulalab-host] left: the home no longer counts on this machine\\n')
 process.exit(0)
 `
 
@@ -169,7 +169,7 @@ type Machine = { home?: string; status?: string; unjoined?: boolean; polls?: str
  * second, for scripts that wait minutes on a real VM.
  */
 function rig(vast: Partial<Vast> = {}, machines: Record<string, Machine> = {}, opts: { fast?: boolean } = {}) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-runner-fleet-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-runner-fleet-'))
   const bin = path.join(dir, 'bin')
   write(path.join(bin, 'curl'), FAKE_CURL)
   write(path.join(bin, 'ssh'), FAKE_SSH)
@@ -208,8 +208,8 @@ function rig(vast: Partial<Vast> = {}, machines: Record<string, Machine> = {}, o
     filledOnstart: () => {
       const file = path.join(dir, 'onstart-runner.sh')
       fs.writeFileSync(file, read('deploy/vast/onstart-runner.sh')
-        .replace(/^export COLLOQ_RUNNER_URL="[^"]*"/m, `export COLLOQ_RUNNER_URL="${HOME}"`)
-        .replace(/^export COLLOQ_RUNNER_CODE="[^"]*"/m, `export COLLOQ_RUNNER_CODE="${CODE}"`))
+        .replace(/^export AULALAB_RUNNER_URL="[^"]*"/m, `export AULALAB_RUNNER_URL="${HOME}"`)
+        .replace(/^export AULALAB_RUNNER_CODE="[^"]*"/m, `export AULALAB_RUNNER_CODE="${CODE}"`))
       return file
     },
     done: () => fs.rmSync(dir, { recursive: true, force: true }),
@@ -218,29 +218,29 @@ function rig(vast: Partial<Vast> = {}, machines: Record<string, Machine> = {}, o
 
 // ------------------------------------------------- scripts/vast-vm.sh ROLE
 
-test('vast-vm.sh with ROLE=runner rents a VM labelled colloq-runner and waits for colloq-host runner status', () => {
+test('vast-vm.sh with ROLE=runner rents a VM labelled aulalab-runner and waits for aulalab-host runner status', () => {
   const m = rig()
   try {
     const onstart = m.filledOnstart()
     const r = m.run(VM, [], { ROLE: 'runner', ONSTART: onstart, FORCE: '1', DISK: '150' })
     assert.equal(r.status, 0, r.out)
-    assert.match(r.out, /VM offer 101.*: 2 x RTX 4090, \$0\.500\/hr, a machine for https:\/\/vsos\.colloq\.ru/)
+    assert.match(r.out, /VM offer 101.*: 2 x RTX 4090, \$0\.500\/hr, a machine for https:\/\/vsos\.aulalab\.ru/)
     const rent = m.vast().rents[0]!
-    assert.equal(rent.body.label, 'colloq-runner')
+    assert.equal(rent.body.label, 'aulalab-runner')
     assert.equal(rent.body.vm, true)
     assert.equal(rent.body.disk, 150)
     assert.equal(rent.body.onstart, fs.readFileSync(onstart, 'utf8'))
     const ssh = r.calls.filter((c) => c.tool === 'ssh')
     // Vast does not run a VM's on-start: it is uploaded and started over ssh, as for an instance.
-    assert.equal(ssh.find((c) => c.command!.includes('cat > /etc/colloq/onstart.sh'))!.input, fs.readFileSync(onstart, 'utf8'))
-    assert.ok(ssh.some((c) => c.command === 'colloq-host runner status'), ssh.map((c) => c.command).join('\n'))
+    assert.equal(ssh.find((c) => c.command!.includes('cat > /etc/aulalab/onstart.sh'))!.input, fs.readFileSync(onstart, 'utf8'))
+    assert.ok(ssh.some((c) => c.command === 'aulalab-host runner status'), ssh.map((c) => c.command).join('\n'))
     assert.ok(!ssh.some((c) => c.command!.includes('/api/health')), 'a machine has no /api/health to wait for')
-    assert.match(r.out, /on the VM: colloq-host runner status \| logs \| leave/)
+    assert.match(r.out, /on the VM: aulalab-host runner status \| logs \| leave/)
     // NAME= labels a batch of its own.
     const named = rig()
     try {
       assert.equal(named.run(VM, [], { ROLE: 'runner', ONSTART: named.filledOnstart(), FORCE: '1', NAME: 'gpu' }).status, 0)
-      assert.equal(named.vast().rents[0]!.body.label, 'colloq-runner-gpu')
+      assert.equal(named.vast().rents[0]!.body.label, 'aulalab-runner-gpu')
     } finally { named.done() }
   } finally { m.done() }
 })
@@ -258,7 +258,7 @@ test('vast-vm.sh waits through polls Vast answers with something that is not JSO
     const polls = r.calls.filter((c) => c.tool === 'curl' && c.method === 'GET' && /\/instances\/\d+\/$/.test(c.url!))
     assert.ok(polls.length > garbled.length, `every lost poll was asked again: ${polls.length}`)
     assert.deepEqual(m.vast().garbled, [])
-    assert.match(r.out, /on the VM: colloq-host runner status \| logs \| leave/)
+    assert.match(r.out, /on the VM: aulalab-host runner status \| logs \| leave/)
   } finally { m.done() }
   // An answer that says no in words is still an end: the instance is gone, and the wait says so.
   const refusal = JSON.stringify({ success: false, error: 'no_such_instance', msg: 'Instance 901 does not exist.' })
@@ -276,7 +276,7 @@ test('vast-vm.sh with ROLE=runner refuses an unfilled on-start, a class address 
   try {
     const template = path.join(ROOT, 'deploy/vast/onstart-runner.sh')
     const cases: Array<[Record<string, string>, RegExp]> = [
-      [{ ROLE: 'runner', ONSTART: template }, /COLLOQ_RUNNER_URL and COLLOQ_RUNNER_CODE in .* are not filled in/],
+      [{ ROLE: 'runner', ONSTART: template }, /AULALAB_RUNNER_URL and AULALAB_RUNNER_CODE in .* are not filled in/],
       [{ ROLE: 'runner', ONSTART: m.filledOnstart(), HOST: 'vsos' }, /HOST= names a class address, and a machine for submissions has none/],
       [{ ROLE: 'home', ONSTART: m.filledOnstart() }, /ROLE= is app or runner, not "home"/],
     ]
@@ -296,19 +296,19 @@ test('vast-runner up rents COUNT machines one after another, and one refused for
   try {
     const r = m.run(RUNNER, ['up'], { COUNT: '2', CODE, URL: `${HOME}/`, FORCE: '1', GPU: 'RTX 4090', GPUS: '2' })
     assert.equal(r.status, 0, r.out)
-    assert.match(r.out, /2 of 2 joined https:\/\/vsos\.colloq\.ru/)
+    assert.match(r.out, /2 of 2 joined https:\/\/vsos\.aulalab\.ru/)
     const vast = m.vast()
     // The second copy first went for the offer the first had just taken, was refused, and took the next.
     assert.deepEqual(vast.rents.map((x) => x.offer), [101, 101, 102])
     assert.deepEqual(vast.rented, [101, 102])
     assert.match(r.out, /\[2\].*the offer was gone; searching again in 0 s \(try 2 of 3\)/)
     for (const rent of vast.rents) {
-      assert.equal(rent.body.label, 'colloq-runner')
+      assert.equal(rent.body.label, 'aulalab-runner')
       assert.equal(rent.body.vm, true)
       assert.equal(rent.body.disk, 120, 'a machine with cards gets the GPU floor by default')
       const onstart = String(rent.body.onstart)
-      assert.match(onstart, new RegExp(`^export COLLOQ_RUNNER_URL="${HOME.replace(/[.]/g, '\\.')}"`, 'm'))
-      assert.match(onstart, new RegExp(`^export COLLOQ_RUNNER_CODE="${CODE}"`, 'm'))
+      assert.match(onstart, new RegExp(`^export AULALAB_RUNNER_URL="${HOME.replace(/[.]/g, '\\.')}"`, 'm'))
+      assert.match(onstart, new RegExp(`^export AULALAB_RUNNER_CODE="${CODE}"`, 'm'))
       assert.ok(!onstart.includes('RELAY_TOKEN'), 'no relay token in a machine\'s on-start')
     }
     // One after another: no search starts before the rent before it has its instance.
@@ -325,11 +325,11 @@ test('vast-runner up rents COUNT machines one after another, and one refused for
       assert.deepEqual(q.dph_total, { lte: 0.9 })
       assert.equal(q.ask_contract_id, undefined, 'no copy rents an offer named for all of them')
     }
-    // Both machines were waited for by colloq-host runner status, on their own VMs.
-    const status = r.calls.filter((c) => c.tool === 'ssh' && c.command === 'colloq-host runner status').map((c) => c.host).sort()
+    // Both machines were waited for by aulalab-host runner status, on their own VMs.
+    const status = r.calls.filter((c) => c.tool === 'ssh' && c.command === 'aulalab-host runner status').map((c) => c.host).sort()
     assert.deepEqual(status, ['198.51.100.151', '198.51.100.152'])
     // A log per machine, the last try's.
-    assert.match(fs.readFileSync(path.join(m.logs, 'runner-2.log'), 'utf8'), /instance 902 \(label colloq-runner\)/)
+    assert.match(fs.readFileSync(path.join(m.logs, 'runner-2.log'), 'utf8'), /instance 902 \(label aulalab-runner\)/)
     assert.ok(!fs.readFileSync(path.join(m.logs, 'runner-1.log'), 'utf8').includes(CODE), 'the code stays out of the logs')
   } finally { m.done() }
 })
@@ -344,8 +344,8 @@ test('vast-runner up refuses in words before any request: the count, the code, t
       [{ CODE: '' }, /CODE= is the enrollment code from the home's owner/],
       [{ CODE: 'abc' }, /CODE= is not an enrollment code: 32 hex digits/],
       [{ URL: '' }, /URL= names the home these machines join/],
-      [{ URL: 'https://vsos.colloq.ru/admin' }, /URL=https:\/\/vsos\.colloq\.ru\/admin is not a home's address/],
-      [{ URL: 'vsos.colloq.ru' }, /URL=vsos\.colloq\.ru: the home's address starts with https:\/\//],
+      [{ URL: 'https://vsos.example.edu/admin' }, /URL=https:\/\/vsos\.aulalab\.ru\/admin is not a home's address/],
+      [{ URL: 'vsos.example.edu' }, /URL=vsos\.aulalab\.ru: the home's address starts with https:\/\//],
       [{ DISK: 'lots' }, /DISK= is a size in GB, not "lots"/],
       [{ MAX_PRICE: '1$' }, /MAX_PRICE= \(VAST_MAX_PRICE in \.env\) is dollars per hour/],
       // NAME becomes a label and a pattern the copies' logs are read with.
@@ -363,7 +363,7 @@ test('vast-runner up refuses in words before any request: the count, the code, t
     fs.appendFileSync(m.envFile, `VAST_RUNNER_URL=${HOME}\n`)
     const r = m.run(RUNNER, ['up'], { COUNT: '1', CODE, FORCE: '1' })
     assert.equal(r.status, 0, r.out)
-    assert.match(String(m.vast().rents[0]!.body.onstart), /^export COLLOQ_RUNNER_URL="https:\/\/vsos\.colloq\.ru"/m)
+    assert.match(String(m.vast().rents[0]!.body.onstart), /^export AULALAB_RUNNER_URL="https:\/\/vsos\.aulalab\.ru"/m)
   } finally { m.done() }
 })
 
@@ -385,7 +385,7 @@ test('vast-runner up names each machine rented but never joined with its destroy
     assert.equal(r.status, 1, r.out)
     assert.deepEqual(d.destroyed(r.calls), [902], 'the joined machine stays')
     assert.match(r.out, /instance 902 destroyed \(DESTROY_UNJOINED=1\): it no longer bills/)
-    assert.match(r.out, /1 of 2 joined https:\/\/vsos\.colloq\.ru/)
+    assert.match(r.out, /1 of 2 joined https:\/\/vsos\.aulalab\.ru/)
   } finally { d.done() }
   // A machine its copy destroyed already (ssh never let it in) is said to be gone, and not destroyed twice.
   const broken = rig({}, {}, { fast: true })
@@ -403,7 +403,7 @@ const vm = (id: number, label: string, running = true) => ({
   id, label, actual_status: running ? 'running' : 'exited', gpu_name: 'RTX 4090', num_gpus: 2,
   public_ipaddr: running ? `198.51.100.${id}` : '', ports: running ? { '22/tcp': [{ HostIp: '0.0.0.0', HostPort: String(40000 + id) }] } : {},
 })
-const LISTED = [vm(11, 'colloq-runner'), vm(12, 'colloq-runner-gpu'), vm(13, 'colloq-vm'), vm(14, 'colloq'), vm(15, 'colloq-runnerx')]
+const LISTED = [vm(11, 'aulalab-runner'), vm(12, 'aulalab-runner-gpu'), vm(13, 'aulalab-vm'), vm(14, 'aulalab'), vm(15, 'aulalab-runnerx')]
 
 // What an agent says in its status (the fields the fleet reads: joined, and
 // compatible from a sync made after the survey asked, by syncedAt).
@@ -414,23 +414,23 @@ const STALE = `{"joined":true,"compatible":true,"version":"0.24.0","homeVersion"
 const LAB = 'https://lab.example.org'
 
 /** The updates a run started, host:port and the remote command, sorted. */
-const starts = (calls: Call[]) => calls.filter((c) => c.tool === 'ssh' && c.input?.includes('colloq-runner-fleet: start the update'))
+const starts = (calls: Call[]) => calls.filter((c) => c.tool === 'ssh' && c.input?.includes('aulalab-runner-fleet: start the update'))
   .map((c) => `${c.host}:${c.port} ${c.command}`).sort()
 
-test('runners-update starts colloq-host runner update detached on every colloq-runner machine, polls it, and touches nothing else', () => {
+test('runners-update starts aulalab-host runner update detached on every aulalab-runner machine, polls it, and touches nothing else', () => {
   const m = rig({ listed: LISTED }, { '198.51.100.11': { home: HOME, status: OUTDATED }, '198.51.100.12': { home: HOME, status: OUTDATED } })
   try {
     let r = m.run(RUNNER, ['update'], { VERSION: '0.25.0', NOW: '1' })
     assert.equal(r.status, 0, r.out)
     assert.deepEqual(starts(r.calls), ['198.51.100.11:40011 bash -s -- 0.25.0 --now', '198.51.100.12:40012 bash -s -- 0.25.0 --now'])
     // Detached, so that a dropped ssh cannot kill it halfway; then polled until it ends.
-    const start = r.calls.find((c) => c.input?.includes('colloq-runner-fleet: start the update'))!
-    assert.match(start.input!, /^setsid nohup bash -c '.*colloq-host runner update "\$@" > "\$0\/log" 2>&1; echo "\$\?" > "\$0\/exit"' "\$d" "\$@" < \/dev\/null > \/dev\/null 2>&1 &$/m)
-    assert.ok(r.calls.some((c) => c.host === '198.51.100.11' && c.input?.includes('colloq-runner-fleet: poll the update')))
+    const start = r.calls.find((c) => c.input?.includes('aulalab-runner-fleet: start the update'))!
+    assert.match(start.input!, /^setsid nohup bash -c '.*aulalab-host runner update "\$@" > "\$0\/log" 2>&1; echo "\$\?" > "\$0\/exit"' "\$d" "\$@" < \/dev\/null > \/dev\/null 2>&1 &$/m)
+    assert.ok(r.calls.some((c) => c.host === '198.51.100.11' && c.input?.includes('aulalab-runner-fleet: poll the update')))
     assert.ok(!r.calls.some((c) => c.tool === 'ssh' && ['13', '14', '15'].some((n) => c.host === `198.51.100.${n}`)), 'no other instance of the account is touched')
     // Each machine's home, asked over ssh before anything, is in the list.
-    assert.match(r.out, /instance 11 {2}colloq-runner {2}running {2}198\.51\.100\.11:40011 {2}home https:\/\/vsos\.colloq\.ru {2}\(outdated\)/)
-    assert.match(r.out, /\[11\].*colloq-runner has joined its home/)
+    assert.match(r.out, /instance 11 {2}aulalab-runner {2}running {2}198\.51\.100\.11:40011 {2}home https:\/\/vsos\.aulalab\.ru {2}\(outdated\)/)
+    assert.match(r.out, /\[11\].*aulalab-runner has joined its home/)
     assert.match(r.out, /every machine is on 0\.25\.0/)
     // Without a version: each machine asks its own home.
     r = m.run(RUNNER, ['update'])
@@ -454,7 +454,7 @@ test('runners-update starts colloq-host runner update detached on every colloq-r
 })
 
 test('runners-update takes the machines of URL= alone, leaves those already on their home\'s build unless FORCE=1, and moves no two homes to one version', () => {
-  const m = rig({ listed: [vm(11, 'colloq-runner'), vm(12, 'colloq-runner'), vm(16, 'colloq-runner'), vm(17, 'colloq-runner', false)] }, {
+  const m = rig({ listed: [vm(11, 'aulalab-runner'), vm(12, 'aulalab-runner'), vm(16, 'aulalab-runner'), vm(17, 'aulalab-runner', false)] }, {
     '198.51.100.11': { home: HOME, status: OUTDATED },
     '198.51.100.12': { home: HOME, status: CURRENT },
     '198.51.100.16': { home: LAB, status: OUTDATED },
@@ -463,13 +463,13 @@ test('runners-update takes the machines of URL= alone, leaves those already on t
     let r = m.run(RUNNER, ['update'], { URL: `${HOME}/` })
     assert.equal(r.status, 0, r.out)
     // The home is read on the machine, up to the # of its join: the code never comes back.
-    const survey = r.calls.find((c) => c.input?.includes('colloq-runner-fleet: survey'))!
-    assert.ok(survey.input!.includes('/etc/colloq/runner.env') && survey.input!.includes('#.*/\\1/p'), survey.input)
+    const survey = r.calls.find((c) => c.input?.includes('aulalab-runner-fleet: survey'))!
+    assert.ok(survey.input!.includes('/etc/aulalab/runner.env') && survey.input!.includes('#.*/\\1/p'), survey.input)
     // Of vsos's machines, only the one not on vsos's build yet; the others of the account are named and left.
     assert.deepEqual(starts(r.calls), ['198.51.100.11:40011 bash -s --'])
-    assert.match(r.out, /\[12\].*its runner build is already its home's \(https:\/\/vsos\.colloq\.ru\): left as it is \(FORCE=1 updates it all the same\)/)
-    assert.match(r.out, /instance 16 {2}colloq-runner {2}left alone: its home is https:\/\/lab\.example\.org/)
-    assert.match(r.out, /instance 17 {2}colloq-runner {2}left alone: its home is not known/)
+    assert.match(r.out, /\[12\].*its runner build is already its home's \(https:\/\/vsos\.aulalab\.ru\): left as it is \(FORCE=1 updates it all the same\)/)
+    assert.match(r.out, /instance 16 {2}aulalab-runner {2}left alone: its home is https:\/\/lab\.example\.org/)
+    assert.match(r.out, /instance 17 {2}aulalab-runner {2}left alone: its home is not known/)
     // FORCE=1 updates it all the same.
     r = m.run(RUNNER, ['update'], { URL: HOME, FORCE: '1' })
     assert.equal(r.status, 0, r.out)
@@ -488,9 +488,9 @@ test('runners-update takes the machines of URL= alone, leaves those already on t
     assert.equal(r.status, 0, r.out)
     assert.match(r.out, /no machine serves https:\/\/nobody\.example\.org/)
     assert.deepEqual(starts(r.calls), [])
-    r = m.run(RUNNER, ['update'], { URL: 'vsos.colloq.ru' })
+    r = m.run(RUNNER, ['update'], { URL: 'vsos.example.edu' })
     assert.equal(r.status, 1, r.out)
-    assert.match(r.out, /URL=vsos\.colloq\.ru: the home's address starts with https:\/\//)
+    assert.match(r.out, /URL=vsos\.aulalab\.ru: the home's address starts with https:\/\//)
     assert.deepEqual(r.calls, [])
   } finally { m.done() }
 })
@@ -499,7 +499,7 @@ test('runners-update takes no home\'s word from before it asked: a machine whose
   // "Right after the home", as the docs have it: the home's container replaced, its tunnel back seconds later.
   // Machine 11's agent last heard the home that was (compatible, a sync before the survey asked); machine 12's
   // heard the new one say its build is its own.
-  const m = rig({ listed: [vm(11, 'colloq-runner'), vm(12, 'colloq-runner')] }, {
+  const m = rig({ listed: [vm(11, 'aulalab-runner'), vm(12, 'aulalab-runner')] }, {
     '198.51.100.11': { home: HOME, status: STALE },
     '198.51.100.12': { home: HOME, status: CURRENT },
   })
@@ -507,11 +507,11 @@ test('runners-update takes no home\'s word from before it asked: a machine whose
     let r = m.run(RUNNER, ['update'])
     assert.equal(r.status, 0, r.out)
     assert.deepEqual(starts(r.calls), ['198.51.100.11:40011 bash -s --'])
-    assert.match(r.out, /\[12\].*its runner build is already its home's \(https:\/\/vsos\.colloq\.ru\): left as it is/)
+    assert.match(r.out, /\[12\].*its runner build is already its home's \(https:\/\/vsos\.aulalab\.ru\): left as it is/)
     assert.doesNotMatch(r.out, /\[11\].*left as it is/)
     assert.doesNotMatch(r.out, /instance 11 .*\(on its home's build\)/)
     // Each agent is given a minute for a sync made after the survey asked; a run that skips no machine waits for none.
-    const surveys = (calls: Call[]) => calls.filter((c) => c.input?.includes('colloq-runner-fleet: survey')).map((c) => c.command)
+    const surveys = (calls: Call[]) => calls.filter((c) => c.input?.includes('aulalab-runner-fleet: survey')).map((c) => c.command)
     assert.deepEqual(surveys(r.calls), ['bash -s -- 60', 'bash -s -- 60'])
     assert.match(r.out, /asking each machine which home it serves, and its home's word on its build in a sync from now on \(up to 60 s\)/)
     r = m.run(RUNNER, ['update'], { RUNNER_SURVEY_SEC: '5' })
@@ -533,22 +533,22 @@ test('the survey on a machine waits for a sync made after it asked, for a workin
   const script = /\nSURVEY_SCRIPT='([\s\S]*?)'\n/.exec(read('scripts/vast-runner.sh'))?.[1]
   assert.ok(script, 'no SURVEY_SCRIPT in scripts/vast-runner.sh')
   const fleetPy = /\nFLEET_PY='([\s\S]*?)'\n/.exec(read('scripts/vast-runner.sh'))![1]!
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-runner-survey-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-runner-survey-'))
   try {
     const bin = path.join(dir, 'bin')
     const asks = path.join(dir, 'asks')
     const runnerEnv = path.join(dir, 'runner.env')
-    fs.writeFileSync(runnerEnv, `HTTPS_PROXY=http://proxy:3128\nCOLLOQ_RUNNER_JOIN=${HOME}#${CODE}\n`)
-    // colloq-host runner status on the machine: a sync of long ago for the first FAKE_STALE asks, then one made just now.
-    write(path.join(bin, 'colloq-host'), `#!/bin/sh
+    fs.writeFileSync(runnerEnv, `HTTPS_PROXY=http://proxy:3128\nAULALAB_RUNNER_JOIN=${HOME}#${CODE}\n`)
+    // aulalab-host runner status on the machine: a sync of long ago for the first FAKE_STALE asks, then one made just now.
+    write(path.join(bin, 'aulalab-host'), `#!/bin/sh
 n=$(( $(cat '${asks}' 2>/dev/null || echo 0) + 1 )); echo "$n" > '${asks}'
 if [ "$n" -le "\${FAKE_STALE:-0}" ]; then at=1000; else at="$(date +%s)999"; fi
-echo "[colloq-host] a word on stderr" >&2
+echo "[aulalab-host] a word on stderr" >&2
 printf '{"joined":true,"state":"%s","compatible":true,"syncedAt":%s}\\n' "\${FAKE_STATE:-active}" "$at"
 `)
     write(path.join(bin, 'sleep'), '#!/bin/sh\nexit 0\n')
     const file = path.join(dir, 'survey.sh')
-    fs.writeFileSync(file, script.replaceAll('/etc/colloq/runner.env', runnerEnv))
+    fs.writeFileSync(file, script.replaceAll('/etc/aulalab/runner.env', runnerEnv))
     const survey = (wait: string, env: Record<string, string> = {}) => {
       fs.rmSync(asks, { force: true })
       // As `bash -s -- WAIT` gets it on the machine: the wait is the script's first word.
@@ -560,7 +560,7 @@ printf '{"joined":true,"state":"%s","compatible":true,"syncedAt":%s}\\n' "\${FAK
       const surveyDir = path.join(dir, 'answers')
       fs.mkdirSync(surveyDir, { recursive: true })
       fs.writeFileSync(path.join(surveyDir, '11'), r.stdout)
-      const py = spawnSync('python3', ['-c', fleetPy], { input: ['11', '198.51.100.11', '40011', 'running', 'colloq-runner'].join('\x1f') + '\n',
+      const py = spawnSync('python3', ['-c', fleetPy], { input: ['11', '198.51.100.11', '40011', 'running', 'aulalab-runner'].join('\x1f') + '\n',
         encoding: 'utf8', env: { ...process.env, SURVEY: surveyDir, WANT: '' } })
       assert.equal(py.status, 0, py.stderr)
       return { out: r.stdout, asked, said, asks: Number(fs.readFileSync(asks, 'utf8')), verdict: py.stdout.trim().split('\x1f').pop() }
@@ -568,7 +568,7 @@ printf '{"joined":true,"state":"%s","compatible":true,"syncedAt":%s}\\n' "\${FAK
     // A sync that comes while it waits: asked three times, and the line is the fresh one.
     let s = survey('6', { FAKE_STALE: '2' })
     assert.equal(s.asks, 3)
-    assert.match(s.out, /^home https:\/\/vsos\.colloq\.ru$/m)
+    assert.match(s.out, /^home https:\/\/vsos\.aulalab\.ru$/m)
     assert.ok(s.said.syncedAt >= s.asked, s.out)
     assert.equal(s.verdict, 'current')
     // None comes: the wait is bounded, and the stale word is no `current`.
@@ -583,22 +583,22 @@ printf '{"joined":true,"state":"%s","compatible":true,"syncedAt":%s}\\n' "\${FAK
 })
 
 test('an update outlives a dropped ssh: the polls go on where they were, and a machine that rebooted under its update is said so', () => {
-  const m = rig({ listed: [vm(11, 'colloq-runner'), vm(12, 'colloq-runner')] }, {
+  const m = rig({ listed: [vm(11, 'aulalab-runner'), vm(12, 'aulalab-runner')] }, {
     '198.51.100.11': { home: HOME, status: OUTDATED, polls: ['running', 'drop', 'running', 'exit 0'] },
     '198.51.100.12': { home: HOME, status: OUTDATED, polls: ['running', 'gone'] },
   })
   try {
     const r = m.run(RUNNER, ['update'])
     assert.equal(r.status, 1, r.out)
-    const polls = (host: string) => r.calls.filter((c) => c.host === host && c.input?.includes('colloq-runner-fleet: poll the update')).map((c) => c.command)
+    const polls = (host: string) => r.calls.filter((c) => c.host === host && c.input?.includes('aulalab-runner-fleet: poll the update')).map((c) => c.command)
     // Each poll asks for the lines past those printed; the dropped one changed nothing.
     assert.deepEqual(polls('198.51.100.11'), ['bash -s -- 0', 'bash -s -- 1', 'bash -s -- 1', 'bash -s -- 3'])
     assert.match(r.out, /\[11\].*no answer over ssh \(poll 1 of 40\); the update goes on on the machine/)
-    assert.match(r.out, /\[11\].*colloq-runner has joined its home/)
+    assert.match(r.out, /\[11\].*aulalab-runner has joined its home/)
     assert.match(r.out, /\[12\].*the update stopped without finishing \(the machine rebooted\?\)/)
     assert.match(r.out, /some machines did not update/)
     // One start each: a poll never starts a second update.
-    assert.equal(r.calls.filter((c) => c.input?.includes('colloq-runner-fleet: start the update')).length, 2)
+    assert.equal(r.calls.filter((c) => c.input?.includes('aulalab-runner-fleet: start the update')).length, 2)
   } finally { m.done() }
 })
 
@@ -610,15 +610,15 @@ test('runners-down: every machine leaves its home first, then is destroyed; the 
     let r = m.run(RUNNER, ['down'])
     assert.equal(r.status, 1, r.out)
     assert.match(r.out, /no terminal to ask in\. FORCE=1 destroys without asking\./)
-    assert.equal(r.calls.filter((c) => c.method === 'DELETE' || c.command === 'colloq-host runner leave').length, 0)
+    assert.equal(r.calls.filter((c) => c.method === 'DELETE' || c.command === 'aulalab-host runner leave').length, 0)
     // What would be destroyed is listed with each machine's home.
-    assert.match(r.out, /instance 11 {2}colloq-runner {2}running {2}198\.51\.100\.11:40011 {2}home https:\/\/vsos\.colloq\.ru\n/)
-    assert.match(r.out, /instance 12 {2}colloq-runner-gpu {2}running {2}198\.51\.100\.12:40012 {2}home https:\/\/lab\.example\.org\n/)
+    assert.match(r.out, /instance 11 {2}aulalab-runner {2}running {2}198\.51\.100\.11:40011 {2}home https:\/\/vsos\.aulalab\.ru\n/)
+    assert.match(r.out, /instance 12 {2}aulalab-runner-gpu {2}running {2}198\.51\.100\.12:40012 {2}home https:\/\/lab\.example\.org\n/)
     r = m.run(RUNNER, ['down'], { FORCE: '1' })
     assert.equal(r.status, 0, r.out)
     assert.deepEqual(m.destroyed(r.calls), [11, 12])
     for (const id of [11, 12]) {
-      const leave = r.calls.findIndex((c) => c.tool === 'ssh' && c.host === `198.51.100.${id}` && c.command === 'colloq-host runner leave')
+      const leave = r.calls.findIndex((c) => c.tool === 'ssh' && c.host === `198.51.100.${id}` && c.command === 'aulalab-host runner leave')
       const destroy = r.calls.findIndex((c) => c.method === 'DELETE' && c.url!.endsWith(`/instances/${id}/`))
       assert.ok(leave >= 0 && leave < destroy, `instance ${id}: leave ${leave}, destroy ${destroy}`)
     }
@@ -630,14 +630,14 @@ test('runners-down: every machine leaves its home first, then is destroyed; the 
     const r = one.run(RUNNER, ['down'], { FORCE: '1', URL: HOME })
     assert.equal(r.status, 0, r.out)
     assert.deepEqual(one.destroyed(r.calls), [11])
-    assert.ok(!r.calls.some((c) => c.command === 'colloq-host runner leave' && c.host === '198.51.100.12'))
-    assert.match(r.out, /instance 12 {2}colloq-runner-gpu {2}left alone: its home is https:\/\/lab\.example\.org/)
+    assert.ok(!r.calls.some((c) => c.command === 'aulalab-host runner leave' && c.host === '198.51.100.12'))
+    assert.match(r.out, /instance 12 {2}aulalab-runner-gpu {2}left alone: its home is https:\/\/lab\.example\.org/)
   } finally { one.done() }
   const now = rig({ listed: LISTED })
   try {
     const r = now.run(RUNNER, ['down'], { FORCE: '1', NOW: '1' })
     assert.equal(r.status, 0, r.out)
-    assert.equal(r.calls.filter((c) => c.command === 'colloq-host runner leave').length, 0)
+    assert.equal(r.calls.filter((c) => c.command === 'aulalab-host runner leave').length, 0)
     assert.deepEqual(now.destroyed(r.calls), [11, 12])
     assert.match(r.out, /its home still lists it: revoke it there/)
   } finally { now.done() }
@@ -650,7 +650,7 @@ test('runners-down: every machine leaves its home first, then is destroyed; the 
     assert.match(r.out, /\[12\].*it did not leave its home/)
     assert.match(r.out, /not every machine left its home or was destroyed/)
   } finally { stuck.done() }
-  const none = rig({ listed: [vm(13, 'colloq-vm'), vm(14, 'colloq')] })
+  const none = rig({ listed: [vm(13, 'aulalab-vm'), vm(14, 'aulalab')] })
   try {
     const r = none.run(RUNNER, ['down'], { FORCE: '1' })
     assert.equal(r.status, 0, r.out)
@@ -686,7 +686,7 @@ if (a.includes('-w')) process.stdout.write('200')
 `
 
 function classTooling(instances: unknown[]) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-class-tooling-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-class-tooling-'))
   fs.mkdirSync(path.join(dir, 'scripts'))
   for (const f of ['vast.sh', 'vast-legacy.sh', 'lib.sh']) fs.copyFileSync(path.join(ROOT, 'scripts', f), path.join(dir, 'scripts', f))
   const log = path.join(dir, 'calls.log')
@@ -694,7 +694,7 @@ function classTooling(instances: unknown[]) {
   fs.writeFileSync(key, 'not a key\n', { mode: 0o600 })
   fs.writeFileSync(`${key}.pub`, 'ssh-ed25519 AAAAtestkey test@laptop\n')
   // The class's own secrets, which must never reach a machine for submissions.
-  fs.writeFileSync(path.join(dir, '.env'), `VAST_TOKEN=t\nVAST_SSH_KEY=${key}\nRELAY_DOMAIN=colloq.ru\nRELAY_TOKEN=relay-secret\nSESSION_SECRET=session-secret\n`)
+  fs.writeFileSync(path.join(dir, '.env'), `VAST_TOKEN=t\nVAST_SSH_KEY=${key}\nRELAY_DOMAIN=example.edu\nRELAY_TOKEN=relay-secret\nSESSION_SECRET=session-secret\n`)
   write(path.join(dir, 'bin', 'curl'), CLASS_CURL)
   for (const tool of ['ssh', 'rsync']) write(path.join(dir, 'bin', tool), `#!/bin/sh\nprintf '{"tool":"${tool}"}\\n' >> '${log}'\nexit 97\n`)
   const run = (script: string, args: string[], env: Record<string, string> = {}) => {
@@ -710,7 +710,7 @@ function classTooling(instances: unknown[]) {
   return { run, done: () => fs.rmSync(dir, { recursive: true, force: true }) }
 }
 
-const RENTED_RUNNER = { id: 901, label: 'colloq-runner', actual_status: 'running', public_ipaddr: '198.51.100.9',
+const RENTED_RUNNER = { id: 901, label: 'aulalab-runner', actual_status: 'running', public_ipaddr: '198.51.100.9',
   ports: { '22/tcp': [{ HostPort: '40901' }] }, dph_total: 0.5, gpu_name: 'RTX 4090', num_gpus: 2, start_date: 0 }
 
 test('the class tooling never takes a machine for submissions for a deployment, and no deployment takes their label', () => {
@@ -720,7 +720,7 @@ test('the class tooling never takes a machine for submissions for a deployment, 
     // make vast-down with no name: nothing of the class's is rented, and the machine is not destroyed without its leave.
     let r = alone.run('vast-legacy.sh', ['down'])
     assert.equal(r.status, 0, r.out)
-    assert.match(r.out, /nothing with label "colloq" is rented on vast\.ai/)
+    assert.match(r.out, /nothing with label "aulalab" is rented on vast\.ai/)
     assert.doesNotMatch(r.out, /taking "runner"|destroy instance 901/)
     assert.deepEqual(r.calls.filter((c) => c.method === 'DELETE' || c.tool !== 'curl'), [])
     r = alone.run('vast.sh', ['down'])
@@ -736,13 +736,13 @@ test('the class tooling never takes a machine for submissions for a deployment, 
       r = alone.run(script, ['status'])
       assert.equal(r.status, 0, `${script}: ${r.out}`)
       assert.match(r.out, /nothing is rented on vast\.ai/, script)
-      assert.match(r.out, /machines for submissions rented too: 1 \(label colloq-runner…\), not deployments: make runners-update · make runners-down take care of them/, script)
+      assert.match(r.out, /machines for submissions rented too: 1 \(label aulalab-runner…\), not deployments: make runners-update · make runners-down take care of them/, script)
     }
   } finally { alone.done() }
   // Next to a class deployment, the machines change nothing: there is one deployment, and it is hse.
   const mixed = classTooling([
-    { id: 11, label: 'colloq-hse', actual_status: 'running', dph_total: 0.3, gpu_name: 'RTX 5070', num_gpus: 1, start_date: 0 },
-    RENTED_RUNNER, { ...RENTED_RUNNER, id: 902, label: 'colloq-runner-gpu' },
+    { id: 11, label: 'aulalab-hse', actual_status: 'running', dph_total: 0.3, gpu_name: 'RTX 5070', num_gpus: 1, start_date: 0 },
+    RENTED_RUNNER, { ...RENTED_RUNNER, id: 902, label: 'aulalab-runner-gpu' },
   ])
   try {
     let r = mixed.run('vast-legacy.sh', ['status'])
@@ -759,10 +759,10 @@ test('the class tooling never takes a machine for submissions for a deployment, 
   const named = classTooling([RENTED_RUNNER])
   try {
     for (const script of ['vast-legacy.sh', 'vast.sh']) {
-      for (const env of [{ NAME: 'runner' }, { NAME: 'runner-gpu' }, { HOST: 'runner.colloq.ru' }] as Record<string, string>[]) {
+      for (const env of [{ NAME: 'runner' }, { NAME: 'runner-gpu' }, { HOST: 'runner.example.edu' }] as Record<string, string>[]) {
         const r = named.run(script, ['status'], env)
         assert.equal(r.status, 1, `${script} ${JSON.stringify(env)}: ${r.out}`)
-        assert.match(r.out, /would label its machine colloq-runner(-gpu)?, and colloq-runner labels the machines for submissions \(make vast-runner · runners-update · runners-down\)\. Choose another name\./)
+        assert.match(r.out, /would label its machine aulalab-runner(-gpu)?, and aulalab-runner labels the machines for submissions \(make vast-runner · runners-update · runners-down\)\. Choose another name\./)
         assert.deepEqual(r.calls, [], `${script} ${JSON.stringify(env)} reached the API`)
       }
     }
@@ -784,16 +784,16 @@ function make(args: string[], env: Record<string, string> = {}) {
 test('the Makefile hands the fleet targets their variables, and lists them', () => {
   let r = make(['-n', 'vast-runner', 'COUNT=3', `CODE=${CODE}`, `URL=${HOME}`, 'GPU=RTX 4090', 'GPUS=2', 'DISK=150', 'MAX_PRICE=1.5'])
   assert.equal(r.status, 0, r.out)
-  assert.match(r.out, new RegExp(`COUNT="3" CODE="${CODE}" URL="https://vsos\\.colloq\\.ru" NAME="" GPU="RTX 4090" GPUS="2"`))
+  assert.match(r.out, new RegExp(`COUNT="3" CODE="${CODE}" URL="https://vsos\\.aulalab\\.ru" NAME="" GPU="RTX 4090" GPUS="2"`))
   assert.match(r.out, /DISK="150" MAX_PRICE="1\.5" DESTROY_UNJOINED="" \.\/scripts\/vast-runner\.sh up/)
   r = make(['-n', 'vast-runner', 'COUNT=1', `CODE=${CODE}`, 'DESTROY_UNJOINED=1'])
   assert.match(r.out, /DESTROY_UNJOINED="1" \.\/scripts\/vast-runner\.sh up/)
   r = make(['-n', 'runners-update', 'VERSION=0.25.0', 'NOW=1'])
   assert.match(r.out, /NAME="" URL="" VERSION="0\.25\.0" NOW="1" FORCE="" \.\/scripts\/vast-runner\.sh update/)
   r = make(['-n', 'runners-update', `URL=${HOME}`, 'FORCE=1'])
-  assert.match(r.out, /NAME="" URL="https:\/\/vsos\.colloq\.ru" VERSION="" NOW="" FORCE="1" \.\/scripts\/vast-runner\.sh update/)
+  assert.match(r.out, /NAME="" URL="https:\/\/vsos\.aulalab\.ru" VERSION="" NOW="" FORCE="1" \.\/scripts\/vast-runner\.sh update/)
   r = make(['-n', 'runners-down', 'NOW=1', 'FORCE=1', `URL=${HOME}`])
-  assert.match(r.out, /NAME="" URL="https:\/\/vsos\.colloq\.ru" NOW="1" FORCE="1" \.\/scripts\/vast-runner\.sh down/)
+  assert.match(r.out, /NAME="" URL="https:\/\/vsos\.aulalab\.ru" NOW="1" FORCE="1" \.\/scripts\/vast-runner\.sh down/)
   const help = make(['help']).out.replace(/\x1b\[[0-9;]*m/g, '')
   for (const target of ['vast-runner', 'runners-update', 'runners-down', 'runner-dev', 'kernel-publish']) {
     assert.match(help, new RegExp(`^ +${target} +\\S`, 'm'), `make help lacks ${target}`)
@@ -801,30 +801,30 @@ test('the Makefile hands the fleet targets their variables, and lists them', () 
   }
 })
 
-test('make runner-dev runs the agent from the sources against a dev home, its tree under .colloq/, and needs a code', () => {
+test('make runner-dev runs the agent from the sources against a dev home, its tree under .aulalab/, and needs a code', () => {
   // RUNNER_DEV_NODE22 pointed nowhere: the node on PATH, as on a machine without Homebrew's node@22.
   let r = make(['-n', 'runner-dev', `CODE=${CODE}`, 'URL=http://localhost:4000', 'RUNNER_DEV_NODE22=/nonexistent/node'])
   assert.equal(r.status, 0, r.out)
-  assert.match(r.out, new RegExp(`COLLOQ_RUNNER_JOIN="http://localhost:4000#${CODE}"`))
-  assert.match(r.out, /COLLOQ_RUNNER_STATE="\$state" DATA_DIR="\$state\/data" NODE_ENV=development KERNEL_BACKEND=docker COMPETITION_BACKEND=docker/)
+  assert.match(r.out, new RegExp(`AULALAB_RUNNER_JOIN="http://localhost:4000#${CODE}"`))
+  assert.match(r.out, /AULALAB_RUNNER_STATE="\$state" DATA_DIR="\$state\/data" NODE_ENV=development KERNEL_BACKEND=docker COMPETITION_BACKEND=docker/)
   // Never the checkout's own data/: from a checkout that is the home's tree (server/src/data-dir.ts).
   assert.doesNotMatch(r.out, /DATA_DIR="?\$PWD\/data|DATA_DIR=data\b/)
-  assert.match(r.out, /mktemp -d "\$PWD\/\.colloq\/runner-dev\.XXXXXX"/)
+  assert.match(r.out, /mktemp -d "\$PWD\/\.aulalab\/runner-dev\.XXXXXX"/)
   // make dev's home has no bundle and reports `dev`, which only the sources match (decision 5).
   assert.match(r.out, /^\s*node --import tsx server\/src\/runner-agent\/main\.ts$/m)
   r = make(['-n', 'runner-dev', `CODE=${CODE}`, 'URL=http://localhost:4000', 'DIST=1', 'RUNNER_DEV_NODE22=/nonexistent/node'])
   assert.match(r.out, /^\s*node server\/dist\/runner\.js$/m)
   // Without a code it stops at once, and starts nothing.
-  const before = fs.existsSync(path.join(ROOT, '.colloq')) ? fs.readdirSync(path.join(ROOT, '.colloq')) : []
+  const before = fs.existsSync(path.join(ROOT, '.aulalab')) ? fs.readdirSync(path.join(ROOT, '.aulalab')) : []
   r = make(['runner-dev'])
   assert.notEqual(r.status, 0)
   assert.match(r.out, /Specify the code from the home's panel: make runner-dev CODE=<32 hex digits>/)
-  const after = fs.existsSync(path.join(ROOT, '.colloq')) ? fs.readdirSync(path.join(ROOT, '.colloq')) : []
+  const after = fs.existsSync(path.join(ROOT, '.aulalab')) ? fs.readdirSync(path.join(ROOT, '.aulalab')) : []
   assert.deepEqual(after, before, 'a refused runner-dev left a directory behind')
 })
 
 test('make runner-dev joins only a home named on the command line, on node 22, without the compose paths', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-runner-dev-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-runner-dev-'))
   try {
     // A node of the test's own, as node@22 and on PATH: should the refusal below ever go, what it starts is this, never an
     // agent that joins the instance this checkout serves.
@@ -834,15 +834,15 @@ test('make runner-dev joins only a home named on the command line, on node 22, w
     write(path.join(dir, 'bin', 'node'), `#!/bin/sh\nexec '${node}' "$@"\n`)
     const stand = { PATH: `${path.join(dir, 'bin')}:${process.env.PATH}` }
     // No default home: the only one there could be is this checkout's own port, the live instance on a machine that serves a class.
-    const before = fs.existsSync(path.join(ROOT, '.colloq')) ? fs.readdirSync(path.join(ROOT, '.colloq')) : []
+    const before = fs.existsSync(path.join(ROOT, '.aulalab')) ? fs.readdirSync(path.join(ROOT, '.aulalab')) : []
     let r = make(['runner-dev', `CODE=${CODE}`, `RUNNER_DEV_NODE22=${node}`], stand)
     assert.notEqual(r.status, 0)
     assert.match(r.out, /Specify the home: make runner-dev URL=http:\/\/localhost:<port> CODE=…, a dev home of your own on another port than this checkout's server .*never the live instance/)
     assert.doesNotMatch(r.out, /localhost:3000/)
     assert.equal(fs.existsSync(dump), false, 'nothing was started')
-    const after = fs.existsSync(path.join(ROOT, '.colloq')) ? fs.readdirSync(path.join(ROOT, '.colloq')) : []
+    const after = fs.existsSync(path.join(ROOT, '.aulalab')) ? fs.readdirSync(path.join(ROOT, '.aulalab')) : []
     assert.deepEqual(after, before)
-    assert.doesNotMatch(read('Makefile'), /COLLOQ_RUNNER_JOIN="\$\(or \$\(URL\)/, 'no fallback for URL in the join')
+    assert.doesNotMatch(read('Makefile'), /AULALAB_RUNNER_JOIN="\$\(or \$\(URL\)/, 'no fallback for URL in the join')
     // Homebrew's node@22 when it is there, for the Node the image and CI run.
     assert.match(read('Makefile'), /^RUNNER_DEV_NODE22 := \/opt\/homebrew\/opt\/node@22\/bin\/node$/m)
     r = make(['-n', 'runner-dev', `CODE=${CODE}`, 'URL=http://localhost:4000', `RUNNER_DEV_NODE22=${node}`])
@@ -854,8 +854,8 @@ test('make runner-dev joins only a home named on the command line, on node 22, w
     assert.equal(r.status, 0, r.out)
     const seen = fs.readFileSync(dump, 'utf8')
     assert.match(seen, /^ARGS --import tsx server\/src\/runner-agent\/main\.ts$/m)
-    assert.ok(seen.includes(`\nCOLLOQ_RUNNER_JOIN=http://localhost:4000#${CODE}\n`), seen)
-    assert.ok(seen.includes(`\nCOLLOQ_RUNNER_STATE=${tree}\n`) && seen.includes(`\nDATA_DIR=${tree}/data\n`), seen)
+    assert.ok(seen.includes(`\nAULALAB_RUNNER_JOIN=http://localhost:4000#${CODE}\n`), seen)
+    assert.ok(seen.includes(`\nAULALAB_RUNNER_STATE=${tree}\n`) && seen.includes(`\nDATA_DIR=${tree}/data\n`), seen)
     assert.doesNotMatch(seen, /^(DATA_HOST_DIR|WORKSPACE_HOST_DIR)=/m, 'the agent hands the daemon its own paths')
   } finally { fs.rmSync(dir, { recursive: true, force: true }) }
 })
@@ -871,7 +871,7 @@ test('make kernel-publish takes ENV from the command line only', () => {
 // -------------------------------------------------- scripts/kernel-publish.sh
 
 function publishRig() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-kernel-publish-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-kernel-publish-'))
   const bin = path.join(dir, 'bin')
   const log = path.join(dir, 'docker.log')
   // A docker whose registry holds only what PUBLISHED names, whose builds
@@ -918,24 +918,24 @@ exit 0
 test('kernel-publish builds the GPU kernels parents first, checks each on a card, and pushes it under the release tag', () => {
   const p = publishRig()
   try {
-    const repo = 'ghcr.io/colloq-edu/colloq-kernel'
+    const repo = 'ghcr.io/vighneshtule/aulalab-kernel'
     const tag = `v${p.version}`
     const r = p.run({ ENVIRONMENTS: 'base-gpu,kaggle-gpu' })
     assert.equal(r.status, 0, r.out)
     const builds = r.calls.filter((c) => c.startsWith('buildx build'))
     assert.equal(builds.length, 4, r.calls.join('\n'))
     const [gpuLoad, gpuPush, kaggleLoad, kagglePush] = builds
-    assert.match(gpuLoad!, /--builder colloq-kernel-publish --platform linux\/amd64 -f kernel\/Dockerfile --build-arg KERNEL_ENV=base-gpu /)
+    assert.match(gpuLoad!, /--builder aulalab-kernel-publish --platform linux\/amd64 -f kernel\/Dockerfile --build-arg KERNEL_ENV=base-gpu /)
     assert.doesNotMatch(gpuLoad!, /PARENT=/, 'base-gpu is a root on the Dockerfile\'s own python')
-    // Loaded for its check under a name of this run's own, never the instance's colloq-kernel:<env>.
+    // Loaded for its check under a name of this run's own, never the instance's aulalab-kernel:<env>.
     const probe = (load: string, env: string) => {
       const ref = /--provenance=false --load -t (\S+) kernel$/.exec(load)?.[1] ?? ''
-      assert.match(ref, new RegExp(`^colloq-kernel-publish:${tag.replace(/[.]/g, '\\.')}-${env}-\\d+$`), load)
+      assert.match(ref, new RegExp(`^aulalab-kernel-publish:${tag.replace(/[.]/g, '\\.')}-${env}-\\d+$`), load)
       return ref
     }
     const gpuProbe = probe(gpuLoad!, 'base-gpu')
     const kaggleProbe = probe(kaggleLoad!, 'kaggle-gpu')
-    assert.ok(!r.calls.some((c) => /colloq-kernel:(base-gpu|kaggle-gpu)\b/.test(c)), 'a name an instance on the builder may move at any moment')
+    assert.ok(!r.calls.some((c) => /aulalab-kernel:(base-gpu|kaggle-gpu)\b/.test(c)), 'a name an instance on the builder may move at any moment')
     // The names go when the run ends.
     for (const ref of [gpuProbe, kaggleProbe]) assert.ok(r.calls.includes(`image rm ${ref}`), r.calls.join('\n'))
     assert.match(gpuPush!, new RegExp(`--push --provenance=mode=max --sbom=true --metadata-file \\S+ -t ${repo.replace(/[.]/g, '\\.')}:${tag.replace(/[.]/g, '\\.')}-base-gpu kernel$`))
@@ -945,7 +945,7 @@ test('kernel-publish builds the GPU kernels parents first, checks each on a card
     for (const b of builds) {
       assert.match(b, new RegExp(`--label org\\.opencontainers\\.image\\.version=${p.version.replace(/[.]/g, '\\.')} `))
       assert.match(b, /--label org\.opencontainers\.image\.revision=c0ffee0{34} /)
-      assert.match(b, /--label colloq\.environment=(base-gpu|kaggle-gpu) /)
+      assert.match(b, /--label aulalab\.environment=(base-gpu|kaggle-gpu) /)
     }
     // Every image runs before its push: the imports, the kaggle check for the kaggle stack, torch on a card.
     const at = (c: string) => r.calls.indexOf(c)
@@ -958,7 +958,7 @@ test('kernel-publish builds the GPU kernels parents first, checks each on a card
     for (const c of kaggleRuns) assert.ok(at(kaggleLoad!) < at(c) && at(c) < at(kagglePush!), c)
     assert.ok(gpuRuns.some((c) => c.includes(`--network none --gpus device=0 ${gpuProbe} python -c`) && c.includes('torch.cuda.is_available()')))
     assert.ok(kaggleRuns.some((c) => c.includes(`scripts/check-kaggle-base.py:/check.py:ro ${kaggleProbe} python /check.py`)))
-    assert.match(r.calls.find((c) => c.startsWith('buildx create'))!, /--name colloq-kernel-publish --driver docker-container/)
+    assert.match(r.calls.find((c) => c.startsWith('buildx create'))!, /--name aulalab-kernel-publish --driver docker-container/)
     // The tag the entry point pulls for this version is the one pushed.
     const lifted = /^kernel_pull_ref\(\) \{\n[\s\S]*?\n\}\n/m.exec(read('deploy/vast/entrypoint.sh'))![0]
     const pull = spawnSync('bash', ['-c', `${lifted}kernel_pull_ref base-gpu 0`], { encoding: 'utf8', env: { PATH: process.env.PATH!, VERSION: p.version } })
@@ -969,7 +969,7 @@ test('kernel-publish builds the GPU kernels parents first, checks each on a card
 test('kernel-publish takes a published parent as it is, and stops before the push when a check fails', () => {
   const p = publishRig()
   try {
-    const repo = 'ghcr.io/colloq-edu/colloq-kernel'
+    const repo = 'ghcr.io/vighneshtule/aulalab-kernel'
     const tag = `v${p.version}`
     // kaggle-gpu alone brings its parent along; a parent already published is never built again.
     let r = p.run({ ENVIRONMENTS: 'kaggle-gpu', PUBLISHED: `${repo}:${tag}-base-gpu` })
@@ -985,8 +985,8 @@ test('kernel-publish takes a published parent as it is, and stops before the pus
     // A fork publishes under its own name.
     r = p.run({ ENVIRONMENTS: 'base-gpu', OWNER: 'A-Fork' })
     assert.equal(r.status, 0, r.out)
-    assert.ok(r.calls.some((c) => c.includes(`-t ghcr.io/a-fork/colloq-kernel:${tag}-base-gpu kernel`)))
-    assert.ok(r.calls.some((c) => c.includes('--label org.opencontainers.image.source=https://github.com/a-fork/colloq ')))
+    assert.ok(r.calls.some((c) => c.includes(`-t ghcr.io/a-fork/aulalab-kernel:${tag}-base-gpu kernel`)))
+    assert.ok(r.calls.some((c) => c.includes('--label org.opencontainers.image.source=https://github.com/a-fork/aulalab ')))
   } finally { p.done() }
 })
 
@@ -1024,11 +1024,11 @@ test('RELEASING.md makes the GPU kernels a step of every release, and publish.ym
   assert.match(releasing, /14 GB\s+of SSD/)
   // An instance that built its GPU kernels itself keeps them, and pulls the published ones only once the name is free.
   assert.match(releasing, /\*\*An instance that built its GPU kernels itself keeps them\.\*\*/)
-  const keep = releasing.indexOf('docker image tag colloq-kernel:base-gpu colloq-kernel:base-gpu-built-here')
-  const free = releasing.indexOf('docker image rm colloq-kernel:base-gpu ')
-  const pull = releasing.indexOf('colloq-host stop && colloq-host start')
+  const keep = releasing.indexOf('docker image tag aulalab-kernel:base-gpu aulalab-kernel:base-gpu-built-here')
+  const free = releasing.indexOf('docker image rm aulalab-kernel:base-gpu ')
+  const pull = releasing.indexOf('aulalab-host stop && aulalab-host start')
   assert.ok(keep > 0 && keep < free && free < pull, 'keep the old build, free the name, then restart to pull')
-  assert.match(releasing, /`colloq-kernel-publish:…`/)
+  assert.match(releasing, /`aulalab-kernel-publish:…`/)
   const publish = read('.github/workflows/publish.yml')
   const comment = publish.slice(0, publish.indexOf('\n  kernels:\n'))
   assert.doesNotMatch(comment, /a GPU\s+#?\s*machine builds it once anyway/)

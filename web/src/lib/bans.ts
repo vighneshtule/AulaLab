@@ -200,10 +200,10 @@ export function personNotes(
  *
  * An event, not a prop through four layers — like `lib/reveal.ts`.
  */
-export const BAN_MENU_EVENT = 'colloq:ban-menu'
+export const BAN_MENU_EVENT = 'aulalab:ban-menu'
 
 /** The ban list changed: whoever shows it will re-read it. */
-export const BANS_CHANGED_EVENT = 'colloq:bans-changed'
+export const BANS_CHANGED_EVENT = 'aulalab:bans-changed'
 
 /** Whom to remove and where the click was — in window coordinates. */
 export interface BanTarget {

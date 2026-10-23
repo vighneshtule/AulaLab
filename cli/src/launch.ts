@@ -67,7 +67,7 @@ function layOutWebAssets(root: string): void {
       fs.mkdirSync(path.dirname(to), { recursive: true })
       fs.copyFileSync(source, to)
     } catch (error) {
-      console.warn(`[colloq] ${target}: ${error instanceof Error ? error.message : String(error)} — npm ci?`)
+      console.warn(`[aulalab] ${target}: ${error instanceof Error ? error.message : String(error)} — npm ci?`)
     }
   }
 }
@@ -82,9 +82,9 @@ const root = appDir()
 const home = homeDir()
 const dist = isDistribution(root)
 const receiptFile = path.join(home, SESSION_FILE)
-const resultFile = path.join(home, '.colloq/local-session-result.json')
-const pidFile = path.join(home, '.colloq.pid')
-const logFile = path.join(home, '.colloq.log')
+const resultFile = path.join(home, '.aulalab/local-session-result.json')
+const pidFile = path.join(home, '.aulalab.pid')
+const logFile = path.join(home, '.aulalab.log')
 const entry = fileURLToPath(import.meta.url)
 const GRACE = 80000
 
@@ -122,9 +122,9 @@ async function supervisorOwned(receipt: LaunchReceipt): Promise<boolean> {
    * We recognize the receipt by the STATE directory, not by the application
    * directory.
    *
-   * For an installed colloq the application directory changes by itself: an
+   * For an installed aulalab the application directory changes by itself: an
    * update puts the code into a new version of the package. If we compared it,
-   * `colloq stop` after a `pip install -U` in the middle of a class would
+   * `aulalab stop` after a `pip install -U` in the middle of a class would
    * refuse to stop its own live server ("someone else's process was not
    * stopped"), and the teacher would be left with a running class and no
    * controls. Ownership is proven anyway not by this line but by the process
@@ -209,7 +209,7 @@ async function shareCloudflared(
   } catch (error) {
     throw new Error(
       `No cloudflared for --share: ${(error as Error).message}\n` +
-        'Start without --share (colloq start) and publish later with colloq host.',
+        'Start without --share (aulalab start) and publish later with aulalab host.',
     )
   }
 }
@@ -242,12 +242,12 @@ async function stopSession(): Promise<LaunchReceipt | null> {
     if (readReceipt(receiptFile)?.runId !== receipt.runId && !alive(receipt.pid)) {
       const result = readJson<{ runId: string; error: string | null }>(resultFile)
       if (result?.runId === receipt.runId && result.error)
-        throw new Error(result.error + ' Check colloq logs.')
+        throw new Error(result.error + ' Check aulalab logs.')
       return receipt
     }
     await delay(100)
   }
-  throw new Error('The stop did not finish. Check colloq logs; nothing was killed by force.')
+  throw new Error('The stop did not finish. Check aulalab logs; nothing was killed by force.')
 }
 /**
  * What to remove the room kernels with after the server stops.
@@ -297,7 +297,7 @@ function childArgs(options: LaunchOptions): string[] {
 async function detached(options: LaunchOptions): Promise<number> {
   const existing = readReceipt(receiptFile)
   if (existing && (await supervisorOwned(existing))) {
-    console.log(`Colloq is already running: ${existing.url}`)
+    console.log(`Aula Lab is already running: ${existing.url}`)
     return 0
   }
   /*
@@ -325,14 +325,14 @@ async function detached(options: LaunchOptions): Promise<number> {
    * first line.
    *
    * Both roots go to the child as explicit variables. It could work them out
-   * again on its own, but a relative COLLOQ_HOME or a start from another
+   * again on its own, but a relative AULALAB_HOME or a start from another
    * directory would give a second answer to the same question, and the
    * receipt would end up somewhere other than where the parent looks for it.
    */
   const loader = entry.endsWith('.ts') ? ['--import', 'tsx'] : []
   const child = spawn(process.execPath, [...loader, entry, ...childArgs(options)], {
     cwd: root,
-    env: { ...process.env, COLLOQ_LAUNCH_ID: runId, COLLOQ_APP_DIR: root, COLLOQ_HOME: home },
+    env: { ...process.env, AULALAB_LAUNCH_ID: runId, AULALAB_APP_DIR: root, AULALAB_HOME: home },
     detached: true,
     stdio: ['ignore', log, log],
   })
@@ -414,16 +414,16 @@ async function runSession(options: LaunchOptions): Promise<number> {
   const prior = readReceipt(receiptFile)
   if (prior && (await supervisorOwned(prior))) {
     console.log(
-      `Colloq is already ${prior.phase === 'ready' ? 'running' : 'starting'}: ${teacherLink(prior.url, prior.dataDir)}`,
+      `Aula Lab is already ${prior.phase === 'ready' ? 'running' : 'starting'}: ${teacherLink(prior.url, prior.dataDir)}`,
     )
-    if (options.host) console.log(`For public access: colloq host ${options.host}`)
-    if (options.share) console.log('For a public link: colloq host')
+    if (options.host) console.log(`For public access: aulalab host ${options.host}`)
+    if (options.share) console.log('For a public link: aulalab host')
     if (options.open && !options.share && prior.phase === 'ready')
       openBrowser(teacherLink(prior.url, prior.dataDir))
     return 0
   }
   if (options.detach && !options.child) return await detached(options)
-  const runId = options.child ? process.env.COLLOQ_LAUNCH_ID || randomUUID() : randomUUID()
+  const runId = options.child ? process.env.AULALAB_LAUNCH_ID || randomUUID() : randomUUID()
   process.title = `clq:${runId.slice(0, 24)}`
   const releases: Array<() => void> = []
   let processes: Processes | undefined, receipt: LaunchReceipt | undefined, log: number | undefined
@@ -456,14 +456,14 @@ async function runSession(options: LaunchOptions): Promise<number> {
   process.stdout.on('error', onOutputError)
   process.stderr.on('error', onOutputError)
   try {
-    releases.push(acquireLock(path.join(home, '.colloq/local-session.lock'), process.pid, runId))
+    releases.push(acquireLock(path.join(home, '.aulalab/local-session.lock'), process.pid, runId))
     const legacy = Number(fs.existsSync(pidFile) ? fs.readFileSync(pidFile, 'utf8').trim() : 0)
     if (legacy && alive(legacy))
       throw new Error(
-        'A server from .colloq.pid is already running. Use it, or stop it explicitly with colloq stop.',
+        'A server from .aulalab.pid is already running. Use it, or stop it explicitly with aulalab stop.',
       )
     /*
-     * The .env of a local class is written by colloq itself, not a copy of
+     * The .env of a local class is written by aulalab itself, not a copy of
      * .env.example. Why exactly so: launch-config.ts · localClassEnv.
      */
     const envFile = path.join(home, '.env')
@@ -489,7 +489,7 @@ async function runSession(options: LaunchOptions): Promise<number> {
         console.log(`Port ${taken} is taken; using ${free}.`)
       }
     }
-    config.env.COLLOQ_LOCAL_RUN_ID = runId
+    config.env.AULALAB_LOCAL_RUN_ID = runId
     /*
      * Name the port that is really taken, and the way out. It used to be
      * "Port 3000 or 3000 is already taken": with a single port the phrase
@@ -659,7 +659,7 @@ async function runSession(options: LaunchOptions): Promise<number> {
         console.error(
           `\nNot published: there is no ${script} next to the application.\n` +
             `The class runs locally: ${config.url}\n` +
-            'The package looks built without scripts/: update colloq (pip install -U colloq).',
+            'The package looks built without scripts/: update aulalab (pip install -U aulalab).',
         )
       } else if (refusal) {
         receipt.hosting = 'failed'
@@ -668,18 +668,18 @@ async function runSession(options: LaunchOptions): Promise<number> {
       } else {
         /*
          * The state directory goes to the child as an explicit variable: the
-         * script looks in it for .env, the class receipt and .colloq.pid, and
+         * script looks in it for .env, the class receipt and .aulalab.pid, and
          * on its own it would take the directory above scripts/, which for an
-         * installed colloq is the application directory, where none of that
-         * exists (scripts/lib.sh · COLLOQ_STATE_ROOT). For a start from the
-         * terminal COLLOQ_HOME may not be in the environment at all: the
+         * installed aulalab is the application directory, where none of that
+         * exists (scripts/lib.sh · AULALAB_STATE_ROOT). For a start from the
+         * terminal AULALAB_HOME may not be in the environment at all: the
          * supervisor works it out itself.
          *
-         * For --share the name is empty on purpose: an empty COLLOQ_HOSTNAME is
+         * For --share the name is empty on purpose: an empty AULALAB_HOSTNAME is
          * exactly the quick tunnel, and a line in .env or in the shell must not
-         * pull the link into a named one. COLLOQ_CLOUDFLARED is the file found
+         * pull the link into a named one. AULALAB_CLOUDFLARED is the file found
          * and checked above: the script does not look for it a second time.
-         * COLLOQ_SHARE=1 asks the script not to print its own summary but to
+         * AULALAB_SHARE=1 asks the script not to print its own summary but to
          * say with a marker line that the address is up; we print the summary,
          * in one block (launch-share.ts).
          */
@@ -690,15 +690,15 @@ async function runSession(options: LaunchOptions): Promise<number> {
           [script],
           false,
           {
-            COLLOQ_HOME: home,
+            AULALAB_HOME: home,
             ...(options.share
               ? {
-                  COLLOQ_HOSTNAME: '',
-                  COLLOQ_DIRECT: '',
-                  COLLOQ_SHARE: '1',
-                  COLLOQ_CLOUDFLARED: cloudflared ?? '',
+                  AULALAB_HOSTNAME: '',
+                  AULALAB_DIRECT: '',
+                  AULALAB_SHARE: '1',
+                  AULALAB_CLOUDFLARED: cloudflared ?? '',
                 }
-              : { COLLOQ_HOSTNAME: options.host }),
+              : { AULALAB_HOSTNAME: options.host }),
           },
           root,
           options.share
@@ -718,8 +718,8 @@ async function runSession(options: LaunchOptions): Promise<number> {
             console.log(
               `\nPublic access ended (code ${code}). Local work continues: ${config.url}\n` +
                 (options.share
-                  ? 'Try again: colloq host (a new quick tunnel — and a new address to send).'
-                  : `Try again: colloq host ${options.host}`),
+                  ? 'Try again: aulalab host (a new quick tunnel — and a new address to send).'
+                  : `Try again: aulalab host ${options.host}`),
             )
           }
         })
@@ -754,13 +754,13 @@ async function runSession(options: LaunchOptions): Promise<number> {
        * worth breaking the stop over: a non-zero exit code will not shut down
        * a single container. The regular path has already removed the kernels:
        * on SIGTERM the server removes the room kernels itself
-       * (server/src/index.ts, COLLOQ_STOP_KERNELS_ON_EXIT=1). What is lost is
+       * (server/src/index.ts, AULALAB_STOP_KERNELS_ON_EXIT=1). What is lost is
        * only the backup for the case when the server died on its own and never
        * got to it.
        */
       console.error(
         'Nothing here can stop the kernels: neither server/dist/local-cleanup.js nor the source. ' +
-          'Containers left behind are visible with: docker ps --filter name=colloq-room-',
+          'Containers left behind are visible with: docker ps --filter name=aulalab-room-',
       )
     if (processes && cleanupArgs) {
       const cleanup = processes.start('Stopping kernels', process.execPath, cleanupArgs)
@@ -799,7 +799,7 @@ async function runSession(options: LaunchOptions): Promise<number> {
     process.off('SIGHUP', onHangup)
     process.stdout.off('error', onOutputError)
     process.stderr.off('error', onOutputError)
-    if (cleanupFailure) throw new Error(cleanupFailure + ' Check colloq logs; the data is saved.')
+    if (cleanupFailure) throw new Error(cleanupFailure + ' Check aulalab logs; the data is saved.')
   }
 }
 

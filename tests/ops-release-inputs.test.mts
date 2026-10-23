@@ -22,8 +22,8 @@ const environments = new Set(fs.readdirSync(path.join(repo, 'kernel/environments
 
 function gpu(name: string): boolean {
   const source = read(`kernel/environments/${name}.txt`)
-  if (/^#\s*colloq:\s*gpu\s*$/m.test(source)) return true
-  const parent = source.match(/^#\s*colloq:\s*from\s+(\S+)\s*$/m)?.[1]
+  if (/^#\s*aulalab:\s*gpu\s*$/m.test(source)) return true
+  const parent = source.match(/^#\s*aulalab:\s*from\s+(\S+)\s*$/m)?.[1]
   return parent ? gpu(parent) : false
 }
 
@@ -54,7 +54,7 @@ test('the release docs name only environments that exist', () => {
 })
 
 test('the app Pod is ready on its own health, lives on livez, and the k3s guide says so and is marked a preview', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-probe-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-probe-'))
   try {
     const release = path.join(dir, 'release.json')
     fs.writeFileSync(release, JSON.stringify({ schemaVersion: 1, version: 'v1', sourceCommit: 'a'.repeat(40), k3sVersion: 'v1.34.1+k3s1',
@@ -65,13 +65,13 @@ test('the app Pod is ready on its own health, lives on livez, and the k3s guide 
     assert.equal(rendered.status, 0, rendered.stderr)
     const items = JSON.parse(rendered.stdout).items as any[]
     const deployment = (name: string) => items.find((x) => x.kind === 'Deployment' && x.metadata.name === name).spec.template.spec
-    const app = deployment('colloq-app').containers[0]
+    const app = deployment('aulalab-app').containers[0]
     assert.equal(app.readinessProbe.httpGet.path, '/api/readyz')
     assert.equal(app.livenessProbe.httpGet.path, '/api/livez')
     // The guide describes the broker's mounts as the manifest renders them.
-    const broker = deployment('colloq-runtime')
+    const broker = deployment('aulalab-runtime')
     const claims = broker.volumes.filter((v: any) => v.persistentVolumeClaim).map((v: any) => v.persistentVolumeClaim.claimName)
-    assert.deepEqual(claims, ['colloq-data'])
+    assert.deepEqual(claims, ['aulalab-data'])
     const guide = read('deploy/k3s/README.md')
     assert.doesNotMatch(guide, /broker mounts neither PVC/i)
     assert.match(guide, /broker at `\/data`/)

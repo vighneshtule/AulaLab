@@ -43,7 +43,7 @@ export interface RoomMount {
 
 /** Every input of one class container's `docker run`. */
 export interface RoomSpec {
-  /** The container's name: `colloq-room-<id>[-<role>]` at home, `colloq-class-<i6>-<id>-<role>` on a machine. */
+  /** The container's name: `aulalab-room-<id>[-<role>]` at home, `aulalab-class-<i6>-<id>-<role>` on a machine. */
   name: string
   /**
    * The class's container, its personal notebooks', or its council's.
@@ -57,11 +57,11 @@ export interface RoomSpec {
    * council sees the class folder read-only (D10).
    */
   role: RoomRole
-  /** The class: the folder's place inside, `/workspace/<id>`, and the `colloq.session` label. */
+  /** The class: the folder's place inside, `/workspace/<id>`, and the `aulalab.session` label. */
   sessionId: string
-  /** The environment's name, for the `colloq.environment` label. */
+  /** The environment's name, for the `aulalab.environment` label. */
   environment: string
-  /** The image to run: `colloq-kernel:<env>` at home, the pinned revision's tag on a machine. */
+  /** The image to run: `aulalab-kernel:<env>` at home, the pinned revision's tag on a machine. */
   image: string
   /**
    * The class folder as the docker daemon sees it, mounted at
@@ -98,9 +98,9 @@ export interface RoomSpec {
   cpus: number
   /** The process ceiling (perimeter-core.ts · RoomHardening). */
   pids: number
-  /** COLLOQ_ROOM_NETWORK's mode: `none` also points the container's resolver at an address the rules refuse. */
+  /** AULALAB_ROOM_NETWORK's mode: `none` also points the container's resolver at an address the rules refuse. */
   mode: RoomNetworkMode
-  /** The `colloq.profile` label (perimeter-core.ts · profileFor). */
+  /** The `aulalab.profile` label (perimeter-core.ts · profileFor). */
   profile: string
   /** This container's Jupyter token: its own, never another container's. */
   token: string
@@ -116,7 +116,7 @@ export interface RoomSpec {
 }
 
 /** The label home's census looks for (pool.ts · roomContainers): its own rooms, and only those. */
-export const ROOM_KERNEL_LABEL = 'colloq.kind=room-kernel'
+export const ROOM_KERNEL_LABEL = 'aulalab.kind=room-kernel'
 
 /**
  * The label a machine's class kernels carry instead (§3). Home's census
@@ -124,7 +124,7 @@ export const ROOM_KERNEL_LABEL = 'colloq.kind=room-kernel'
  * for one of its rooms, not even on one daemon; the agent finds its own by
  * this label and its INSTANCE_LABEL together.
  */
-export const CLASS_KERNEL_LABEL = 'colloq.kind=class-kernel'
+export const CLASS_KERNEL_LABEL = 'aulalab.kind=class-kernel'
 
 /**
  * What a GPU room's shared memory is when nothing else is said: docker's own
@@ -151,7 +151,7 @@ export const MACHINE_ROOM_FLAGS: readonly string[] = Object.freeze([
 export const HASH_SEED_MAX = 4294967295
 
 /**
- * The class's PYTHONHASHSEED (D28): 1 + (sha256("colloq-hashseed:" + id) mod
+ * The class's PYTHONHASHSEED (D28): 1 + (sha256("aulalab-hashseed:" + id) mod
  * 4294967295), so a number from 1 to HASH_SEED_MAX and never 0, which would
  * switch the randomisation off rather than seed it.
  *
@@ -160,7 +160,7 @@ export const HASH_SEED_MAX = 4294967295
  * containers, at home or on any machine, get the same one.
  */
 export function classHashSeed(sessionId: string): number {
-  const digest = BigInt(`0x${createHash('sha256').update(`colloq-hashseed:${sessionId}`).digest('hex')}`)
+  const digest = BigInt(`0x${createHash('sha256').update(`aulalab-hashseed:${sessionId}`).digest('hex')}`)
   return Number(digest % BigInt(HASH_SEED_MAX)) + 1
 }
 
@@ -338,25 +338,25 @@ function argv(spec: RoomSpec, kind: string, beforeImage: readonly string[]): str
     '--label',
     kind,
     '--label',
-    `colloq.session=${spec.sessionId}`,
+    `aulalab.session=${spec.sessionId}`,
     '--label',
-    `colloq.environment=${spec.environment}`,
+    `aulalab.environment=${spec.environment}`,
     /*
      * Whose container this is: the class's, its personal notebooks' or its
      * council's.
      *
      * Set on all, including the room one, where the value would be implied
      * anyway: the label is needed by the sweep, the slice allocation and
-     * `colloq status`, and they read `docker ps`, that is, also yesterday's
+     * `aulalab status`, and they read `docker ps`, that is, also yesterday's
      * containers started by a process that no longer exists. A missing label
      * reads as `room` (see pool.ts · KernelRole), so live containers survive a
      * rollout without being recreated.
      */
     '--label',
-    `colloq.role=${spec.role}`,
+    `aulalab.role=${spec.role}`,
     // The label is the source of truth about who holds a slice: it survives
     // a server restart, and the in-memory map does not.
-    ...(gpu ? ['--label', `colloq.gpu=${gpu}`] : []),
+    ...(gpu ? ['--label', `aulalab.gpu=${gpu}`] : []),
     ...spec.labels.flatMap((label) => ['--label', label]),
     ...beforeImage,
     spec.image,
@@ -370,7 +370,7 @@ const SESSION_ID = /^[A-Za-z0-9_-]{1,64}$/
 
 /** What a machine knows of a placement beyond the spec: whose agent it is and which generation. */
 export interface MachinePlacement {
-  /** The agent's INSTANCE_LABEL (runner-agent/images.ts), `ru.colloq.competition-instance=<hex>`. */
+  /** The agent's INSTANCE_LABEL (runner-agent/images.ts), `ru.aulalab.competition-instance=<hex>`. */
   instanceLabel: string
   /** The placement's generation: every write about it carries it (§6.9). */
   gen: number
@@ -387,8 +387,8 @@ export type MachineRoomSpec = Omit<RoomSpec, 'name' | 'network' | 'publish' | 'l
   mode: 'blocked' | 'none'
 }
 
-/** The key of the placement label: `colloq.placement=<id>:<role>:<gen>`. */
-export const PLACEMENT_LABEL = 'colloq.placement'
+/** The key of the placement label: `aulalab.placement=<id>:<role>:<gen>`. */
+export const PLACEMENT_LABEL = 'aulalab.placement'
 
 /** One slot of a class at one generation, as its container's label names it. */
 export interface PlacedSlot {
@@ -403,7 +403,7 @@ function checkSlot(slot: PlacedSlot): void {
   if (!Number.isSafeInteger(slot.gen) || slot.gen < 1) throw new Error(`not a placement generation: ${slot.gen}`)
 }
 
-/** The placement label of a slot, `colloq.placement=<id>:<role>:<gen>`, as `--label` takes it. */
+/** The placement label of a slot, `aulalab.placement=<id>:<role>:<gen>`, as `--label` takes it. */
 export function placementLabel(slot: PlacedSlot): string {
   checkSlot(slot)
   return `${PLACEMENT_LABEL}=${slot.sessionId}:${slot.role}:${slot.gen}`
@@ -422,15 +422,15 @@ export function slotOfPlacementLabel(value: string): PlacedSlot | null {
 }
 
 /**
- * A class container's name on a machine: `colloq-class-<i6>-<id>-<role>`,
+ * A class container's name on a machine: `aulalab-class-<i6>-<id>-<role>`,
  * `<i6>` being the agent's six hex characters (perimeter-core.ts ·
  * machinePerimeter). The role is always spelled out, unlike home's
- * `colloq-room-<id>`: a machine holds nothing from before the role existed.
+ * `aulalab-room-<id>`: a machine holds nothing from before the role existed.
  */
 export function machineRoomContainer(instanceLabel: string, sessionId: string, role: RoomRole): string {
   if (!SESSION_ID.test(sessionId)) throw new Error(`not a class id: ${JSON.stringify(sessionId)}`)
   if (!ROLES.includes(role)) throw new Error(`not a class container role: ${JSON.stringify(role)}`)
-  return `colloq-class-${machinePerimeter(instanceLabel).i6}-${sessionId}-${role}`
+  return `aulalab-class-${machinePerimeter(instanceLabel).i6}-${sessionId}-${role}`
 }
 
 /**
@@ -438,11 +438,11 @@ export function machineRoomContainer(instanceLabel: string, sessionId: string, r
  * same spec, with what is the machine's by rule (§7.1).
  *
  *   - its name, `machineRoomContainer`, and its network, the machine's own
- *     bridge `colloq-mrooms-<i6>` behind the machine's chains;
+ *     bridge `aulalab-mrooms-<i6>` behind the machine's chains;
  *   - Jupyter published on 127.0.0.1 only, the form a home on the host uses:
  *     the agent reaches it from the host's network, and a rented VM's public
  *     address never sees port 8888;
- *   - `colloq.kind=class-kernel` in place of `room-kernel`, the placement
+ *   - `aulalab.kind=class-kernel` in place of `room-kernel`, the placement
  *     label with its generation, and the agent's INSTANCE_LABEL, by which it
  *     adopts its containers after a restart and which no other agent's sweep
  *     touches;

@@ -1,5 +1,5 @@
 /**
- * The version of what this code keeps in colloq.db.
+ * The version of what this code keeps in aulalab.db.
  *
  * Bump it by one in the same commit as a migration that older code cannot
  * live with: one that drops or renames a table or a column, moves values into
@@ -39,6 +39,6 @@ export const DATA_SCHEMA_VERSION = 2
  * For the operator who has read the refusal and knows the newer migration is
  * harmless for this release; everyone else restores the backup taken before
  * the update. It is read from the environment, so on the server image it goes
- * into /etc/colloq/colloq.env and for the pip package into the shell or .env.
+ * into /etc/aulalab/aulalab.env and for the pip package into the shell or .env.
  */
-export const ALLOW_SCHEMA_DOWNGRADE = 'COLLOQ_ALLOW_SCHEMA_DOWNGRADE'
+export const ALLOW_SCHEMA_DOWNGRADE = 'AULALAB_ALLOW_SCHEMA_DOWNGRADE'

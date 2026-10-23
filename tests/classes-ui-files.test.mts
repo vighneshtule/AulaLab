@@ -30,7 +30,7 @@ const web = (rel: string) => new URL(`../web/src/${rel}`, import.meta.url).href
 const shared = (rel: string) => new URL(`../shared/${rel}`, import.meta.url).href
 
 before(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-classes-files-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-classes-files-'))
   const stub = async (name: string, body: string) => {
     const file = path.join(dir, `${name}.mjs`)
     await writeFile(file, body)

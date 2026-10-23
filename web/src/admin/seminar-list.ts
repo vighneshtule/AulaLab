@@ -351,7 +351,7 @@ export function groupRows(
 /* --------------------------------------------------------------- scope */
 
 /** The localStorage key for an owner's Мои/Все choice. */
-export const SCOPE_KEY = 'colloq.admin.seminars.scope'
+export const SCOPE_KEY = 'aulalab.admin.seminars.scope'
 
 /**
  * The remembered scope, defensively: storage can throw (a private window,

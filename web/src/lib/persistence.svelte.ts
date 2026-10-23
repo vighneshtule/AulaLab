@@ -9,7 +9,7 @@
  *
  * Nothing here is ever a gate. Storage can be missing (private windows),
  * blocked (enterprise policy) or simply silent (a permission prompt nobody
- * answered), and in every one of those cases Colloq must still open.
+ * answered), and in every one of those cases Aula Lab must still open.
  */
 import { clearDocument, IndexeddbPersistence } from 'y-indexeddb'
 import type * as Y from 'yjs'
@@ -27,7 +27,7 @@ export interface LocalStore {
 
 /** One database per seminar, so forgetting one room never touches another. */
 function dbName(sessionId: string): string {
-  return `colloq.session.${sessionId}`
+  return `aulalab.session.${sessionId}`
 }
 
 /**

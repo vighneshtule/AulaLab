@@ -3,18 +3,18 @@
  *
  * A Cloudflare quick tunnel is one cloudflared process, and until now one had
  * to install it oneself: `brew install cloudflared`, otherwise host.sh died
- * with a refusal. For a teacher who installed colloq through pip, that is a
+ * with a refusal. For a teacher who installed aulalab through pip, that is a
  * second installer for the sake of one link, and on Linux without Homebrew a
  * hunt for a package.
  *
  * The search order (resolveCloudflared) goes from explicit to downloaded:
- *   1. COLLOQ_CLOUDFLARED=/path: the person named the file themselves, and we
+ *   1. AULALAB_CLOUDFLARED=/path: the person named the file themselves, and we
  *      trust it;
  *   2. cloudflared in PATH: installed by hand (brew, a system package);
  *   3. <home>/bin/cloudflared: our copy, and only if its bytes match the
  *      pinned sum (launch-cloudflared-pin.ts);
  *   4. otherwise we download the pinned release from GitHub into <home>/bin.
- * COLLOQ_CLOUDFLARED_DOWNLOAD=0 forbids the fourth step: machines that
+ * AULALAB_CLOUDFLARED_DOWNLOAD=0 forbids the fourth step: machines that
  * download nothing from the network get a refusal in words, not a quiet
  * download.
  *
@@ -44,7 +44,7 @@ export const CLOUDFLARED_RELEASES = 'https://github.com/cloudflare/cloudflared/r
 export const INSTALL_HINT =
   'Install cloudflared yourself (brew install cloudflared, or a package from ' +
   CLOUDFLARED_RELEASES +
-  ') or name the file: COLLOQ_CLOUDFLARED=/path/to/cloudflared.'
+  ') or name the file: AULALAB_CLOUDFLARED=/path/to/cloudflared.'
 
 const SYSTEMS: Record<string, string> = { darwin: 'macOS', linux: 'Linux' }
 
@@ -67,13 +67,13 @@ export function pickCloudflaredAsset(
 ): CloudflaredAsset {
   if (platform === 'win32')
     throw new Error(
-      'Sharing a class from Windows is not supported: colloq runs on macOS and Linux. ' +
+      'Sharing a class from Windows is not supported: aulalab runs on macOS and Linux. ' +
         'Run it inside WSL 2 (Ubuntu on Windows), where it works as on Linux.',
     )
   const asset = assets.find((item) => item.platform === platform && item.arch === arch)
   if (!asset)
     throw new Error(
-      `colloq has no pinned cloudflared build for ${SYSTEMS[platform] ?? platform} ${arch}. ` +
+      `aulalab has no pinned cloudflared build for ${SYSTEMS[platform] ?? platform} ${arch}. ` +
         INSTALL_HINT,
     )
   return asset
@@ -146,7 +146,7 @@ export function cloudflaredBinary(asset: CloudflaredAsset, downloaded: Uint8Arra
 }
 
 export type CloudflaredResolution =
-  | { kind: 'use'; path: string; source: 'override' | 'path' | 'colloq' }
+  | { kind: 'use'; path: string; source: 'override' | 'path' | 'aulalab' }
   | { kind: 'download'; asset: CloudflaredAsset; stale: boolean }
   | { kind: 'refuse'; message: string }
 
@@ -154,7 +154,7 @@ export interface CloudflaredLookup {
   env: Record<string, string | undefined>
   platform: string
   arch: string
-  /** Where colloq puts its copy: <home>/bin. */
+  /** Where aulalab puts its copy: <home>/bin. */
   binDir: string
   /** Whether the file exists and can be run. */
   executable(file: string): boolean
@@ -165,17 +165,17 @@ export interface CloudflaredLookup {
 
 /** Where to get cloudflared, without a single action; ensureCloudflared carries out the decision. */
 export function resolveCloudflared(lookup: CloudflaredLookup): CloudflaredResolution {
-  const named = (lookup.env.COLLOQ_CLOUDFLARED ?? '').trim()
+  const named = (lookup.env.AULALAB_CLOUDFLARED ?? '').trim()
   if (named) {
     if (!path.isAbsolute(named))
       return {
         kind: 'refuse',
-        message: `COLLOQ_CLOUDFLARED must be an absolute path to the file, not "${named}".`,
+        message: `AULALAB_CLOUDFLARED must be an absolute path to the file, not "${named}".`,
       }
     if (!lookup.executable(named))
       return {
         kind: 'refuse',
-        message: `COLLOQ_CLOUDFLARED names ${named}, and that is not an executable file.`,
+        message: `AULALAB_CLOUDFLARED names ${named}, and that is not an executable file.`,
       }
     return { kind: 'use', path: named, source: 'override' }
   }
@@ -195,15 +195,15 @@ export function resolveCloudflared(lookup: CloudflaredLookup): CloudflaredResolu
   }
   const present = lookup.executable(ours)
   if (present && lookup.hashOf(ours) === asset.binarySha256)
-    return { kind: 'use', path: ours, source: 'colloq' }
-  if (lookup.env.COLLOQ_CLOUDFLARED_DOWNLOAD?.trim() === '0')
+    return { kind: 'use', path: ours, source: 'aulalab' }
+  if (lookup.env.AULALAB_CLOUDFLARED_DOWNLOAD?.trim() === '0')
     return {
       kind: 'refuse',
       message:
         (present
           ? `${ours} is not the pinned cloudflared ${CLOUDFLARED_VERSION}`
           : 'cloudflared is not installed') +
-        ', and downloading is switched off (COLLOQ_CLOUDFLARED_DOWNLOAD=0). ' +
+        ', and downloading is switched off (AULALAB_CLOUDFLARED_DOWNLOAD=0). ' +
         INSTALL_HINT,
     }
   return { kind: 'download', asset, stale: present }
@@ -345,7 +345,7 @@ export async function ensureCloudflared(options: EnsureOptions): Promise<string>
   options.say(
     decision.stale
       ? `The cloudflared in ${binDir} is not the pinned ${CLOUDFLARED_VERSION} build: fetching it again.`
-      : 'cloudflared is not installed: colloq fetches it once, for this and every later link.',
+      : 'cloudflared is not installed: aulalab fetches it once, for this and every later link.',
   )
   options.say(
     `  cloudflared ${CLOUDFLARED_VERSION} for ${SYSTEMS[asset.platform]} ${asset.arch}, ` +

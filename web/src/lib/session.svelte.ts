@@ -2304,7 +2304,7 @@ export class SessionState {
   }
 }
 
-const SESSION_KEY = Symbol('colloq.session')
+const SESSION_KEY = Symbol('aulalab.session')
 
 export function setSessionState(state: SessionState): SessionState {
   return setContext(SESSION_KEY, state)

@@ -132,9 +132,6 @@ test('nothing points at the removed cut-release machinery', () => {
     ...workflows.map((file) => `.github/workflows/${file}`),
     'Makefile',
     'README.md',
-    // The Russian README talks about releases too: the translation must not go
-    // stale here any more than the original.
-    'README.ru.md',
     'RELEASING.md',
     'CONTRIBUTING.md',
     'CHANGELOG.md',
@@ -195,7 +192,7 @@ test('the config tags vX.Y.Z and names every copy of the version at its current 
     assert.ok(covered.has(`package-lock.json $.packages.${w}.version`), `package-lock.json packages["${w}"] is not in extra-files`)
   }
   assert.ok(covered.has('shared/package.json $.version'))
-  assert.ok(covered.has('python/colloq/_version.py'))
+  assert.ok(covered.has('python/aulalab/_version.py'))
 })
 
 test('release-as pins only the first release, and its reminder travels with it', () => {

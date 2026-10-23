@@ -37,7 +37,7 @@ Written by release-please from Conventional Commits.
 
 `
 
-const CHANGELOG = `${HEADER}## [0.1.0](https://github.com/example/colloq/releases/tag/v0.1.0) (2026-09-13)
+const CHANGELOG = `${HEADER}## [0.1.0](https://github.com/example/aulalab/releases/tag/v0.1.0) (2026-09-13)
 
 ### Added
 
@@ -58,7 +58,7 @@ function rpConfig(extra?: unknown[]) {
           { type: 'json', path: 'shared/package.json', jsonpath: '$.version' },
           { type: 'json', path: 'package-lock.json', jsonpath: '$.packages.server.version' },
           { type: 'json', path: 'package-lock.json', jsonpath: '$.packages["cli"].version' },
-          { type: 'generic', path: 'python/colloq/_version.py' },
+          { type: 'generic', path: 'python/aulalab/_version.py' },
         ],
       },
     },
@@ -67,32 +67,32 @@ function rpConfig(extra?: unknown[]) {
 
 /** A tree with the same copies as the real one: root, two workspaces, lock, Python, changelog, release-please. */
 function fixture(version = '0.1.0', changelog = CHANGELOG): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-version-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-version-'))
   const write = (file: string, text: string) => {
     fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
     fs.writeFileSync(path.join(dir, file), text)
   }
-  write('package.json', json({ name: 'colloq', private: true, version, workspaces: ['server', 'cli'] }))
-  write('server/package.json', json({ name: '@colloq/server', private: true, version, type: 'module' }))
-  write('cli/package.json', json({ name: '@colloq/cli', private: true, version }))
-  write('shared/package.json', json({ name: '@colloq/shared', private: true, version, type: 'module' }))
+  write('package.json', json({ name: 'aulalab', private: true, version, workspaces: ['server', 'cli'] }))
+  write('server/package.json', json({ name: '@aulalab/server', private: true, version, type: 'module' }))
+  write('cli/package.json', json({ name: '@aulalab/cli', private: true, version }))
+  write('shared/package.json', json({ name: '@aulalab/shared', private: true, version, type: 'module' }))
   write(
     'package-lock.json',
     json({
-      name: 'colloq',
+      name: 'aulalab',
       version,
       lockfileVersion: 3,
       requires: true,
       packages: {
-        '': { name: 'colloq', version, workspaces: ['server', 'cli'] },
-        cli: { name: '@colloq/cli', version },
-        'node_modules/@colloq/cli': { resolved: 'cli', link: true },
+        '': { name: 'aulalab', version, workspaces: ['server', 'cli'] },
+        cli: { name: '@aulalab/cli', version },
+        'node_modules/@aulalab/cli': { resolved: 'cli', link: true },
         'node_modules/left-pad': { version: '1.3.0' },
-        server: { name: '@colloq/server', version, dependencies: { 'left-pad': '^1.3.0' } },
+        server: { name: '@aulalab/server', version, dependencies: { 'left-pad': '^1.3.0' } },
       },
     }),
   )
-  write('python/colloq/_version.py', pythonVersionFile(version))
+  write('python/aulalab/_version.py', pythonVersionFile(version))
   write('CHANGELOG.md', changelog)
   write('release-please-config.json', json(rpConfig()))
   write('.release-please-manifest.json', json({ '.': version }))
@@ -172,11 +172,11 @@ test('check names every copy that disagrees, and a tag that does not match', () 
     assert.match(checkVersions(dir, { tag: 'v0.2.0' }).join('\n'), /tag v0\.2\.0 does not match/)
     assert.match(checkVersions(dir, { tag: '0.1.0' }).join('\n'), /expected v0\.1\.0/)
 
-    writeJson(dir, 'cli/package.json', { name: '@colloq/cli', version: '0.0.9' })
+    writeJson(dir, 'cli/package.json', { name: '@aulalab/cli', version: '0.0.9' })
     const lock = JSON.parse(read(dir, 'package-lock.json'))
     lock.packages.server.version = '0.0.8'
     writeJson(dir, 'package-lock.json', lock)
-    fs.writeFileSync(path.join(dir, 'python/colloq/_version.py'), pythonVersionFile('0.0.7'))
+    fs.writeFileSync(path.join(dir, 'python/aulalab/_version.py'), pythonVersionFile('0.0.7'))
     const problems = checkVersions(dir).join('\n')
     assert.match(problems, /cli\/package\.json says 0\.0\.9/)
     assert.match(problems, /package-lock\.json packages\["server"\] says 0\.0\.8/)
@@ -197,11 +197,11 @@ test('a version raised by hand, past release-please, is caught by its manifest',
 })
 
 test('the changelog: release-please headings count, the top one is the version, nothing sits above it', () => {
-  const released = `${HEADER}## [0.2.0](https://github.com/example/colloq/compare/v0.1.0...v0.2.0) (2026-09-20)
+  const released = `${HEADER}## [0.2.0](https://github.com/example/aulalab/compare/v0.1.0...v0.2.0) (2026-09-20)
 
 ### Features
 
-* **council:** something ([abc1234](https://github.com/example/colloq/commit/abc1234))
+* **council:** something ([abc1234](https://github.com/example/aulalab/commit/abc1234))
 
 ## 0.1.1 (2026-09-15)
 
@@ -242,7 +242,7 @@ test('the release-please rehearsal moves every copy, and only version lines', ()
       'cli/package.json',
       'package-lock.json',
       'package.json',
-      'python/colloq/_version.py',
+      'python/aulalab/_version.py',
       'server/package.json',
       'shared/package.json',
     ])
@@ -255,7 +255,7 @@ test('the release-please rehearsal moves every copy, and only version lines', ()
     assert.equal(changed.length, 4)
     assert.ok(changed.every((line) => /"version": "0\.1\.0"/.test(line)))
     assert.equal(JSON.parse(files.get('package-lock.json')!).packages['node_modules/left-pad'].version, '1.3.0')
-    assert.equal(files.get('python/colloq/_version.py'), pythonVersionFile('0.2.0'))
+    assert.equal(files.get('python/aulalab/_version.py'), pythonVersionFile('0.2.0'))
     // The new release section is at the top, under the header; the old changelog is intact.
     const changelog = files.get('CHANGELOG.md')!
     assert.deepEqual(changelogVersions(changelog), ['0.2.0', '0.1.0'])
@@ -290,14 +290,14 @@ test('a copy release-please would not touch fails the check, whatever the reason
       rpConfig([
         { type: 'json', path: 'server/pakage.json', jsonpath: '$.version' },
         { type: 'json', path: 'package-lock.json', jsonpath: '$.packages.srever.version' },
-        { type: 'generic', path: 'python/colloq/_version.py' },
+        { type: 'generic', path: 'python/aulalab/_version.py' },
       ]),
     )
-    fs.writeFileSync(path.join(dir, 'python/colloq/_version.py'), '__version__ = "0.1.0"\n')
+    fs.writeFileSync(path.join(dir, 'python/aulalab/_version.py'), '__version__ = "0.1.0"\n')
     const problems = checkVersions(dir).join('\n')
     assert.match(problems, /server\/pakage\.json does not exist/)
     assert.match(problems, /\$\.packages\.srever\.version: no version string there/)
-    assert.match(problems, /no line marked x-release-please-version in python\/colloq\/_version\.py/)
+    assert.match(problems, /no line marked x-release-please-version in python\/aulalab\/_version\.py/)
   })
   // release-type is not node — nobody will raise the lock root and package.json.
   withFixture((dir) => {
@@ -308,7 +308,7 @@ test('a copy release-please would not touch fails the check, whatever the reason
 
 test('sync repairs copies without a new number; it refuses to reformat a hand-formatted file', () => {
   withFixture((dir) => {
-    writeJson(dir, 'server/package.json', { name: '@colloq/server', private: true, version: '0.0.1', type: 'module' })
+    writeJson(dir, 'server/package.json', { name: '@aulalab/server', private: true, version: '0.0.1', type: 'module' })
     assert.match(checkVersions(dir).join('\n'), /server\/package\.json says 0\.0\.1/)
     const before = read(dir, 'server/package.json')
     assert.equal(quietly(() => main(['sync', '--dry-run'], dir)), 0)
@@ -317,7 +317,7 @@ test('sync repairs copies without a new number; it refuses to reformat a hand-fo
     assert.deepEqual(checkVersions(dir), [])
     assert.equal(read(dir, '.release-please-manifest.json'), json({ '.': '0.1.0' }))
 
-    fs.writeFileSync(path.join(dir, 'cli/package.json'), '{"name":"@colloq/cli","version":"0.1.0"}\n')
+    fs.writeFileSync(path.join(dir, 'cli/package.json'), '{"name":"@aulalab/cli","version":"0.1.0"}\n')
     assert.throws(() => versionEdits(diskReader(dir), '0.2.0'), /cli\/package\.json is not in npm's canonical JSON/)
   })
 })
@@ -338,13 +338,13 @@ test('this checkout: every copy agrees, release-please would move them all, and 
   assert.deepEqual(checkVersions(repo), [])
   const version = JSON.parse(read(repo, 'package.json')).version as string
   // Packaging writes _version.py with the same function — so `make pack` does not dirty the tree.
-  assert.equal(read(repo, 'python/colloq/_version.py'), pythonVersionFile(version))
+  assert.equal(read(repo, 'python/aulalab/_version.py'), pythonVersionFile(version))
   assert.match(read(repo, 'scripts/pack.mts'), /writeFileSync\([^\n]*_version\.py'\), pythonVersionFile\(version\)\)/)
-  const { COLLOQ_VERSION } = await import('../server/src/version.ts')
-  assert.equal(COLLOQ_VERSION, version)
+  const { AULALAB_VERSION } = await import('../server/src/version.ts')
+  assert.equal(AULALAB_VERSION, version)
   // The panel takes the number from the build (vite define), not from a string in the markup.
   const shell = read(repo, 'web/src/admin/AdminShell.svelte')
   assert.doesNotMatch(shell, /<Wordmark[^>]*version="v?\d/)
-  assert.match(shell, /__COLLOQ_VERSION__/)
-  assert.match(read(repo, 'web/vite.config.ts'), /__COLLOQ_VERSION__: JSON\.stringify\(COLLOQ_VERSION\)/)
+  assert.match(shell, /__AULALAB_VERSION__/)
+  assert.match(read(repo, 'web/vite.config.ts'), /__AULALAB_VERSION__: JSON\.stringify\(AULALAB_VERSION\)/)
 })

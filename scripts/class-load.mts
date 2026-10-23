@@ -147,7 +147,7 @@
  *        (or node --import tsx scripts/class-load.mts with the variables below)
  *   LOAD_BASE_URL      the home, http(s)://…                        required
  *   LOAD_SETUP_TOKEN   its setup token (signs in as the first owner), or
- *   LOAD_STAFF_COOKIE  an owner's `colloq_staff=…` cookie: one of the two
+ *   LOAD_STAFF_COOKIE  an owner's `aulalab_staff=…` cookie: one of the two
  *   LOAD_STUDENTS      N                                             default 30
  *   LOAD_MINUTES       the class's length                            default 60
  *   LOAD_CLASS         «Где считается»: machines, personal, gpu, home default machines
@@ -350,7 +350,7 @@ function readSettings(): Settings {
   const setupToken = text('LOAD_SETUP_TOKEN')
   const staffCookie = text('LOAD_STAFF_COOKIE').split(';')[0]!.trim()
   if (!setupToken && !staffCookie) throw new Usage('neither LOAD_SETUP_TOKEN nor LOAD_STAFF_COOKIE is set: only an owner may make and delete the rig\'s room')
-  if (staffCookie && !staffCookie.startsWith('colloq_staff=')) throw new Usage('LOAD_STAFF_COOKIE is not a colloq_staff= cookie')
+  if (staffCookie && !staffCookie.startsWith('aulalab_staff=')) throw new Usage('LOAD_STAFF_COOKIE is not a aulalab_staff= cookie')
   const preset = (text('LOAD_CLASS') || 'machines') as ClassPlacementPreset
   if (!CLASS_PLACEMENT_PRESET_NAMES.includes(preset)) throw new Usage(`LOAD_CLASS: one of ${CLASS_PLACEMENT_PRESET_NAMES.join(', ')}, not "${preset}"`)
   const cells = text('LOAD_CELLS') || 'python'
@@ -412,7 +412,7 @@ try {
 }
 const S = settings
 const WSB = S.base.replace(/^http/, 'ws')
-const secrets = new Set<string>([S.setupToken, S.staffCookie.slice('colloq_staff='.length)].filter(Boolean))
+const secrets = new Set<string>([S.setupToken, S.staffCookie.slice('aulalab_staff='.length)].filter(Boolean))
 
 /* -------------------------------------------------------------- the plan */
 
@@ -745,9 +745,9 @@ async function signIn(): Promise<string | null> {
     await res.arrayBuffer()
     if (!res.ok) return `the setup token was refused (HTTP ${res.status})`
     staffCookie = (res.headers.get('set-cookie') ?? '').split(';')[0]!
-    if (!staffCookie.startsWith('colloq_staff=')) return 'no staff cookie was issued'
+    if (!staffCookie.startsWith('aulalab_staff=')) return 'no staff cookie was issued'
   }
-  secrets.add(staffCookie.slice('colloq_staff='.length))
+  secrets.add(staffCookie.slice('aulalab_staff='.length))
   const me = await request('GET', '/api/admin/me', { cookie: staffCookie }).catch(() => null)
   if (!me || me.status !== 200) return `the panel does not know this cookie (${me ? `HTTP ${me.status}` : 'no answer'})`
   const role = parsed<AdminMe>(me)?.teacher?.role
@@ -757,7 +757,7 @@ async function signIn(): Promise<string | null> {
 
 /** The class's environment as the room is made with it; null — the instance's. */
 let environment: string | null = S.environment
-/** The environment asks for a card (`# colloq: gpu`): the class's room holds one whole. */
+/** The environment asks for a card (`# aulalab: gpu`): the class's room holds one whole. */
 let gpuClass = false
 
 /**
@@ -777,11 +777,11 @@ async function chooseEnvironment(): Promise<string | null> {
     const named = list.find((one) => one.name === S.environment)
     if (!named) return `there is no environment called ${S.environment} on this home`
     gpuClass = named.gpu
-    if (S.preset === 'gpu' && !named.gpu) return `CLASS=gpu needs a GPU environment (\`# colloq: gpu\`), and ${S.environment} is not one`
+    if (S.preset === 'gpu' && !named.gpu) return `CLASS=gpu needs a GPU environment (\`# aulalab: gpu\`), and ${S.environment} is not one`
     return null
   }
   const gpu = list.find((one) => one.name === 'base-gpu' && one.gpu) ?? list.find((one) => one.gpu)
-  if (!gpu) return 'CLASS=gpu: this home has no GPU environment (`# colloq: gpu`): name one with LOAD_ENVIRONMENT'
+  if (!gpu) return 'CLASS=gpu: this home has no GPU environment (`# aulalab: gpu`): name one with LOAD_ENVIRONMENT'
   environment = gpu.name
   gpuClass = true
   return null
@@ -3472,7 +3472,7 @@ for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
 
 async function main(): Promise<number> {
   say()
-  say(bold('  colloq class-load') + dim(`  ${new Date().toISOString()}  ·  ${S.base}`))
+  say(bold('  aulalab class-load') + dim(`  ${new Date().toISOString()}  ·  ${S.base}`))
   say(dim(`  ${S.students} students (${STUDENTS_OWN} in personal notebooks) · ${S.minutes} min in ${ROUNDS} ${ROUNDS === 1 ? 'round' : 'rounds'} of ${Math.round(ROUND_MS / 1000)}s · CLASS=${S.preset} (room ${PLACEMENT.room}, own ${PLACEMENT.own}, council ${POOL ? `on a pool of ${S.workers} workers, ${S.attemptMb} MB each` : 'in the shared kernel'})${S.epochMb ? ` · ${S.epochMb} MB of data for the epoch` : ''}${S.cells === 'fake' ? ' · fake cells' : ''}`))
   if (S.baseline) say(dim(`  baseline: ${S.baseline.path}`))
   say(dim('  relay2\'s counters before the run, on the relay:'))

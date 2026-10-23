@@ -10,11 +10,11 @@ import type { PreparationRequest, PreparationResult, PreparationProgress } from 
 import { PREPARATION_PROXY_PYTHON, PREPARATION_PYTHON } from './preparation-python.js'
 import { preparationJob, preparationSource, writeExtraCa } from './source.js'
 
-const LABEL = 'ru.colloq.dependency-preparation'
+const LABEL = 'ru.aulalab.dependency-preparation'
 const scope = createHash('sha256').update(path.resolve(hostPathOf(config.dataDir))).digest('hex').slice(0, 16)
 const label = `${LABEL}=${scope}`
 const active = new Set<string>()
-const MARKER = '__COLLOQ_DEP__'
+const MARKER = '__AULALAB_DEP__'
 const MiB = 1024 * 1024
 
 type DockerResult = { code: number; out: string }
@@ -145,10 +145,10 @@ export async function prepareDependencies(request: PreparationRequest): Promise<
   if (request.signal.aborted) cancel()
   const timeout = setTimeout(() => controller.abort(new DependencyPreparationError('timeout', 'Package preparation exceeded its time limit.')), seconds * 1000)
   const suffix = randomUUID().replaceAll('-', '')
-  const network = `colloq-dep-net-${suffix}`
-  const proxy = `colloq-dep-proxy-${suffix}`
-  const resolver = `colloq-dep-resolve-${suffix}`
-  const verifier = `colloq-dep-verify-${suffix}`
+  const network = `aulalab-dep-net-${suffix}`
+  const proxy = `aulalab-dep-proxy-${suffix}`
+  const resolver = `aulalab-dep-resolve-${suffix}`
+  const verifier = `aulalab-dep-verify-${suffix}`
   const names = [resolver, verifier, proxy]
   for (const name of names) active.add(name)
   const input = path.join(request.workDir, 'input')

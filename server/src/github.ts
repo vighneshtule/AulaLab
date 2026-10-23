@@ -199,7 +199,7 @@ class GithubMissing extends Error {}
  */
 async function ghJson(path: string): Promise<unknown> {
   const res = await fetch(`${API}${path}`, {
-    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'colloq' },
+    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'aulalab' },
     signal: AbortSignal.timeout(20_000),
   })
   /*
@@ -325,7 +325,7 @@ export async function fetchNotebook(target: GithubTarget, maxBytes: number): Pro
 
 export async function fetchRaw(url: string, maxBytes: number): Promise<Buffer> {
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'colloq' },
+    headers: { 'User-Agent': 'aulalab' },
     signal: AbortSignal.timeout(60_000),
   })
   if (!res.ok) {

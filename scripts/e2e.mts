@@ -97,7 +97,7 @@ async function until(label: string, fn: () => boolean, ms = 120_000) {
  * on (fetch keeps no jar).
  *
  * Claiming an unclaimed instance is deliberately not done here. A harness that
- * claims one becomes its owner — "Alexander <owner@colloq.test>" in somebody
+ * claims one becomes its owner — "Alexander <owner@aulalab.test>" in somebody
  * else's panel — and takes away the first-run screen the teacher was supposed
  * to see. Claiming an instance is a person's decision, so say so and stop.
  */
@@ -117,7 +117,7 @@ if (!signIn.ok) throw new Error(`FAIL: could not sign in as staff (${signIn.stat
 // Name=value only: the browser's own attributes (Path, HttpOnly, SameSite) are
 // instructions to a browser and not part of what gets sent back.
 const staffCookie = (signIn.headers.get('set-cookie') ?? '').split(';')[0]
-if (!staffCookie.startsWith('colloq_staff=')) throw new Error('FAIL: no staff cookie was issued')
+if (!staffCookie.startsWith('aulalab_staff=')) throw new Error('FAIL: no staff cookie was issued')
 const me = await j(signIn)
 console.log(`0. signed in as staff: ${me.teacher.name} (${me.teacher.role}) — setup token, recovery path`)
 

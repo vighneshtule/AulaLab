@@ -3,10 +3,10 @@
 # The .env of a local class, for make. Prints it to stdout; the `.env` target
 # writes it.
 #
-# Why a separate writer, when colloq already writes out the same file
+# Why a separate writer, when aulalab already writes out the same file
 # (cli/src/launch-config.ts · localClassEnv). The `.env` target used to do
 # `cp .env.example .env`, and .env.example is the PRODUCTION template:
-# KERNEL_BACKEND=broker, KERNEL_CATALOG_FILE=/etc/colloq/… . The file is
+# KERNEL_BACKEND=broker, KERNEL_CATALOG_FILE=/etc/aulalab/… . The file is
 # created by the first target that needs it (make up, run, host, activity),
 # and after that `make dev` refused on broker: "This is a runtime broker
 # installation". The supervisor is right about it, and there is no reason to
@@ -29,26 +29,26 @@
 set -euo pipefail
 
 # The kernel token is unique to each installation, 24 bytes in hex, like
-# randomBytes(24) in colloq. Through od, not `tr -dc … </dev/urandom | head`:
+# randomBytes(24) in aulalab. Through od, not `tr -dc … </dev/urandom | head`:
 # under pipefail tr catches SIGPIPE, the substitution returns 141, and set -e
 # would cut the script short.
 token="$(od -An -tx1 -N24 /dev/urandom | tr -d ' \n')"
 [ "${#token}" -eq 48 ] || { echo 'local-env.sh: /dev/urandom did not give 24 bytes' >&2; exit 1; }
 
 cat <<EOF
-# Settings for this machine. colloq wrote this file on its first start:
-# edit it and restart with colloq restart. The full list of everything that
+# Settings for this machine. aulalab wrote this file on its first start:
+# edit it and restart with aulalab restart. The full list of everything that
 # can be configured is in .env.example next to the application.
 
 # The address of the class on this machine. From outside it is visible
-# only through colloq host.
+# only through aulalab host.
 PORT=3000
 BIND_ADDR=127.0.0.1
 UI_LANGUAGE=ru
 
 # The kernels of a class are Docker containers on this computer, one per room.
 # Each room container is hardened: no privileges, a process limit, the internet
-# yes, your local network and this computer no. COLLOQ_ROOM_NETWORK=open lifts
+# yes, your local network and this computer no. AULALAB_ROOM_NETWORK=open lifts
 # the network block for a machine you fully trust.
 KERNEL_BACKEND=docker
 KERNEL_ENV=base

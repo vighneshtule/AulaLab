@@ -18,7 +18,7 @@ export type KernelBackend = 'broker' | 'docker' | 'test'
  *
  * Previously a test server without an explicit `KERNEL_BACKEND` took docker
  * and began managing REAL containers: the idle sweeper walks the
- * `colloq.kind=room-kernel` labels via `docker ps -a`, so it also sees the
+ * `aulalab.kind=room-kernel` labels via `docker ps -a`, so it also sees the
  * rooms of another, live server on the same machine. On 20 Sep 2026 a test
  * instance started this way ended up next to a class in progress and could
  * have shut down its room; the cost of the mistake is wiped variables for the
@@ -105,7 +105,7 @@ function runtimeUrl(raw: string): string {
   if (url.username || url.password || url.search || url.hash || !['', '/'].includes(url.pathname)) {
     throw new RuntimeRequestError(tr("server.invalidKernelRuntimeUrlCredentialsQueryStrings.b2ea18"))
   }
-  const local = ['localhost', '127.0.0.1', '[::1]', 'colloq-runtime'].includes(url.hostname) ||
+  const local = ['localhost', '127.0.0.1', '[::1]', 'aulalab-runtime'].includes(url.hostname) ||
     url.hostname.endsWith('.svc') || url.hostname.endsWith('.svc.cluster.local')
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) {
     throw new RuntimeRequestError('Use HTTPS for a kernel runtime outside the local host or cluster; public cleartext URLs are disabled')

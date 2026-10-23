@@ -9,7 +9,7 @@ import { tr } from './i18n.js'
  * token, and "read-only" here is a property of the design, not a switch the
  * server would have to honour.
  *
- * A course is the only address in Colloq a person would bookmark: it is
+ * A course is the only address in Aula Lab a person would bookmark: it is
  * given to the class in the first week, and nothing else is given after it.
  */
 import type { CellOutput, CellType } from './notebook.js'
@@ -1020,7 +1020,7 @@ export const SKIP_REASON_TEXT: Record<SkipReason, string> = {
  * The decision is "not indexed", and it is about what this page is: a record
  * of a class given to its own class by link, not a publication for readers
  * at large. It should be found by whoever was given the address; the
- * colloq.ru landing is open to search engines and stays open.
+ * example.edu landing is open to search engines and stays open.
  */
 export const PUBLIC_PAGES_INDEXED = false
 

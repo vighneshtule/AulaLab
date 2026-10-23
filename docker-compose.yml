@@ -1,10 +1,10 @@
 # Explicit local Docker development. Production uses deploy/k3s.
 # Each room gets its own kernel; missing Docker access or network fails execution.
-name: colloq
+name: aulalab
 
 networks:
   default:
-    name: colloq
+    name: aulalab
 services:
   app:
     build:
@@ -17,7 +17,7 @@ services:
     environment:
       NODE_ENV: development
       KERNEL_BACKEND: docker
-      UI_LANGUAGE: ${UI_LANGUAGE:-ru}
+      UI_LANGUAGE: ${UI_LANGUAGE:-en}
       PORT: 3000
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
       SESSION_SECRET: ${SESSION_SECRET:-}
@@ -43,7 +43,7 @@ services:
       # paths on the host. Without this every submission gets an empty data
       # directory and fails on read_csv — silently, and for everyone at once.
       DATA_HOST_DIR: ${DATA_HOST_DIR:-${PWD}/data}
-      KERNEL_NETWORK: ${KERNEL_NETWORK:-colloq}
+      KERNEL_NETWORK: ${KERNEL_NETWORK:-aulalab}
       KERNEL_MEM: ${KERNEL_MEM:-4g}
       # Per-environment override, one line per environment that needs its own
       # ceiling: a deep-learning seminar wants 8-16g where a plain room wants 2g.
@@ -88,4 +88,4 @@ services:
       args:
         KERNEL_ENV: ${KERNEL_ENV:-base}
         PARENT: ${KERNEL_PARENT:-python:3.11-slim-bookworm}
-    image: colloq-kernel:${KERNEL_ENV:-base}
+    image: aulalab-kernel:${KERNEL_ENV:-base}

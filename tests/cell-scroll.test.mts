@@ -247,12 +247,12 @@ test("a text cell reports that it settled, and the notebook follows it like a co
   const book = readFileSync(new URL("../web/src/components/notebook/Notebook.svelte", import.meta.url), "utf8");
   assert.match(
     cell,
-    /commitMarkdown\(\)[\s\S]{0,900}?dispatchEvent\(new CustomEvent\('colloq:cell-settled', \{ detail: \{ cellId: id \} \}\)\)[\s\S]{0,40}?return true/,
+    /commitMarkdown\(\)[\s\S]{0,900}?dispatchEvent\(new CustomEvent\('aulalab:cell-settled', \{ detail: \{ cellId: id \} \}\)\)[\s\S]{0,40}?return true/,
     "the note rendered silently, so the sheet will not follow it",
   );
   assert.match(
     book,
-    /addEventListener\('colloq:cell-settled', onSettled\)/,
+    /addEventListener\('aulalab:cell-settled', onSettled\)/,
     "Notebook does not listen for a note being rendered",
   );
   assert.match(

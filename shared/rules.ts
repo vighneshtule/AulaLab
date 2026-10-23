@@ -632,7 +632,7 @@ export const MAX_OWN_MEMORY_MB = 262144
 export const MAX_OWN_CPUS = 64
 
 /**
- * What a room is when nobody has said otherwise: exactly what Colloq has always
+ * What a room is when nobody has said otherwise: exactly what Aula Lab has always
  * been. Every existing seminar reads as this, and so does every new one whose
  * teacher never opens the settings.
  */

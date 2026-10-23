@@ -370,7 +370,7 @@ async function generate(
        */
       throw new Error(
         tr("server.theModelReturnedAnEmptyResponse.826722", { p0: providerModel() }) +
-          tr("server.askWhoeverRunsThisColloqToCheck.43c560"),
+          tr("server.askWhoeverRunsThisAulaLabToCheck.43c560"),
       )
     }
     settle(sessionId, entryId, 'done', null)
@@ -720,7 +720,7 @@ function systemPrompt(
    */
   const rules = [
     tr('server.ai.answerLanguage'),
-    'You are the AI oracle built into Colloq, a live seminar notebook that a class is working in right now.',
+    'You are the AI oracle built into Aula Lab, a live seminar notebook that a class is working in right now.',
     'Every person in the seminar can read your reply: answer the room, not a private tab.',
     'Earlier turns in this thread were asked by different people; each question is labelled with its asker.',
     /*

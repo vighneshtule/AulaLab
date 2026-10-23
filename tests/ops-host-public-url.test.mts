@@ -24,7 +24,7 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const script = fs.readFileSync(path.join(repo, 'scripts/host.sh'), 'utf8')
 
 test('cluster relay uses loopback ingress and the controlled public URL operation', () => {
-  assert.match(script, /COLLOQ_CLUSTER/)
+  assert.match(script, /AULALAB_CLUSTER/)
   assert.match(script, /PORT=30080/)
   assert.match(script, /scripts\/cluster\.sh public-url "\$PUBLIC"/)
 })
@@ -39,7 +39,7 @@ test('the address arrives without restarting the service', () => {
   const restarts = code
     .split('\n')
     .map((line, i) => [i + 1, line] as const)
-    .filter(([, line]) => /systemctl\s+(restart|reload-or-restart)\s+colloq/.test(line))
+    .filter(([, line]) => /systemctl\s+(restart|reload-or-restart)\s+aulalab/.test(line))
   assert.deepEqual(
     restarts,
     [],

@@ -5,7 +5,7 @@ import { isDeepStrictEqual } from 'node:util'
  * run, how urgent it is, and the labels and annotations the platform's policy
  * engine and cost accounting require.
  *
- * Settings of someone else's Kubernetes, not of Colloq. On the single-node k3s
+ * Settings of someone else's Kubernetes, not of Aula Lab. On the single-node k3s
  * the installer builds, none of them is needed and all are empty; in a bank's
  * multi-node cluster they decide whether a room's Pod is admitted and
  * scheduled at all. They are read once at start (config.ts), refused with a
@@ -15,7 +15,7 @@ import { isDeepStrictEqual } from 'node:util'
 export interface PodPolicy {
   /**
    * RUNTIME_COLOCATE_WITH_APP: a required podAffinity to the app's Pod
-   * (`colloq.dev/role=app`) on its node, for every Pod that mounts the data or
+   * (`aulalab.dev/role=app`) on its node, for every Pod that mounts the data or
    * workspace claim.
    *
    * With ReadWriteOnce storage the volume is attached to one node, and a room
@@ -59,13 +59,13 @@ function qualifiedName(key: string): boolean {
  * An operator's label with one of them would either lose to the broker's own
  * value (and then silently not be there) or, if it won, do harm: a room Pod
  * labelled with another room's session hash would answer to that room's
- * Service, and one labelled `colloq.dev/role=app` would become the target the
+ * Service, and one labelled `aulalab.dev/role=app` would become the target the
  * colocation affinity looks for. So they are refused at start, not merged.
  */
 export function reservedKey(key: string): boolean {
   const slash = key.indexOf('/')
   const prefix = slash < 0 ? '' : key.slice(0, slash)
-  return key.startsWith('colloq.') || prefix.endsWith('.colloq.dev') || key === 'app.kubernetes.io/managed-by'
+  return key.startsWith('aulalab.') || prefix.endsWith('.aulalab.dev') || key === 'app.kubernetes.io/managed-by'
 }
 
 /**
@@ -116,7 +116,7 @@ export function parseStringMap(
     if (!qualifiedName(key))
       throw new Error(`${name}: ${shown(key)} is not a valid Kubernetes ${kind === 'annotations' ? 'annotation' : 'label'} key`)
     if (kind !== 'nodeSelector' && reservedKey(key))
-      throw new Error(`${name}: ${shown(key)} is reserved: colloq.* keys and app.kubernetes.io/managed-by carry the broker's ownership and selectors`)
+      throw new Error(`${name}: ${shown(key)} is reserved: aulalab.* keys and app.kubernetes.io/managed-by carry the broker's ownership and selectors`)
     if (kind === 'annotations' && SECURITY_ANNOTATIONS.some((prefix) => key.startsWith(`${prefix}/`)))
       throw new Error(`${name}: ${shown(key)} would change the Pod's security profile, which the broker fixes`)
     if (typeof item !== 'string') throw new Error(`${name}: the value of ${shown(key)} must be a string`)
@@ -224,7 +224,7 @@ export function parseExtendedResource(name: string, raw: string | undefined): st
 }
 
 /** The label of the app's Pod that the colocation affinity looks for; the chart sets it. */
-export const APP_POD_SELECTOR = { 'colloq.dev/role': 'app' } as const
+export const APP_POD_SELECTOR = { 'aulalab.dev/role': 'app' } as const
 const TOPOLOGY = 'kubernetes.io/hostname'
 
 /** The required podAffinity to the app's node: fresh per Pod, never shared between specs. */

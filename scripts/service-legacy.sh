@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Colloq on a dedicated machine: the server as a systemd service, room kernels in docker.
+# Aula Lab on a dedicated machine: the server as a systemd service, room kernels in docker.
 #
 #   scripts/service.sh install   install and start (idempotent)
 #   scripts/service.sh restart   restart — after git pull and a build
@@ -32,7 +32,7 @@
 #
 # A server on the host removes both: the repository, .env and docker are right
 # next to it, the panel can do everything, and there is no user mismatch — see
-# deploy/colloq.service, which also names the price (the service runs as root).
+# deploy/aulalab.service, which also names the price (the service runs as root).
 #
 # WHAT install DOES, step by step: checks the machine, creates .env, installs
 # docker (if it is missing) and Node, builds the project, builds the kernel
@@ -50,13 +50,13 @@ RED=$'\033[31m'; DIM=$'\033[2m'; BOLD=$'\033[1m'; CYAN=$'\033[36m'; OFF=$'\033[0
 say() { printf '%s\n' "$*"; }
 die() { printf '%s%s%s\n' "$RED" "$*" "$OFF" >&2; exit 1; }
 
-SERVICE=colloq
+SERVICE=aulalab
 UNIT=/etc/systemd/system/$SERVICE.service
-TEMPLATE=deploy/colloq-legacy.service
+TEMPLATE=deploy/aulalab-legacy.service
 # The default path written in the template. It is replaced with the real
 # repository directory; kept in a variable so the replacement and the template
 # do not drift apart.
-TEMPLATE_ROOT=/opt/colloq
+TEMPLATE_ROOT=/opt/aulalab
 # Node is installed by major line. 20 is the one the project is built and
 # tested on; a machine that already has 20 or newer is not touched at all.
 NODE_MAJOR="${NODE_MAJOR:-22}"
@@ -100,7 +100,7 @@ need_systemd() {
 need_root() {
   [ "$(id -u)" = 0 ] || die "root is needed: sudo $0 $CMD
   The service is installed into /etc/systemd/system and runs as root — why exactly so
-  is explained in the header of deploy/colloq.service."
+  is explained in the header of deploy/aulalab.service."
 }
 
 # The service is installed — not "running" but "the unit file exists". It
@@ -155,7 +155,7 @@ explain_unhealthy() {
 # editedSinceBuild), and it can compare contents rather than times. Here it is
 # only the base shared by all environments, which has no mark.
 kernel_recipe_newer() {
-  local image="colloq-kernel:$1" created built file
+  local image="aulalab-kernel:$1" created built file
   created="$(docker image inspect -f '{{.Created}}' "$image" 2>/dev/null || true)"
   [ -n "$created" ] || return 0
   built="$(date -d "$created" +%s 2>/dev/null || true)"
@@ -180,8 +180,8 @@ cmd_install() {
   local steps=8
 
   say "${BOLD}1/$steps${OFF} checking the machine"
-  [ -f package.json ] && [ -d server/src ] || die "this is not a Colloq repository: $REPO
-  Run it from a clone: cd /opt/colloq && make service-install"
+  [ -f package.json ] && [ -d server/src ] || die "this is not a Aula Lab repository: $REPO
+  Run it from a clone: cd /opt/aulalab && make service-install"
   [ -f "$TEMPLATE" ] || die "no $TEMPLATE — the unit template. Is the clone incomplete?"
   # The repository path goes both into the unit and into the sed that puts it
   # there. A unit is not a shell: a path with a space would have to be quoted
@@ -190,17 +190,17 @@ cmd_install() {
   case "$REPO" in
     *[!A-Za-z0-9._/-]*) die "the path \"$REPO\" has characters a systemd unit does not understand.
   Move the repository to where the path has only letters, digits, dot, hyphen,
-  underscore and slash: /opt/colloq is what scripts/vast.sh uses." ;;
+  underscore and slash: /opt/aulalab is what scripts/vast.sh uses." ;;
   esac
-  # Who holds the port. A second Colloq on the same port means two databases,
+  # Who holds the port. A second Aula Lab on the same port means two databases,
   # two setup-tokens and links leading now here, now there; there is no
   # catching that from the screen. Our own service (a reinstall) is no obstacle.
   if active; then
     say "${DIM}    the service is already installed and running — this is an update${OFF}"
   elif docker compose ps --status running --services 2>/dev/null | grep -qx app; then
-    die "app is running in docker — that is Colloq in the old form, and it holds port $PORT.
+    die "app is running in docker — that is Aula Lab in the old form, and it holds port $PORT.
   Stop it and try again: make down"
-  elif [ -f .colloq.pid ] && kill -0 "$(cat .colloq.pid 2>/dev/null)" 2>/dev/null; then
+  elif [ -f .aulalab.pid ] && kill -0 "$(cat .aulalab.pid 2>/dev/null)" 2>/dev/null; then
     die "a server started with make run is running on the host.
   Stop it and try again: make stop"
   elif command -v ss >/dev/null 2>&1 && ss -ltn 2>/dev/null | grep -qE "[:.]$PORT[[:space:]]"; then
@@ -329,7 +329,7 @@ cmd_install() {
   # Renaming a directory is one filesystem operation, and there is no window in
   # which the static files are missing.
   rm -rf web/dist.next web/dist.prev
-  npm run build -w @colloq/web -- --outDir dist.next --emptyOutDir
+  npm run build -w @aulalab/web -- --outDir dist.next --emptyOutDir
   [ -f web/dist.next/index.html ] || die "the build passed, but there is no web/dist.next/index.html — the room would open empty."
   if [ -d web/dist ]; then mv web/dist web/dist.prev; fi
   mv web/dist.next web/dist
@@ -338,20 +338,20 @@ cmd_install() {
   # The server is one file, and swapping it is not visible to the running
   # process at all: node read it at startup. The new one is picked up by the
   # service restart in step eight.
-  npm run build -w @colloq/server
+  npm run build -w @aulalab/server
   [ -f server/dist/server.js ] || die "the build passed, but there is no server/dist/server.js — see the output above."
 
   say "${BOLD}6/$steps${OFF} kernel image"
   # Without a built environment image the instance comes up but cannot run a
-  # seminar: a room asks for `colloq-kernel:<environment>`, and it is not
+  # seminar: a room asks for `aulalab-kernel:<environment>`, and it is not
   # there. `make up` used to do this along with building the whole stack; here
   # there is no stack, and the step became visible. An image that is already
   # built is not rebuilt — that is the idempotence.
   local env_name; env_name="$(read_env KERNEL_ENV)"; env_name="${env_name:-base}"
-  if docker image inspect "colloq-kernel:$env_name" >/dev/null 2>&1 && ! kernel_recipe_newer "$env_name"; then
-    say "${DIM}    colloq-kernel:$env_name is already built${OFF}"
+  if docker image inspect "aulalab-kernel:$env_name" >/dev/null 2>&1 && ! kernel_recipe_newer "$env_name"; then
+    say "${DIM}    aulalab-kernel:$env_name is already built${OFF}"
   else
-    say "${DIM}    building colloq-kernel:$env_name — this is slow, minutes${OFF}"
+    say "${DIM}    building aulalab-kernel:$env_name — this is slow, minutes${OFF}"
     make --no-print-directory env-build NAME="$env_name"
   fi
 
@@ -381,7 +381,7 @@ cmd_install() {
   # hard-coded thousand would then silently not match, and the first cell that
   # writes to a file would fail with PermissionError.
   local kgid
-  kgid="$(docker run --rm "colloq-kernel:$env_name" id -g 2>/dev/null | tr -dc '0-9' || true)"
+  kgid="$(docker run --rm "aulalab-kernel:$env_name" id -g 2>/dev/null | tr -dc '0-9' || true)"
   if [ -z "$kgid" ]; then
     kgid=1000
     say "${DIM}    could not ask the image for its group — taking 1000, as in kernel/Dockerfile${OFF}"
@@ -416,7 +416,7 @@ cmd_install() {
 
   if wait_health 90; then
     printf '\n'
-    say "${BOLD}Colloq runs as a service${OFF} ${DIM}(systemd, as root)${OFF}"
+    say "${BOLD}Aula Lab runs as a service${OFF} ${DIM}(systemd, as root)${OFF}"
     say "  ${CYAN}$(read_env PUBLIC_URL)${OFF}"
     say "${DIM}journal: make service-logs · restart: make service-restart${OFF}"
     say "${DIM}to the outside: make host HOST=<name>${OFF}"
@@ -488,7 +488,7 @@ case "$CMD" in
   logs)    cmd_logs ;;
   status)  cmd_status ;;
   *)
-    say "${BOLD}Colloq as a systemd service${OFF} ${DIM}— the server on the host, room kernels in docker${OFF}"
+    say "${BOLD}Aula Lab as a systemd service${OFF} ${DIM}— the server on the host, room kernels in docker${OFF}"
     say "  scripts/service.sh install  ${DIM}install and start (also: update)${OFF}"
     say "  scripts/service.sh restart  ${DIM}restart${OFF}"
     say "  scripts/service.sh stop     ${DIM}stop (room kernels stay)${OFF}"

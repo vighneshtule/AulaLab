@@ -1125,8 +1125,8 @@ function dropPending(term: Term, why: string): void {
   systemLine(
     term,
     dropped.length === 1
-      ? tr("server.colloqTheCommandWasRemovedFromThe.7c25e4", { p0: dropped[0].by.name, p1: why })
-      : tr("server.colloqRemovedFromTheQueue.649577", { p0: dropped.length, p1: commandWord(dropped.length), p2: why }),
+      ? tr("server.aulalabTheCommandWasRemovedFromThe.7c25e4", { p0: dropped[0].by.name, p1: why })
+      : tr("server.aulalabRemovedFromTheQueue.649577", { p0: dropped.length, p1: commandWord(dropped.length), p2: why }),
   )
 }
 
@@ -1451,7 +1451,7 @@ function onShellExit(term: Term): void {
   settleRun(term, false)
   rejectWaiters(term, new Error(tr("server.theShellExited.3948b2")))
   setPhase(term, 'closed')
-  systemLine(term, tr("server.colloqTheShellExitedSelectRestartShell.bc74b5"))
+  systemLine(term, tr("server.aulalabTheShellExitedSelectRestartShell.bc74b5"))
   dropPending(term, tr("server.theShellExited.3948b2"))
 }
 
@@ -1486,7 +1486,7 @@ function fail(term: Term, message: string, code?: TerminalLineCode): void {
   // column), so it does not need the marker that tells our words from the
   // shell's; a tab without the drawer's rule reads the sentence as is. And it
   // is said once: every drawer opened on a full machine asks again.
-  if (!code) systemLine(term, `[colloq] ${message}`)
+  if (!code) systemLine(term, `[aulalab] ${message}`)
   else if (!codedLineStands(getTerminal(docOf(term)), code, message)) systemLine(term, message, code)
   dropPending(term, tr("server.theTerminalNoLongerExists.fe4ae0"))
   rejectWaiters(term, new Error(message))
@@ -1848,7 +1848,7 @@ export function runCommand(
     return
   }
   if (Buffer.byteLength(text, 'utf8') > MAX_COMMAND_BYTES) {
-    systemLine(term, tr("server.colloqTheCommandIsTooLongPut.50c546"))
+    systemLine(term, tr("server.aulalabTheCommandIsTooLongPut.50c546"))
     done?.({ output: '', finished: false })
     return
   }
@@ -1875,14 +1875,14 @@ export function runCommand(
    */
   if (term.commandLine) {
     if (term.pending.length >= MAX_PENDING_COMMANDS) {
-      systemLine(term, tr("server.colloqTooManyCommandsAreQueuedTry.76db34"))
+      systemLine(term, tr("server.aulalabTooManyCommandsAreQueuedTry.76db34"))
       // Whoever waits for the answer (the Oracle) must learn about the refusal
       // now, not a minute and a half later from a timeout.
       done?.({ output: '', finished: false })
       return
     }
     term.pending.push({ text, by, done })
-    systemLine(term, tr("server.colloqTheCommandIsWaitingForThe.0e6b42", { p0: by.name }))
+    systemLine(term, tr("server.aulalabTheCommandIsWaitingForThe.0e6b42", { p0: by.name }))
     return
   }
 
@@ -1982,8 +1982,8 @@ export function dropPendingOf(sessionId: string, participantId: string): number 
   systemLine(
     term,
     mine.length === 1
-      ? tr("server.colloqTheCommandWasRemovedFromThe.1c9d79", { p0: mine[0].by.name })
-      : tr("server.colloqRemovedFromTheQueue.9a6da6", { p0: mine.length, p1: commandWord(mine.length) }),
+      ? tr("server.aulalabTheCommandWasRemovedFromThe.1c9d79", { p0: mine[0].by.name })
+      : tr("server.aulalabRemovedFromTheQueue.9a6da6", { p0: mine.length, p1: commandWord(mine.length) }),
   )
   return mine.length
 }
@@ -2042,8 +2042,8 @@ export function interruptTerminal(sessionId: string, by?: string, byId?: string)
       systemLine(
         term,
         dropped === 1
-          ? tr("server.colloqTheCommandWasRemovedFromThe.1c9d79", { p0: mine[0].by.name })
-          : tr("server.colloqRemovedFromTheQueue.9a6da6", { p0: dropped, p1: commandWord(dropped) }),
+          ? tr("server.aulalabTheCommandWasRemovedFromThe.1c9d79", { p0: mine[0].by.name })
+          : tr("server.aulalabRemovedFromTheQueue.9a6da6", { p0: dropped, p1: commandWord(dropped) }),
       )
     }
   }
@@ -2058,7 +2058,7 @@ export function interruptTerminal(sessionId: string, by?: string, byId?: string)
   if (!mayStop) return
   // Named, because a shared shell that goes quiet without saying who did it is
   // a room where everybody assumes it was somebody else.
-  if (by) systemLine(term, tr("server.colloqCtrlCIsStoppingTheCommand.3aead4", { p0: by }))
+  if (by) systemLine(term, tr("server.aulalabCtrlCIsStoppingTheCommand.3aead4", { p0: by }))
   /*
    * The send result is read, and that is no small matter.
    *
@@ -2077,7 +2077,7 @@ export function interruptTerminal(sessionId: string, by?: string, byId?: string)
     term.queued.unshift(ETX)
     systemLine(
       term,
-      tr("server.colloqTheShellIsDisconnectedSoCtrl.885614") +
+      tr("server.aulalabTheShellIsDisconnectedSoCtrl.885614") +
         tr("server.itWillBeSentWhenTheTerminal.bdfcc3"),
     )
   }
@@ -2154,7 +2154,7 @@ export async function closeTerminal(sessionId: string): Promise<void> {
   settleRun(term, false)
   rejectWaiters(term, new Error(tr("server.theTerminalWasClosed.5a818b")))
   setPhase(term, 'closed')
-  systemLine(term, tr("server.colloqTheTerminalIsClosed.9cf9fb"))
+  systemLine(term, tr("server.aulalabTheTerminalIsClosed.9cf9fb"))
   dropPending(term, tr("server.theTerminalWasClosed.5a818b"))
   if (!name) return
   try {

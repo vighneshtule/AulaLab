@@ -1,0 +1,4 @@
+# Retired: the AulaLab web server must not run as a root systemd service.
+# Install a versioned single-node deployment with:
+# scripts/cluster.sh install --release /path/release.json
+# k3s owns the non-root app and runtime broker workloads.

@@ -67,7 +67,7 @@ test('a reply without the marker is a hiccup of the path, whatever its status; w
       if (answer.kind === 'ok') assert.ok(!('surprise' in answer.value), 'a key home sent and the contract does not know reached the agent')
     }
     // A home of another version says which it speaks: the machine needs that release, and the detail says so.
-    home.onSync = () => ({ status: 426, json: { error: 'protocol' }, headers: { 'X-Colloq-Runner-Protocol': '2' } })
+    home.onSync = () => ({ status: 426, json: { error: 'protocol' }, headers: { 'X-AulaLab-Runner-Protocol': '2' } })
     const other = await client.sync(syncBody())
     assert.equal(other.kind, 'refused')
     assert.match(other.kind === 'refused' ? other.detail : '', /home speaks protocol 2, this machine 1/)
@@ -115,7 +115,7 @@ test('the relay tells home offline from home silent, a name it serves no home by
     assert.equal(await client.relayState(), 'home_offline')
     home.relay = { known: true, tunnel: true }
     assert.equal(await client.relayState(), 'home_silent')
-    // known: false is no home at all behind this name (a wrong address in COLLOQ_RUNNER_JOIN), which no waiting brings online.
+    // known: false is no home at all behind this name (a wrong address in AULALAB_RUNNER_JOIN), which no waiting brings online.
     home.relay = { known: false, tunnel: false }
     assert.equal(await client.relayState(), 'home_unknown')
     home.relay = null
@@ -191,7 +191,7 @@ test('the backoff stays between one second and thirty, grows with each failure i
   assert.equal(retryAfter('soon'), null)
   assert.equal(retryAfter(null), null)
   // The marker header is the contract's name.
-  assert.equal(REMOTE_MARKER_HEADER, 'X-Colloq-Runner-Api')
+  assert.equal(REMOTE_MARKER_HEADER, 'X-AulaLab-Runner-Api')
 })
 
 test('the fake home reads every request as home does: one the contract\'s parsers refuse is answered as home answers it, and fails the test that sent it', async () => {

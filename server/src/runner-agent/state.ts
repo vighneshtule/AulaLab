@@ -1,6 +1,6 @@
 /**
- * The machine's own files under its state root (COLLOQ_RUNNER_STATE, by
- * default /var/lib/colloq-runner, the same path inside the agent's container
+ * The machine's own files under its state root (AULALAB_RUNNER_STATE, by
+ * default /var/lib/aulalab-runner, the same path inside the agent's container
  * and on the host): who it is to its home, the leases it holds, what each run
  * came to, and the status the health check reads.
  *
@@ -18,7 +18,7 @@
  *                            `docker run`: what an agent restarted under a class adopts
  *   rooms/<id>/              a class folder's copy, mounted into the class's containers
  *                            (uid 1000, folders 2775, files 0664, as home's sessionDir)
- *   restart.marker           left by `colloq-host runner update` before it stops the
+ *   restart.marker           left by `aulalab-host runner update` before it stops the
  *                            agent: the last sync then says `bye: restart`
  *
  * EVERY WRITE IS WHOLE OR NOT AT ALL: a temporary file next to the target,
@@ -57,8 +57,8 @@ import {
 import { RUNTIME_MEMORY_MAX_MB, RUNTIME_MEMORY_MIN_MB } from '@shared/runtime'
 import { COMPETITION_ATTEMPT_ID } from '@shared/competition-runtime'
 
-/** Where the tree lives when COLLOQ_RUNNER_STATE names none: the path deploy/vast/colloq-host mounts. */
-export const DEFAULT_STATE_ROOT = '/var/lib/colloq-runner'
+/** Where the tree lives when AULALAB_RUNNER_STATE names none: the path deploy/vast/aulalab-host mounts. */
+export const DEFAULT_STATE_ROOT = '/var/lib/aulalab-runner'
 
 export interface StateLayout {
   root: string
@@ -73,7 +73,7 @@ export interface StateLayout {
   placementsDir: string
   /** The class folders' copies: one per class, shared by its containers on this machine (§8.1). */
   roomsDir: string
-  /** Written by `colloq-host runner update` before it stops the agent (§14). */
+  /** Written by `aulalab-host runner update` before it stops the agent (§14). */
   restartMarker: string
 }
 
@@ -142,7 +142,7 @@ export function readJson(file: string, limit = 4 * 1024 * 1024): unknown {
   }
 }
 
-/** A compact UTC time for file names: 20261014T013500Z, as colloq-host names what it puts aside. */
+/** A compact UTC time for file names: 20261014T013500Z, as aulalab-host names what it puts aside. */
 export function fileTime(at = Date.now()): string {
   return new Date(at).toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')
 }
@@ -165,7 +165,7 @@ export interface Identity {
    * in an identity an earlier build wrote: as old as that.
    */
   joinIdAt?: number
-  /** The sha256 of the code it joined (or is joining) with: a new code in COLLOQ_RUNNER_JOIN is told apart by it. */
+  /** The sha256 of the code it joined (or is joining) with: a new code in AULALAB_RUNNER_JOIN is told apart by it. */
   codeSha256: string
   runnerId?: string
   secret?: string
@@ -225,7 +225,7 @@ export function writeIdentity(layout: StateLayout, identity: Identity): void {
 
 /**
  * Put the identity aside, under a name no agent reads (runner.json.<why>-<time>),
- * the way colloq-host's retire_identity does after a leave: a revoked or left
+ * the way aulalab-host's retire_identity does after a leave: a revoked or left
  * identity in place would greet the next join with a 401 for good. The caches
  * stay for the next join. Returns where it went; `null` — there was none.
  */
@@ -359,7 +359,7 @@ export interface StoredPlacement {
 }
 
 const PLACEMENT_FILE = /^([A-Za-z0-9_-]{1,64})-(room|own|council)\.json$/
-const REVISION_TAG_IMAGE = /^colloq-revision:[a-f0-9]{32}$/
+const REVISION_TAG_IMAGE = /^aulalab-revision:[a-f0-9]{32}$/
 
 /** `<id>-<role>.json`, from a key the contract's pattern took: the role is the name's last part, whatever the id holds. */
 function placementFile(layout: StateLayout, key: string): string {
@@ -467,7 +467,7 @@ function placementOf(value: unknown, key: string): StoredPlacement | null {
   return { intent, container: v.container, image: v.image, spec: v.spec, limits: { memoryMb: limits.memoryMb, cpus: limits.cpus }, card: v.card }
 }
 
-/** `colloq-host runner update` left the marker: this stop is a restart (bye `restart`). */
+/** `aulalab-host runner update` left the marker: this stop is a restart (bye `restart`). */
 export function restartMarked(layout: StateLayout): boolean {
   return fs.existsSync(layout.restartMarker)
 }
@@ -494,7 +494,7 @@ export type AgentState = 'joining' | 'active' | 'draining' | 'leaving' | 'left' 
  * that the relay has not seen yet (its word that the tunnel is up lags a cut
  * by its heartbeats), so whether the tunnel is up is unknown; `home_unknown` —
  * the relay serves no home by this name (the
- * address in COLLOQ_RUNNER_JOIN, or a home whose name was given up), which no
+ * address in AULALAB_RUNNER_JOIN, or a home whose name was given up), which no
  * waiting mends; `unreachable` — neither home nor its relay answered (this
  * machine's network, or no relay in front of home); `refused` — home answered
  * with a refusal.
@@ -531,7 +531,7 @@ export interface AgentStatus {
    * for none (no class here, or a home without classes).
    */
   tunnel?: { up: boolean; rttMs: number | null } | null
-  /** The class containers held, by slot (§6.1): what `colloq-host runner status` shows beside the runs. */
+  /** The class containers held, by slot (§6.1): what `aulalab-host runner status` shows beside the runs. */
   classes?: { room: number; own: number; council: number }
 }
 

@@ -79,8 +79,8 @@ test('the details read as sentences where they are one, and as settings where th
 })
 
 test('an event nobody signed in for names the server\'s console when it came from there, and a dash otherwise', () => {
-  // A code minted with colloq-host runner-code (server/src/ops/runner-code.ts): no actor, its source in the detail.
-  const minted = event({ action: 'runner.code_minted', detail: { machines: 3, hours: 12, trusted: true, approvedSlots: null, source: 'colloq-host' } })
+  // A code minted with aulalab-host runner-code (server/src/ops/runner-code.ts): no actor, its source in the detail.
+  const minted = event({ action: 'runner.code_minted', detail: { machines: 3, hours: 12, trusted: true, approvedSlots: null, source: 'aulalab-host' } })
   assert.equal(auditActorless(minted), 'Консоль сервера')
   // The server's own doing, a page republished when a class ends, has nobody to name.
   assert.equal(auditActorless(event({ action: 'publication.published', detail: { room: 'abc12345', trigger: 'finish' } })), '—')
@@ -95,7 +95,7 @@ test('an event nobody signed in for names the server\'s console when it came fro
   assert.equal(auditDetail(minted), 'machines: 3 · hours: 12 · trusted: да · approvedSlots: —')
   // A source the Who column did not spend still shows: one with a person to name, or one this build has no words for.
   const signed = { id: 't1', name: 'Нина Петрова', email: 'nina@example.org', role: 'owner' as const }
-  assert.equal(auditDetail({ ...minted, actor: signed }), 'machines: 3 · hours: 12 · trusted: да · approvedSlots: — · source: colloq-host')
+  assert.equal(auditDetail({ ...minted, actor: signed }), 'machines: 3 · hours: 12 · trusted: да · approvedSlots: — · source: aulalab-host')
   assert.equal(auditDetail(event({ action: 'runner.code_minted', detail: { machines: 1, source: 'cron' } })), 'machines: 1 · source: cron')
   // The screen says it where a staff member's name would stand.
   const screen = fs

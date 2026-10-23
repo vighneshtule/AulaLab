@@ -39,7 +39,7 @@ after(() => {
 })
 
 function tmpdir(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-env-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-env-'))
   made.push(dir)
   return dir
 }
@@ -180,7 +180,7 @@ test('dns.sh asks .env for the relay address and does not touch the zone without
   assert.match(r.stderr, /RELAY_ADDR/)
 
   // And the hard-wired address is gone from the script — it was exactly what
-  // silently pointed `*.colloq.ru` back at the old machine after the relay
+  // silently pointed `*.example.edu` back at the old machine after the relay
   // moved.
   const text = fs.readFileSync(path.join(repo, 'scripts/dns.sh'), 'utf8')
   assert.ok(

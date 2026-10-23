@@ -201,7 +201,7 @@ export interface EpochPython {
   /** A silent run in the notebook's kernel that removes its export COUNCIL_EPOCH_DIR/<seq>, which nobody will read (dropMachineExport). */
   dropRun(seq: number): { source: string; expressions: Record<string, string> }
   /**
-   * A worker's load of an epoch (`/colloq/epochs/<sha>`), within its
+   * A worker's load of an epoch (`/aulalab/epochs/<sha>`), within its
    * ceiling. Its cell installs this server's guard and hidden module before
    * it loads: a load that held leaves the worker's process holding both, and
    * its entries after it go lean (entrySource).
@@ -215,8 +215,8 @@ export interface EpochPython {
   loadReport(raw: unknown): { ok: boolean; error: string | null; left?: Array<{ name: string; why: string }>; gated?: boolean } | null
   /**
    * A worker's entry for one attempt: today's, with the three inputs only a
-   * worker's takes (§9.4, §9.7) — the attempt's text (`_colloq_needs`), its
-   * run's id (its folder, /colloq/scratch/<runId>) and its ceiling — and the
+   * worker's takes (§9.4, §9.7) — the attempt's text (`_aulalab_needs`), its
+   * run's id (its folder, /aulalab/scratch/<runId>) and its ceiling — and the
    * class folder its folder's skeleton is made from; and the epoch the
    * worker was loaded with for it, when it has files, which a process
    * holding another or none refuses (§9.6). `lean`: the worker's process

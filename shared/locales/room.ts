@@ -187,12 +187,12 @@ export const roomMessages: MessageCatalog = {
    *
    * Строка про интерактивный вывод — ответ на самую частую жалобу «ячейка
    * ничего не выводит»: вывод был, он состоял из скрипта, а скрипты из чужого
-   * вывода Colloq не исполняет (SECURITY.md). Перечисление в конце — не
+   * вывода Aula Lab не исполняет (SECURITY.md). Перечисление в конце — не
    * список ограничений, а подсказка, куда идти: у plotly всё работает.
    */
   "room.output.interactive": {
-    "ru": "Этот вывод интерактивный и требует исполнения скрипта — Colloq такое не исполняет. Поддерживаются картинки, таблицы, Markdown и графики plotly.",
-    "en": "This output is interactive and needs a script to run — Colloq does not run scripts. Images, tables, Markdown and plotly figures are supported."
+    "ru": "Этот вывод интерактивный и требует исполнения скрипта — Aula Lab такое не исполняет. Поддерживаются картинки, таблицы, Markdown и графики plotly.",
+    "en": "This output is interactive and needs a script to run — Aula Lab does not run scripts. Images, tables, Markdown and plotly figures are supported."
   },
   "room.output.plotlyTitle": {"ru": "Интерактивный график plotly", "en": "Interactive plotly figure"},
   "room.output.plotlyBroken": {"ru": "График не читается", "en": "The figure could not be read"},
@@ -621,12 +621,12 @@ export const roomMessages: MessageCatalog = {
     "en": "No solutions submitted yet."
   },
   "room.ui.21": {
-    "ru": "Оракул предложит разбор решений и примеры для показа. Провайдеру ИИ передаются задание, контекст, решения и — если это разрешено на Colloq — имена учащихся.",
-    "en": "The oracle will suggest a review of solutions and examples to show. The AI provider receives the task, the context, the solutions and — if this Colloq allows it — student names."
+    "ru": "Оракул предложит разбор решений и примеры для показа. Провайдеру ИИ передаются задание, контекст, решения и — если это разрешено на Aula Lab — имена учащихся.",
+    "en": "The oracle will suggest a review of solutions and examples to show. The AI provider receives the task, the context, the solutions and — if this Aula Lab allows it — student names."
   },
   "room.ui.22": {
-    "ru": "Имена учащихся уезжают провайдеру, если это разрешено на Colloq. Проверьте выводы оракула.",
-    "en": "Student names go to the provider when this Colloq allows it. Check the oracle’s conclusions."
+    "ru": "Имена учащихся уезжают провайдеру, если это разрешено на Aula Lab. Проверьте выводы оракула.",
+    "en": "Student names go to the provider when this Aula Lab allows it. Check the oracle’s conclusions."
   },
   "room.ui.23": {
     "ru": "Что верно",
@@ -2194,8 +2194,8 @@ export const roomMessages: MessageCatalog = {
     "en": "hint mode — the model is instructed to guide you toward a solution"
   },
   "room.ui.503": {
-    "ru": "Оракул выключен на этом Colloq.",
-    "en": "The oracle is disabled on this Colloq instance."
+    "ru": "Оракул выключен на этом Aula Lab.",
+    "en": "The oracle is disabled on this Aula Lab instance."
   },
   "room.ui.504": {
     "ru": "Оракул выключен на этом занятии.",
@@ -4111,8 +4111,8 @@ export const roomMessages: MessageCatalog = {
     "en": "Check that you copied the full link, or ask the teacher for the current class link."
   },
   "room.ui.1213": {
-    "ru": "Вернуться в Colloq",
-    "en": "Back to Colloq"
+    "ru": "Вернуться в Aula Lab",
+    "en": "Back to Aula Lab"
   },
   "room.ui.1214": {
     "ru": "Входим в комнату…",
@@ -4431,8 +4431,8 @@ export const roomMessages: MessageCatalog = {
     "en": "{p0} is here"
   },
   "room.extra.401": {
-    "ru": "Вернуться в Colloq",
-    "en": "Back to Colloq"
+    "ru": "Вернуться в Aula Lab",
+    "en": "Back to Aula Lab"
   },
   "room.extra.402": {
     "ru": "Открыть курс «{p0}»",

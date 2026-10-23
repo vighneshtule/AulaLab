@@ -1,6 +1,6 @@
 /**
  * Platform wheels (scripts/platform-wheels.py): Node and node_modules inside,
- * so that after `pip install colloq` only Docker is needed.
+ * so that after `pip install aulalab` only Docker is needed.
  *
  * No network and no npm here: the builder is checked piece by piece, namely
  * reading binary headers, repacking the wheel and refusing a foreign
@@ -98,16 +98,16 @@ test('the header of a binary names its format and machine', () => {
 
 /** A py3-none-any wheel shaped the way hatchling writes it. */
 function universalWheel(dir: string): string {
-  const wheel = path.join(dir, 'colloq-9.9.9-py3-none-any.whl')
+  const wheel = path.join(dir, 'aulalab-9.9.9-py3-none-any.whl')
   const code = [
     'import zipfile, sys',
     'with zipfile.ZipFile(sys.argv[1], "w") as z:',
-    '  z.writestr("colloq/__init__.py", "")',
-    '  z.writestr("colloq/_app/package.json", \'{"name": "colloq", "version": "9.9.9", "dependencies": {"better-sqlite3": "^13.0.3"}}\')',
-    '  z.writestr("colloq/_app/.colloq-dist.json", \'{"name": "colloq", "version": "9.9.9"}\')',
-    '  z.writestr("colloq-9.9.9.dist-info/METADATA", "Metadata-Version: 2.4\\nName: colloq\\nVersion: 9.9.9\\n")',
-    '  z.writestr("colloq-9.9.9.dist-info/WHEEL", "Wheel-Version: 1.0\\nGenerator: hatchling\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n")',
-    '  z.writestr("colloq-9.9.9.dist-info/RECORD", "")',
+    '  z.writestr("aulalab/__init__.py", "")',
+    '  z.writestr("aulalab/_app/package.json", \'{"name": "aulalab", "version": "9.9.9", "dependencies": {"better-sqlite3": "^13.0.3"}}\')',
+    '  z.writestr("aulalab/_app/.aulalab-dist.json", \'{"name": "aulalab", "version": "9.9.9"}\')',
+    '  z.writestr("aulalab-9.9.9.dist-info/METADATA", "Metadata-Version: 2.4\\nName: aulalab\\nVersion: 9.9.9\\n")',
+    '  z.writestr("aulalab-9.9.9.dist-info/WHEEL", "Wheel-Version: 1.0\\nGenerator: hatchling\\nRoot-Is-Purelib: true\\nTag: py3-none-any\\n")',
+    '  z.writestr("aulalab-9.9.9.dist-info/RECORD", "")',
   ].join('\n')
   const result = spawnSync('python3', ['-c', code, wheel], { encoding: 'utf8' })
   assert.equal(result.status, 0, result.stderr)
@@ -115,7 +115,7 @@ function universalWheel(dir: string): string {
 }
 
 test('repack: the tag, the Node, the node_modules and a RECORD that checks out', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-wheels-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-wheels-'))
   try {
     const universal = universalWheel(dir)
     const modules = path.join(dir, 'node_modules')
@@ -129,17 +129,17 @@ test('repack: the tag, the Node, the node_modules and a RECORD that checks out',
         'wheel = pw.repack(Path(sys.argv[1]), target, b"NODE", b"MIT", "v24.0.0", Path(sys.argv[2]), Path(sys.argv[3]), 1700000000)',
         'import zipfile, csv, io, hashlib, base64',
         'z = zipfile.ZipFile(wheel)',
-        'rows = list(csv.reader(io.StringIO(z.read("colloq-9.9.9.dist-info/RECORD").decode())))',
+        'rows = list(csv.reader(io.StringIO(z.read("aulalab-9.9.9.dist-info/RECORD").decode())))',
         'ok = all(h == "sha256=" + base64.urlsafe_b64encode(hashlib.sha256(z.read(p)).digest()).rstrip(b"=").decode() and int(n) == len(z.read(p)) for p, h, n in rows if h)',
         'print(json.dumps({',
         '  "name": wheel.name,',
         '  "names": z.namelist(),',
-        '  "wheel": z.read("colloq-9.9.9.dist-info/WHEEL").decode(),',
+        '  "wheel": z.read("aulalab-9.9.9.dist-info/WHEEL").decode(),',
         '  "record_ok": ok,',
         '  "recorded": sorted(r[0] for r in rows),',
-        '  "node_mode": oct(z.getinfo("colloq/_app/bin/node").external_attr >> 16),',
-        '  "stamp": json.loads(z.read("colloq/_app/.node-modules.json")),',
-        '  "dist": json.loads(z.read("colloq/_app/.colloq-dist.json")),',
+        '  "node_mode": oct(z.getinfo("aulalab/_app/bin/node").external_attr >> 16),',
+        '  "stamp": json.loads(z.read("aulalab/_app/.node-modules.json")),',
+        '  "dist": json.loads(z.read("aulalab/_app/.aulalab-dist.json")),',
         '  "dates": sorted({i.date_time for i in z.infolist()}),',
         '}))',
       ].join('\n'),
@@ -157,16 +157,16 @@ test('repack: the tag, the Node, the node_modules and a RECORD that checks out',
       dist: { bundled?: { target: string; node: string } }
       dates: number[][]
     }
-    assert.equal(out.name, 'colloq-9.9.9-py3-none-macosx_14_0_arm64.whl')
+    assert.equal(out.name, 'aulalab-9.9.9-py3-none-macosx_14_0_arm64.whl')
     assert.match(out.wheel, /^Root-Is-Purelib: false$/m)
     assert.match(out.wheel, /^Tag: py3-none-macosx_14_0_arm64$/m)
     assert.doesNotMatch(out.wheel, /py3-none-any/)
     assert.equal(out.record_ok, true)
     assert.deepEqual(out.recorded, [...out.names].sort())
     // RECORD last, .dist-info at the end of the archive.
-    assert.equal(out.names.at(-1), 'colloq-9.9.9.dist-info/RECORD')
-    assert.ok(out.names.includes('colloq/_app/node_modules/better-sqlite3/prebuilds/darwin-arm64.node'))
-    assert.ok(out.names.includes('colloq/_app/bin/node.LICENSE'))
+    assert.equal(out.names.at(-1), 'aulalab-9.9.9.dist-info/RECORD')
+    assert.ok(out.names.includes('aulalab/_app/node_modules/better-sqlite3/prebuilds/darwin-arm64.node'))
+    assert.ok(out.names.includes('aulalab/_app/bin/node.LICENSE'))
     assert.equal(out.node_mode, '0o100755')
     // The same stamp the shim writes after npm install: with it the first run installs nothing.
     assert.deepEqual(out.stamp, { version: '9.9.9', dependencies: { 'better-sqlite3': '^13.0.3' } })
@@ -180,7 +180,7 @@ test('repack: the tag, the Node, the node_modules and a RECORD that checks out',
 })
 
 test('verify: a native module built for another machine is a refusal, not a wheel', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-wheels-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-wheels-'))
   try {
     const macArm = Buffer.concat([Buffer.from('cffaedfe0c000001', 'hex'), Buffer.alloc(56)])
     const macX64 = Buffer.concat([Buffer.from('cffaedfe07000001', 'hex'), Buffer.alloc(56)])
@@ -229,7 +229,7 @@ test('verify: a native module built for another machine is a refusal, not a whee
 test('the Node archives are what the pin says (when they are in the cache)', () => {
   // No network in tests: only archives already in the cache are checked.
   const pin = readJson('scripts/node-runtime.json')
-  const cache = process.env.COLLOQ_NODE_CACHE || path.join(os.homedir(), '.cache/colloq/node')
+  const cache = process.env.AULALAB_NODE_CACHE || path.join(os.homedir(), '.cache/aulalab/node')
   for (const archive of Object.values(pin.archives) as { file: string; sha256: string }[]) {
     const file = path.join(cache, archive.file)
     if (!fs.existsSync(file)) continue

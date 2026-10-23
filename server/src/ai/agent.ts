@@ -3037,7 +3037,7 @@ async function steps(
        * Empty in everything: no text, no reasoning trace, no call. This is not
        * a result but the endpoint's silence — a filter, a truncated output
        * limit, empty choices — and an empty caption under the turn reads as a
-       * Colloq breakage.
+       * Aula Lab breakage.
        */
       spoke =
         answer.text.trim() ||

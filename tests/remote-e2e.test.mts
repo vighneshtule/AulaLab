@@ -55,8 +55,8 @@ before(async () => {
 after(async () => {
   await killAgents()
   await home.close()
-  // Kept with the machines' trees (COLLOQ_E2E_KEEP=1): every request home took, for a look after a red run.
-  if (process.env.COLLOQ_E2E_KEEP) fs.writeFileSync(path.join(fleet.root, 'home-requests.json'), JSON.stringify(home.requests, null, 1))
+  // Kept with the machines' trees (AULALAB_E2E_KEEP=1): every request home took, for a look after a red run.
+  if (process.env.AULALAB_E2E_KEEP) fs.writeFileSync(path.join(fleet.root, 'home-requests.json'), JSON.stringify(home.requests, null, 1))
 })
 
 /* ------------------------------------------------------------- the database */
@@ -255,7 +255,7 @@ scenario('a CPU submission runs on a machine — shown under it in the console w
 
   // The metric ran here, on the answer the machine sent: the stand-in's score of exactly those bytes.
   const answer = competitionsFs.readFileSync(path.join(resultDir(c.id, sent.id), SUBMISSION_FILE)) as Buffer
-  assert.ok(answer.toString('utf8').includes('# colloq-run: '), 'the machine\'s answer is the one kept')
+  assert.ok(answer.toString('utf8').includes('# aulalab-run: '), 'the machine\'s answer is the one kept')
   assert.equal(done.publicScore, stableScore(`${sha256(answer)}:public`, 0.5, 1))
   assert.ok(competitionsFs.existsSync(path.join(resultDir(c.id, sent.id), EXECUTED_FILE)), 'the executed notebook came back')
   assert.deepEqual(runsOf(sent.id), [['notebook', 'ok'], ['metric', 'ok']])
@@ -487,7 +487,7 @@ scenario('a machine whose image is gone declines the lease: the run comes back w
   const agent = await scene.machine('decliner', [c])
   const runnerId = agent.runnerId
   // An operator prunes the machine's images: the agent still has the revision written down as ready.
-  agent.dropImage(`colloq-revision:${c.revisionId}`)
+  agent.dropImage(`aulalab-revision:${c.revisionId}`)
   const entrant = await new Entrant(home, c).join()
   const sent = await entrant.submit(notebook(null, 2))
   const enqueuedAt = queueRow(sent.id)!.enqueuedAt
@@ -503,7 +503,7 @@ scenario('a machine whose image is gone declines the lease: the run comes back w
   assert.equal((await entrant.submission(sent.id)).state, 'queued')
 
   // The machine pulls its image back into shape, and still is not offered this submission (the decline's skip).
-  await until('the machine to have its image back', () => agent.hasImage(`colloq-revision:${c.revisionId}`), 20_000, () => agent.log())
+  await until('the machine to have its image back', () => agent.hasImage(`aulalab-revision:${c.revisionId}`), 20_000, () => agent.log())
   await readyFor(agent, c)
   await sleep(1500)
   assert.deepEqual(leasesOf(sent.id).map((lease) => lease.state), ['declined'], 'not offered to the machine that declined it')

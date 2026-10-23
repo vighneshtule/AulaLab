@@ -46,7 +46,7 @@ test('image probes coalesce and expired negative results recover', async () => {
  let now=0, healthy=false
  const calls:string[][]=[]
  const read=module.createCapabilityReader({backend:()=> 'docker',clock:()=>now,storageAvailable:()=>true,
-  run:async(args:string[])=>{calls.push(args);if(args[0]==='version')return '28.3.0';if(!healthy)throw new Error('Error: No such image: colloq-kernel:base');return 'sha256:'+'a'.repeat(64)} })
+  run:async(args:string[])=>{calls.push(args);if(args[0]==='version')return '28.3.0';if(!healthy)throw new Error('Error: No such image: aulalab-kernel:base');return 'sha256:'+'a'.repeat(64)} })
  const results=await Promise.all(Array.from({length:12},()=>read('base')))
  assert.ok(results.every((x:any)=>x.execution.code==='image_unavailable'))
  assert.equal(calls.filter(a=>a[0]==='image').length,1)
@@ -70,9 +70,9 @@ test('an image probe that timed out says docker did not answer; only «No such i
  const read=()=>createCapabilityReader({backend:()=> 'docker',clock:()=>0,storageAvailable:()=>true,
   run:async(args:string[])=>{if(args[0]==='version')return '28.3.0';throw failure}})
  assert.equal((await read()('kaggle-base','sha256:'+'a'.repeat(64))).execution.code,'image_unavailable')
- failure=Object.assign(new Error('Command failed: docker image inspect --format {{.Id}} colloq-kernel:kaggle-base'),{stderr:'Error: No such object: colloq-kernel:kaggle-base\n'})
+ failure=Object.assign(new Error('Command failed: docker image inspect --format {{.Id}} aulalab-kernel:kaggle-base'),{stderr:'Error: No such object: aulalab-kernel:kaggle-base\n'})
  assert.equal((await read()('kaggle-base')).execution.code,'image_unavailable','docker\'s words in stderr count too')
- failure=Object.assign(new Error('Command failed: docker image inspect --format {{.Id}} colloq-kernel:kaggle-base'),{killed:true,signal:'SIGTERM',code:null})
+ failure=Object.assign(new Error('Command failed: docker image inspect --format {{.Id}} aulalab-kernel:kaggle-base'),{killed:true,signal:'SIGTERM',code:null})
  const stalled=await read()('kaggle-base')
  assert.equal(stalled.execution.available,false)
  assert.equal(stalled.execution.code,'docker_unavailable')

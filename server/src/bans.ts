@@ -37,7 +37,7 @@ export const BAN_MS = 24 * 60 * 60 * 1000
 
 /* --------------------------------------------------------- device cookie */
 
-export const DEVICE_COOKIE = 'colloq_device'
+export const DEVICE_COOKIE = 'aulalab_device'
 /** No reason for the mark to live shorter: it outlives the semester and storage clearing. */
 const DEVICE_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000
 /** 24 bytes is exactly 32 base64url characters. The mark always has the same length. */
@@ -120,7 +120,7 @@ export function markDevice(req: Request, res: Response): string {
  * The address a request came from — here solely for the hint in the ban list.
  *
  * Behind the relay the server sees loopback: caddy on the VPS hands the request
- * to frps, which hands it to the client on this machine, and it reaches Colloq
+ * to frps, which hands it to the client on this machine, and it reaches Aula Lab
  * from 127.0.0.1. The real address arrives in the `X-Forwarded-For` header,
  * which caddy sets itself (scripts/relay-setup.sh, scripts/host.sh).
  *

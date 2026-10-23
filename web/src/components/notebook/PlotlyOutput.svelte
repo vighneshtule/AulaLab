@@ -247,7 +247,7 @@
      */
     node.contentWindow?.postMessage(
       {
-        colloq: PLOTLY_MSG,
+        aulalab: PLOTLY_MSG,
         kind: 'draw',
         figure: { ...got, layout: { ...got.layout, height: figureHeight(got) } },
       },

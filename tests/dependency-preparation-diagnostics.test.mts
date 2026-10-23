@@ -11,7 +11,7 @@ test('a failed container publishes a bounded diagnostic at its latest preparatio
   fs.mkdirSync(bin)
   fs.writeFileSync(path.join(bin,'docker'), `#!${process.execPath}
 if (process.argv[2] === 'run') {
- process.stdout.write('__COLLOQ_DEP__' + JSON.stringify({state:'downloading'}) + '\\n');
+ process.stdout.write('__AULALAB_DEP__' + JSON.stringify({state:'downloading'}) + '\\n');
  process.stderr.write('x'.repeat(4000) + 'fixture mount failed');
  process.exitCode = 1;
 }
@@ -39,7 +39,7 @@ test('a reported failure keeps only the details a page may show, and our steps a
       bytes:888100000,limitBytes:524288000,partial:true,note:'<script>',
       heaviest:[{name:'torch',bytes:888100000},{name:'<b>torch</b>',bytes:1},{name:'sympy',bytes:-1}],
     }}},
-  ].map(value => '__COLLOQ_DEP__' + JSON.stringify(value) + '\n').join('')
+  ].map(value => '__AULALAB_DEP__' + JSON.stringify(value) + '\n').join('')
   fs.writeFileSync(path.join(bin,'docker'), `#!${process.execPath}
 if (process.argv[2] === 'run') { process.stdout.write(${JSON.stringify(lines)}); process.exitCode = 1 }
 `, {mode:0o755})

@@ -53,11 +53,11 @@ test('DNS failure or successful sibling connection cannot pass isolation evidenc
   ])
     assert.throws(() => validateSmokeReport('isolation', invalid))
   assert.deepEqual(
-    parseSmokeReport('COLLOQ_RUNTIME_SMOKE=' + JSON.stringify(report) + '\n'),
+    parseSmokeReport('AULALAB_RUNTIME_SMOKE=' + JSON.stringify(report) + '\n'),
     report,
   )
   assert.throws(() => parseSmokeReport('noise only'))
-  assert.throws(() => parseSmokeReport('COLLOQ_RUNTIME_SMOKE={}\nCOLLOQ_RUNTIME_SMOKE={}'))
+  assert.throws(() => parseSmokeReport('AULALAB_RUNTIME_SMOKE={}\nAULALAB_RUNTIME_SMOKE={}'))
 })
 test('canary collision never claims or removes the preexisting directory', () => {
   const root = mkdtempSync(join(tmpdir(), 'kernel-smoke-'))

@@ -75,15 +75,15 @@ export type EnvPaths = {
    * node_modules.
    *
    * Not "the repository root", as it said here before the roots were split:
-   * an installed colloq has no repository at all, but it does have this
+   * an installed aulalab has no repository at all, but it does have this
    * directory, inside the package. The class state is NEVER put here (see home
    * below): the next `pip install -U` would overwrite it, and on many machines
    * it is not writable anyway.
    */
   root: string
   /**
-   * The state directory: .env, .colloq/, .colloq.pid, .colloq.log, data/.
-   * In the repository it is the root itself; an installed colloq has its own
+   * The state directory: .env, .aulalab/, .aulalab.pid, .aulalab.log, data/.
+   * In the repository it is the root itself; an installed aulalab has its own
    * (homeDir). The paths below that belong to the state are resolved from it.
    */
   home: string
@@ -103,14 +103,14 @@ export type EnvPaths = {
    * supervisor and of the server.
    *
    * The single source of truth about what is running RIGHT NOW. .env answers
-   * another question, what is configured, and `colloq run --port 4100` does
+   * another question, what is configured, and `aulalab run --port 4100` does
    * not touch it at all.
    */
   sessionFile: string
   /** The package lists that arrived with the product: one environment, one file. */
   envDir: string
   /**
-   * The package lists the person created: `colloq env new` writes here and
+   * The package lists the person created: `aulalab env new` writes here and
    * only here. Why there is a second directory is explained at its
    * computation below.
    */
@@ -132,7 +132,7 @@ export type Env = {
    * where it is already resolved from the state directory.
    */
   path(...parts: string[]): string
-  /** A path from the person's argument: resolved from the directory they called from (COLLOQ_CWD). */
+  /** A path from the person's argument: resolved from the directory they called from (AULALAB_CWD). */
   userPath(path: string): string
   /** A line from .env. Throws on a key from SECRET_KEYS. */
   read(key: string): string
@@ -158,9 +158,9 @@ export type EnvOptions = {
   root?: string
   /** The state directory; by default the root, as it always was. */
   home?: string
-  /** The directory it was called from (the shim puts it into COLLOQ_CWD). */
+  /** The directory it was called from (the shim puts it into AULALAB_CWD). */
   cwd?: string
-  /** The process environment variables, for COLLOQ_CWD. */
+  /** The process environment variables, for AULALAB_CWD. */
   processEnv?: NodeJS.ProcessEnv
 }
 
@@ -273,7 +273,7 @@ export function createEnv(opts: EnvOptions = {}): Env {
   /*
    * The defaults of the roots are the same two answers as the start has
    * (launch-state.ts), and this matters more than it seems: otherwise
-   * `colloq run` would write the log in one place and `colloq logs` would read
+   * `aulalab run` would write the log in one place and `aulalab logs` would read
    * it in another.
    *
    * home takes the root when the root was named explicitly: that is how the
@@ -282,7 +282,7 @@ export function createEnv(opts: EnvOptions = {}): Env {
    */
   const root = opts.root ?? appDir()
   const home = opts.home ?? opts.root ?? homeDir()
-  const cwd = opts.cwd ?? processEnv.COLLOQ_CWD ?? root
+  const cwd = opts.cwd ?? processEnv.AULALAB_CWD ?? root
 
   const path = (...parts: string[]): string => joinPath(root, ...parts)
   const statePath = (...parts: string[]): string => joinPath(home, ...parts)
@@ -290,8 +290,8 @@ export function createEnv(opts: EnvOptions = {}): Env {
     root,
     home,
     envFile: statePath('.env'),
-    pidFile: statePath('.colloq.pid'),
-    logFile: statePath('.colloq.log'),
+    pidFile: statePath('.aulalab.pid'),
+    logFile: statePath('.aulalab.log'),
     envDir: path('kernel/environments'),
     /*
      * The second directory of environments, and it is created exactly where
@@ -299,7 +299,7 @@ export function createEnv(opts: EnvOptions = {}): Env {
      *
      * The environments that arrived with the product (base, kaggle-base,
      * base-gpu, kaggle-gpu) lie in <app>/kernel/environments. For an
-     * installed colloq that is site-packages: the directory is overwritten
+     * installed aulalab that is site-packages: the directory is overwritten
      * entirely by the next `pip install -U`, and on many machines is not
      * writable at all. Creating one's own environment there means either a
      * permission refusal or losing the file on the very first update.
@@ -312,7 +312,7 @@ export function createEnv(opts: EnvOptions = {}): Env {
      * path. That is intended: there kernel/environments is both written and
      * read, goes into the `docker build` context, and is seen by the Makefile,
      * launch-config.ts · kernelInputs and the teacher's panel. A new directory
-     * next to it would pull the file from under all three, and `colloq env new`
+     * next to it would pull the file from under all three, and `aulalab env new`
      * in a clone would create an environment the build does not see.
      */
     ownEnvDir: home === root ? path('kernel/environments') : joinPath(home, 'environments'),

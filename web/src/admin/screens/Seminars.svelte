@@ -3028,7 +3028,7 @@
           'file',
         )} {tr("admin.in.its.workspace")}
         {#if !doomed.publication}
-          {tr("admin.you.cannot.restore.the.seminar.through.colloq.after.deletion")}
+          {tr("admin.you.cannot.restore.the.seminar.through.aulalab.after.deletion")}
         {/if}
       </p>
 

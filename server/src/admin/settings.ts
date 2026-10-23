@@ -21,7 +21,7 @@
  * .env and get the previous number.
  *
  * The API key is stored in this SQLite file in plain text. That is deliberate:
- * Colloq is single-tenant and self-hosted, the database sits in the same
+ * Aula Lab is single-tenant and self-hosted, the database sits in the same
  * DATA_DIR as the setup token and beside the .env the key would otherwise live
  * in, and anyone who can read that directory already owns the instance.
  * Scrambling it here would only look like encryption while shipping the key and
@@ -73,6 +73,11 @@ const upsertSetting = db.prepare(`
 `)
 const deleteSetting = db.prepare('DELETE FROM instance_settings WHERE key = ?')
 const selectLanguage = db.prepare('SELECT value FROM instance_settings WHERE key = ?')
+
+// Existing instances may have saved a non-English interface language. Keep the
+// setting key for compatibility, but migrate its value before serving pages.
+const savedLanguage = selectLanguage.get('ui.language') as { value: string } | undefined
+if (savedLanguage?.value !== 'en') upsertSetting.run('ui.language', 'en')
 
 export function getInstanceLanguage(): Locale {
   const row = selectLanguage.get('ui.language') as { value: string } | undefined

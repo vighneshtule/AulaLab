@@ -10,7 +10,7 @@ const job = {
 
 test('only a catalog revision and bounded typed IDs can select notebook data',()=>{
  assert.deepEqual(parseCompetitionJobIntent(job),job)
- for(const patch of [{image:'evil'}, {competitionId:'../secret'}, {revision:'colloq-kernel:base'}, {limits:{...job.limits,memoryMb:1e12}}, {bundleId:'../wheel'}])
+ for(const patch of [{image:'evil'}, {competitionId:'../secret'}, {revision:'aulalab-kernel:base'}, {limits:{...job.limits,memoryMb:1e12}}, {bundleId:'../wheel'}])
   assert.throws(()=>parseCompetitionJobIntent({...job,...patch}),/Invalid|Unexpected/)
 })
 test('scorer cannot be given participant wheel bundle; prep cannot name competition data',()=>{

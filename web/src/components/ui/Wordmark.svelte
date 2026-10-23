@@ -50,7 +50,7 @@
        tones of one ink instead of two colours. -->
   <Icon name="logo" size={MARK[size]} class="shrink-0" />
 
-  <span class="{WORD[size]} shrink-0 font-bold uppercase tracking-wordmark">Colloq</span>
+  <span class="{WORD[size]} shrink-0 font-bold uppercase tracking-wordmark">Aula Lab</span>
 
   {#if line}
     <!-- The em dash is a rule, not a character: at 0.22em tracking a real dash

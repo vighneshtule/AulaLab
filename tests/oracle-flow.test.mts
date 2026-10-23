@@ -269,7 +269,7 @@ test('an empty model answer does not advise the room to fix an environment varia
     // Students read this text: they cannot see the environment variable, and the
     // panel is not their door. The same split as for the key refusal in routes/ai.ts.
     assert.doesNotMatch(said, /OPENAI_MODEL/)
-    assert.match(said, /владельца Colloq/i)
+    assert.match(said, /владельца Aula Lab/i)
   } finally {
     r.close()
     await gate.close()

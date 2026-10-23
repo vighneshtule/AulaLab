@@ -67,7 +67,7 @@ const ID_OK = /^[A-Za-z0-9_-]{1,64}$/
 /**
  * The data file name — what the participant will see in `data/` and write in
  * their notebook. No paths, no leading dot, no spaces at the edges: a file
- * `../../colloq.db` should not even be up for discussion.
+ * `../../aulalab.db` should not even be up for discussion.
  */
 const NAME_OK = /^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/
 

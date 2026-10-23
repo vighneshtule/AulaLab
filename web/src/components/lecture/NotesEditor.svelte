@@ -486,7 +486,7 @@
 
   /* The console's ladder and its key: one choice per device (ConsoleView). */
   const SIZES = [18, 22, 28] as const
-  const SIZE_KEY = 'colloq.pult.notesSize'
+  const SIZE_KEY = 'aulalab.pult.notesSize'
   let step = $state(readStep())
   function readStep(): number {
     try {

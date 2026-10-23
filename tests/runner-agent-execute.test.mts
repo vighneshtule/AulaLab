@@ -147,14 +147,14 @@ test('cards: the shares busy by head, the free ones by the share each run pinned
 
 test('the cards are probed with the agent\'s own image; a machine without the NVIDIA runtime has none and no problem', async () => {
   const docker = fakeAgentDocker()
-  assert.deepEqual(await probeCards(docker, 'ghcr.io/colloq-edu/colloq-server:0.24.0'), { cards: [], driver: null, problem: null })
+  assert.deepEqual(await probeCards(docker, 'ghcr.io/vighneshtule/aulalab-server:0.24.0'), { cards: [], driver: null, problem: null })
   docker.cards = '0, GPU-aa, NVIDIA GeForce RTX 4090, 24564\n1, GPU-bb, NVIDIA GeForce RTX 4090, 24564\n'
-  const probed = await probeCards(docker, 'ghcr.io/colloq-edu/colloq-server:0.24.0')
+  const probed = await probeCards(docker, 'ghcr.io/vighneshtule/aulalab-server:0.24.0')
   assert.deepEqual(probed.cards.map((card) => [card.device, card.memoryMb]), [['0', 24_564], ['1', 24_564]])
   assert.equal(probed.driver, '580.65.06')
   const run = docker.calls.find((args) => args[0] === 'run')!
   assert.equal(run[run.indexOf('--gpus') + 1], 'all')
-  assert.ok(run.includes('ghcr.io/colloq-edu/colloq-server:0.24.0') && run.includes('--pull=never'))
+  assert.ok(run.includes('ghcr.io/vighneshtule/aulalab-server:0.24.0') && run.includes('--pull=never'))
   // A probe that failed for another reason is said, for the owner.
   docker.intercept = (args) => (args[0] === 'run' ? { code: 125, out: 'docker: Error response from daemon: nvidia-container-cli: initialization error: nvml error: driver not loaded' } : undefined)
   const failed = await probeCards(docker, 'img')

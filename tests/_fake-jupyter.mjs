@@ -35,7 +35,7 @@
  *                                            COUNCIL_EPOCH_DIR, which `docker
  *                                            cp` copies out)
  *     --epochs-dir D --scratch-dir D         a council container's two mounts
- *                                            (/colloq/epochs, /colloq/scratch): a
+ *                                            (/aulalab/epochs, /aulalab/scratch): a
  *                                            worker loads its epoch from D's
  *                                            files by their sha256, and an
  *                                            attempt works in a folder of its
@@ -98,11 +98,11 @@
  * it); `&&` chains them, and a line typed while a command runs waits for it.
  *
  * SERVICE RUNS ARE ANSWERED BY THEIR MODULE. A silent execute reports through
- * `user_expressions`, and three hidden modules share its `colloq` key: the
+ * `user_expressions`, and three hidden modules share its `aulalab` key: the
  * guard's report (`<guard module>.report`) is what this process's guard
  * said, or a KeyError in a fresh one; the help's static parse
- * (`_colloq_inspect`) and the council's entry, export and load
- * (`_colloq_council`) get canned reports told apart by their code. The
+ * (`_aulalab_inspect`) and the council's entry, export and load
+ * (`_aulalab_council`) get canned reports told apart by their code. The
  * council's export, load, and a pool worker's entry and exit
  * (remote-classes.md §9.3–9.7) answer in the shapes of
  * kernel/council-isolation.ts, as `fake.council` says (POST /_fake/knobs
@@ -121,7 +121,7 @@
  * agent's files instead: its load reads the epoch's manifest, stream and
  * buffers from the epochs folder by their sha256 (none there, or one that
  * does not hash to its name, and the load fails), and an attempt's entry
- * makes its folder /colloq/scratch/<runId> — the class folder's top level as
+ * makes its folder /aulalab/scratch/<runId> — the class folder's top level as
  * links into it — the cell's folder until its exit, which lists the regular
  * files the attempt wrote there besides the canned ones.
  *
@@ -130,8 +130,8 @@
  * by its session path, while `fake.council.gate` is set as its process
  * starts) runs a non-silent execute only when a worker's entry that
  * held opened the gate for the run id its request's metadata carries
- * (`colloqRun`), once; any other is answered with the gate's refusal, an
- * error named ColloqRefused, without running — except one that carries no
+ * (`aulalabRun`), once; any other is answered with the gate's refusal, an
+ * error named AulaLabRefused, without running — except one that carries no
  * run id while no worker's entry has touched the gate in that process, as
  * a home before the gate sends it. A worker's entry shuts the gate first
  * and opens it last when it holds; one that expects an epoch
@@ -145,8 +145,8 @@
  * reached home yet leaves, the request served by the next process.
  *
  * THE HIDDEN MODULES A PROCESS HOLDS (§9.6, 0.26.1). A silent execute whose
- * code carries the guard's install (`'<colloq-guard>'`: the guard's rule, a
- * full entry, a worker's load) or the council module's (`'<colloq-council>'`:
+ * code carries the guard's install (`'<aulalab-guard>'`: the guard's rule, a
+ * full entry, a worker's load) or the council module's (`'<aulalab-council>'`:
  * a full entry, an export, a load) leaves its process holding that module;
  * a fresh process holds neither. A pool worker's lean entry, which checks
  * them where a full one installs them (known by the words its checks raise,
@@ -180,7 +180,7 @@ import { WebSocketServer } from 'ws'
 /* ------------------------------------------------------------------ guard */
 
 /** The guard's hidden module: server/src/kernel/danger.ts · GUARD_MODULE. */
-export const GUARD_MODULE = '_colloq_guard'
+export const GUARD_MODULE = '_aulalab_guard'
 
 /**
  * How a fake answers the install of the guard against dangerous commands.
@@ -210,22 +210,22 @@ function reportOf(module) {
 }
 
 /** A notebook kernel's removal of one of its export folders (council-isolation.ts · exportDropExpression), its epoch's number caught. */
-const EXPORT_DROP = /^__import__\('shutil'\)\.rmtree\("\/tmp\/colloq-epoch\/(\d+)", ignore_errors=True\)$/
+const EXPORT_DROP = /^__import__\('shutil'\)\.rmtree\("\/tmp\/aulalab-epoch\/(\d+)", ignore_errors=True\)$/
 
 /** The council's hidden module (server/src/kernel/council-isolation.ts · COUNCIL_MODULE): its entry, exit, export and load. */
-const COUNCIL_MODULE = '_colloq_council'
+const COUNCIL_MODULE = '_aulalab_council'
 
 /** The workers' gate (server/src/kernel/council-gate.ts): the metadata key of a run id, its refusal's name and words. */
-const GATE_RUN_KEY = 'colloqRun'
-const GATE_REFUSED = 'ColloqRefused'
-const GATE_REFUSAL = 'colloq gate: this request was not run, as no entry opened the gate for it'
+const GATE_RUN_KEY = 'aulalabRun'
+const GATE_REFUSED = 'AulaLabRefused'
+const GATE_REFUSAL = 'aulalab gate: this request was not run, as no entry opened the gate for it'
 
-/** A call of one of the council module's functions, the way the entry calls `enter`: `modules["_colloq_council"].<name>(`. */
+/** A call of one of the council module's functions, the way the entry calls `enter`: `modules["_aulalab_council"].<name>(`. */
 const COUNCIL_CALL = (name) => new RegExp(`modules\\[(['"])${COUNCIL_MODULE}\\1\\]\\.${name}\\(`)
 
 /** The install lines' marks (danger.ts, council-isolation.ts: the name each source is compiled under), and what a lean entry raises without them. */
-const GUARD_INSTALL = "'<colloq-guard>'"
-const COUNCIL_INSTALL = "'<colloq-council>'"
+const GUARD_INSTALL = "'<aulalab-guard>'"
+const COUNCIL_INSTALL = "'<aulalab-council>'"
 const LEAN_REFUSAL = 'the worker does not hold the modules its pool loaded'
 
 /**
@@ -841,12 +841,12 @@ export async function startFakeJupyter(options = {}) {
     if (guard) {
       return {
         user_expressions: {
-          colloq: { status: 'ok', data: { 'text/plain': JSON.stringify(guard) }, metadata: {} },
+          aulalab: { status: 'ok', data: { 'text/plain': JSON.stringify(guard) }, metadata: {} },
         },
       }
     }
     /*
-     * The `colloq` key is shared by two service runs — the council entry and
+     * The `aulalab` key is shared by two service runs — the council entry and
      * the static help parse (kernel/inspect-static.ts) — and they must be
      * answered DIFFERENTLY. We tell them apart by the code: help arrives with its
      * own hidden module on the very first line. Otherwise the help parse would
@@ -859,7 +859,7 @@ export async function startFakeJupyter(options = {}) {
           found: true,
           text: 'Module: seaborn\nType: module\nPackage: seaborn 0.13.2\nSummary: Statistical data visualization\nDocs: http://seaborn.pydata.org',
         })
-      : code.includes('_colloq_inspect')
+      : code.includes('_aulalab_inspect')
         ? JSON.stringify({ found: true, text: 'Signature:\nsns.lmplot(data)\nType: function' })
         : COUNCIL_CALL('export').test(code)
           ? epochExport(kernel, code)
@@ -870,10 +870,10 @@ export async function startFakeJupyter(options = {}) {
               : COUNCIL_CALL('leave').test(code) && kernel?.council?.run
                 ? JSON.stringify(workerExit(kernel))
                 : JSON.stringify({ ok: true, copied: 1, skipped: [], failed: [], bytes: 0, ms: 1 })
-    if (text === null) return { user_expressions: { colloq: { status: 'error', ename: 'AttributeError', evalue: 'exported', traceback: [] } } }
+    if (text === null) return { user_expressions: { aulalab: { status: 'error', ename: 'AttributeError', evalue: 'exported', traceback: [] } } }
     return {
       user_expressions: {
-        colloq: { status: 'ok', data: { 'text/plain': text }, metadata: {} },
+        aulalab: { status: 'ok', data: { 'text/plain': text }, metadata: {} },
       },
     }
   }
@@ -1091,7 +1091,7 @@ export async function startFakeJupyter(options = {}) {
       // Its very last step: the attempt behind it may run, once.
       if (kernel.gated) kernel.gateOpen = runId
     }
-    return { ok: true, copied: 1, skipped: [], failed: [], bytes: 0, ms: 1, scratch: runId ? `/colloq/scratch/${runId}` : null }
+    return { ok: true, copied: 1, skipped: [], failed: [], bytes: 0, ms: 1, scratch: runId ? `/aulalab/scratch/${runId}` : null }
   }
 
   /** A pool worker's exit (council-isolation.ts · parseExitReport): what was left behind, its files, its growth. */
@@ -1148,7 +1148,7 @@ export async function startFakeJupyter(options = {}) {
           ? { status: 'ok', data: { 'text/plain': repr(kernel.ns.get(text)) }, metadata: {} }
           : { status: 'error', ename: 'NameError', evalue: `name '${text}' is not defined`, traceback: [] }
       } else {
-        answers[key] = councilExpressions(true, code, kernel).user_expressions.colloq
+        answers[key] = councilExpressions(true, code, kernel).user_expressions.aulalab
       }
     }
     return answers

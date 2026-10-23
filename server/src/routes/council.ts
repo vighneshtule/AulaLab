@@ -173,18 +173,18 @@ export function councilRoutes(deps: CouncilOracleDeps = live): Router {
       return res.status(403).json({
         error:
           settings.defaultMode === 'off'
-            ? tr("server.theOracleIsDisabledOnThisColloq.e47e9a")
+            ? tr("server.theOracleIsDisabledOnThisAulaLab.e47e9a")
             : tr("server.theOracleIsDisabledForThisSeminar.48f5c6"),
       })
     }
     if (settings.questionsPerHour === 0) {
       return res
         .status(403)
-        .json({ error: tr("server.theOracleIsDisabledOnThisColloq.395e3a") })
+        .json({ error: tr("server.theOracleIsDisabledOnThisAulaLab.395e3a") })
     }
     if (!aiReady()) {
       return res.status(503).json({
-        error: tr("server.noModelIsConfiguredOnThisColloq.c1d63b"),
+        error: tr("server.noModelIsConfiguredOnThisAulaLab.c1d63b"),
       })
     }
 

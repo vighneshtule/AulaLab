@@ -325,14 +325,14 @@ export function remoteRunnerRoutes(): Router {
       // The owner who minted the code is who enrolled the machine (§6 "Audit"); a code minted on the
       // console has nobody to name, and says it came from there, as its mint does (ops/runner-code.ts).
       const owner = getTeacher(joined.runner.createdBy)
-      const fromConsole = !owner && joined.runner.createdBy === 'colloq-host'
+      const fromConsole = !owner && joined.runner.createdBy === 'aulalab-host'
       recordAdminEvent({
         actor: owner,
         action: 'runner.enrolled',
         target: { type: 'runner', id: joined.runner.id, label: joined.runner.name },
         detail: {
           trusted: joined.runner.trusted, classes: joined.runner.classes, approvedSlots: joined.runner.approvedSlots, hostname: request.facts.hostname,
-          version: request.facts.version, ...(fromConsole ? { source: 'colloq-host' } : {}),
+          version: request.facts.version, ...(fromConsole ? { source: 'aulalab-host' } : {}),
         },
         req,
       })
@@ -502,7 +502,7 @@ async function sync(req: Request, res: Response): Promise<void> {
     noteEpochStates(current.id, request.kernels.epochs)
     if (request.kernels.collected) noteCollected(current.id, request.kernels.collected)
   }
-  // A machine leaving with nothing held revokes itself: its next call is refused, and it stops (colloq-host runner leave).
+  // A machine leaving with nothing held revokes itself: its next call is refused, and it stops (aulalab-host runner leave).
   if (request.state === 'leaving' && request.attempts.length === 0) leaveRunner(current.id, now)
   const hold = syncHold(request, current)
   // The hold is a real connection's wait, on the wall's clock whatever clock the machines are heard on.
@@ -591,7 +591,7 @@ function currentReadings(runnerId: string, kernels: RemoteKernelsRequest): Remot
  * THE LOG IS BOUNDED BY WHAT HOME ASKED FOR. A machine's ready lists are its
  * own words, checked for their shape alone: one flipping between two sets of
  * made-up ids wrote 288 rows a sync, tens of thousands a minute into
- * colloq.db, kept for three months, and its page's last fifty lines were all
+ * aulalab.db, kept for three months, and its page's last fifty lines were all
  * noise — the join and the hidden-test fetches pushed off it. So a readiness
  * line names only a revision or a manifest this server asked the machine for
  * (heard.ts · askedOf), at most READY_EVENTS of them an hour; `outdated` is
@@ -819,7 +819,7 @@ function classFileCaps(): Pick<RemoteKernelsReply, 'caps'> {
  * first reply carried — an offer made then may have been withdrawn since, or
  * read the hidden test of a machine the owner has stopped trusting.
  *
- * A `draining` decline is the machine stopping (colloq-host runner update
+ * A `draining` decline is the machine stopping (aulalab-host runner update
  * --now, a leave, docker stop): its reply carries no work, new or offered
  * before. A stopping agent passes whatever a reply hands it and never syncs
  * again, so each lease in it would sit unacked for its minute

@@ -284,7 +284,7 @@ test('a running submission is killed and waited for, then removed with everythin
   const c = makeCompetition('erase-running')
   const busy = person('busy@hse.ru', c.id)
   const running = acceptSubmission({ competitionId: c.id, entrantId: busy.entrant.id, fileName: 'long.ipynb', bytes: 64 })
-  putSubmissionNotebook(c.id, running.id, NOTEBOOK('# colloq-test: {"hold": 20000}'))
+  putSubmissionNotebook(c.id, running.id, NOTEBOOK('# aulalab-test: {"hold": 20000}'))
   assert.equal(await pumpOnce(), 1)
   assert.equal(queueRow(running.id)?.state, 'running')
   // A rescore queued behind it, as "rescore everyone" would leave it.

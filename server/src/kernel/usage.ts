@@ -118,7 +118,7 @@ function parseTime(text: string): number | null {
 }
 
 const INSPECT_FORMAT =
-  '{{.Name}}\t{{.HostConfig.Memory}}\t{{.HostConfig.NanoCpus}}\t{{.State.StartedAt}}\t{{index .Config.Labels "colloq.environment"}}'
+  '{{.Name}}\t{{.HostConfig.Memory}}\t{{.HostConfig.NanoCpus}}\t{{.State.StartedAt}}\t{{index .Config.Labels "aulalab.environment"}}'
 const STATS_FORMAT = '{{.Name}}\t{{.MemUsage}}\t{{.CPUPerc}}'
 
 /**

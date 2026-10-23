@@ -7,7 +7,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 const helper = fileURLToPath(new URL('../scripts/state-lock.py', import.meta.url))
 test('operation lock excludes competing actions and remains held across nested launchers', async () => {
-  const state = mkdtempSync(path.join(tmpdir(), 'colloq-lock-'))
+  const state = mkdtempSync(path.join(tmpdir(), 'aulalab-lock-'))
   const child = spawn(
     'python3',
     [
@@ -56,11 +56,11 @@ sys.stdin.readline()`,
   }
 })
 test('an environment variable alone cannot impersonate the inherited lock', () => {
-  const state = mkdtempSync(path.join(tmpdir(), 'colloq-lock-'))
+  const state = mkdtempSync(path.join(tmpdir(), 'aulalab-lock-'))
   try {
     assert.notEqual(
       spawnSync('python3', [helper, 'held', '--state', state], {
-        env: { ...process.env, COLLOQ_STATE_LOCK_FD: '9' },
+        env: { ...process.env, AULALAB_STATE_LOCK_FD: '9' },
       }).status,
       0,
     )

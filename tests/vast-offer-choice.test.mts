@@ -49,7 +49,7 @@ function harness(script: string): string {
 }
 
 function answer(script: string, input: string, env: Record<string, string> = {}): string {
-  const dir = mkdtempSync(path.join(tmpdir(), 'colloq-vast-'))
+  const dir = mkdtempSync(path.join(tmpdir(), 'aulalab-vast-'))
   const file = path.join(dir, 'harness.sh')
   writeFileSync(file, harness(script))
   const run = spawnSync('bash', [file], { input: input + '\n', encoding: 'utf8', env: { ...process.env, ...env } })

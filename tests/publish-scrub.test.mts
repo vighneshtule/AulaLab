@@ -52,7 +52,7 @@ before(async () => {
   doc.transact(() => {
     const cells = doc.getArray<Y.Map<unknown>>(root)
     cells.push([
-      createCell('markdown', `# Комната ${ID}\n\nСсылка: https://colloq.ru/s/${ID}`),
+      createCell('markdown', `# Комната ${ID}\n\nСсылка: https://github.com/vighneshtule/AulaLab/s/${ID}`),
       createCell('code', `df = pd.read_csv('/workspace/${ID}/data.csv')`),
       createCell('code', `OPENAI_API_KEY = '${KEY}'`),
       createCell('markdown', '## Итоги\n\nОтвечал Зуев Аким, потом Аким ещё раз.'),
@@ -95,7 +95,7 @@ const publish = (ack: string[]) =>
 test('kernel paths become relative and the bare id disappears, in every kind of text', () => {
   assert.equal(scrubText(`open('/workspace/${ID}/data.csv')`, ID), "open('data.csv')")
   assert.equal(scrubText(`cd /workspace/${ID}`, ID), 'cd .')
-  assert.equal(scrubText(`https://colloq.ru/s/${ID}?x`, ID), 'https://colloq.ru/s/…?x')
+  assert.equal(scrubText(`https://github.com/vighneshtule/AulaLab/s/${ID}?x`, ID), 'https://github.com/vighneshtule/AulaLab/s/…?x')
   // Only the id as a word: a longer name that contains it is someone else's.
   assert.equal(scrubText(`${ID}2 and x${ID}`, ID), `${ID}2 and x${ID}`)
   const cells: PublicCell[] = [

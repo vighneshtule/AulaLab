@@ -1,5 +1,5 @@
 /**
- * A class online: colloq host is the group's only command.
+ * A class online: aulalab host is the group's only command.
  *
  * In the first half of the file no process is started and no real file is
  * read: the executor is replaced by an array of calls, the file system by an
@@ -32,12 +32,12 @@ import { registry } from '../cli/src/registry.js'
 const ROOT = '/repo'
 
 const FILES: Record<string, string> = {
-  '/repo/package.json': '{ "name": "colloq", "version": "0.1.0" }',
-  '/repo/cli/package.json': '{ "name": "@colloq/cli", "version": "0.1.0" }',
+  '/repo/package.json': '{ "name": "aulalab", "version": "0.1.0" }',
+  '/repo/cli/package.json': '{ "name": "@aulalab/cli", "version": "0.1.0" }',
   '/repo/.env': [
     'PORT=3000',
     'KERNEL_ENV=base',
-    'RELAY_DOMAIN=colloq.ru',
+    'RELAY_DOMAIN=example.edu',
     'RELAY_ADDR=203.0.113.10',
     'RELAY_PORT=7000',
     'RELAY_TOKEN=very-secret-token',
@@ -130,29 +130,29 @@ function spawned(result: Harness): Call[] {
 
 /* ------------------------------------------------------------------ host */
 
-test('host: the name goes to the script as a variable, --direct adds COLLOQ_DIRECT=1', async () => {
-  const relay = await run(['host', 'hse.colloq.ru', '--dry-run'])
+test('host: the name goes to the script as a variable, --direct adds AULALAB_DIRECT=1', async () => {
+  const relay = await run(['host', 'hse.example.edu', '--dry-run'])
   assert.equal(relay.code, 0)
-  // COLLOQ_HOME in front is the state directory: .env, the class receipt and
-  // .colloq.pid live there, not next to the script. In the sources it is the
+  // AULALAB_HOME in front is the state directory: .env, the class receipt and
+  // .aulalab.pid live there, not next to the script. In the sources it is the
   // same directory, and the variable changes nothing in the line except its
   // honesty.
-  assert.deepEqual(relay.out, ['COLLOQ_HOME=/repo COLLOQ_HOSTNAME=hse.colloq.ru ./scripts/host.sh'])
+  assert.deepEqual(relay.out, ['AULALAB_HOME=/repo AULALAB_HOSTNAME=hse.example.edu ./scripts/host.sh'])
   assert.deepEqual(spawned(relay), [])
 
   // The order is as in the host-direct target and in the host.sh header:
   // people copy this line.
-  const direct = await run(['host', 'hse.colloq.ru', '--direct', '--dry-run'])
+  const direct = await run(['host', 'hse.example.edu', '--direct', '--dry-run'])
   assert.deepEqual(direct.out, [
-    'COLLOQ_HOME=/repo COLLOQ_DIRECT=1 COLLOQ_HOSTNAME=hse.colloq.ru ./scripts/host.sh',
+    'AULALAB_HOME=/repo AULALAB_DIRECT=1 AULALAB_HOSTNAME=hse.example.edu ./scripts/host.sh',
   ])
 
   // Without a name it is a quick tunnel: no name is made up for the script.
   const quick = await run(['host', '--dry-run'])
-  assert.deepEqual(quick.out, ['COLLOQ_HOME=/repo ./scripts/host.sh'])
+  assert.deepEqual(quick.out, ['AULALAB_HOME=/repo ./scripts/host.sh'])
 
-  const alias = await run(['public', 'hse.colloq.ru', '--dry-run'])
-  assert.deepEqual(alias.out, ['COLLOQ_HOME=/repo COLLOQ_HOSTNAME=hse.colloq.ru ./scripts/host.sh'])
+  const alias = await run(['public', 'hse.example.edu', '--dry-run'])
+  assert.deepEqual(alias.out, ['AULALAB_HOME=/repo AULALAB_HOSTNAME=hse.example.edu ./scripts/host.sh'])
 })
 
 test('host: the same line from the wheel and from the sources, and make is never called', async () => {
@@ -161,21 +161,21 @@ test('host: the same line from the wheel and from the sources, and make is never
   // was not the one the teacher had. Now there is one branch, and ctx.dist
   // does not touch it.
   for (const argv of [
-    ['host', 'hse.colloq.ru'],
-    ['host', 'hse.colloq.ru', '--direct'],
+    ['host', 'hse.example.edu'],
+    ['host', 'hse.example.edu', '--direct'],
     ['host'],
   ]) {
-    const source = await run([...argv, '--dry-run'], { dist: false, home: '/home/.colloq' })
-    const wheel = await run([...argv, '--dry-run'], { dist: true, home: '/home/.colloq' })
+    const source = await run([...argv, '--dry-run'], { dist: false, home: '/home/.aulalab' })
+    const wheel = await run([...argv, '--dry-run'], { dist: true, home: '/home/.aulalab' })
     assert.deepEqual(source.out, wheel.out, argv.join(' '))
-    assert.match(wheel.out[0] ?? '', /^COLLOQ_HOME=\/home\/\.colloq .*\.\/scripts\/host\.sh$/)
+    assert.match(wheel.out[0] ?? '', /^AULALAB_HOME=\/home\/\.aulalab .*\.\/scripts\/host\.sh$/)
     assert.doesNotMatch(wheel.out[0] ?? '', /\bmake\b/)
   }
 })
 
 test('host: KEY=VALUE pairs are no longer parsed — a refusal, not a silent substitution', async () => {
   // HOST=… in place of the name is a name, and it is no good for DNS.
-  const asName = await run(['host', 'HOST=hse.colloq.ru', '--dry-run'])
+  const asName = await run(['host', 'HOST=hse.example.edu', '--dry-run'])
   assert.equal(asName.code, 2)
   assert.deepEqual(spawned(asName), [])
   assert.deepEqual(asName.out, [])
@@ -183,7 +183,7 @@ test('host: KEY=VALUE pairs are no longer parsed — a refusal, not a silent sub
 
   // PORT=3001 after the name is an extra argument, and it does not go to the
   // script as environment.
-  const extra = await run(['host', 'hse.colloq.ru', 'PORT=3001', '--dry-run'])
+  const extra = await run(['host', 'hse.example.edu', 'PORT=3001', '--dry-run'])
   assert.equal(extra.code, 2)
   assert.deepEqual(spawned(extra), [])
   assert.deepEqual(extra.out, [])
@@ -195,9 +195,9 @@ test('host: direct mode without a name is a usage refusal, nothing is started', 
   assert.equal(result.code, 2)
   assert.deepEqual(spawned(result), [])
   assert.match(result.err.join('\n'), /direct mode needs a name/)
-  assert.match(result.err.join('\n'), /colloq host class\.example\.org --direct/)
+  assert.match(result.err.join('\n'), /aulalab host class\.example\.org --direct/)
 
-  // Under --dry-run too: a line with an empty COLLOQ_HOSTNAME would lie about
+  // Under --dry-run too: a line with an empty AULALAB_HOSTNAME would lie about
   // what is going to run.
   const dry = await run(['host', '--direct', '--dry-run'])
   assert.equal(dry.code, 2)
@@ -206,11 +206,11 @@ test('host: direct mode without a name is a usage refusal, nothing is started', 
 
 test('host: a name not in Latin letters is refused before it gets to the script', async () => {
   for (const name of [
-    'ХСЕ.colloq.ru',
-    'Hse.colloq.ru',
-    'hse.colloq.ru-',
-    'hse.colloq.ru.',
-    'hse_colloq.ru',
+    'ХСЕ.example.edu',
+    'Hse.example.edu',
+    'hse.example.edu-',
+    'hse.example.edu.',
+    'hse_example.edu',
   ]) {
     const result = await run(['host', name, '--dry-run'])
     assert.equal(result.code, 2, name)
@@ -222,7 +222,7 @@ test('host: a name not in Latin letters is refused before it gets to the script'
 
 test('host: the question is not asked before the check, so a bad name gives code 2, not 3', async () => {
   for (const argv of [
-    ['host', 'ХСЕ.colloq.ru', '--direct'],
+    ['host', 'ХСЕ.example.edu', '--direct'],
     ['host', '--direct'],
   ]) {
     // Neither a terminal nor --yes: the framework would ask and refuse with
@@ -235,41 +235,41 @@ test('host: the question is not asked before the check, so a bad name gives code
 })
 
 test('host --direct: the question names the cost; "no" gives code 4 and "cancelled"', async () => {
-  const no = await run(['host', 'hse.colloq.ru', '--direct'], { tty: true, answer: 'n' })
+  const no = await run(['host', 'hse.example.edu', '--direct'], { tty: true, answer: 'n' })
   assert.equal(no.code, 4)
   assert.deepEqual(spawned(no), [])
-  assert.match(no.asked[0] ?? '', /caddy on 80 and 443.*hse\.colloq\.ru\?/)
+  assert.match(no.asked[0] ?? '', /caddy on 80 and 443.*hse\.aulalab\.ru\?/)
   assert.deepEqual(no.out, ['cancelled'])
 
-  const yes = await run(['host', 'hse.colloq.ru', '--direct'], { tty: true, answer: 'y' })
+  const yes = await run(['host', 'hse.example.edu', '--direct'], { tty: true, answer: 'y' })
   assert.equal(yes.code, 0)
   assert.deepEqual(spawned(yes), [['./scripts/host.sh']])
   assert.deepEqual(yes.envs[0], {
-    COLLOQ_HOME: '/repo',
-    COLLOQ_DIRECT: '1',
-    COLLOQ_HOSTNAME: 'hse.colloq.ru',
+    AULALAB_HOME: '/repo',
+    AULALAB_DIRECT: '1',
+    AULALAB_HOSTNAME: 'hse.example.edu',
   })
 })
 
 test('host --direct --yes: no question at all', async () => {
-  const result = await run(['host', 'hse.colloq.ru', '--direct', '--yes'], { tty: true })
+  const result = await run(['host', 'hse.example.edu', '--direct', '--yes'], { tty: true })
   assert.equal(result.code, 0)
   assert.deepEqual(result.asked, [])
   assert.deepEqual(spawned(result), [['./scripts/host.sh']])
-  assert.equal(result.envs[0]?.COLLOQ_DIRECT, '1')
+  assert.equal(result.envs[0]?.AULALAB_DIRECT, '1')
 })
 
 test('host: the tunnel stays quiet while no class is running, and asks when one is', async () => {
-  const quiet = await run(['host', 'hse.colloq.ru'], { tty: true, answer: 'n' })
+  const quiet = await run(['host', 'hse.example.edu'], { tty: true, answer: 'n' })
   assert.equal(quiet.code, 0)
   assert.deepEqual(quiet.asked, [])
   assert.deepEqual(spawned(quiet), [['./scripts/host.sh']])
-  assert.deepEqual(quiet.envs[0], { COLLOQ_HOME: '/repo', COLLOQ_HOSTNAME: 'hse.colloq.ru' })
+  assert.deepEqual(quiet.envs[0], { AULALAB_HOME: '/repo', AULALAB_HOSTNAME: 'hse.example.edu' })
 
-  const busy = await run(['host', 'hse.colloq.ru'], { tty: true, answer: 'n', capture: oneRoom })
+  const busy = await run(['host', 'hse.example.edu'], { tty: true, answer: 'n', capture: oneRoom })
   assert.equal(busy.code, 4)
   assert.deepEqual(spawned(busy), [])
-  assert.match(busy.asked[0] ?? '', /publish hse\.colloq\.ru\? 1 room is running/)
+  assert.match(busy.asked[0] ?? '', /publish hse\.aulalab\.ru\? 1 room is running/)
 
   // Without a name the question names the class as a whole, not an empty spot.
   const quick = await run(['host'], { tty: true, answer: 'n', capture: oneRoom })
@@ -278,12 +278,12 @@ test('host: the tunnel stays quiet while no class is running, and asks when one 
 })
 
 test('host: the header names the transport, and there is one; under it, two lines about the perimeter', async () => {
-  const relay = await run(['host', 'hse.colloq.ru', '--yes'], { tty: true })
+  const relay = await run(['host', 'hse.example.edu', '--yes'], { tty: true })
   // One header, and under it two lines about the perimeter: a room is a
   // hardened container with no access to the home network, and the link is
-  // still a door to code on this computer. colloq doctor says the same words
+  // still a door to code on this computer. aulalab doctor says the same words
   // (PERIMETER in cli/src/commands/host.ts).
-  assert.equal(relay.out[0], 'publishing hse.colloq.ru through the relay: keep this window open')
+  assert.equal(relay.out[0], 'publishing hse.example.edu through the relay: keep this window open')
   assert.equal(relay.out.length, 3)
   assert.match(relay.out[1] ?? '', /hardened container per room, cut off from your home network/)
   assert.match(relay.out[2] ?? '', /the link is a door: anyone who has it runs code in a sandbox/)
@@ -298,10 +298,10 @@ test('host: the header names the transport, and there is one; under it, two line
   const quick = await run(['host', '--yes'], { tty: true })
   assert.match(quick.out[0] ?? '', /quick Cloudflare tunnel: the name is random/)
 
-  const direct = await run(['host', 'hse.colloq.ru', '--direct', '--yes'], { tty: true })
+  const direct = await run(['host', 'hse.example.edu', '--direct', '--yes'], { tty: true })
   assert.equal(
     direct.out[0],
-    'installing caddy on this machine: it holds 80 and 443 for hse.colloq.ru',
+    'installing caddy on this machine: it holds 80 and 443 for hse.example.edu',
   )
   assert.equal(direct.out.length, 3)
 
@@ -314,7 +314,7 @@ test('host: the header names the transport, and there is one; under it, two line
 })
 
 test('host: no .env gives code 3, names the path and a workable hint, the same everywhere', async () => {
-  const source = await run(['host', 'hse.colloq.ru', '--yes'], {
+  const source = await run(['host', 'hse.example.edu', '--yes'], {
     tty: true,
     files: { '/repo/.env': null },
   })
@@ -326,20 +326,20 @@ test('host: no .env gives code 3, names the path and a workable hint, the same e
   // The hint must be workable. The old one, "cp .env.example .env", lied
   // twice: the path is relative (that is, in the person's current directory),
   // and an installed package has no .env.example at all. .env is created by
-  // colloq start, from the sources as well, so there is one hint.
-  assert.match(source.err.join('\n'), /colloq start creates it on the first run/)
+  // aulalab start, from the sources as well, so there is one hint.
+  assert.match(source.err.join('\n'), /aulalab start creates it on the first run/)
   assert.doesNotMatch(source.err.join('\n'), /\.env\.example/)
 
-  const packaged = await run(['host', 'hse.colloq.ru', '--yes'], {
+  const packaged = await run(['host', 'hse.example.edu', '--yes'], {
     tty: true,
     dist: true,
-    home: '/home/.colloq',
+    home: '/home/.aulalab',
     files: { '/repo/.env': null },
   })
   assert.equal(packaged.code, 3)
   assert.deepEqual(spawned(packaged), [])
-  assert.match(packaged.err.join('\n'), /no \/home\/\.colloq\/\.env/)
-  assert.match(packaged.err.join('\n'), /colloq start creates it on the first run/)
+  assert.match(packaged.err.join('\n'), /no \/home\/\.aulalab\/\.env/)
+  assert.match(packaged.err.join('\n'), /aulalab start creates it on the first run/)
   assert.doesNotMatch(packaged.err.join('\n'), /\.env\.example/)
 })
 
@@ -347,39 +347,39 @@ test('host: no .env but --dry-run: the line is printed, no .env check is needed'
   // --dry-run only shows what would run and reads nothing beyond the
   // arguments: refusing over a missing .env here would be a refusal for
   // nothing.
-  const result = await run(['host', 'hse.colloq.ru', '--dry-run'], {
+  const result = await run(['host', 'hse.example.edu', '--dry-run'], {
     files: { '/repo/.env': null },
   })
   assert.equal(result.code, 0)
   assert.deepEqual(result.out, [
-    'COLLOQ_HOME=/repo COLLOQ_HOSTNAME=hse.colloq.ru ./scripts/host.sh',
+    'AULALAB_HOME=/repo AULALAB_HOSTNAME=hse.example.edu ./scripts/host.sh',
   ])
 })
 
-/* -------------------------------------------------- host in an installed colloq */
+/* -------------------------------------------------- host in an installed aulalab */
 
 /**
  * Two roots: the app separate, the state separate.
  *
- * In a colloq installed through pip the app directory lives inside the package
+ * In a aulalab installed through pip the app directory lives inside the package
  * (read-only, wiped by an update), while .env, the class receipt and
- * .colloq.pid are in ~/.colloq. The script has to be told where the state is,
+ * .aulalab.pid are in ~/.aulalab. The script has to be told where the state is,
  * otherwise it looks for it next to itself and publishes the address into a
  * file nobody reads.
  */
-const PACKAGED: Options = { dist: true, home: '/home/.colloq' }
+const PACKAGED: Options = { dist: true, home: '/home/.aulalab' }
 
 test('host: the script really runs and knows the state directory', async () => {
-  const result = await run(['host', 'hse.colloq.ru', '--yes'], {
+  const result = await run(['host', 'hse.example.edu', '--yes'], {
     ...PACKAGED,
     tty: true,
-    files: { '/repo/.env': null, '/home/.colloq/.env': 'PORT=3000\nRELAY_DOMAIN=colloq.ru\n' },
+    files: { '/repo/.env': null, '/home/.aulalab/.env': 'PORT=3000\nRELAY_DOMAIN=example.edu\n' },
   })
   assert.equal(result.code, 0)
   assert.deepEqual(spawned(result), [['./scripts/host.sh']])
   assert.deepEqual(result.envs[0], {
-    COLLOQ_HOME: '/home/.colloq',
-    COLLOQ_HOSTNAME: 'hse.colloq.ru',
+    AULALAB_HOME: '/home/.aulalab',
+    AULALAB_HOSTNAME: 'hse.example.edu',
   })
   // The settings were read from the state directory: RELAY_DOMAIN comes from
   // there, and the header names the relay, not Cloudflare.
@@ -392,7 +392,7 @@ test('host: in the sources the state root is named the same way, even though it 
   // live by the same rule (cli/src/commands/local.ts · stateEnv).
   const result = await run(['host', '--yes'], { tty: true })
   assert.deepEqual(spawned(result), [['./scripts/host.sh']])
-  assert.deepEqual(result.envs[0], { COLLOQ_HOME: '/repo' })
+  assert.deepEqual(result.envs[0], { AULALAB_HOME: '/repo' })
 })
 
 /* -------------------------------------------------------- group makeup */
@@ -413,11 +413,11 @@ test('the group has one command, host; the workshop is not called from here', ()
 
 test('old workshop names get "no such command", and nothing is started', async () => {
   for (const argv of [
-    ['host-direct', 'hse.colloq.ru'],
+    ['host-direct', 'hse.example.edu'],
     ['tunnel', 'setup', 'class.example.ru'],
     ['relay', 'setup', 'root@203.0.113.10'],
     ['relay', 'ping'],
-    ['dns', 'point', 'hse.colloq.ru', '203.0.113.10'],
+    ['dns', 'point', 'hse.example.edu', '203.0.113.10'],
   ]) {
     const result = await run([...argv, '--yes'], { tty: true })
     assert.equal(result.code, 2, argv.join(' '))
@@ -435,7 +435,7 @@ test('old workshop names get "no such command", and nothing is started', async (
  * WHAT goes to the script. Here what is checked is what lies at the other end
  * of that line — and it can only be seen in the real files. That is exactly
  * where the finding was: the line went out right, but the script was not in
- * the package at all, and `colloq host` died with code 127 on the only command
+ * the package at all, and `aulalab host` died with code 127 on the only command
  * by which the class gets its link.
  */
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -507,15 +507,15 @@ test('scripts look for state in the state directory, not next to themselves', ()
   const body = code(hostSh)
   // The class receipt and the pid file hang off the state root. The old
   // defaults were relative, that is, "next to the script".
-  assert.match(body, /SESSION_RECEIPT="\$COLLOQ_STATE_ROOT\/\.colloq\/local-session\.json"/)
-  assert.match(body, /PIDFILE="\$\{PIDFILE:-\$COLLOQ_STATE_ROOT\/\.colloq\.pid\}"/)
-  assert.equal(/\$\{PIDFILE:-\.colloq\.pid\}/.test(body), false, 'the pid file is looked up locally again')
+  assert.match(body, /SESSION_RECEIPT="\$AULALAB_STATE_ROOT\/\.aulalab\/local-session\.json"/)
+  assert.match(body, /PIDFILE="\$\{PIDFILE:-\$AULALAB_STATE_ROOT\/\.aulalab\.pid\}"/)
+  assert.equal(/\$\{PIDFILE:-\.aulalab\.pid\}/.test(body), false, 'the pid file is looked up locally again')
   assert.equal(
-    /\[ -f \.colloq\/local-session\.json \]/.test(body),
+    /\[ -f \.aulalab\/local-session\.json \]/.test(body),
     false,
     'the class receipt is looked up locally again',
   )
-  // PUBLIC_URL is written into the .env that colloq link reads — otherwise
+  // PUBLIC_URL is written into the .env that aulalab link reads — otherwise
   // after a "successful" publication it would keep saying "not published".
   const setter = /^set_public_url\(\) \{$[\s\S]*?^\}$/m.exec(hostSh)![0]
   assert.match(setter, /"\$ENV_FILE"/)
@@ -526,11 +526,11 @@ test('scripts look for state in the state directory, not next to themselves', ()
   )
 })
 
-test('lib.sh: the state root is COLLOQ_HOME, and without it the old directory', () => {
+test('lib.sh: the state root is AULALAB_HOME, and without it the old directory', () => {
   // The only place in this file where a process is started: the property is
   // checked on real bash, because its whole point lies in shell substitution.
   // Checking it by reading would mean checking one's own guess.
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-state-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-state-'))
   try {
     fs.writeFileSync(path.join(dir, '.env'), 'PORT=3999\n')
     const ask = (cwd: string, home?: string): string =>
@@ -540,10 +540,10 @@ test('lib.sh: the state root is COLLOQ_HOME, and without it the old directory', 
         env:
           home === undefined
             ? { PATH: process.env.PATH ?? '' }
-            : { PATH: process.env.PATH ?? '', COLLOQ_HOME: home },
+            : { PATH: process.env.PATH ?? '', AULALAB_HOME: home },
       })
     // A named state directory beats the one the script is in: for an
-    // installed colloq these are different directories, and only the first
+    // installed aulalab these are different directories, and only the first
     // has .env.
     assert.equal(ask(repo, dir), '3999')
     // Without the variable, as before: the current directory the scripts cd

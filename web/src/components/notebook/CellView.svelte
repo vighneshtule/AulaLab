@@ -2022,7 +2022,7 @@
        * (cell-scroll.ts · afterRun): only down, and only if the bottom is not
        * visible.
        */
-      window.dispatchEvent(new CustomEvent('colloq:cell-settled', { detail: { cellId: id } }))
+      window.dispatchEvent(new CustomEvent('aulalab:cell-settled', { detail: { cellId: id } }))
       return true
     }
     if (!mayRun) {
@@ -2075,7 +2075,7 @@
     const created = insertCellAfter(session.doc, bookRoot, id, meta.current.type)
     session.selectCell(created)
     await tick()
-    window.dispatchEvent(new CustomEvent('colloq:enter-cell', { detail: { cellId: created } }))
+    window.dispatchEvent(new CustomEvent('aulalab:enter-cell', { detail: { cellId: created } }))
   }
 
   /**
@@ -2104,7 +2104,7 @@
    */
   function step(direction: -1 | 1, focus = true, fallback = false, grow = false, scroll = true) {
     window.dispatchEvent(
-      new CustomEvent('colloq:step-cell', {
+      new CustomEvent('aulalab:step-cell', {
         detail: { cellId: id, direction, focus, fallback, grow, scroll },
       }),
     )
@@ -2140,7 +2140,7 @@
 
   function askAi(action: AiAction) {
     session.selectCell(id)
-    window.dispatchEvent(new CustomEvent('colloq:ask-ai', { detail: { cellId: id, action } }))
+    window.dispatchEvent(new CustomEvent('aulalab:ask-ai', { detail: { cellId: id, action } }))
   }
 
   /* ------------------------------------------------------ asking for an edit */
@@ -2274,8 +2274,8 @@
       const detail = (event as CustomEvent<{ cellId: string }>).detail
       if (detail?.cellId === id) enter()
     }
-    window.addEventListener('colloq:enter-cell', onEnterCell)
-    return () => window.removeEventListener('colloq:enter-cell', onEnterCell)
+    window.addEventListener('aulalab:enter-cell', onEnterCell)
+    return () => window.removeEventListener('aulalab:enter-cell', onEnterCell)
   })
 
   /*
@@ -2300,8 +2300,8 @@
       if (!run()) return
       if (detail.step) step(1, false, false, true, false)
     }
-    window.addEventListener('colloq:run-cell', onRunCell)
-    return () => window.removeEventListener('colloq:run-cell', onRunCell)
+    window.addEventListener('aulalab:run-cell', onRunCell)
+    return () => window.removeEventListener('aulalab:run-cell', onRunCell)
   })
 
   const TOOL_BASE =

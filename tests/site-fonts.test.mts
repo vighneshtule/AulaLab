@@ -1,7 +1,7 @@
 /**
  * The landing page is opened from places where Google does not answer.
  *
- * The colloq.ru page is the only thing people read before signing in at all,
+ * The example.edu page is the only thing people read before signing in at all,
  * and they read it from a university network with no way out and from Russia,
  * where external CDNs have been blocked before. While the monospace font came
  * from fonts.googleapis.com, the terminal in the hero was drawn in a system

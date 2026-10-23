@@ -112,10 +112,10 @@
  *     subdomain = "probe-lab"
  *
  *   On C, G and U, with the same token:
- *     node scripts/class-probe.mts machine --host probe-lab.colloq.ru --out k0-C.json
- *     node scripts/class-probe.mts watch --host probe-lab.colloq.ru --out k0-C-watch.json
+ *     node scripts/class-probe.mts machine --host probe-lab.example.edu --out k0-C.json
+ *     node scripts/class-probe.mts watch --host probe-lab.example.edu --out k0-C-watch.json
  *   and step 3 again the other way, for class uploads (§4.9):
- *     node scripts/class-probe.mts machine --host probe-lab.colloq.ru --steps 3 --bulk-dir up --out k0-C-up.json
+ *     node scripts/class-probe.mts machine --host probe-lab.example.edu --steps 3 --bulk-dir up --out k0-C-up.json
  *
  * HOST is a name (then wss:// and https://), or a URL such as
  * http://127.0.0.1:3999 for a probe on the same box. The probe dials
@@ -152,7 +152,7 @@ const PROTOCOL = 1
 
 const DOORS = { tunnel: '/probe/tunnel', echo: '/probe/echo', blob: '/probe/blob' } as const
 /** On every answer of the probe's own: a relay's page (frps's 404 for a name with no client) lacks it. */
-const MARKER = 'x-colloq-probe'
+const MARKER = 'x-aulalab-probe'
 
 // The tunnel as remote-classes.md §4.2-4.7 draws it.
 const HEADER_BYTES = 16

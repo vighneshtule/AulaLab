@@ -92,7 +92,7 @@ export const setupTokenPath = SETUP_TOKEN_FILE
  * The fresh one is never printed — the banner is for an unclaimed instance
  * only (`setupBanner`). It lives in the file for whoever can read the server's
  * disk: the recovery path when the owner loses their link
- * (routes/admin-auth.ts · signin/token), the `colloq start` banner on a
+ * (routes/admin-auth.ts · signin/token), the `aulalab start` banner on a
  * teacher's own laptop and the operator scripts that sign in with it all read
  * the file afresh. Reading that file already means owning the instance — the
  * database next to it holds every teacher's link — so the file is not a new
@@ -135,7 +135,7 @@ export function setupBanner(publicUrl: string): string | null {
   if (isClaimed()) return null
   return [
     '',
-    '  ┌ nobody owns this Colloq yet',
+    '  ┌ nobody owns this Aula Lab yet',
     `  │ open  ${publicUrl}/admin/t/${setupToken}`,
     '  │ then type your name and email — that makes you the owner, and everyone',
     '  │ else teaching here gets a personal sign-in link from you.',
@@ -209,7 +209,7 @@ function readCookieHeader(header: string | undefined, name: string): string | nu
      * `decodeURIComponent('%')` throws URIError, and here that cost the
      * process: the same function is called by the role parsing in the socket
      * handshake, where there is no try/catch around the callback — so
-     * `Cookie: colloq_staff=%` from any participant reached uncaughtException
+     * `Cookie: aulalab_staff=%` from any participant reached uncaughtException
      * and took down the whole instance with all its rooms. The value still has
      * to be a signature, and this one will not verify.
      */
@@ -428,7 +428,7 @@ export function originAllowed(origin: string | undefined, host: string | undefin
  * The address the server hands out as its own (config.publicUrl): a page
  * served from it is ours, whatever Host the request arrives with.
  *
- * Two fronts write a Host of their own. The `colloq start --share` tunnel
+ * Two fronts write a Host of their own. The `aulalab start --share` tunnel
  * reaches the server with Host 127.0.0.1:<port> (scripts/host.sh ·
  * --http-host-header), while the page sends the Origin of its
  * *.trycloudflare.com address — the tunnel lease is what publicUrl holds then.

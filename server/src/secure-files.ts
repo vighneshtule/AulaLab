@@ -67,7 +67,7 @@ type SafeFs = Pick<typeof fs, 'openSync' | 'existsSync' | 'lstatSync' | 'statSyn
  * rejected on macOS, because there link() follows the link, while on Linux it
  * copies the link itself (both behaviors checked by measurement).
  *
- * The COLLOQ_UNSAFE_DEV_FILES flag (options.allowUnsafeDevelopment) decides
+ * The AULALAB_UNSAFE_DEV_FILES flag (options.allowUnsafeDevelopment) decides
  * NOTHING here any more and is kept only for signature compatibility with the
  * callers. It used to enable a path that merely lstat-ed the segments and
  * handed out a plain string — that is, fs.* calmly went through a symlink

@@ -22,9 +22,9 @@ values is caught at the release, not in a customer's cluster.
 
 Usage (see publish.yml):
   python3 scripts/chart-values.py --version 0.10.0 \\
-    --app-image ghcr.io/o/colloq-app@sha256:... --runtime-image ghcr.io/o/colloq-runtime@sha256:... \\
-    --kernel-images '{"base": "ghcr.io/o/colloq-kernel@sha256:...", ...}' \\
-    --chart deploy/helm/colloq --output out/values-0.10.0.yaml
+    --app-image ghcr.io/o/aulalab-app@sha256:... --runtime-image ghcr.io/o/aulalab-runtime@sha256:... \\
+    --kernel-images '{"base": "ghcr.io/o/aulalab-kernel@sha256:...", ...}' \\
+    --chart deploy/helm/aulalab --output out/values-0.10.0.yaml
 The release values are also printed to stdout as one line of JSON.
 """
 import argparse
@@ -63,7 +63,7 @@ def pinned(reference, what):
 
 
 def split_registry(repository, what):
-    """('ghcr.io', 'colloq-edu/colloq-app') of ghcr.io/colloq-edu/colloq-app, by Docker's rule:
+    """('ghcr.io', 'vighneshtule/aulalab-app') of ghcr.io/vighneshtule/aulalab-app, by Docker's rule:
     the first component is a registry when it has a dot or a port, or is localhost."""
     first, _, path = repository.partition('/')
     if not path or not ('.' in first or ':' in first or first == 'localhost'):
@@ -317,8 +317,8 @@ def write_chart_yaml(text, version):
         match = KEY.match(line)
         if match and not match['indent']:
             top.setdefault(key_name(match['key']), i)
-    if 'name' not in top or inline_value(KEY.match(lines[top['name']])['rest']) != 'colloq':
-        raise ValueError('Chart.yaml must name the chart colloq: it is published as oci://ghcr.io/<owner>/charts/colloq')
+    if 'name' not in top or inline_value(KEY.match(lines[top['name']])['rest']) != 'aulalab':
+        raise ValueError('Chart.yaml must name the chart aulalab: it is published as oci://ghcr.io/<owner>/charts/aulalab')
     if 'version' not in top:
         raise ValueError('Chart.yaml has no version')
     # The chart version is the release version: one number for the chart, its
@@ -334,8 +334,8 @@ def write_chart_yaml(text, version):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--version', required=True, help='the release version, X.Y.Z[-rc.N], without the v')
-    parser.add_argument('--app-image', required=True, help='colloq-app pinned by digest')
-    parser.add_argument('--runtime-image', required=True, help='colloq-runtime pinned by digest')
+    parser.add_argument('--app-image', required=True, help='aulalab-app pinned by digest')
+    parser.add_argument('--runtime-image', required=True, help='aulalab-runtime pinned by digest')
     parser.add_argument('--kernel-images', required=True, help='JSON object: environment name -> pinned kernel image')
     parser.add_argument('--default-environment', default='base')
     parser.add_argument('--chart', help='the chart directory to write the release into (values.yaml, Chart.yaml)')
@@ -355,7 +355,7 @@ def main():
         new_chart = write_chart_yaml((chart / 'Chart.yaml').read_text(encoding='utf-8'), args.version)
         (chart / 'values.yaml').write_text(new_values, encoding='utf-8')
         (chart / 'Chart.yaml').write_text(new_chart, encoding='utf-8')
-    header = [f'# Colloq {args.version}: the images and the kernel catalog this release published, by digest.',
+    header = [f'# Aula Lab {args.version}: the images and the kernel catalog this release published, by digest.',
               '# The chart of the same version carries these values as its defaults; this file lists them',
               '# on their own, for a registry mirror to copy the images and for a diff between releases.',
               '# Written by publish.yml (scripts/chart-values.py).']

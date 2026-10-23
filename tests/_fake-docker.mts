@@ -51,9 +51,9 @@ export interface FakeDocker {
 export type Reply = { code: number; out: string }
 
 const nameOf = (session: string, role: 'room' | 'own') =>
-  role === 'own' ? `colloq-room-${session}-own` : `colloq-room-${session}`
+  role === 'own' ? `aulalab-room-${session}-own` : `aulalab-room-${session}`
 
-const sessionOf = (name: string) => name.slice('colloq-room-'.length).replace(/-own$/, '')
+const sessionOf = (name: string) => name.slice('aulalab-room-'.length).replace(/-own$/, '')
 
 const defaults = (): FakeContainer => ({
   memoryMb: 4096,
@@ -73,7 +73,7 @@ export function fakeDocker(): FakeDocker {
     KERNEL_BACKEND: 'docker',
     KERNEL_ISOLATION: 'required',
     KERNEL_NETWORK: 'running-network',
-    COLLOQ_ROOM_NETWORK: 'open',
+    AULALAB_ROOM_NETWORK: 'open',
   })
   // "The server runs in a container": the room network is then KERNEL_NETWORK, asked of the fake.
   fs.existsSync = ((p: fs.PathLike) => p === '/.dockerenv' || exists(p)) as typeof fs.existsSync
@@ -130,7 +130,7 @@ export function fakeDocker(): FakeDocker {
     // A start gets as far as admission: the image is there, the perimeter goes up.
     if (command === 'image') return { code: 0, out: 'ready' }
     if (command === 'run') {
-      if (!args.includes('--name')) return { code: 0, out: 'colloq-perimeter: ok' }
+      if (!args.includes('--name')) return { code: 0, out: 'aulalab-perimeter: ok' }
       const name = args[args.indexOf('--name') + 1]!
       const memoryMb = Number(args.find((arg) => arg.startsWith('--memory='))?.match(/\d+/)?.[0] ?? 4096)
       containers.set(name, { ...defaults(), memoryMb })

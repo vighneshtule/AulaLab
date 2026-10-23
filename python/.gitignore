@@ -2,7 +2,7 @@
 # истории ему делать нечего — это те же web/dist и server/dist, шесть мегабайт
 # на каждую сборку. В колесо оно попадает мимо этого правила: hatchling берёт
 # его по tool.hatch.build.targets.wheel.artifacts в pyproject.toml.
-colloq/_app/
+aulalab/_app/
 
 # Колесо и всё, что оставляет после себя сборка.
 dist/

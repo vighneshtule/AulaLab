@@ -1,10 +1,10 @@
 # Versioned deployment on a Vast VM
 
-> For the common case, `make vast-vm` rents a VM and holds a class with the prebuilt `colloq-vast` image; see [deploy/vast/README.md](../deploy/vast/README.md). It keeps a separate container per room on the VM's Docker. The k3s path described here stays the option for stricter isolation: restricted Pods, NetworkPolicy, a separate runtime broker and digest-pinned releases. It is a preview: no release up to and including 0.8.4 has published the k3s bundle (`release.json`, `colloq-deploy.tar.gz`, `SHA256SUMS`), so the manifest the steps below need does not exist yet. For a university server, see [Your own server (university)](https://colloq.cc/docs/en/server.html).
+> For the common case, `make vast-vm` rents a VM and holds a class with the prebuilt `aulalab-vast` image; see [deploy/vast/README.md](../deploy/vast/README.md). It keeps a separate container per room on the VM's Docker. The k3s path described here stays the option for stricter isolation: restricted Pods, NetworkPolicy, a separate runtime broker and digest-pinned releases. It is a preview: no release up to and including 0.8.4 has published the k3s bundle (`release.json`, `aulalab-deploy.tar.gz`, `SHA256SUMS`), so the manifest the steps below need does not exist yet. For a university server, see [Your own server (university)](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/server.html).
 
 Use a full Vast **VM**, not an ordinary Vast Docker instance. The workflow keeps VM-only, verified, on-demand offer selection, named-instance labels, price confirmation, registered SSH-key checks, direct mapped SSH, and the existing FRP relay names. A VM hosts one k3s node; application and room Pods share that VM's Linux kernel.
 
-Vast VMs support systemd and nested containers. Only Vast's `docker.io/vastai/kvm` images work as VM templates. The default is a dated Ubuntu VM image; this is separate from the application images pinned by digest in the Colloq release. [Vast VM documentation](https://docs.vast.ai/guides/instances/virtual-machines)
+Vast VMs support systemd and nested containers. Only Vast's `docker.io/vastai/kvm` images work as VM templates. The default is a dated Ubuntu VM image; this is separate from the application images pinned by digest in the Aula Lab release. [Vast VM documentation](https://docs.vast.ai/guides/instances/virtual-machines)
 
 ## Install or update
 
@@ -15,7 +15,7 @@ For private images, pass `VAST_REGISTRY_CONFIG=/path/pull-only.json` (or `script
 Without credentials, explicitly set `VAST_PUBLIC_IMAGES=1` to declare that all release images are anonymously pullable. With credentials for only some registries, the same declaration covers the remaining images. These checks happen before rental; a syntactically valid credential can still be expired or lack access, and the cluster's actual image-pull preflight remains mandatory.
 
 ```sh
-VAST_PUBLIC_IMAGES=1 RELEASE=/absolute/path/release.json NAME=hse HOST=hse.colloq.ru make vast-up
+VAST_PUBLIC_IMAGES=1 RELEASE=/absolute/path/release.json NAME=hse HOST=hse.example.edu make vast-up
 RELEASE=/absolute/path/release.json NAME=hse make vast-status
 RELEASE=/absolute/path/release.json NAME=hse SINCE=2h make vast-logs
 ```
@@ -38,7 +38,7 @@ Nested KVM and GPU compatibility of stronger optional sandboxes are not assumed.
 
 ## Portable backups
 
-Application data is stored under `/var/lib/colloq/{data,workspace}` in static local PVs with Retain semantics. These survive Pod replacement, but do not survive destruction of the rental. **Vast Volumes currently cannot attach to VMs.** [Vast volume limitation](https://docs.vast.ai/guides/instances/storage/volumes)
+Application data is stored under `/var/lib/aulalab/{data,workspace}` in static local PVs with Retain semantics. These survive Pod replacement, but do not survive destruction of the rental. **Vast Volumes currently cannot attach to VMs.** [Vast volume limitation](https://docs.vast.ai/guides/instances/storage/volumes)
 
 ```sh
 # Keep the class running: consistent SQLite, files copied at different instants.
@@ -51,7 +51,7 @@ RELEASE=/absolute/path/release.json NAME=hse MODE=consistent make vast-sync
 RELEASE=/absolute/path/release.json NAME=hse MODE=consistent RESUME=1 make vast-sync
 ```
 
-Each archive is named `colloq-<UTC>-<mode>.tar.gz` under `backups/<name>/`. It contains the SQLite snapshot, workspaces, application configuration, application/broker secrets, release manifest, catalog and a checksum inventory. Treat it as a secret. Checksums detect corruption; they do not authenticate an archive from an untrusted sender. Symlinks and special files are refused; regular files preserve the owner executable bit while group/world access is removed. Files changing or disappearing can make a live backup fail; retry or choose consistent mode.
+Each archive is named `aulalab-<UTC>-<mode>.tar.gz` under `backups/<name>/`. It contains the SQLite snapshot, workspaces, application configuration, application/broker secrets, release manifest, catalog and a checksum inventory. Treat it as a secret. Checksums detect corruption; they do not authenticate an archive from an untrusted sender. Symlinks and special files are refused; regular files preserve the owner executable bit while group/world access is removed. Files changing or disappearing can make a live backup fail; retry or choose consistent mode.
 
 The archive is validated on the VM and again after transfer. Validation checks every file, the named environment and SQLite `quick_check` results. The chosen release/catalog records immutable image identities; registry availability and retention remain necessary because image layers are not included in the application archive.
 
@@ -63,7 +63,7 @@ Restore a trusted archive using its environment name and an explicitly compatibl
 
 ```sh
 bash scripts/cluster.sh prepare --release /path/release.json
-NAME=hse bash scripts/restore.sh --archive /path/colloq-...-consistent.tar.gz \
+NAME=hse bash scripts/restore.sh --archive /path/aulalab-...-consistent.tar.gz \
   --release /path/release.json --replace
 bash scripts/cluster.sh prepare --release /path/release.json
 bash scripts/cluster.sh start
@@ -79,6 +79,6 @@ Before destroying a rental, obtain and validate a consistent archive outside it.
 
 Confirm separate room Pod/token/subPath storage, no Kubernetes credentials in application or room Pods, and enforced NetworkPolicy/Pod Security settings. Standard NetworkPolicy has an exception for traffic to the local node; the production deployment needs its documented host firewall rules. Container isolation does not promise protection against guest-kernel vulnerabilities.
 
-Production file operations require Linux `/proc/self/fd` traversal. The application holds a trusted workspace-root descriptor, opens every parent with `O_DIRECTORY|O_NOFOLLOW`, and keeps a final file descriptor through asynchronous download delivery. Recursive deletion uses the same anchored traversal; symlinks are not followed. Local non-Linux development requires the explicit `COLLOQ_UNSAFE_DEV_FILES=1` opt-in (or `NODE_ENV=test` in fixtures). That development path rejects static symlinks but does not provide the Linux race protection and cannot be enabled in production.
+Production file operations require Linux `/proc/self/fd` traversal. The application holds a trusted workspace-root descriptor, opens every parent with `O_DIRECTORY|O_NOFOLLOW`, and keeps a final file descriptor through asynchronous download delivery. Recursive deletion uses the same anchored traversal; symlinks are not followed. Local non-Linux development requires the explicit `AULALAB_UNSAFE_DEV_FILES=1` opt-in (or `NODE_ENV=test` in fixtures). That development path rejects static symlinks but does not provide the Linux race protection and cannot be enabled in production.
 
-Logs use Kubernetes durations such as `SINCE=30m` or `SINCE=2h`; freeform journalctl dates are unsupported. Deleted room Pods no longer have logs available through `kubectl logs`. Colloq scrubs common tokens while exporting logs, but notebook/application output can contain user data.
+Logs use Kubernetes durations such as `SINCE=30m` or `SINCE=2h`; freeform journalctl dates are unsupported. Deleted room Pods no longer have logs available through `kubectl logs`. Aula Lab scrubs common tokens while exporting logs, but notebook/application output can contain user data.

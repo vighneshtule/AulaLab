@@ -35,7 +35,7 @@ const script = path.join(repo, 'scripts/runtime-backup.py')
 const dirs: string[] = []
 after(() => dirs.forEach((dir) => fs.rmSync(dir, { recursive: true, force: true })))
 function temp(): string {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-robust-')))
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-robust-')))
   dirs.push(dir)
   return dir
 }
@@ -60,13 +60,13 @@ function seed(userVersion = 0, compatible = [1]) {
   fs.mkdirSync(path.join(root, 'data'))
   fs.mkdirSync(path.join(root, 'workspace/room-a/sub'), { recursive: true })
   fs.mkdirSync(path.join(root, 'secrets'))
-  database(path.join(root, 'data/colloq.db'), userVersion)
+  database(path.join(root, 'data/aulalab.db'), userVersion)
   fs.writeFileSync(path.join(root, 'workspace/room-a/file.txt'), 'room data')
   fs.writeFileSync(path.join(root, 'workspace/room-a/sub/inner.txt'), 'inner')
   fs.writeFileSync(path.join(root, 'data/session-secret'), 'signing-key', { mode: 0o600 })
   const releaseFile = path.join(root, 'release.json')
   fs.writeFileSync(releaseFile, JSON.stringify(release(compatible)))
-  return { root, release: releaseFile, archive: path.join(temp(), 'colloq-test.tar.gz') }
+  return { root, release: releaseFile, archive: path.join(temp(), 'aulalab-test.tar.gz') }
 }
 
 /** What `python -m venv` and a running kernel leave behind, plus the worst links a student can make. */
@@ -223,7 +223,7 @@ test('restore never writes outside its stage, whatever the archive says', () => 
     ['a hard link', "add('workspace','dir'); add('workspace/f'); add('workspace/h','hard','workspace/f')", /hard links and special files/],
     ['a FIFO', "add('workspace','dir'); add('workspace/p','fifo')", /hard links and special files/],
     ['a link where the manifest must be', "add('manifest.json','sym','/etc/passwd')", /link outside/],
-    ['a link where the database must be', "add('data','dir'); add('data/colloq.db','sym','/etc/passwd')", /link outside/],
+    ['a link where the database must be', "add('data','dir'); add('data/aulalab.db','sym','/etc/passwd')", /link outside/],
     ['a link as a whole tree', "add('workspace','sym','/')", /link outside/],
     ['a duplicate entry', "add('workspace','dir'); add('workspace/a'); add('workspace/a')", /duplicate archive path/],
   ]
@@ -279,27 +279,27 @@ print('left:', sorted(os.listdir(pathlib.Path(out).parent)))
 
 test('retention keeps the newest BACKUP_KEEP archives, never the fresh one, and nothing it did not name', () => {
   const dir = temp()
-  const archives = ['colloq-20260101T000000Z-live.tar.gz', 'colloq-20260102T000000Z-consistent.tar.gz',
-    'colloq-20260103T000000Z-live.tar.gz.age', 'colloq-20260104T000000Z-live.tar.gz']
-  const strangers = ['notes.txt', 'colloq-manual.tar.gz', 'colloq-20250101T000000Z-live.tar.gz.partial']
+  const archives = ['aulalab-20260101T000000Z-live.tar.gz', 'aulalab-20260102T000000Z-consistent.tar.gz',
+    'aulalab-20260103T000000Z-live.tar.gz.age', 'aulalab-20260104T000000Z-live.tar.gz']
+  const strangers = ['notes.txt', 'aulalab-manual.tar.gz', 'aulalab-20250101T000000Z-live.tar.gz.partial']
   for (const name of [...archives, ...strangers]) fs.writeFileSync(path.join(dir, name), name)
-  fs.symlinkSync(path.join(dir, 'notes.txt'), path.join(dir, 'colloq-20240101T000000Z-live.tar.gz'))
-  fs.mkdirSync(path.join(dir, 'demo')); fs.writeFileSync(path.join(dir, 'demo/colloq-20200101T000000Z-live.tar.gz'), 'other env')
+  fs.symlinkSync(path.join(dir, 'notes.txt'), path.join(dir, 'aulalab-20240101T000000Z-live.tar.gz'))
+  fs.mkdirSync(path.join(dir, 'demo')); fs.writeFileSync(path.join(dir, 'demo/aulalab-20200101T000000Z-live.tar.gz'), 'other env')
   const prune = (keep: number, fresh: string) => run('prune', '--directory', dir, '--keep', String(keep), '--fresh', path.join(dir, fresh))
   assert.equal(prune(2, archives[3]).status, 0)
-  assert.deepEqual(fs.readdirSync(dir).sort(), [...strangers, archives[2], archives[3], 'colloq-20240101T000000Z-live.tar.gz', 'demo'].sort())
-  assert.ok(fs.existsSync(path.join(dir, 'demo/colloq-20200101T000000Z-live.tar.gz')))
+  assert.deepEqual(fs.readdirSync(dir).sort(), [...strangers, archives[2], archives[3], 'aulalab-20240101T000000Z-live.tar.gz', 'demo'].sort())
+  assert.ok(fs.existsSync(path.join(dir, 'demo/aulalab-20200101T000000Z-live.tar.gz')))
   // A clock that went backwards: the fresh archive sorts oldest and still stays.
-  fs.writeFileSync(path.join(dir, 'colloq-20991231T235959Z-live.tar.gz'), 'future')
-  fs.writeFileSync(path.join(dir, 'colloq-20250601T000000Z-live.tar.gz'), 'fresh')
-  assert.equal(prune(1, 'colloq-20250601T000000Z-live.tar.gz').status, 0)
-  const left = fs.readdirSync(dir).filter((n) => /^colloq-\d{8}T/.test(n)).sort()
-  assert.deepEqual(left, ['colloq-20240101T000000Z-live.tar.gz', 'colloq-20250101T000000Z-live.tar.gz.partial',
-    'colloq-20250601T000000Z-live.tar.gz', 'colloq-20991231T235959Z-live.tar.gz'])
+  fs.writeFileSync(path.join(dir, 'aulalab-20991231T235959Z-live.tar.gz'), 'future')
+  fs.writeFileSync(path.join(dir, 'aulalab-20250601T000000Z-live.tar.gz'), 'fresh')
+  assert.equal(prune(1, 'aulalab-20250601T000000Z-live.tar.gz').status, 0)
+  const left = fs.readdirSync(dir).filter((n) => /^aulalab-\d{8}T/.test(n)).sort()
+  assert.deepEqual(left, ['aulalab-20240101T000000Z-live.tar.gz', 'aulalab-20250101T000000Z-live.tar.gz.partial',
+    'aulalab-20250601T000000Z-live.tar.gz', 'aulalab-20991231T235959Z-live.tar.gz'])
   // 0 keeps every backup.
-  fs.writeFileSync(path.join(dir, 'colloq-20000101T000000Z-live.tar.gz'), 'old')
-  assert.equal(prune(0, 'colloq-20250601T000000Z-live.tar.gz').status, 0)
-  assert.ok(fs.existsSync(path.join(dir, 'colloq-20000101T000000Z-live.tar.gz')))
+  fs.writeFileSync(path.join(dir, 'aulalab-20000101T000000Z-live.tar.gz'), 'old')
+  assert.equal(prune(0, 'aulalab-20250601T000000Z-live.tar.gz').status, 0)
+  assert.ok(fs.existsSync(path.join(dir, 'aulalab-20000101T000000Z-live.tar.gz')))
 })
 
 /** A tools directory like a release bundle: the real scripts, a fake cluster.sh unless asked otherwise. */
@@ -309,7 +309,7 @@ function tools(root: string, withRealCluster = false): string {
     fs.copyFileSync(path.join(repo, 'scripts', f), path.join(dir, 'scripts', f))
   }
   fs.chmodSync(path.join(dir, 'scripts/backup.sh'), 0o755)
-  if (!withRealCluster) fs.writeFileSync(path.join(dir, 'scripts/cluster.sh'), '#!/bin/bash\necho "$1" >> "$COLLOQ_STATE_DIR/lifecycle"\n')
+  if (!withRealCluster) fs.writeFileSync(path.join(dir, 'scripts/cluster.sh'), '#!/bin/bash\necho "$1" >> "$AULALAB_STATE_DIR/lifecycle"\n')
   return dir
 }
 
@@ -318,26 +318,26 @@ test('backup.sh writes 0600 archives into backups/ next to the tools, prunes to 
   const dir = tools(s.root)
   const backups = path.join(dir, 'backups')
   fs.mkdirSync(backups, { mode: 0o700 })
-  for (const stamp of ['20250101T000000Z', '20250102T000000Z', '20250103T000000Z']) fs.writeFileSync(path.join(backups, `colloq-${stamp}-live.tar.gz`), 'old')
-  const env = { ...process.env, COLLOQ_STATE_DIR: s.root, RELEASE: s.release, NAME: '', BACKUP_KEEP: '2' }
+  for (const stamp of ['20250101T000000Z', '20250102T000000Z', '20250103T000000Z']) fs.writeFileSync(path.join(backups, `aulalab-${stamp}-live.tar.gz`), 'old')
+  const env = { ...process.env, AULALAB_STATE_DIR: s.root, RELEASE: s.release, NAME: '', BACKUP_KEEP: '2' }
   const live = spawnSync('bash', [path.join(dir, 'scripts/backup.sh')], { encoding: 'utf8', env: { ...env, MODE: 'live' } })
   assert.equal(live.status, 0, live.stdout + live.stderr)
   const kept = fs.readdirSync(backups).sort()
   assert.equal(kept.length, 2, kept.join(', '))
-  assert.equal(kept[0], 'colloq-20250103T000000Z-live.tar.gz')
-  assert.match(kept[1], /^colloq-\d{8}T\d{6}Z-live\.tar\.gz$/)
+  assert.equal(kept[0], 'aulalab-20250103T000000Z-live.tar.gz')
+  assert.match(kept[1], /^aulalab-\d{8}T\d{6}Z-live\.tar\.gz$/)
   assert.equal(fs.statSync(path.join(backups, kept[1])).mode & 0o777, 0o600)
   assert.equal(run('validate', '--archive', path.join(backups, kept[1])).status, 0)
 
   // Everything a consistent backup can refuse for, it refuses with the app running.
-  fs.rmSync(path.join(s.root, 'data/colloq.db'))
+  fs.rmSync(path.join(s.root, 'data/aulalab.db'))
   const refused = spawnSync('bash', [path.join(dir, 'scripts/backup.sh')], { encoding: 'utf8', env: { ...env, MODE: 'consistent', RESUME: '1' } })
   assert.notEqual(refused.status, 0)
   assert.match(refused.stderr, /application database is missing/)
   assert.equal(fs.existsSync(path.join(s.root, 'lifecycle')), false, 'no writer may be stopped for a backup that cannot happen')
 
   // Asked to encrypt without age: refused before anything is stopped or written.
-  database(path.join(s.root, 'data/colloq.db'))
+  database(path.join(s.root, 'data/aulalab.db'))
   const python = spawnSync('/bin/sh', ['-c', 'command -v python3'], { encoding: 'utf8' }).stdout.trim()
   const bare = [path.dirname(python), '/usr/bin', '/bin'].join(':')
   if (spawnSync('/bin/sh', ['-c', 'command -v age'], { encoding: 'utf8', env: { PATH: bare } }).stdout.trim() === '') {
@@ -368,18 +368,18 @@ test('with BACKUP_AGE_RECIPIENT the archive is encrypted, the plaintext removed,
   const dir = tools(s.root)
   const bin = path.join(s.root, 'bin'); fs.mkdirSync(bin)
   fs.writeFileSync(path.join(bin, 'age'), FAKE_AGE, { mode: 0o755 })
-  const env = { ...process.env, COLLOQ_STATE_DIR: s.root, RELEASE: s.release, NAME: '', PATH: `${bin}:${process.env.PATH}` }
+  const env = { ...process.env, AULALAB_STATE_DIR: s.root, RELEASE: s.release, NAME: '', PATH: `${bin}:${process.env.PATH}` }
   const backed = spawnSync('bash', [path.join(dir, 'scripts/backup.sh')], { encoding: 'utf8', env: { ...env, MODE: 'live', BACKUP_AGE_RECIPIENT: 'age1example' } })
   assert.equal(backed.status, 0, backed.stdout + backed.stderr)
   const names = fs.readdirSync(path.join(dir, 'backups'))
   assert.equal(names.length, 1)
-  assert.match(names[0], /^colloq-\d{8}T\d{6}Z-live\.tar\.gz\.age$/)
+  assert.match(names[0], /^aulalab-\d{8}T\d{6}Z-live\.tar\.gz\.age$/)
   const encrypted = path.join(dir, 'backups', names[0])
   assert.equal(fs.statSync(encrypted).mode & 0o777, 0o600)
 
   const target = temp()
   const identity = path.join(s.root, 'identity.txt'); fs.writeFileSync(identity, 'AGE-SECRET-KEY-TEST')
-  const restoreEnv = { ...env, COLLOQ_STATE_DIR: target }
+  const restoreEnv = { ...env, AULALAB_STATE_DIR: target }
   const command = ['bash', path.join(dir, 'scripts/restore.sh'), '--archive', encrypted, '--release', s.release]
   const without = spawnSync(command[0], command.slice(1), { encoding: 'utf8', env: restoreEnv })
   assert.notEqual(without.status, 0)
@@ -436,15 +436,15 @@ function vm(dropDatabaseOnStop: boolean) {
   fs.writeFileSync(path.join(state, 'releases/current.json'), JSON.stringify(release()))
   const bin = path.join(state, 'bin'); fs.mkdirSync(bin)
   const k3s = `#!/bin/sh
-printf '%s\\n' "$*" >> "$COLLOQ_STATE_DIR/k3s-calls"
+printf '%s\\n' "$*" >> "$AULALAB_STATE_DIR/k3s-calls"
 case "$*" in
   --version) echo "k3s version v1.34.1+k3s1 (fake)";;
   *"create -f -"*) cat >/dev/null;;
-  *"jsonpath={.spec.replicas}"*) cat "$COLLOQ_STATE_DIR/replicas" 2>/dev/null || echo 1;;
-  *"scale deployment/colloq-app deployment/colloq-runtime --replicas=0"*)
-    echo 0 > "$COLLOQ_STATE_DIR/replicas"
-    ${dropDatabaseOnStop ? 'rm -f "$COLLOQ_STATE_DIR/data/colloq.db"' : ':'};;
-  *"scale deployment/colloq-app --replicas=1"*) echo 1 > "$COLLOQ_STATE_DIR/replicas";;
+  *"jsonpath={.spec.replicas}"*) cat "$AULALAB_STATE_DIR/replicas" 2>/dev/null || echo 1;;
+  *"scale deployment/aulalab-app deployment/aulalab-runtime --replicas=0"*)
+    echo 0 > "$AULALAB_STATE_DIR/replicas"
+    ${dropDatabaseOnStop ? 'rm -f "$AULALAB_STATE_DIR/data/aulalab.db"' : ':'};;
+  *"scale deployment/aulalab-app --replicas=1"*) echo 1 > "$AULALAB_STATE_DIR/replicas";;
 esac
 exit 0
 `
@@ -452,7 +452,7 @@ exit 0
     fs.writeFileSync(path.join(bin, name), body === null ? k3s : `#!/bin/sh\n${body}\n`, { mode: 0o755 })
   }
   const update = () => spawnSync('bash', [path.join(bundle, 'scripts/cluster.sh'), 'update', '--release', next], { encoding: 'utf8',
-    env: { ...process.env, COLLOQ_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` } })
+    env: { ...process.env, AULALAB_STATE_DIR: state, PATH: `${bin}:${process.env.PATH}` } })
   const calls = () => fs.existsSync(path.join(state, 'k3s-calls')) ? fs.readFileSync(path.join(state, 'k3s-calls'), 'utf8').split('\n').filter(Boolean) : []
   return { state, backups, update, calls }
 }
@@ -462,22 +462,22 @@ test('update pulls the images and takes its backup preflight before it stops any
   const r = machine.update()
   const calls = machine.calls()
   const pulled = calls.findIndex((c) => c.includes('create -f -'))
-  const stopped = calls.findIndex((c) => c.includes('scale deployment/colloq-app deployment/colloq-runtime --replicas=0'))
+  const stopped = calls.findIndex((c) => c.includes('scale deployment/aulalab-app deployment/aulalab-runtime --replicas=0'))
   assert.ok(pulled >= 0, calls.join('\n'))
   assert.ok(stopped > pulled, 'images are pulled while the classes still run:\n' + calls.join('\n'))
   const archives = fs.readdirSync(machine.backups)
   assert.equal(archives.length, 1)
   assert.match(archives[0], /-consistent\.tar\.gz$/)
-  // A pretend VM has no /etc/rancher/k3s/colloq-managed, so prepare stops
+  // A pretend VM has no /etc/rancher/k3s/aulalab-managed, so prepare stops
   // there; everything this test is about happened before it.
   assert.notEqual(r.status, 0)
-  assert.match(r.stderr, /not Colloq-managed/)
+  assert.match(r.stderr, /not Aula Lab-managed/)
   assert.equal(fs.readdirSync(path.join(machine.state, 'releases')).filter((n) => n.startsWith('.pulled')).length, 0)
 })
 
 test('an update whose backup cannot happen stops nothing, and one whose backup fails after the stop brings the classes back', () => {
   const refused = vm(false)
-  fs.rmSync(path.join(refused.state, 'data/colloq.db'))
+  fs.rmSync(path.join(refused.state, 'data/aulalab.db'))
   let r = refused.update()
   assert.notEqual(r.status, 0)
   assert.match(r.stderr, /application database is missing/)
@@ -491,14 +491,14 @@ test('an update whose backup cannot happen stops nothing, and one whose backup f
   assert.match(r.stderr, /aborted before any change/)
   const calls = failed.calls()
   const stopped = calls.findIndex((c) => c.includes('--replicas=0'))
-  const started = calls.findIndex((c) => c.includes('scale deployment/colloq-app --replicas=1'))
+  const started = calls.findIndex((c) => c.includes('scale deployment/aulalab-app --replicas=1'))
   assert.ok(stopped >= 0 && started > stopped, calls.join('\n'))
   assert.equal(JSON.parse(fs.readFileSync(path.join(failed.state, 'releases/current.json'), 'utf8')).version, 'v1', 'the installed release is unchanged')
 })
 
 test('update refuses a release that does not list the schema stamped in the database, before any cluster call', () => {
   const machine = vm(false)
-  execFileSync('python3', ['-c', 'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("pragma user_version=2"); c.commit()', path.join(machine.state, 'data/colloq.db')])
+  execFileSync('python3', ['-c', 'import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("pragma user_version=2"); c.commit()', path.join(machine.state, 'data/aulalab.db')])
   const r = machine.update()
   assert.notEqual(r.status, 0)
   assert.match(r.stderr, /data schema 2/)

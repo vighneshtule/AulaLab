@@ -1,7 +1,7 @@
 /**
  * The CLI speaks English, and explains itself in English.
  *
- * A string is the SCREEN: it is read by a person who ran `pip install colloq`
+ * A string is the SCREEN: it is read by a person who ran `pip install aulalab`
  * anywhere in the world. A comment is the REASON: it is read by whoever edits
  * the neighbouring line a year from now. The comments used to be Russian; since
  * the code went public (24 Sep 2026) they are English too, like the rest of the
@@ -13,7 +13,7 @@
  * class.
  *
  * Comments are cut out of the code without a regex. A regex trips over the
- * most ordinary things: `'https://colloq.ru'` inside a string looks like the
+ * most ordinary things: `'https://github.com/vighneshtule/AulaLab'` inside a string looks like the
  * start of a comment, and `'/*'` in text like the start of a block comment.
  * Hence the small character-by-character scanner below, which knows three
  * states (code, string, comment) and therefore gets neither case wrong.
@@ -110,7 +110,7 @@ test('CLI comments are English too', () => {
  */
 test('the scanner tells a string from a comment, including the tricky shapes', () => {
   const sample = [
-    `const url = 'https://colloq.ru/// не комментарий'`,
+    `const url = 'https://github.com/vighneshtule/AulaLab/// не комментарий'`,
     `// зато это комментарий: 'русская строка внутри него не в счёт'`,
     `/* и это тоже: "и здесь" */ const ok = "English"`,
     'const tpl = `и это строка`',
@@ -118,7 +118,7 @@ test('the scanner tells a string from a comment, including the tricky shapes', (
   ].join('\n')
   const texts = literals(sample).map((item) => item.text)
   assert.deepEqual(texts, [
-    `'https://colloq.ru/// не комментарий'`,
+    `'https://github.com/vighneshtule/AulaLab/// не комментарий'`,
     `"English"`,
     '`и это строка`',
     `"don't"`,
@@ -132,7 +132,7 @@ test('the scanner tells a string from a comment, including the tricky shapes', (
  * The Russian word was removed earlier: a class is called "занятие". The
  * English "seminar" would bring back the same confusion from the other side:
  * Classes in the panel, seminars in the CLI. We catch both, in example names
- * too: `colloq tunnel setup seminar.example.ru` is the same vocabulary, just
+ * too: `aulalab tunnel setup seminar.example.ru` is the same vocabulary, just
  * in an address.
  */
 test('the CLI says class, in both alphabets', () => {

@@ -30,7 +30,7 @@ export interface ImageIdentity {
 }
 
 /** The registry the published kernels live in, unless the operator names another. */
-export const PUBLISHED_KERNEL_REPO = 'ghcr.io/colloq-edu/colloq-kernel'
+export const PUBLISHED_KERNEL_REPO = 'ghcr.io/vighneshtule/aulalab-kernel'
 
 const DIFF_ID = /^sha256:[a-f0-9]{64}$/
 const PLATFORM_PART = /^[a-z0-9_]{1,16}$/
@@ -54,20 +54,20 @@ const PATH_COMPONENT = /^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$/
  * layer, so it reads one way only.
  */
 export function layersFingerprint(os: string, architecture: string, diffIds: readonly string[]): string {
-  return createHash('sha256').update(`colloq.remote.layers.v1\n${os}/${architecture}\n${diffIds.map((id) => `${id}\n`).join('')}`).digest('hex')
+  return createHash('sha256').update(`aulalab.remote.layers.v1\n${os}/${architecture}\n${diffIds.map((id) => `${id}\n`).join('')}`).digest('hex')
 }
 
 /**
  * The repository an image of ours is published to: KERNEL_IMAGE_REPO when the
  * operator set one (deploy/vast/entrypoint.sh · kernel_pull_ref reads the same
  * variable), else the one this server's image was built with
- * (COLLOQ_KERNEL_REPO), else the public one. `none` is the operator's word for
+ * (AULALAB_KERNEL_REPO), else the public one. `none` is the operator's word for
  * "every environment is built here": no repository is preferred then.
  */
 export function kernelImageRepo(env: NodeJS.ProcessEnv = process.env): string | null {
   const asked = (env.KERNEL_IMAGE_REPO ?? '').trim()
   if (asked === 'none') return null
-  return asked || (env.COLLOQ_KERNEL_REPO ?? '').trim() || PUBLISHED_KERNEL_REPO
+  return asked || (env.AULALAB_KERNEL_REPO ?? '').trim() || PUBLISHED_KERNEL_REPO
 }
 
 /** The first component of a repository names a registry when docker would read it as one. */
@@ -86,8 +86,8 @@ function portable(repo: string): boolean {
 }
 
 /**
- * A repository as docker resolves it: `colloq-kernel` is
- * docker.io/library/colloq-kernel, `org/kernels` is docker.io/org/kernels.
+ * A repository as docker resolves it: `aulalab-kernel` is
+ * docker.io/library/aulalab-kernel, `org/kernels` is docker.io/org/kernels.
  * RepoDigests print Docker Hub in that short form.
  */
 function qualified(repo: string): string {
@@ -123,7 +123,7 @@ function digested(entry: unknown): { repo: string; digest: string } | null {
  * machine's loopback, which no other machine reaches. An entry without a
  * registry is Docker Hub in docker's short form, or, in the containerd store,
  * simply the local name of an image built here (that store prints every name
- * of an image with its digest, `colloq-kernel@sha256:…` included), so such an
+ * of an image with its digest, `aulalab-kernel@sha256:…` included), so such an
  * entry counts only as the preferred repository itself. A wrong `null` costs
  * a revision that runs at home; a wrong reference costs machines that pull
  * something else, or nothing, under it.

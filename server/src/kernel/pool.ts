@@ -47,8 +47,8 @@ import { ROOM_SHM, classHashSeed, memSpec, roomRunArgs, type RoomRole } from './
  */
 import { anyLivePlacement, classHasLivePlacement, hasLivePlacement, livePlacementRows, machinePlaced } from './remote/placement-store.js'
 
-const IMAGE_PREFIX = 'colloq-kernel'
-const ROOM_PREFIX = 'colloq-room'
+const IMAGE_PREFIX = 'aulalab-kernel'
+const ROOM_PREFIX = 'aulalab-room'
 
 interface RunResult {
   code: number
@@ -88,7 +88,7 @@ function run(args: string[], timeoutMs = 20_000): Promise<RunResult> {
  * §6.1), lives only on machines: this server's Docker branch refuses it
  * (`endpointForSession`), and its slot is `<id>#council` (`slotFor`).
  *
- * A live container without the `colloq.role` label reads as `room`: that is
+ * A live container without the `aulalab.role` label reads as `room`: that is
  * how ALL containers started before this change look, and they must survive a
  * rollout without being recreated.
  */
@@ -446,7 +446,7 @@ async function sameNetwork(container: string, network: string): Promise<boolean>
 
 /** The hardened profile version the container was started with; empty means it was started before the profile. */
 async function profileOf(container: string): Promise<string> {
-  const res = await run(['inspect', container, '--format', '{{index .Config.Labels "colloq.profile"}}'])
+  const res = await run(['inspect', container, '--format', '{{index .Config.Labels "aulalab.profile"}}'])
   if (res.code !== 0) return ''
   const label = res.out.trim()
   return label === '<no value>' ? '' : label
@@ -457,7 +457,7 @@ async function profileOf(container: string): Promise<string> {
  * the one it was reached by back then.
  *
  * On the host it sits in `bridge` with a published port, and that port still
- * works: it does not need the `colloq-rooms` network to last out the lesson.
+ * works: it does not need the `aulalab-rooms` network to last out the lesson.
  * In the container form the network did not change at all, so membership in
  * it is enough.
  */
@@ -471,7 +471,7 @@ const legacyWarned = new Set<string>()
 
 /**
  * Whether a label differs from the current profile only by the room network
- * mode (`1` against `1-none`): the same hardening, another COLLOQ_ROOM_NETWORK.
+ * mode (`1` against `1-none`): the same hardening, another AULALAB_ROOM_NETWORK.
  */
 function sameHardening(profile: string): boolean {
   return profile.split('-')[0] === ROOM_PROFILE
@@ -482,7 +482,7 @@ function warnLegacy(sessionId: string, profile: string): void {
   legacyWarned.add(sessionId)
   console.warn(
     sameHardening(profile)
-      ? `[kernel] room ${sessionId} keeps its container from the previous COLLOQ_ROOM_NETWORK until it stops: the firewall rules already apply to it, its resolver setting changes at the next start`
+      ? `[kernel] room ${sessionId} keeps its container from the previous AULALAB_ROOM_NETWORK until it stops: the firewall rules already apply to it, its resolver setting changes at the next start`
       : `[kernel] room ${sessionId} keeps its pre-hardening container (default privileges, open network) until it stops; the next start recreates it hardened`,
   )
 }
@@ -698,9 +698,9 @@ export async function roomContainers(options: { strict?: boolean } = {}): Promis
     'ps',
     '-a',
     '--filter',
-    'label=colloq.kind=room-kernel',
+    'label=aulalab.kind=room-kernel',
     '--format',
-    '{{.Label "colloq.session"}}\t{{.Label "colloq.gpu"}}\t{{.State}}\t{{.Label "colloq.role"}}',
+    '{{.Label "aulalab.session"}}\t{{.Label "aulalab.gpu"}}\t{{.State}}\t{{.Label "aulalab.role"}}',
   ])
   if (res.code !== 0) {
     if (options.strict) throw new Error('Room allocation census is unavailable')
@@ -778,7 +778,7 @@ function inContainer(): boolean {
  * network name: `KERNEL_NETWORK`.
  *
  * On the host, rooms no longer sit in the default `bridge` but live in their
- * own `colloq-rooms` network (18 Sep 2026): it has a known subnet, and the ban
+ * own `aulalab-rooms` network (18 Sep 2026): it has a known subnet, and the ban
  * on local addresses is written exactly for it, without touching the
  * machine's other containers (perimeter.ts). In the container form the network
  * stays shared with the server, otherwise the kernel cannot be reached by
@@ -803,7 +803,7 @@ function perimeterTarget(): RoomNetworkTarget {
 /* -------------------------------------------------------------- GPU slices */
 
 /**
- * The devices given to Colloq: `KERNEL_GPUS`, comma-separated, in the form
+ * The devices given to Aula Lab: `KERNEL_GPUS`, comma-separated, in the form
  * docker understands them (`MIG-GPU-…`, `0`, `1`).
  *
  * Empty or unset means nobody asks for a GPU, and everything works exactly as
@@ -965,14 +965,14 @@ export async function gpuBusy(): Promise<string[]> {
  * The cards competition submissions hold right now: the ones the queue has
  * bound to a running run (`queueBoundCards`), whether or not its container is
  * up yet, and the ones a submission's container carries by the same
- * `colloq.gpu` label rooms carry — live or stopped, and whichever instance on
+ * `aulalab.gpu` label rooms carry — live or stopped, and whichever instance on
  * this daemon started them: a card in use is in use.
  *
  * Runner cards are out of the rooms' pool, so a room never meets a
  * submission on a card — except in one window: the owner gives a card back
  * to classes while a submission still holds it, for up to its time limit.
  * The room census does not see a submission (it counts
- * `colloq.kind=room-kernel` only), and `docker run` would put a lecture on the
+ * `aulalab.kind=room-kernel` only), and `docker run` would put a lecture on the
  * same card without a word. So a new room is kept off every card a
  * submission holds, and the panels (routes/admin-environments.ts ·
  * gpuState, routes/admin-resources.ts · gpuShare) promise no class such a
@@ -991,7 +991,7 @@ export async function submissionGpuCards(): Promise<string[]> {
  *
  * The queue writes a run's card into its row in the very transaction that
  * takes the run (competitions/store.ts · takeNext), while the run's container
- * carries the `colloq.gpu` label only once `docker run` is issued: seconds
+ * carries the `aulalab.gpu` label only once `docker run` is issued: seconds
  * later, tens of seconds on the first GPU run after a restart (the run's
  * inputs are composed, its package set hashed, its card's size probed). In
  * between, the label census sees nothing, and a card the owner gave back to
@@ -1020,18 +1020,18 @@ function queueBoundCards(): string[] {
   return (selectBoundCards.all() as Array<{ gpu: string }>).map((row) => row.gpu)
 }
 
-/** The `colloq.gpu` labels of submissions' containers; none when docker does not answer. */
+/** The `aulalab.gpu` labels of submissions' containers; none when docker does not answer. */
 async function submissionContainerCards(): Promise<string[]> {
   if (!(await canIsolate())) return []
   const res = await run([
     'ps',
     '-a',
     '--filter',
-    'label=colloq.kind=competition-run',
+    'label=aulalab.kind=competition-run',
     '--filter',
-    'label=colloq.gpu',
+    'label=aulalab.gpu',
     '--format',
-    '{{.Label "colloq.gpu"}}',
+    '{{.Label "aulalab.gpu"}}',
   ])
   if (res.code !== 0) return []
   // A device id has no blanks in it; a line that does is not a label value.
@@ -1084,7 +1084,7 @@ async function takeGpu(sessionId: string, env: string): Promise<string> {
  * that learns about its trouble only on the first `.cuda()`.
  */
 async function sameGpu(container: string, gpu: string | null): Promise<boolean> {
-  const res = await run(['inspect', container, '--format', '{{index .Config.Labels "colloq.gpu"}}'])
+  const res = await run(['inspect', container, '--format', '{{index .Config.Labels "aulalab.gpu"}}'])
   if (res.code !== 0) return true
   // No label: docker prints an empty string, and older versions print `<no value>`.
   const label = res.out.trim() === '<no value>' ? '' : res.out.trim()
@@ -1129,7 +1129,7 @@ export function defaultMemoryMb(gpu = false): number {
  * is not one number for the whole machine.
  *
  * Two gigabytes per room is an honest default for a laptop where someone
- * starts Colloq to have a look, and a death sentence for a computer vision
+ * starts Aula Lab to have a look, and a death sentence for a computer vision
  * class: `resnet18` on a batch of 250 images at 224×224 takes nearly two
  * gigabytes in activations alone, and that is ON TOP of torch, the CUDA
  * context and an already loaded language model. Then the cgroup kills python,
@@ -1204,7 +1204,7 @@ export function runArgs(opts: {
    * memory and CPU numbers, but its own cgroup and its own token.
    */
   role?: KernelRole
-  /** The room's network: `colloq-rooms` on the host, KERNEL_NETWORK in the container form. */
+  /** The room's network: `aulalab-rooms` on the host, KERNEL_NETWORK in the container form. */
   network: string
   /**
    * Whether to publish Jupyter on the host loopback: that is how a server
@@ -1960,7 +1960,7 @@ async function startContainer(
      */
     if (!(await sameImage(container, image))) return recreate(tr("server.theEnvironmentImageWasRebuilt.229a9d"))
     /*
-     * A container started before the hardened profile (no colloq.profile
+     * A container started before the hardened profile (no aulalab.profile
      * label): with docker's default privileges and in a network without the
      * ban.
      *
@@ -1971,7 +1971,7 @@ async function startContainer(
      * all the variables away from the lesson in the middle of the class; the
      * owner's decision is "until the restart".
      *
-     * The same rule covers a changed COLLOQ_ROOM_NETWORK (`none` also sets
+     * The same rule covers a changed AULALAB_ROOM_NETWORK (`none` also sets
      * the container's resolver, see perimeter.ts · roomProfile): the rules
      * follow the subnet and reach a live container at once, the resolver
      * setting at its next start.

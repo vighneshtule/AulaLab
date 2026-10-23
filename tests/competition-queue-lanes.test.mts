@@ -171,7 +171,7 @@ function holdOnMachine(submissionId: string, options: { boot?: string; gpu?: str
  */
 function leaseFor(row: QueueRow, state: string): void {
   db.prepare(`INSERT INTO remote_leases (attempt_id, runner_id, competition_id, submission_id, run_id, state, seq, sealed, provenance, manifest, container, offered_at, deadline_at)
-    VALUES (?, ?, ?, ?, ?, ?, 1, 0, '{}', '{}', 'colloq-comp-lease-run', ?, ?)`)
+    VALUES (?, ?, ?, ?, ?, ?, 1, 0, '{}', '{}', 'aulalab-comp-lease-run', ?, ?)`)
     .run(row.attemptId, row.holder, row.competitionId, row.submissionId, randomUUID(), state, Date.now(), Date.now() + 3_600_000)
 }
 
@@ -200,11 +200,11 @@ async function scoredWithSlowAnswer(c: Competition, holdMs: number): Promise<Sub
   const sent = send(c, person('Пересчёт'))
   await drainCompetitionQueue()
   assert.equal(getSubmission(sent.id)?.state, 'scored')
-  competitionsFs.writeFileSync(path.join(resultDir(c.id, sent.id), SUBMISSION_FILE), enc(`# colloq-test: {"hold": ${holdMs}}\nid,target\n1,0\n2,0\n`), { mode: 0o600 })
+  competitionsFs.writeFileSync(path.join(resultDir(c.id, sent.id), SUBMISSION_FILE), enc(`# aulalab-test: {"hold": ${holdMs}}\nid,target\n1,0\n2,0\n`), { mode: 0o600 })
   return sent
 }
 
-const HOLD = '# colloq-test: {"hold": 60000}\nmodel.fit()'
+const HOLD = '# aulalab-test: {"hold": 60000}\nmodel.fit()'
 
 /* ----------------------------------------------- a row a machine holds */
 
@@ -660,7 +660,7 @@ test('a fresh result whose metric is put off keeps its place and its «running»
 test("a notebook that ran here, only its metric put off, keeps what it did, and its score counts the notebook's time", async () => {
   await reset()
   const c = competition()
-  const sent = send(c, person('ОтложенаМетрика'), '# colloq-test: {"hold": 30}\nx = 1')
+  const sent = send(c, person('ОтложенаМетрика'), '# aulalab-test: {"hold": 30}\nx = 1')
   runner.unplaced.add(sent.id)
   assert.equal(await pumpOnce(), 1)
   await settleCompetitionWork()

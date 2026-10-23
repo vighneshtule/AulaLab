@@ -12,7 +12,7 @@ import {
   COUNCIL_SCRATCH_MOUNT,
   REMOTE_RUN_ID,
 } from '@shared/remote-kernels'
-import { COLLOQ_REFUSED, GUARD_MODULE, guardCouncilSettings, guardInstallLine } from './danger.js'
+import { AULALAB_REFUSED, GUARD_MODULE, guardCouncilSettings, guardInstallLine } from './danger.js'
 import { COUNCIL_GATE_MODULE } from './council-gate.js'
 
 /**
@@ -40,7 +40,7 @@ import { COUNCIL_GATE_MODULE } from './council-gate.js'
  * bindings with personal copies; after it, return the namespace to exactly
  * what it was.
  *
- * The cost of a copy here is not theoretical. The `colloq-kernel:base` image has
+ * The cost of a copy here is not theoretical. The `aulalab-kernel:base` image has
  * pandas 3, where Copy-on-Write is always on: `obj.copy(deep=False)` costs O(1),
  * and any write to the copy leaves the original alone, i.e. the most frequent
  * and heaviest case of a seminar (a table of hundreds of megabytes) is covered
@@ -106,10 +106,10 @@ import { COUNCIL_GATE_MODULE } from './council-gate.js'
  */
 
 /** The hidden module the isolation state lives in. Not a name in `globals()`. */
-export const COUNCIL_MODULE = '_colloq_council'
+export const COUNCIL_MODULE = '_aulalab_council'
 
 /** The key the report travels under in the kernel reply's `user_expressions`. */
-export const COUNCIL_REPORT_KEY = 'colloq'
+export const COUNCIL_REPORT_KEY = 'aulalab'
 
 /**
  * The expression the kernel evaluates and puts into `execute_reply`.
@@ -137,13 +137,13 @@ export const COUNCIL_LEFTOVERS_EXPR = `__import__('sys').modules['${COUNCIL_MODU
  * The name of the exception with which the isolation refuses an attempt in its
  * own words.
  *
- * The same as the global guard's (danger.ts · COLLOQ_REFUSED), and that is no
+ * The same as the global guard's (danger.ts · AULALAB_REFUSED), and that is no
  * coincidence: since 20 Sep 2026 the refusal "this command takes the kernel
  * down for everyone" is implemented ONCE, and a council attempt simply keeps it
  * on above the room rule. The name is kept here as an alias so callers do not
  * have to be rewritten.
  */
-export const COUNCIL_REFUSED = COLLOQ_REFUSED
+export const COUNCIL_REFUSED = AULALAB_REFUSED
 
 /** How many bytes of personal copies one attempt may have, unless told otherwise. */
 export const COUNCIL_DEFAULT_COPY_BYTES = 512 * 1024 * 1024
@@ -615,7 +615,7 @@ def _service(name):
         return True
     if name.startswith('__') and name.endswith('__'):
         return True
-    if name.startswith('_colloq'):
+    if name.startswith('_aulalab'):
         return True
     if name in _SERVICE:
         return True
@@ -1625,25 +1625,25 @@ class _NotCarried(object):
     plausible answer. So any use of the stand-in raises NotCarried in the
     room's words, naming the variable, why it stayed behind and where such
     attempts run. Reads the entry can see are refused before the attempt
-    starts (\`_colloq_needs\`); this catches the rest, \`globals()['conn']\`
+    starts (\`_aulalab_needs\`); this catches the rest, \`globals()['conn']\`
     and the like.
 
     Special methods are looked up on the type, past \`__getattr__\`: hence
     the list below, so that iterating, calling, indexing, comparing,
     printing and pickling it all refuse alike.
     """
-    __slots__ = ('_colloq_name', '_colloq_why', '_colloq_text')
+    __slots__ = ('_aulalab_name', '_aulalab_why', '_aulalab_text')
 
     def __init__(self, name, why, text):
-        object.__setattr__(self, '_colloq_name', name)
-        object.__setattr__(self, '_colloq_why', why)
-        object.__setattr__(self, '_colloq_text', text)
+        object.__setattr__(self, '_aulalab_name', name)
+        object.__setattr__(self, '_aulalab_why', why)
+        object.__setattr__(self, '_aulalab_text', text)
 
-    def _colloq_refuse(self, *args, **kwargs):
-        raise NotCarried(object.__getattribute__(self, '_colloq_text'))
+    def _aulalab_refuse(self, *args, **kwargs):
+        raise NotCarried(object.__getattribute__(self, '_aulalab_text'))
 
     def __getattr__(self, name):
-        raise NotCarried(object.__getattribute__(self, '_colloq_text'))
+        raise NotCarried(object.__getattribute__(self, '_aulalab_text'))
 
 
 for _method in (
@@ -1661,7 +1661,7 @@ for _method in (
         '__mod__', '__rmod__', '__pow__', '__rpow__', '__and__', '__rand__',
         '__or__', '__ror__', '__xor__', '__rxor__', '__lshift__', '__rlshift__',
         '__rshift__', '__rrshift__'):
-    setattr(_NotCarried, _method, _NotCarried._colloq_refuse)
+    setattr(_NotCarried, _method, _NotCarried._aulalab_refuse)
 del _method
 
 
@@ -1791,7 +1791,7 @@ def _dirty():
     detail 4).
 
     So this assumes the epoch store is on one, as the agent's is by default
-    (/var/lib/colloq-runner). On a tmpfs a file's pages are shared memory:
+    (/var/lib/aulalab-runner). On a tmpfs a file's pages are shared memory:
     Pss_Shmem charges each worker its share of every epoch page it touched,
     as Private_Dirty would charge a page whole, and for good (a tmpfs page
     is never written back), to the one worker that alone maps it. Leaving
@@ -2168,7 +2168,7 @@ class _Reads(object):
     and \`x += 1\` reads \`x\`: a set of the names bound anywhere would call
     both safe. Class bodies and comprehensions run where they stand, with
     names of their own; function and lambda bodies run later, if at all, and
-    what they read is symtable's part (_colloq_needs). Branches are taken in
+    what they read is symtable's part (_aulalab_needs). Branches are taken in
     order, as if all of them ran.
     """
 
@@ -2350,7 +2350,7 @@ def _deferred(table, out):
         _deferred(child, out)
 
 
-def _colloq_needs(source, left):
+def _aulalab_needs(source, left):
     """The names an attempt reads that its epoch left behind (§9.4), sorted.
 
     It runs inside the entry's own execute, so it costs no round trip, and
@@ -2523,7 +2523,7 @@ def enter(ns, budget, settings=None):
             # behind (§9.4), and does so before anything is held or copied:
             # the attempt goes to the notebook's queue, keeping its place,
             # and the worker stays exactly as it was.
-            needs = _colloq_needs(source, current['left'])
+            needs = _aulalab_needs(source, current['left'])
             if needs:
                 report = _Report(json.dumps({
                     'ok': False,
@@ -2880,15 +2880,15 @@ def _pickler():
     class _EpochPickler(base):
         def __init__(self, file, ns, callback, trial=None, counted=None):
             base.__init__(self, file, protocol=5, buffer_callback=callback)
-            self.colloq_ns = ns
+            self.aulalab_ns = ns
             # A trial prices the copies only the export's own dump makes (_array).
-            self.colloq_trial = trial
+            self.aulalab_trial = trial
             # The buffers carried names hold, by (place, size).
-            self.colloq_counted = trial.counted if trial is not None else (counted or {})
+            self.aulalab_counted = trial.counted if trial is not None else (counted or {})
             # The modules this pickle names its classes and functions by (_uses).
-            self.colloq_uses = set()
+            self.aulalab_uses = set()
             # Flat byte views of the buffers under arrays (_owner), one per buffer.
-            self.colloq_owners = {}
+            self.aulalab_owners = {}
 
         def reducer_override(self, obj):
             return _reduce(self, obj, parent)
@@ -2925,11 +2925,11 @@ def _reduce(pickler, obj, parent):
     if kind is types.FunctionType:
         if obj in _BY_NAME:
             return NotImplemented
-        if obj.__globals__ is pickler.colloq_ns:
+        if obj.__globals__ is pickler.aulalab_ns:
             return _function_reduce(obj)
         _uses(pickler, obj)
     elif kind is _NotCarried:
-        raise _Left(object.__getattribute__(obj, '_colloq_why'))
+        raise _Left(object.__getattribute__(obj, '_aulalab_why'))
     elif isinstance(obj, type):
         if parent is None and _module_of(obj) == '__main__':
             raise _Left('unpicklable')
@@ -3003,7 +3003,7 @@ def _uses(pickler, obj):
     """Note the module a class or a function will be looked up in when the stream loads."""
     module = _module_of(obj)
     if module and module not in _ALWAYS:
-        pickler.colloq_uses.add(module)
+        pickler.aulalab_uses.add(module)
 
 
 def _singleton_of(obj):
@@ -3058,7 +3058,7 @@ def _afford(pickler, size):
     meeting the OOM killer, which nothing else would stop in a GPU room
     (no address-space ceiling there).
     """
-    trial = pickler.colloq_trial
+    trial = pickler.aulalab_trial
     if trial is not None:
         if size > trial.room() or not _fits(size):
             raise _Left('budget')
@@ -3103,7 +3103,7 @@ def _array(pickler, obj, np):
         base, start, extent = found
         offset = int(obj.__array_interface__['data'][0]) - start
         if _within(obj, offset, extent):
-            if (start, extent) in pickler.colloq_counted:
+            if (start, extent) in pickler.aulalab_counted:
                 # Its memory travels anyway, with a name carried already:
                 # the view costs nothing more, \`train = X[:n]\` included.
                 return (_view_of, (base, offset, obj.shape, obj.strides, obj.dtype, writeable))
@@ -3113,7 +3113,7 @@ def _array(pickler, obj, np):
         # numpy's own: out of band, its own bytes, and no copy made.
         return None
     _afford(pickler, size)
-    trial = pickler.colloq_trial
+    trial = pickler.aulalab_trial
     if trial is not None:
         # A trial only prices the copy: the export's own dump makes it.
         trial.price(size)
@@ -3135,14 +3135,14 @@ def _owner(pickler, obj, np):
         if nxt is None:
             break
         if not isinstance(nxt, np.ndarray):
-            known = pickler.colloq_owners.get(id(nxt))
+            known = pickler.aulalab_owners.get(id(nxt))
             if known is None or known[0] is not nxt:
                 try:
                     flat = np.frombuffer(nxt, dtype=np.uint8)
                 except Exception:
                     return None
                 known = (nxt, flat)
-                pickler.colloq_owners[id(nxt)] = known
+                pickler.aulalab_owners[id(nxt)] = known
             flat = known[1]
             return flat, int(flat.__array_interface__['data'][0]), int(flat.nbytes)
         cur = nxt
@@ -3324,7 +3324,7 @@ def _trial(obj, ns, cap, threshold, counted):
         return 'budget', (), {}, ()
     except Exception as err:
         return _why(obj, err), (), {}, ()
-    return sink.n, sink.big, sink.keys, pickler.colloq_uses
+    return sink.n, sink.big, sink.keys, pickler.aulalab_uses
 
 
 # What a failed pickle names, and the reason that is. The message names the
@@ -3424,7 +3424,7 @@ def _priced(value, ns):
         pickler.dump(value)
     except Exception:
         return 0, set()
-    return sink.n, pickler.colloq_uses
+    return sink.n, pickler.aulalab_uses
 
 
 def _row(name):
@@ -3464,7 +3464,7 @@ def _portable(ns):
 _ENV_OUT = frozenset(('HOSTNAME', 'HOME', 'PWD', 'OLDPWD', 'SHLVL', '_', 'PYTHONHASHSEED',
                       'OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'OPENBLAS_NUM_THREADS',
                       'NUMEXPR_NUM_THREADS', 'VECLIB_MAXIMUM_THREADS'))
-_ENV_OUT_PREFIX = ('JPY_', 'JUPYTER', 'KERNEL_', 'IPY', 'COLLOQ', 'NVIDIA_', 'CUDA_', 'PYDEVD')
+_ENV_OUT_PREFIX = ('JPY_', 'JUPYTER', 'KERNEL_', 'IPY', 'AULALAB', 'NVIDIA_', 'CUDA_', 'PYDEVD')
 
 
 def _environment():
@@ -4105,13 +4105,13 @@ class _Seed(pickle.Unpickler):
 
     def __init__(self, file, buffers):
         pickle.Unpickler.__init__(self, file, buffers=buffers)
-        self.colloq_missing = set()
+        self.aulalab_missing = set()
 
     def find_class(self, module, name):
         try:
             return pickle.Unpickler.find_class(self, module, name)
         except (ImportError, AttributeError):
-            self.colloq_missing.add(module)
+            self.aulalab_missing.add(module)
             return _Missing
 
 
@@ -4268,7 +4268,7 @@ def load(ns, manifest, body_sha, settings=None):
             stream.seek(0)
             reader = _Seed(stream, maps)
             payload = reader.load()
-            missing = reader.colloq_missing
+            missing = reader.aulalab_missing
             del reader
         finally:
             _target = None
@@ -4392,7 +4392,7 @@ function implInstallLine(): string {
   return (
     `if getattr(__import__('sys').modules.get(${module}), 'version', None) != ` +
     `${JSON.stringify(implVersion())}: ` +
-    `exec(compile(${implLiteral()}, '<colloq-council>', 'exec'), ` +
+    `exec(compile(${implLiteral()}, '<aulalab-council>', 'exec'), ` +
     `__import__('sys').modules.setdefault(${module}, ` +
     `__import__('types').ModuleType(${module})).__dict__)`
   )
@@ -4442,7 +4442,7 @@ function epochInstallLine(): string {
   return (
     `if getattr(__import__('sys').modules.get(${module}), 'epoch_version', None) != ` +
     `${JSON.stringify(epochImplVersion())}: ` +
-    `exec(compile(${epochImplLiteral()}, '<colloq-epoch>', 'exec'), ` +
+    `exec(compile(${epochImplLiteral()}, '<aulalab-epoch>', 'exec'), ` +
     `__import__('sys').modules[${module}].__dict__)`
   )
 }

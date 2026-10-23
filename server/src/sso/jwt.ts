@@ -3,14 +3,14 @@
  *
  * Teleport application access (and oauth2-proxy, Pomerium and the like in
  * front of an OIDC provider) authenticates the person before the request ever
- * reaches Colloq and hands the result on as a signed token in a header. Only
+ * reaches Aula Lab and hands the result on as a signed token in a header. Only
  * the signature makes that header worth anything: the same header can arrive
  * from a browser that typed it, from a student's notebook inside the cluster,
  * or replayed out of somebody's log. So the token is checked here in full —
  * signature against the proxy's published keys (JWKS), expiry, and, when the
  * operator names them, issuer and audience — and anything short of that is
  * simply no identity, never an error page: the request goes on exactly as one
- * without the header, through the personal links Colloq always had.
+ * without the header, through the personal links Aula Lab always had.
  *
  * Node's crypto does the cryptography (RSA, RSA-PSS, ECDSA, Ed25519 from JWK);
  * there is no dependency to audit. What is deliberately refused: `none` and

@@ -4,7 +4,7 @@
  *
  * Commands: run (also start), stop, restart, logs, link, backup, restore. The
  * order here is the order in help. This is everything a teacher runs a class
- * with on their laptop after `pip install colloq`; the workshop (the docker
+ * with on their laptop after `pip install aulalab`; the workshop (the docker
  * stack, the build, tests, a shell in the kernel) is not here. It lives in the
  * Makefile and scripts/, and is called there directly: a wrapper over it from
  * the wheel only printed `make …`, which the package does not have.
@@ -50,7 +50,7 @@ function flag(ctx: Ctx, name: string): string | undefined {
  *
  * scripts/backup.sh and scripts/restore.sh cd to themselves and, without a
  * hint, take data/ and workspace/ from the APPLICATION directory, putting the
- * archive into <app>/backups. For an installed colloq there is neither the
+ * archive into <app>/backups. For an installed aulalab there is neither the
  * database nor the class files there: a backup would be taken from an empty
  * place, and a restore would land beside the real database, and both
  * troubles are silent.
@@ -60,7 +60,7 @@ function flag(ctx: Ctx, name: string): string | undefined {
  * remember to repeat in the next command.
  */
 function stateEnv(ctx: Ctx): Record<string, string> {
-  return { COLLOQ_HOME: ctx.env.paths.home }
+  return { AULALAB_HOME: ctx.env.paths.home }
 }
 
 /**
@@ -69,7 +69,7 @@ function stateEnv(ctx: Ctx): Record<string, string> {
  *
  * The targets backup, backup-legacy, restore and restore-legacy are one- or
  * two-line wrappers over these same scripts, but the Makefile does not travel
- * into the wheel and never will: `colloq backup --dry-run` from the wheel
+ * into the wheel and never will: `aulalab backup --dry-run` from the wheel
  * printed `make backup MODE=live`, a command that dies there with code 127,
  * and this is the only way to carry a class off the machine. Checked live.
  * The scripts do travel (scripts/pack.mts · SCRIPTS), so we call them directly
@@ -110,7 +110,7 @@ function checkLines(lines: string | undefined): void {
   if (!/^[0-9]+$/.test(lines) || lines === '0') {
     throw new UsageError(
       '"' + lines + '" is not a number of lines',
-      'a whole number: colloq logs -n 200',
+      'a whole number: aulalab logs -n 200',
     )
   }
 }
@@ -119,11 +119,11 @@ function checkLines(lines: string | undefined): void {
  * The receipt of the running class, or null if there is no class.
  *
  * There is one path: ctx.env.paths.sessionFile, resolved from the STATE
- * directory. This used to say ctx.env.path('.colloq/local-session.json'), that
- * is, from the APPLICATION directory, and for an installed colloq that
- * diverged silently: the supervisor writes the receipt into ~/.colloq, while
+ * directory. This used to say ctx.env.path('.aulalab/local-session.json'), that
+ * is, from the APPLICATION directory, and for an installed aulalab that
+ * diverged silently: the supervisor writes the receipt into ~/.aulalab, while
  * stop, restart and link looked for it in site-packages and did not find it.
- * Checked live: with the server running, `colloq stop` answered "no class is
+ * Checked live: with the server running, `aulalab stop` answered "no class is
  * running — nothing to stop".
  *
  * The parsing is not our own either: readSession is one for all readers of
@@ -170,12 +170,12 @@ function checkLaunch(ctx: Ctx): void {
   ) {
     throw new UsageError(
       'the port must be a whole number from 1 to 65535',
-      'colloq run --port 3000',
+      'aulalab run --port 3000',
     )
   }
   const host = ctx.values.host
   if (typeof host === 'string' && !hostNameOk(host)) {
-    throw new UsageError('the tunnel name is not valid', 'colloq run --host class.example.org')
+    throw new UsageError('the tunnel name is not valid', 'aulalab run --host class.example.org')
   }
   // Two ways out at once mean two tunnels on one address receipt. The same
   // refusal stands in the supervisor too (launch-config.ts · parseLaunchArgs),
@@ -183,7 +183,7 @@ function checkLaunch(ctx: Ctx): void {
   if (ctx.values.share === true && host !== undefined) {
     throw new UsageError(
       '--share and --host do not work together',
-      'colloq start --share for a quick link, or colloq start --host class.example.org for your own name',
+      'aulalab start --share for a quick link, or aulalab start --host class.example.org for your own name',
     )
   }
 }
@@ -197,9 +197,9 @@ function checkLaunch(ctx: Ctx): void {
  * tsx at all: there lies a single built `cli/launch.mjs`, and it must be
  * called with bare node.
  *
- * While this fork did not exist, `colloq start` from the wheel printed the
+ * While this fork did not exist, `aulalab start` from the wheel printed the
  * path `…/_app/cli/src/launch.ts` and fell over: no file, no tsx. Checked with
- * `colloq start --dry-run` from an installed wheel.
+ * `aulalab start --dry-run` from an installed wheel.
  */
 function launcher(ctx: Ctx): string[] {
   return ctx.dist
@@ -230,7 +230,7 @@ export const commands: Command[] = [
     group: 'local',
     summary: 'Start a local session in this terminal and open the browser',
     usage:
-      'colloq run [--share | --host <name>] [--detach] [--port <port>] [--no-open] [--fast]',
+      'aulalab run [--share | --host <name>] [--detach] [--port <port>] [--no-open] [--fast]',
     flags: [
       {
         name: 'share',
@@ -246,10 +246,10 @@ export const commands: Command[] = [
     check: checkLaunch,
     delegates:
       'native: the class supervisor — cli/launch.mjs in the distribution, cli/src/launch.ts through tsx from the sources',
-    examples: ['colloq start', 'colloq start --share', 'colloq run --host class.example.org'],
+    examples: ['aulalab start', 'aulalab start --share', 'aulalab run --host class.example.org'],
     notes:
-      'colloq start is the same command under its other name, and it is the one a class is started with most of the time. Logs stay in the terminal and are appended to .colloq.log in the state directory as well; Ctrl+C ends the session, its tunnel and the kernels of this database, keeping files and data. A busy server is not restarted. --detach leaves the session in the background; colloq logs follows it, colloq stop ends it. --fast matters only when colloq runs from its sources: an installed colloq arrives built. ' +
-      '--share opens a quick Cloudflare tunnel and prints one block: the link for students (or, with no class yet, where to create one), a warning never to share /admin/ links, and how long the link lives. The address is new on every start, and Cloudflare does not open from Russia — there, use --host with your own relay. Without cloudflared on PATH, colloq downloads a pinned release from GitHub into <state>/bin once and checks its sha256 before running it; COLLOQ_CLOUDFLARED=/path names your own file, COLLOQ_CLOUDFLARED_DOWNLOAD=0 forbids the download. ' +
+      'aulalab start is the same command under its other name, and it is the one a class is started with most of the time. Logs stay in the terminal and are appended to .aulalab.log in the state directory as well; Ctrl+C ends the session, its tunnel and the kernels of this database, keeping files and data. A busy server is not restarted. --detach leaves the session in the background; aulalab logs follows it, aulalab stop ends it. --fast matters only when aulalab runs from its sources: an installed aulalab arrives built. ' +
+      '--share opens a quick Cloudflare tunnel and prints one block: the link for students (or, with no class yet, where to create one), a warning never to share /admin/ links, and how long the link lives. The address is new on every start, and Cloudflare does not open from Russia — there, use --host with your own relay. Without cloudflared on PATH, aulalab downloads a pinned release from GitHub into <state>/bin once and checks its sha256 before running it; AULALAB_CLOUDFLARED=/path names your own file, AULALAB_CLOUDFLARED_DOWNLOAD=0 forbids the download. ' +
       '--share and --host publish a class only when every room runs in a Docker container of its own; otherwise they refuse and the class stays local. They do not work together.',
     async run(ctx) {
       head(ctx, 'starting the local session')
@@ -260,7 +260,7 @@ export const commands: Command[] = [
     name: 'stop',
     group: 'local',
     summary: 'End the local session, its tunnel and the kernels of this database',
-    usage: 'colloq stop',
+    usage: 'aulalab stop',
     flags: [],
     destructive: true,
     confirm: 'cli',
@@ -269,9 +269,9 @@ export const commands: Command[] = [
     confirmWhen: async (ctx) => localSession(ctx) !== null,
     confirmQuestion: 'stop the server?',
     delegates: 'native: the same supervisor with the stop command',
-    examples: ['colloq stop', 'colloq stop --yes'],
+    examples: ['aulalab stop', 'aulalab stop --yes'],
     notes:
-      'From the session receipt (.colloq/local-session.json in the state directory) the supervisor ends the processes it owns and the kernels of its own database. Files and the database are kept. Without a receipt no class is running and there is nothing to stop: every colloq start leaves one.',
+      'From the session receipt (.aulalab/local-session.json in the state directory) the supervisor ends the processes it owns and the kernels of its own database. Files and the database are kept. Without a receipt no class is running and there is nothing to stop: every aulalab start leaves one.',
     async run(ctx) {
       if (localSession(ctx) !== null) {
         head(ctx, 'stopping the server')
@@ -280,15 +280,15 @@ export const commands: Command[] = [
       /*
        * No receipt means no class either.
        *
-       * A class started by colloq is exactly one, its own, with a receipt, and
+       * A class started by aulalab is exactly one, its own, with a receipt, and
        * the absence of the receipt means there is nothing to stop. A server
-       * brought up bypassing colloq (make run, docker compose) is the
+       * brought up bypassing aulalab (make run, docker compose) is the
        * workshop's concern, and shutting it down with the same word would mean
        * guessing at someone else's. Code 0: the request "let nothing be
        * running" is already fulfilled.
        */
       ctx.ui.line('no class is running — nothing to stop')
-      ctx.ui.hint('start one: colloq start')
+      ctx.ui.hint('start one: aulalab start')
       return 0
     },
   },
@@ -296,7 +296,7 @@ export const commands: Command[] = [
     name: 'restart',
     group: 'local',
     summary: 'Restart the local session with the same port, data and tunnel',
-    usage: 'colloq restart [--build] [--fast]',
+    usage: 'aulalab restart [--build] [--fast]',
     flags: [
       { name: 'build', summary: 'Rebuild the frontend before restarting' },
       { name: 'fast', summary: 'With --build, build without compression' },
@@ -304,9 +304,9 @@ export const commands: Command[] = [
     destructive: true,
     confirm: 'self',
     delegates: 'native: the same supervisor with the restart command',
-    examples: ['colloq restart', 'colloq restart --build'],
+    examples: ['aulalab restart', 'aulalab restart --build'],
     notes:
-      'The supervisor reads the session receipt, ends the session and starts it again with the same port, data and flags. Without a receipt no class is running, and the command says so in words. --build and --fast matter only when colloq runs from its sources: an installed colloq arrives built and has nothing to rebuild.',
+      'The supervisor reads the session receipt, ends the session and starts it again with the same port, data and flags. Without a receipt no class is running, and the command says so in words. --build and --fast matter only when aulalab runs from its sources: an installed aulalab arrives built and has nothing to rebuild.',
     async run(ctx) {
       if (localSession(ctx) === null) {
         /*
@@ -322,7 +322,7 @@ export const commands: Command[] = [
         ctx.ui.refuse(
           'no class is running — nothing to restart',
           'there is no session receipt at ' + ctx.env.paths.sessionFile,
-          'start one: colloq start',
+          'start one: aulalab start',
         )
         return 3
       }
@@ -336,17 +336,17 @@ export const commands: Command[] = [
     aliases: ['log'],
     group: 'local',
     summary: 'Watch the log of the class on this machine',
-    usage: 'colloq logs [-f|--no-follow] [-n <lines>]',
+    usage: 'aulalab logs [-f|--no-follow] [-n <lines>]',
     flags: [
       { name: 'follow', short: 'f', summary: 'Follow (on by default)' },
       { name: 'no-follow', summary: 'Show the tail and exit' },
       { name: 'lines', short: 'n', arg: 'lines', summary: 'How many lines of the tail' },
     ],
     destructive: false,
-    delegates: 'tail .colloq.log in the state directory',
-    examples: ['colloq logs', 'colloq logs -n 200 --no-follow'],
+    delegates: 'tail .aulalab.log in the state directory',
+    examples: ['aulalab logs', 'aulalab logs -n 200 --no-follow'],
     notes:
-      '.colloq.log is written by every colloq start, in the terminal and with --detach alike. It is appended to and never truncated — the history of past weeks is evidence, and tail only reads. The log holds /admin/t/<token> links: the CLI cuts nothing out of the stream and retells nothing, and it never prints the token itself either.',
+      '.aulalab.log is written by every aulalab start, in the terminal and with --detach alike. It is appended to and never truncated — the history of past weeks is evidence, and tail only reads. The log holds /admin/t/<token> links: the CLI cuts nothing out of the stream and retells nothing, and it never prints the token itself either.',
     async run(ctx) {
       if (ctx.values.follow === true && ctx.values['no-follow'] === true) {
         throw new UsageError(
@@ -360,17 +360,17 @@ export const commands: Command[] = [
       const log = ctx.env.paths.logFile
       if (!ctx.dryRun && !ctx.io.exists(log)) {
         /*
-         * The supervisor creates the log on every `colloq start`, both in the
+         * The supervisor creates the log on every `aulalab start`, both in the
          * terminal and in the background (launch.ts · runSession and
          * detached). No file means no class has been started on this machine
          * yet, and there is exactly one piece of advice: start one. We name
-         * the path in full: for an installed colloq it is in the state
+         * the path in full: for an installed aulalab it is in the state
          * directory, not in the person's working folder.
          */
         ctx.ui.refuse(
           'no log at ' + log,
-          'no class has been started on this machine yet — every colloq start writes its log there',
-          'colloq start --detach — the class goes to the background, and colloq logs follows it',
+          'no class has been started on this machine yet — every aulalab start writes its log there',
+          'aulalab start --detach — the class goes to the background, and aulalab logs follows it',
         )
         return 3
       }
@@ -379,10 +379,10 @@ export const commands: Command[] = [
        * We tail our own file rather than hand the job to make logs-run.
        *
        * The Makefile target is `tail -f $(LOG)` from the APPLICATION
-       * directory, and an installed colloq does not have it at all. The right
+       * directory, and an installed aulalab does not have it at all. The right
        * path is known from the line above (by it we have just checked that
        * the log exists at all), and the log holds the sign-in link that
-       * colloq link refers to: missing here costs the most.
+       * aulalab link refers to: missing here costs the most.
        */
       const args: string[] = []
       if (follow) args.push('-f')
@@ -395,11 +395,11 @@ export const commands: Command[] = [
     name: 'link',
     group: 'local',
     summary: 'Show the class address and where to find the sign-in to the panel',
-    usage: 'colloq link',
+    usage: 'aulalab link',
     flags: [],
     destructive: false,
     delegates: 'native: reads the session receipt, the temporary address and .env',
-    examples: ['colloq link', 'colloq link --dry-run'],
+    examples: ['aulalab link', 'aulalab link --dry-run'],
     notes:
       'The setup token is never printed — not from data/setup-token, not from the log: the /admin/t/<token> link is the key to the whole instance.',
     async run(ctx) {
@@ -413,7 +413,7 @@ export const commands: Command[] = [
         ctx.ui.refuse(
           'no .env',
           'the class address comes from there',
-          'the first run creates it: colloq run',
+          'the first run creates it: aulalab run',
         )
         return 3
       }
@@ -426,7 +426,7 @@ export const commands: Command[] = [
       if (session) ctx.ui.kv('local', session.local)
       if (inside) {
         ctx.ui.kv('address', 'not published', url === '' ? undefined : url)
-        ctx.ui.hint('colloq host <name> — publish it and get a link for the room')
+        ctx.ui.hint('aulalab host <name> — publish it and get a link for the room')
       } else {
         ctx.ui.kv('address', ctx.ui.cyan(url))
       }
@@ -434,10 +434,10 @@ export const commands: Command[] = [
       if (domain !== '') ctx.ui.kv('domain', domain)
       ctx.ui.kv('sign-in', 'printed once at startup')
       /*
-       * We name the paths in full, not ".colloq.log" and "data/setup-token".
+       * We name the paths in full, not ".aulalab.log" and "data/setup-token".
        *
        * A relative name implies that there is one root. For an installed
-       * colloq the log and the token lie in the state directory (~/.colloq),
+       * aulalab the log and the token lie in the state directory (~/.aulalab),
        * while the person looks for them in their working folder, does not find
        * them and decides the sign-in was not saved, although the link is in
        * place.
@@ -457,7 +457,7 @@ export const commands: Command[] = [
     group: 'local',
     summary: 'Take a backup: a local one of this machine or a portable k3s one',
     usage:
-      'colloq backup [--legacy] [--mode <live|consistent>] [--resume] [--name <environment>] [--out <path>] [--release <path>]',
+      'aulalab backup [--legacy] [--mode <live|consistent>] [--resume] [--name <environment>] [--out <path>] [--release <path>]',
     flags: [
       { name: 'legacy', summary: 'A local pair of .db and -files.tar.gz (the default)' },
       { name: 'mode', arg: 'mode', summary: 'Portable: live (the default) or consistent' },
@@ -473,8 +473,8 @@ export const commands: Command[] = [
     destructive: true,
     confirm: 'self',
     delegates:
-      './scripts/backup-local.sh · with a portable flag — MODE=… ./scripts/backup.sh; COLLOQ_HOME names the state directory',
-    examples: ['colloq backup', 'colloq backup --mode consistent --resume'],
+      './scripts/backup-local.sh · with a portable flag — MODE=… ./scripts/backup.sh; AULALAB_HOME names the state directory',
+    examples: ['aulalab backup', 'aulalab backup --mode consistent --resume'],
     notes:
       'Without flags it is a local backup: the database and the class files of this machine. The portable one is for a machine with k3s on it, and --mode, --resume, --out, --release or --name lead into it. The question is asked only with --mode consistent: it stops app, the broker and every room and deliberately leaves them down — only --resume brings them back, and a backup that fails leaves the writers down as well. backup.sh restarts itself under scripts/state-lock.py, refuses while .restore-in-progress is there and refuses without an installed release. The local backup (scripts/backup-local.sh) does a VACUUM INTO (sqlite3 required) and an archive with workspace, data/session-secret, data/setup-token and its own environment lists, both files 0600; exit code 1 from tar means "the file changed while it was read", that is a class in progress, and it is allowed. Everything counts from the state directory: backups of this machine live in its backups/, backups of environments in backups/<environment>/.',
     async run(ctx) {
@@ -496,8 +496,8 @@ export const commands: Command[] = [
        *
        * A portable one makes sense where k3s is installed: scripts/backup.sh
        * first of all demands an installed release and refuses without one. A
-       * teacher who installed colloq through pip and runs a class on their
-       * laptop has no release and never will: `colloq backup` without flags
+       * teacher who installed aulalab through pip and runs a class on their
+       * laptop has no release and never will: `aulalab backup` without flags
        * would answer them about a cluster they never set up, while what they
        * need is exactly the backup scripts/backup-local.sh makes: the database
        * and the class files. The command's promise ("take a backup") and a
@@ -523,7 +523,7 @@ export const commands: Command[] = [
         if (used.length > 0) {
           throw new UsageError(
             used.join(' and ') + ' does not work with --legacy',
-            'a local backup is always the same pair in backups/: colloq backup --legacy',
+            'a local backup is always the same pair in backups/: aulalab backup --legacy',
           )
         }
         head(ctx, 'taking a local backup: the database and the files')
@@ -565,7 +565,7 @@ export const commands: Command[] = [
     group: 'local',
     summary: 'Restore a backup: a local one of this machine or a portable k3s one',
     usage:
-      'colloq restore --archive <file> --release <file> [--replace] [--recover] [--name <environment>] | colloq restore --legacy --db <file> [--files <archive>] [--name <environment>] [--replace]',
+      'aulalab restore --archive <file> --release <file> [--replace] [--recover] [--name <environment>] | aulalab restore --legacy --db <file> [--files <archive>] [--name <environment>] [--replace]',
     flags: [
       { name: 'archive', arg: 'file', summary: 'The portable backup, a .tar.gz' },
       { name: 'release', arg: 'file', summary: 'release.json of the same generation' },
@@ -586,13 +586,13 @@ export const commands: Command[] = [
     destructive: true,
     confirm: 'self',
     delegates:
-      './scripts/restore.sh <db> [<files>] · ./scripts/restore.sh --archive … --release …; COLLOQ_HOME names the state directory',
+      './scripts/restore.sh <db> [<files>] · ./scripts/restore.sh --archive … --release …; AULALAB_HOME names the state directory',
     examples: [
-      'colloq restore --legacy --db backups/colloq-20260914.db --files backups/colloq-20260914-files.tar.gz',
-      'colloq restore --archive backups/{env}/colloq-20260914.tar.gz --release release.json',
+      'aulalab restore --legacy --db backups/aulalab-20260914.db --files backups/aulalab-20260914-files.tar.gz',
+      'aulalab restore --archive backups/{env}/aulalab-20260914.tar.gz --release release.json',
     ],
     notes:
-      'The portable path asks nothing on its own — we ask; the local one asks for itself (scripts/restore.sh), and we do not ask a second time. The two worlds must not be mixed: restore.sh rejects an old pair laid on top as soon as a k3s release is installed. The local path refuses if the colloq service is active, the compose app is running, .colloq.pid is alive, or somebody answers on localhost:<PORT>. WAL and SHM travel with their own database, the old database is set aside as data/colloq.db.replaced-<stamp>, and the files from the archive go over workspace/ without a backup of their own. Relative paths count from the directory the command was called from.',
+      'The portable path asks nothing on its own — we ask; the local one asks for itself (scripts/restore.sh), and we do not ask a second time. The two worlds must not be mixed: restore.sh rejects an old pair laid on top as soon as a k3s release is installed. The local path refuses if the aulalab service is active, the compose app is running, .aulalab.pid is alive, or somebody answers on localhost:<PORT>. WAL and SHM travel with their own database, the old database is set aside as data/aulalab.db.replaced-<stamp>, and the files from the archive go over workspace/ without a backup of their own. Relative paths count from the directory the command was called from.',
     async run(ctx) {
       const legacy = ctx.values.legacy === true
       const archive = flag(ctx, 'archive')
@@ -627,13 +627,13 @@ export const commands: Command[] = [
           throw new UsageError(
             'an old-format backup and a portable one are different worlds: drop ' +
               used.join(' and '),
-            'k3s: colloq restore --archive … --release …',
+            'k3s: aulalab restore --archive … --release …',
           )
         }
         if (db === undefined) {
           throw new UsageError(
             'no --db <file>',
-            'Usage: colloq restore --legacy --db backups/colloq-….db [--files backups/colloq-…-files.tar.gz]',
+            'Usage: aulalab restore --legacy --db backups/aulalab-….db [--files backups/aulalab-…-files.tar.gz]',
           )
         }
         const dbPath = ctx.env.userPath(db)
@@ -663,7 +663,7 @@ export const commands: Command[] = [
         const what = archive === undefined ? '--archive <file>' : '--release <file>'
         throw new UsageError(
           'no ' + what,
-          'a portable backup needs both: colloq restore --archive backup.tar.gz --release release.json',
+          'a portable backup needs both: aulalab restore --archive backup.tar.gz --release release.json',
         )
       }
       const archivePath = ctx.env.userPath(archive)

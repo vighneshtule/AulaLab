@@ -2,7 +2,7 @@
 # mechanism.
 #
 # The default parent is python-slim, that is, exactly the old build. But it
-# can also be a ready colloq image (`--build-arg PARENT=colloq-kernel:base-gpu`),
+# can also be a ready aulalab image (`--build-arg PARENT=aulalab-kernel:base-gpu`),
 # and then this very file builds not a base but a thin layer on top of it:
 # torch with CUDA stays in the parent and is not installed again.
 ARG PARENT=python:3.11-slim-bookworm
@@ -34,7 +34,7 @@ USER root
 # differently in different versions: 7.x in ipykernel sends only
 # `application/vnd.plotly.v1+json`, which the notebook draws the interactive
 # chart from, while 5.x adds `text/html` with a script to it and with the
-# first frame sends the WHOLE plotly.js bundle, five megabytes. Colloq never
+# first frame sends the WHOLE plotly.js bundle, five megabytes. Aula Lab never
 # runs scripts from output (SECURITY.md), so those five megabytes are pure
 # weight in the shared document, which goes to everyone in the room.
 #

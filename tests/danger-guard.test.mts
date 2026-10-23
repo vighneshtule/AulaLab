@@ -34,7 +34,7 @@ import {
   guardPolicySource,
   guardRoomSettings,
   parseGuardReport,
-  COLLOQ_REFUSED,
+  AULALAB_REFUSED,
   GUARD_MODULE,
   GUARD_RELEASE_EXPR,
   GUARD_REPORT_EXPR,
@@ -111,8 +111,8 @@ test('the refusal says what was not run, why, and who can allow it', () => {
 })
 
 test('the exception name is one for the guard and the council — there is no second copy of the refusal', () => {
-  assert.equal(COLLOQ_REFUSED, 'ColloqRefused')
-  assert.equal(COUNCIL_REFUSED, COLLOQ_REFUSED)
+  assert.equal(AULALAB_REFUSED, 'AulaLabRefused')
+  assert.equal(COUNCIL_REFUSED, AULALAB_REFUSED)
   assert.ok(GUARD_REPORT_EXPR.includes(GUARD_MODULE))
   assert.ok(guardHoldExpr().includes('.hold('))
   assert.ok(GUARD_RELEASE_EXPR.includes('.release()'))
@@ -160,7 +160,7 @@ const noPython = python ? false : 'no python3'
  * and what needs testing is not it but our replacement. The hooks have the
  * same names as in `InteractiveShell`, and so the replacement lands on them
  * the same way as in a live kernel (that it lands there too was checked
- * live, in a throwaway container from the `colloq-kernel:base` image).
+ * live, in a throwaway container from the `aulalab-kernel:base` image).
  */
 const SHELL = [
   'class _Shell(object):',
@@ -241,7 +241,7 @@ function ask(
 
 /** Refused with our exception — and the text names the command itself. */
 function refused(out: Record<string, string>, name: string, named: string): void {
-  assert.match(out[name] ?? '', new RegExp(`^${COLLOQ_REFUSED}: `), `"${name}" was not refused: ${out[name]}`)
+  assert.match(out[name] ?? '', new RegExp(`^${AULALAB_REFUSED}: `), `"${name}" was not refused: ${out[name]}`)
   assert.ok(
     (out[name] ?? '').includes(named),
     `the refusal for "${name}" did not name the command itself (${named}): ${out[name]}`,

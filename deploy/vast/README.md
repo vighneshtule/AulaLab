@@ -1,20 +1,20 @@
-# Colloq on Vast.ai with one image
+# Aula Lab on Vast.ai with one image
 
-`colloq-vast` packages everything Colloq needs on a rented GPU machine in one image: the server, the built web client, the tunnel clients (frpc for your own relay, cloudflared), the Docker CLI, and the build context for the Python kernel images. `make vast-vm` rents a Vast **VM** and starts one on-start script on it, and the machine comes up with a class address and an owner sign-in link. Nothing is built from your working tree; only the on-start script is copied over SSH.
+`aulalab-vast` packages everything Aula Lab needs on a rented GPU machine in one image: the server, the built web client, the tunnel clients (frpc for your own relay, cloudflared), the Docker CLI, and the build context for the Python kernel images. `make vast-vm` rents a Vast **VM** and starts one on-start script on it, and the machine comes up with a class address and an owner sign-in link. Nothing is built from your working tree; only the on-start script is copied over SSH.
 
 It covers the common case that `scripts/vast-legacy.sh` handles today, where the VM rsyncs the working tree, runs `npm ci`, builds the app and installs a systemd unit. The versioned k3s path in [docs/deployment-vast.md](../../docs/deployment-vast.md) is still there for installations that need its stricter isolation (restricted Pods, NetworkPolicy, digest-pinned release manifests).
 
-The same image, also published as `ghcr.io/colloq-edu/colloq-server`, is the production path for a university's own Linux server; see [Your own server (university)](#your-own-server-university).
+The same image, also published as `ghcr.io/vighneshtule/aulalab-server`, is the production path for a university's own Linux server; see [Your own server (university)](#your-own-server-university).
 
 ## Design
 
 ### The constraint
 
-Colloq gives every room its own kernel container. The server does this in `server/src/kernel/pool.ts` with `docker run --memory --cpus --pids-limit --gpus device=N` under a hardened profile (uid 1000, `--cap-drop=ALL`, `no-new-privileges`, no IPv6, no access to local addresses), and it mounts only that room's folder into the container. This per-room container is what closed the cross-room file leak. The repo has three kernel backends, and none of them runs rooms without nested containers:
+Aula Lab gives every room its own kernel container. The server does this in `server/src/kernel/pool.ts` with `docker run --memory --cpus --pids-limit --gpus device=N` under a hardened profile (uid 1000, `--cap-drop=ALL`, `no-new-privileges`, no IPv6, no access to local addresses), and it mounts only that room's folder into the container. This per-room container is what closed the cross-room file leak. The repo has three kernel backends, and none of them runs rooms without nested containers:
 
 | Backend | What it needs | Works in a Vast **Docker instance**? |
 |---|---|---|
-| `docker` (dev, pip `colloq`, legacy VM) | a Docker daemon socket | No: Vast disables Docker-in-Docker and offers no privileged mode |
+| `docker` (dev, pip `aulalab`, legacy VM) | a Docker daemon socket | No: Vast disables Docker-in-Docker and offers no privileged mode |
 | `broker` (production, `runtime/`) | the Kubernetes API (k3s) | No: k3s needs nested containers too |
 | `test` | `NODE_ENV=test`, one shared Jupyter | Not a product mode: it has no per-room separation, and production refuses it |
 
@@ -22,12 +22,12 @@ On Vast, VM templates can only use `docker.io/vastai/kvm:*` images, and only in 
 
 ### The decision
 
-The image runs on a **Vast VM** as a sibling of the room kernels. The VM's Docker daemon runs `colloq-vast` with the host socket mounted, and the server inside starts one kernel container per room on that same daemon. The existing `docker` backend does this unchanged: same code, same limits, same isolation as the legacy VM service.
+The image runs on a **Vast VM** as a sibling of the room kernels. The VM's Docker daemon runs `aulalab-vast` with the host socket mounted, and the server inside starts one kernel container per room on that same daemon. The existing `docker` backend does this unchanged: same code, same limits, same isolation as the legacy VM service.
 
 What the owner gets is "one command rents a VM, and the class is running":
 
 - **Rent:** `make vast-vm` rents Vast's Ubuntu VM image over the API and runs [`onstart.sh`](onstart.sh), with your settings filled in, on it.
-- **On boot:** the on-start script pulls `colloq-vast`, installs the small host manager that ships inside it (`colloq-host`), adds `nvidia-container-toolkit` if the GPU needs it, and starts the container.
+- **On boot:** the on-start script pulls `aulalab-vast`, installs the small host manager that ships inside it (`aulalab-host`), adds `nvidia-container-toolkit` if the GPU needs it, and starts the container.
 - **In the container:** it opens the tunnel, starts the server, and prepares the default Python environment in the background. It either pulls the prebuilt kernel image or builds it on first boot.
 
 Run as a plain Docker instance, the image refuses to start (exit code 78) and prints why. A process-per-room backend that would make Docker instances usable is described under [Open decision](#open-decision-a-backend-for-vast-docker-instances). It is not implemented, because it weakens isolation and needs the owner's sign-off.
@@ -43,10 +43,10 @@ Run as a plain Docker instance, the image refuses to start (exit code 78) and pr
 
 ### Other choices
 
-- **No CUDA in the image.** Only room kernels and GPU submissions use the GPU. The torch wheels in `kernel/environments/base-gpu.txt` bring their own CUDA runtime, and the driver comes from the host through nvidia-container-toolkit. An `nvidia/cuda` or PyTorch base under the server would add gigabytes to every rental and give the rooms nothing. So there is one image for CPU and GPU machines, and GPU-ness is a property of the **kernel** environment (`# colloq: gpu`).
-- **`NODE_ENV=development`.** The server allows the Docker kernel backend only outside production, because production expects the k3s broker. `deploy/colloq-legacy.service` sets it for the same reason. It changes nothing else: the unsafe file fallback also requires `COLLOQ_UNSAFE_DEV_FILES=1`, and this image never sets that.
+- **No CUDA in the image.** Only room kernels and GPU submissions use the GPU. The torch wheels in `kernel/environments/base-gpu.txt` bring their own CUDA runtime, and the driver comes from the host through nvidia-container-toolkit. An `nvidia/cuda` or PyTorch base under the server would add gigabytes to every rental and give the rooms nothing. So there is one image for CPU and GPU machines, and GPU-ness is a property of the **kernel** environment (`# aulalab: gpu`).
+- **`NODE_ENV=development`.** The server allows the Docker kernel backend only outside production, because production expects the k3s broker. `deploy/aulalab-legacy.service` sets it for the same reason. It changes nothing else: the unsafe file fallback also requires `AULALAB_UNSAFE_DEV_FILES=1`, and this image never sets that.
 - **Non-root server.** The entrypoint starts as root only to prepare the state directory and to join the socket's group. The server, tunnels, builds and backups then run as `node` (uid 1000). That is the same uid as the kernel user in `kernel/Dockerfile`, so both sides can write room files without group or umask tricks. Access to the Docker socket is still root on the VM; see [Isolation](#isolation-what-users-get).
-- **One Colloq per Docker daemon.** The idle sweep removes every container labelled `colloq.kind=room-kernel` on the daemon, not only its own. Do not run a second Colloq on the same VM. `make vast-image-run` tests inside `docker:dind` for exactly this reason.
+- **One Aula Lab per Docker daemon.** The idle sweep removes every container labelled `aulalab.kind=room-kernel` on the daemon, not only its own. Do not run a second Aula Lab on the same VM. `make vast-image-run` tests inside `docker:dind` for exactly this reason.
 
 ## Renting a machine: `make vast-vm`
 
@@ -65,44 +65,44 @@ make vast-vm INSTANCE=<id> HOST=class2              # redeploy on a VM you alrea
 Do not rent from a template in the Vast console. Measured on 28 September 2026:
 
 - **The console does not make VMs.** A template with the `vastai/kvm` image and the `vms_enabled` filter, rented from the web UI, started as an ordinary Docker instance three times out of three (no systemd, no nested Docker), even on hosts that do support VMs. A VM is created only when the rent request itself carries `"vm": true`, which is what `scripts/vast-vm.sh` (and `scripts/vast-legacy.sh`) send over the API.
-- **Vast does not run the on-start on a VM.** The request carries it, but nothing executes it. `make vast-vm` therefore copies it over SSH to `/etc/colloq/onstart.sh` and starts it. After a reboot nothing runs it again, and nothing needs to: Docker restarts the Colloq container, and the settings live in `/etc/colloq/colloq.env`.
+- **Vast does not run the on-start on a VM.** The request carries it, but nothing executes it. `make vast-vm` therefore copies it over SSH to `/etc/aulalab/onstart.sh` and starts it. After a reboot nothing runs it again, and nothing needs to: Docker restarts the Aula Lab container, and the settings live in `/etc/aulalab/aulalab.env`.
 - **A running VM reports `actual_status: created`**, so the script waits for SSH, not for a status.
 
-`make vast-vm` reads `VAST_TOKEN`, `VAST_SSH_KEY`, `VAST_IMAGE`, `VAST_DISK`, `VAST_MAX_PRICE` and `VAST_GPU` from `.env`; `DISK=`, `MAX_PRICE=` and `GPU=` on the command line win for one rental, and `GPUS=` (cards, at least) and `GPU_RAM=` (GB per card, at least) exist on the command line only. It picks a verified on-demand VM offer with reliability of at least 0.98 and asks before renting (`FORCE=1` skips the question). `OFFER=` is asked for by its number (`ask_contract_id`): Vast answers a search with 64 offers at most, so an offer matched only in the answer was found among the cheapest and nowhere else, and an `id` condition returns no offers at all (13 October 2026). The other filters still apply to it. It checks every offer's *Max CUDA* (at least 13.0) after the search, not in it: in September 2026 the server-side filter hid RTX 5070 and RTX 5090 offers whose listed value was 13.0. The floor holds for every rental, a CPU class's too: `base-gpu` and `kaggle-gpu` carry torch 2.14.1 as CUDA 13.0 wheels, which need an NVIDIA driver of 580 or newer, and on an older one PyTorch imports but never sees the card. An offer refused for that alone is reported with the other conditions (`no VM offer matches: …, Max CUDA from 13.0.`). `HOST` overrides `COLLOQ_HOSTNAME` for this machine only, without editing the file. The script then waits for `/api/health` and prints the class address and the owner link.
+`make vast-vm` reads `VAST_TOKEN`, `VAST_SSH_KEY`, `VAST_IMAGE`, `VAST_DISK`, `VAST_MAX_PRICE` and `VAST_GPU` from `.env`; `DISK=`, `MAX_PRICE=` and `GPU=` on the command line win for one rental, and `GPUS=` (cards, at least) and `GPU_RAM=` (GB per card, at least) exist on the command line only. It picks a verified on-demand VM offer with reliability of at least 0.98 and asks before renting (`FORCE=1` skips the question). `OFFER=` is asked for by its number (`ask_contract_id`): Vast answers a search with 64 offers at most, so an offer matched only in the answer was found among the cheapest and nowhere else, and an `id` condition returns no offers at all (13 October 2026). The other filters still apply to it. It checks every offer's *Max CUDA* (at least 13.0) after the search, not in it: in September 2026 the server-side filter hid RTX 5070 and RTX 5090 offers whose listed value was 13.0. The floor holds for every rental, a CPU class's too: `base-gpu` and `kaggle-gpu` carry torch 2.14.1 as CUDA 13.0 wheels, which need an NVIDIA driver of 580 or newer, and on an older one PyTorch imports but never sees the card. An offer refused for that alone is reported with the other conditions (`no VM offer matches: …, Max CUDA from 13.0.`). `HOST` overrides `AULALAB_HOSTNAME` for this machine only, without editing the file. The script then waits for `/api/health` and prints the class address and the owner link.
 
-`backups/vast-onstart.sh` is git-ignored because it holds the relay token and API keys. Set at least `COLLOQ_IMAGE=ghcr.io/<owner>/colloq-vast:<version>` and choose an address (below). `colloq-host` saves the settings to `/etc/colloq/colloq.env` (mode 0600) on the VM. When the on-start runs again, its non-empty values are written over the same keys in that file, and a key it leaves empty keeps the value already there. A copy made before 0.9.0 lacks the two lines under the settings block (`COLLOQ_ON_VAST=1`, `COLLOQ_FREEZE_UPDATES=1`); `colloq-host` still recognises a VM that `make vast-vm` rented by the `/etc/colloq/onstart.sh` it leaves there, but copy the lines over.
+`backups/vast-onstart.sh` is git-ignored because it holds the relay token and API keys. Set at least `AULALAB_IMAGE=ghcr.io/<owner>/aulalab-vast:<version>` and choose an address (below). `aulalab-host` saves the settings to `/etc/aulalab/aulalab.env` (mode 0600) on the VM. When the on-start runs again, its non-empty values are written over the same keys in that file, and a key it leaves empty keeps the value already there. A copy made before 0.9.0 lacks the two lines under the settings block (`AULALAB_ON_VAST=1`, `AULALAB_FREEZE_UPDATES=1`); `aulalab-host` still recognises a VM that `make vast-vm` rented by the `/etc/aulalab/onstart.sh` it leaves there, but copy the lines over.
 
 A GPU environment needs at least 100 GB of disk (`DISK=100`, or `VAST_DISK=100` for good): `base-gpu` alone is an image of about 9.9 GB (torch and its CUDA wheels), `kaggle-gpu` adds about 2.8 GB on top of it (12.7 GB in all, measured on 13 October 2026), and each environment adds its own image. 60 GB is enough for CPU classes.
 
 After you rent:
 
-1. `make vast-vm` waits for the VM and for Colloq. Booting takes a few minutes, and so does building the default environment on the first start; a GPU environment takes longer.
-2. It prints the SSH command. On the VM, `tail -f /var/log/colloq-onstart.log` or `colloq-host logs` shows the progress.
+1. `make vast-vm` waits for the VM and for Aula Lab. Booting takes a few minutes, and so does building the default environment on the first start; a GPU environment takes longer.
+2. It prints the SSH command. On the VM, `tail -f /var/log/aulalab-onstart.log` or `aulalab-host logs` shows the progress.
 3. Open the owner link. While nobody owns the instance, the log shows a box:
 
    ```
-   ┌ nobody owns this Colloq yet
+   ┌ nobody owns this Aula Lab yet
    │ open  https://class1.relay.example.org/admin/t/<token>
    ```
 
-   To print it again later, run `colloq-host link`. The link is the key to the instance, so do not share it with the class. Opening it and entering a name and email makes you the owner.
-4. Before class, run `colloq-host status`. It prints `/api/health`, which is 200 once the default environment image exists, along with the kernel images and room containers.
+   To print it again later, run `aulalab-host link`. The link is the key to the instance, so do not share it with the class. Opening it and entering a name and email makes you the owner.
+4. Before class, run `aulalab-host status`. It prints `/api/health`, which is 200 once the default environment image exists, along with the kernel images and room containers.
 
 ### Choosing the public address
 
-`COLLOQ_TUNNEL=auto` (the default) picks the first one that is configured:
+`AULALAB_TUNNEL=auto` (the default) picks the first one that is configured:
 
 | Mode | Settings | Address | Notes |
 |---|---|---|---|
-| `relay` | `COLLOQ_HOSTNAME`, `RELAY_DOMAIN`, `RELAY_ADDR`, `RELAY_TOKEN` (`RELAY_PORT`, default 7000) | `https://<name>.<relay domain>` | Your own frps (`make relay-setup`). The only option that works from Russia, where Cloudflare's addresses do not open. A short name (`class1`) is completed with `RELAY_DOMAIN`. Static files are mirrored on the relay when it supports that. |
-| `cloudflare` (named) | `CLOUDFLARE_TUNNEL_TOKEN`, `COLLOQ_HOSTNAME` | `https://<COLLOQ_HOSTNAME>` | Route the hostname to the service `http://localhost:3000` in the Cloudflare dashboard for that tunnel; cloudflared runs inside the container, next to the server. |
+| `relay` | `AULALAB_HOSTNAME`, `RELAY_DOMAIN`, `RELAY_ADDR`, `RELAY_TOKEN` (`RELAY_PORT`, default 7000) | `https://<name>.<relay domain>` | Your own frps (`make relay-setup`). The only option that works from Russia, where Cloudflare's addresses do not open. A short name (`class1`) is completed with `RELAY_DOMAIN`. Static files are mirrored on the relay when it supports that. |
+| `cloudflare` (named) | `CLOUDFLARE_TUNNEL_TOKEN`, `AULALAB_HOSTNAME` | `https://<AULALAB_HOSTNAME>` | Route the hostname to the service `http://localhost:3000` in the Cloudflare dashboard for that tunnel; cloudflared runs inside the container, next to the server. |
 | `none` | `PUBLIC_URL` | whatever you say | For your own reverse proxy. |
-| `cloudflare` (quick) | nothing, on Vast (`COLLOQ_ON_VAST=1`, set by `onstart.sh`); elsewhere only `COLLOQ_TUNNEL=cloudflare` | a random `https://*.trycloudflare.com` | Printed in the log. It changes whenever the tunnel restarts; the server picks up the new one without a restart. Off Vast `auto` never opens it: without `PUBLIC_URL` the mode is `none`, and the log says so loudly. |
+| `cloudflare` (quick) | nothing, on Vast (`AULALAB_ON_VAST=1`, set by `onstart.sh`); elsewhere only `AULALAB_TUNNEL=cloudflare` | a random `https://*.trycloudflare.com` | Printed in the log. It changes whenever the tunnel restarts; the server picks up the new one without a restart. Off Vast `auto` never opens it: without `PUBLIC_URL` the mode is `none`, and the log says so loudly. |
 | `direct` | `-p 3000:3000` in Docker options, plus `PUBLIC_URL=http://<ip>:<mapped port>` | plain HTTP | Only when asked for. No TLS and no middleman. Vast maps the port to a random external one, so read it in the console. |
 
 With a Cloudflare tunnel the server trusts the `CF-Connecting-IP` header (`TRUST_CF_CONNECTING_IP=1`), because every request reaches it from the cloudflared next to it.
 
-To point a relay name at a machine, set `COLLOQ_HOSTNAME=<name>` together with the `RELAY_*` settings. The relay only serves names under its own zone, and a name that is already taken means another machine is serving that class. The tunnel keeps retrying with a growing pause, so it takes over as soon as the other machine lets the name go.
+To point a relay name at a machine, set `AULALAB_HOSTNAME=<name>` together with the `RELAY_*` settings. The relay only serves names under its own zone, and a name that is already taken means another machine is serving that class. The tunnel keeps retrying with a growing pause, so it takes over as soon as the other machine lets the name go.
 
 ### GPU rooms and GPU submissions
 
@@ -110,13 +110,13 @@ To point a relay name at a machine, set `COLLOQ_HOSTNAME=<name>` together with t
 make vast-vm HOST=class1 GPUS=2 GPU_RAM=24 DISK=100
 ```
 
-In the on-start, `KERNEL_PRELOAD="base,base-gpu,kaggle-gpu"` prepares the GPU chain on the first boot: `base-gpu` (CUDA PyTorch and torchvision, about 9.9 GB) and `kaggle-gpu` on top of it (the `kaggle-base` pins plus seaborn, OpenCV and timm, about 2.8 GB more, 12.7 GB in all). Both are published with every release by `make kernel-publish` ([RELEASING.md](../../RELEASING.md#gpu-kernels-at-release-time)), and the first boot pulls them; it builds them on the VM, which takes longer, only when that version's GPU kernels are not published yet or the instance edited their lists. The disk holds both next to the data and the backups. Both carry torch 2.14.1 built for CUDA 13.0, so the VM's driver must be 580 or newer; `make vast-vm` rents only offers whose *Max CUDA* is 13.0 or more for that reason. Each image a competition was checked on also keeps a tag of its own (`colloq-revision:<id>`) that nothing removes, so rebuilding `base-gpu` under a running competition leaves the old one, about 10 GB, on disk.
+In the on-start, `KERNEL_PRELOAD="base,base-gpu,kaggle-gpu"` prepares the GPU chain on the first boot: `base-gpu` (CUDA PyTorch and torchvision, about 9.9 GB) and `kaggle-gpu` on top of it (the `kaggle-base` pins plus seaborn, OpenCV and timm, about 2.8 GB more, 12.7 GB in all). Both are published with every release by `make kernel-publish` ([RELEASING.md](../../RELEASING.md#gpu-kernels-at-release-time)), and the first boot pulls them; it builds them on the VM, which takes longer, only when that version's GPU kernels are not published yet or the instance edited their lists. The disk holds both next to the data and the backups. Both carry torch 2.14.1 built for CUDA 13.0, so the VM's driver must be 580 or newer; `make vast-vm` rents only offers whose *Max CUDA* is 13.0 or more for that reason. Each image a competition was checked on also keeps a tag of its own (`aulalab-revision:<id>`) that nothing removes, so rebuilding `base-gpu` under a running competition leaves the old one, about 10 GB, on disk.
 
 Every card in `KERNEL_GPUS` serves rooms until the owner gives some to competition submissions in the panel's Resources tab (`COMPETITION_GPUS=1` in the on-start does the same until the panel saves a choice of its own). A card given to submissions leaves the rooms' pool, so a class and a submission never share one; a class already holding it keeps it until its container ends, and a card given back to the rooms serves a class once the submissions running on it end. A submission gets a card only from a competition on a CUDA environment with its GPU switch on, and only for the notebook: the metric never gets one. With no card given, such a competition refuses uploads and says why.
 
 The second setting is how many submissions share one card at a time (1–8, `COMPETITION_GPU_PER_DEVICE`). It may change during a class: a running submission keeps the share it started with, and a card takes a new one only once its share fits beside the shares already on it. Each gets an equal share of the card's video memory, and the share is enforced, not only promised:
 
-- inside, `COLLOQ_GPU_MEMORY_MB` (the share less 512 MB for the CUDA context) and a `sitecustomize.py` the harness ships cap PyTorch's allocator, so a model that outgrows the share fails in its cell with `torch.OutOfMemoryError`, also when a library such as polars asked about torch before the notebook imported it. The same file gives a CatBoost GPU fit a `gpu_ram_part` of `COLLOQ_GPU_MEMORY_MB` over `COLLOQ_GPU_CARD_MB` (the card the share was cut from) unless the notebook names its own: CatBoost's own default takes 95 % of the card's free memory at once. XGBoost allocates as it goes and needs nothing; TensorFlow and JAX, in an environment of your own, are not capped, and the watchdog stops them when they take the card;
+- inside, `AULALAB_GPU_MEMORY_MB` (the share less 512 MB for the CUDA context) and a `sitecustomize.py` the harness ships cap PyTorch's allocator, so a model that outgrows the share fails in its cell with `torch.OutOfMemoryError`, also when a library such as polars asked about torch before the notebook imported it. The same file gives a CatBoost GPU fit a `gpu_ram_part` of `AULALAB_GPU_MEMORY_MB` over `AULALAB_GPU_CARD_MB` (the card the share was cut from) unless the notebook names its own: CatBoost's own default takes 95 % of the card's free memory at once. XGBoost allocates as it goes and needs nothing; TensorFlow and JAX, in an environment of your own, are not capped, and the watchdog stops them when they take the card;
 - outside, the runner reads the container's video memory every 3 seconds as root (`docker exec --user 0:0 <container> nvidia-smi --query-compute-apps=used_memory …`, which inside a container lists that container's processes only, and which the notebook's uid 1000 cannot signal) and kills a submission that is more than 256 MB over its share on two readings in a row. The entrant sees out of memory, with the share and what it took; with a hidden test under the brief output, only the share, since how far past it a run went is a number its notebook chose. One failed reading decides nothing, but the watchdog fails closed: 4 failed in a row (about 12 seconds) stop the run, as a failed notebook if the card had answered in that run (a notebook that starves its own processor does that), and as the server's own failure, with a hint for the teacher, if it never did;
 - a burst outside the cap can take a neighbour's memory in the seconds before the second reading, so a submission that runs out of video memory (`torch.OutOfMemoryError`) while the watchdog stops another one on the same card for going past its share goes back to the queue once, and that attempt does not count.
 
@@ -124,13 +124,13 @@ With one submission per card the whole card is the submission's, and nothing is 
 
 ## Settings
 
-The server reads the container's environment and `/workspace/colloq/.env`. For most settings the container environment wins, because `.env` only fills variables that are not already set. `PUBLIC_URL` and `KERNEL_ENV` work the other way: the server re-reads them from `.env` while it runs, and the file wins. That lets the tunnel and the panel's "Make default" change them without a restart. The entrypoint writes `PUBLIC_URL` into `.env` on every start.
+The server reads the container's environment and `/workspace/aulalab/.env`. For most settings the container environment wins, because `.env` only fills variables that are not already set. `PUBLIC_URL` and `KERNEL_ENV` work the other way: the server re-reads them from `.env` while it runs, and the file wins. That lets the tunnel and the panel's "Make default" change them without a restart. The entrypoint writes `PUBLIC_URL` into `.env` on every start.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `COLLOQ_IMAGE` | — | Host only: the image the first `colloq-host up` runs. After that the image is whatever `colloq-host update` last chose (`/etc/colloq/image`), so a reboot never rolls an updated instance back to the on-start's version |
-| `COLLOQ_TUNNEL` | `auto` | `auto`, `relay`, `cloudflare`, `direct`, `none` |
-| `COLLOQ_HOSTNAME` | — | Relay subdomain or full hostname |
+| `AULALAB_IMAGE` | — | Host only: the image the first `aulalab-host up` runs. After that the image is whatever `aulalab-host update` last chose (`/etc/aulalab/image`), so a reboot never rolls an updated instance back to the on-start's version |
+| `AULALAB_TUNNEL` | `auto` | `auto`, `relay`, `cloudflare`, `direct`, `none` |
+| `AULALAB_HOSTNAME` | — | Relay subdomain or full hostname |
 | `RELAY_DOMAIN`, `RELAY_ADDR`, `RELAY_PORT`, `RELAY_TOKEN` | —, —, `7000`, — | Your frps relay |
 | `CLOUDFLARE_TUNNEL_TOKEN` | — | Named Cloudflare tunnel |
 | `PUBLIC_URL` | computed | Overrides the computed address |
@@ -140,42 +140,42 @@ The server reads the container's environment and `/workspace/colloq/.env`. For m
 | `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `AI_PROVIDER`, `AI_REASONING` | off, OpenAI, `gpt-4o-mini`, `openai`, `false` | The assistant. It can also be configured later in the panel |
 | `KERNEL_ENV` | `base` | Default environment for new rooms (the panel's "Make default" writes it to `.env`) |
 | `KERNEL_PRELOAD` | `KERNEL_ENV` | Environments to prepare at start, comma-separated, e.g. `base,kaggle-base`, `base,base-gpu` or `base,base-gpu,kaggle-gpu` |
-| `KERNEL_IMAGE_REPO` | the published `ghcr.io/colloq-edu/colloq-kernel` | Where prebuilt kernel images come from, as `<repo>:<tag>-<env>`. By default the published ones are pulled for the shipped, unedited environments of this version (`base` and `kaggle-base` from `publish.yml`; `base-gpu` and `kaggle-gpu` once `make kernel-publish` has published them), and everything else is built on the machine. An explicit repository is asked for every environment; `none` builds them all on the machine |
+| `KERNEL_IMAGE_REPO` | the published `ghcr.io/vighneshtule/aulalab-kernel` | Where prebuilt kernel images come from, as `<repo>:<tag>-<env>`. By default the published ones are pulled for the shipped, unedited environments of this version (`base` and `kaggle-base` from `publish.yml`; `base-gpu` and `kaggle-gpu` once `make kernel-publish` has published them), and everything else is built on the machine. An explicit repository is asked for every environment; `none` builds them all on the machine |
 | `KERNEL_IMAGE_TAG` | `v<image version>` | Tag prefix, matching the names `publish.yml` and `scripts/release-build.py` publish |
 | `KERNEL_MEM`, `KERNEL_MEM_<ENV>` | `4g`, `16g` for GPU environments | Memory per room: `KERNEL_MEM` for ordinary environments, `KERNEL_MEM_<ENV>` for one environment, where `<ENV>` is its name in capitals with `_` for `-` (`KERNEL_MEM_BASE_GPU`, `KERNEL_MEM_KAGGLE_BASE`). The panel can override it per room, and the owner for the instance (`/api/admin/resources`) |
 | `KERNEL_CPUS` | `2` | CPUs per room |
 | `KERNEL_OWN_MAX`, `KERNEL_OWN_PIDS` | `60`, `2048` | The second container a class gets for its students' personal notebooks, which never receives a GPU: how many kernels may live in it at once, and its process ceiling |
 | `KERNEL_OWN_IDLE_MIN` | `30` | Minutes of idling after which one personal notebook's kernel is stopped; the container goes with the last kernel in it. `0` never stops them |
 | `KERNEL_ROOM_IDLE_MIN` | `120` | Minutes a class with nobody inside and nothing computing keeps its containers before they are stopped and their memory is free again. `0` keeps them. The owner can also stop kernels by hand on the panel's Resources tab |
-| `KERNEL_GPUS` | all GPUs (detected by `colloq-host`) | GPU slices handed out one per GPU room, e.g. `0,1` or MIG ids; the ones given to competition submissions are kept from rooms |
+| `KERNEL_GPUS` | all GPUs (detected by `aulalab-host`) | GPU slices handed out one per GPU room, e.g. `0,1` or MIG ids; the ones given to competition submissions are kept from rooms |
 | `COMPETITION_SLOTS` | `auto` | Submissions running at once: `auto` (sized by the machine) or 1–64. The panel's Resources tab wins over it |
 | `COMPETITION_GPUS`, `COMPETITION_GPU_PER_DEVICE` | none, `1` | The `KERNEL_GPUS` entries given to competition submissions, comma-separated, and how many submissions share one card at a time (1–8); see [GPU rooms and GPU submissions](#gpu-rooms-and-gpu-submissions). The panel's Resources tab wins over them |
 | `KERNEL_SHM` | `1g` | `/dev/shm` for GPU rooms |
-| `KERNEL_NETWORK` | `colloq` | Docker network shared by the server and room kernels |
+| `KERNEL_NETWORK` | `aulalab` | Docker network shared by the server and room kernels |
 | `MAX_UPLOAD_MB`, `MAX_SESSION_MB`, `COUNCIL_COPY_MB`, `COUNCIL_MEMORY_GUARD`, `OPEN_SEMINAR_CREATION`, `TZ` | `50`, `1024`, `512`, `1`, `false`, — | As in `.env.example` |
 | `SESSION_SECRET` | generated, kept in `data/session-secret` | Set it only to rotate the key or share it between instances |
-| `COLLOQ_REGISTRY_USER`, `COLLOQ_REGISTRY_TOKEN` | — | Host only: `docker login` for a private registry. Use a read-only token. The variables are not passed to the container, but the resulting `/root/.docker/config.json` is mounted into it read-only, so the server can pull private kernel images. The server already holds the Docker socket, which is root on the VM, so this adds no access |
-| `COLLOQ_HOME` | `/workspace/colloq` | State directory. Mount it from the host at the **same path**. `colloq-host up` remembers it in `colloq.env`, as it does `COLLOQ_BIND`, `PORT`, `KERNEL_NETWORK` and `COLLOQ_CONTAINER_NAME`, so a later `update` acts on the same layout |
-| `COLLOQ_HOST_STATE` | detected | The state directory's path on the host, if the automatic detection is not enough |
-| `COLLOQ_BIND` | `127.0.0.1` (`0.0.0.0` in `direct` mode) | Host only: where the machine publishes port 3000. A reverse proxy on another host needs the address it reaches, and then `TRUSTED_PROXIES` |
-| `TRUSTED_PROXIES`, `SHARED_ADDRESSES`, `TRUST_CF_CONNECTING_IP`, `HSTS` | `loopback`, —, off (on with a Cloudflare tunnel), on | Whose `X-Forwarded-For` the server believes, campus NAT addresses, the Cloudflare header, the HSTS header. With the port on loopback, `colloq-host` trusts loopback and the Docker network's gateway by itself, which is how a proxy on the same host reaches the container |
-| `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`, `NODE_EXTRA_CA_CERTS`, `DEPENDENCY_INDEX_URL`, `DEPENDENCY_FILES_HOSTS`, `COLLOQ_ROOM_NETWORK`, `KERNEL_BLOCKED_CIDRS`, `COLLOQ_HELPER_IMAGE` | — | Outbound proxy, internal CA (a host file, mounted read-only at the same path), package mirror, room network. The Docker daemon's own pulls need its own proxy setting |
-| `COLLOQ_ON_VAST` | — | `1` on a Vast VM (`onstart.sh` sets it): `auto` may open a quick tunnel |
-| `COLLOQ_FREEZE_UPDATES` | — | Host only. `1` (set by `onstart.sh`): switch off unattended-upgrades and the apt timers and hold the NVIDIA packages on every `up`; `0`: never. Unset, only a Vast VM started from an older on-start gets it (see above). Off Vast `colloq-host` never touches the host's update policy |
-| `COLLOQ_OFFLINE` | — | `1`: no pulls, no apt, no get.docker.com; images come from `colloq-host load`, which sets it |
+| `AULALAB_REGISTRY_USER`, `AULALAB_REGISTRY_TOKEN` | — | Host only: `docker login` for a private registry. Use a read-only token. The variables are not passed to the container, but the resulting `/root/.docker/config.json` is mounted into it read-only, so the server can pull private kernel images. The server already holds the Docker socket, which is root on the VM, so this adds no access |
+| `AULALAB_HOME` | `/workspace/aulalab` | State directory. Mount it from the host at the **same path**. `aulalab-host up` remembers it in `aulalab.env`, as it does `AULALAB_BIND`, `PORT`, `KERNEL_NETWORK` and `AULALAB_CONTAINER_NAME`, so a later `update` acts on the same layout |
+| `AULALAB_HOST_STATE` | detected | The state directory's path on the host, if the automatic detection is not enough |
+| `AULALAB_BIND` | `127.0.0.1` (`0.0.0.0` in `direct` mode) | Host only: where the machine publishes port 3000. A reverse proxy on another host needs the address it reaches, and then `TRUSTED_PROXIES` |
+| `TRUSTED_PROXIES`, `SHARED_ADDRESSES`, `TRUST_CF_CONNECTING_IP`, `HSTS` | `loopback`, —, off (on with a Cloudflare tunnel), on | Whose `X-Forwarded-For` the server believes, campus NAT addresses, the Cloudflare header, the HSTS header. With the port on loopback, `aulalab-host` trusts loopback and the Docker network's gateway by itself, which is how a proxy on the same host reaches the container |
+| `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`, `NODE_EXTRA_CA_CERTS`, `DEPENDENCY_INDEX_URL`, `DEPENDENCY_FILES_HOSTS`, `AULALAB_ROOM_NETWORK`, `KERNEL_BLOCKED_CIDRS`, `AULALAB_HELPER_IMAGE` | — | Outbound proxy, internal CA (a host file, mounted read-only at the same path), package mirror, room network. The Docker daemon's own pulls need its own proxy setting |
+| `AULALAB_ON_VAST` | — | `1` on a Vast VM (`onstart.sh` sets it): `auto` may open a quick tunnel |
+| `AULALAB_FREEZE_UPDATES` | — | Host only. `1` (set by `onstart.sh`): switch off unattended-upgrades and the apt timers and hold the NVIDIA packages on every `up`; `0`: never. Unset, only a Vast VM started from an older on-start gets it (see above). Off Vast `aulalab-host` never touches the host's update policy |
+| `AULALAB_OFFLINE` | — | `1`: no pulls, no apt, no get.docker.com; images come from `aulalab-host load`, which sets it |
 | `BACKUP_KEEP` | `14` | Backup archives kept; older ones go after a successful backup |
-| `COLLOQ_BACKUP_AT` | `03:30` | Host only: the time of `colloq-host backup-timer on` |
-| `COLLOQ_BACKUP_BEFORE_UPDATE` | `1` | Host only: `0` skips the backup `update` takes before it replaces the image |
+| `AULALAB_BACKUP_AT` | `03:30` | Host only: the time of `aulalab-host backup-timer on` |
+| `AULALAB_BACKUP_BEFORE_UPDATE` | `1` | Host only: `0` skips the backup `update` takes before it replaces the image |
 
-State lives in `/workspace/colloq` on the VM disk:
+State lives in `/workspace/aulalab` on the VM disk:
 
 ```
-/workspace/colloq/
+/workspace/aulalab/
   .env                 PUBLIC_URL, KERNEL_ENV (the server and the entrypoint write these)
-  data/                colloq.db, session-secret, setup-token (0700)
+  data/                aulalab.db, session-secret, setup-token (0700)
   workspace/<room>/    room files; each room kernel mounts only its own folder
   environments/        environments created from the panel, plus .<name>.built stamps
-  backups/             colloq backup output
+  backups/             aulalab backup output
 ```
 
 ## Running it
@@ -183,57 +183,57 @@ State lives in `/workspace/colloq` on the VM disk:
 On the VM, as root:
 
 ```sh
-colloq-host doctor              # PASS / WARN / FAIL for this machine; works before the first up
-colloq-host status              # /api/health, kernel images, room containers
-colloq-host logs                # follow the log
-colloq-host link                # class address and, while unclaimed, the owner link
-colloq-host update ghcr.io/<owner>/colloq-vast:<new version>
-colloq-host backup              # → /workspace/colloq/backups/colloq-<stamp>.db + -files.tar.gz
-colloq-host backup-timer on     # the same every day at COLLOQ_BACKUP_AT (03:30); off | status
-colloq-host restore backups/colloq-<stamp>.db   # stops Colloq, restores, starts it again
-colloq-host stop | start
+aulalab-host doctor              # PASS / WARN / FAIL for this machine; works before the first up
+aulalab-host status              # /api/health, kernel images, room containers
+aulalab-host logs                # follow the log
+aulalab-host link                # class address and, while unclaimed, the owner link
+aulalab-host update ghcr.io/<owner>/aulalab-vast:<new version>
+aulalab-host backup              # → /workspace/aulalab/backups/aulalab-<stamp>.db + -files.tar.gz
+aulalab-host backup-timer on     # the same every day at AULALAB_BACKUP_AT (03:30); off | status
+aulalab-host restore backups/aulalab-<stamp>.db   # stops Aula Lab, restores, starts it again
+aulalab-host stop | start
 ```
 
-**Update.** `update` pulls the new image and replaces the Colloq container. Before a different image meets the database it takes a backup (`COLLOQ_BACKUP_BEFORE_UPDATE=0` skips it) and prints the way back, `REPLACE=1 colloq-host restore --image <previous image> <that backup>`, before anything is replaced. Data stays on disk. Room kernels keep running, and the new server reattaches to them because their Jupyter tokens derive from the persisted signing key. The chosen image is saved in `/etc/colloq/image`, and it stays in use after a reboot even though the on-start still names the old one. Running `up` again with unchanged settings (for example, when the VM reboots) leaves a running instance alone. Rolling back with `update <older image>` alone would start the older server on a database the newer one may already have moved forward, and older versions are not tested against a newer schema: `restore --image` puts the old image and the old data back together. `update` also installs the new image's `colloq-host` in `/usr/local/sbin`, so the manager moves with the image it manages. Coming from 0.8.x, install the new `colloq-host` first (`docker run --rm -v /usr/local/sbin:/host <new image> install-host /host`) and update with it: the old one neither backs up nor passes the settings added in 0.9.0 (on Vast, `COLLOQ_ON_VAST`, without which a VM that relied on the quick tunnel comes up without an address).
+**Update.** `update` pulls the new image and replaces the Aula Lab container. Before a different image meets the database it takes a backup (`AULALAB_BACKUP_BEFORE_UPDATE=0` skips it) and prints the way back, `REPLACE=1 aulalab-host restore --image <previous image> <that backup>`, before anything is replaced. Data stays on disk. Room kernels keep running, and the new server reattaches to them because their Jupyter tokens derive from the persisted signing key. The chosen image is saved in `/etc/aulalab/image`, and it stays in use after a reboot even though the on-start still names the old one. Running `up` again with unchanged settings (for example, when the VM reboots) leaves a running instance alone. Rolling back with `update <older image>` alone would start the older server on a database the newer one may already have moved forward, and older versions are not tested against a newer schema: `restore --image` puts the old image and the old data back together. `update` also installs the new image's `aulalab-host` in `/usr/local/sbin`, so the manager moves with the image it manages. Coming from 0.8.x, install the new `aulalab-host` first (`docker run --rm -v /usr/local/sbin:/host <new image> install-host /host`) and update with it: the old one neither backs up nor passes the settings added in 0.9.0 (on Vast, `AULALAB_ON_VAST`, without which a VM that relied on the quick tunnel comes up without an address).
 
 **Stop.** The container gets SIGTERM with 30 seconds of grace. The server closes sockets, flushes notebook snapshots and closes SQLite, so the WAL is checkpointed. Room kernels are left running on purpose, as they are with the legacy service, so that a restart does not wipe students' variables. Destroying the VM ends them.
 
 **Backups.** The VM disk disappears when the instance is destroyed. Before destroying it, take a backup and copy it off the machine:
 
 ```sh
-ssh -p <port> root@<ip> colloq-host backup
-rsync -e 'ssh -p <port>' -av root@<ip>:/workspace/colloq/backups/ backups/<name>/
-# or: vastai copy <instance>:/workspace/colloq/backups/ ./backups/<name>/
+ssh -p <port> root@<ip> aulalab-host backup
+rsync -e 'ssh -p <port>' -av root@<ip>:/workspace/aulalab/backups/ backups/<name>/
+# or: vastai copy <instance>:/workspace/aulalab/backups/ ./backups/<name>/
 ```
 
-A backup is a pair: a consistent `VACUUM INTO` copy of the database, and an archive with `workspace/`, the signing key, the setup token and your environment lists. It is the same format `colloq backup` produces (`scripts/backup-local.sh`). To restore on a new VM, copy the pair into `/workspace/colloq/backups/` and run `colloq-host restore backups/colloq-<stamp>.db`. Restoring over an instance that already has a database needs `REPLACE=1`. Kernel images are not backed up, because they are cheaper to rebuild or pull. With the container stopped, `colloq-host backup` takes the copy from a one-off container of the same image.
+A backup is a pair: a consistent `VACUUM INTO` copy of the database, and an archive with `workspace/`, the signing key, the setup token and your environment lists. It is the same format `aulalab backup` produces (`scripts/backup-local.sh`). To restore on a new VM, copy the pair into `/workspace/aulalab/backups/` and run `aulalab-host restore backups/aulalab-<stamp>.db`. Restoring over an instance that already has a database needs `REPLACE=1`. Kernel images are not backed up, because they are cheaper to rebuild or pull. With the container stopped, `aulalab-host backup` takes the copy from a one-off container of the same image.
 
 ## Your own server (university)
 
-The same image runs on a server a university keeps, behind the university's own HTTPS reverse proxy, with or without internet. The full guide, with proxy configurations, sizing and day-to-day operation, is [docs/pages/en/server.html](../../docs/pages/en/server.html) ([по-русски](../../docs/pages/ru/server.html)). The short version, as root on a dedicated x86-64 Linux VM with Docker Engine 28 or newer:
+The same image runs on a server a university keeps, behind the university's own HTTPS reverse proxy, with or without internet. The full guide, with proxy configurations, sizing and day-to-day operation, is [docs/pages/en/server.html](../../docs/pages/en/server.html). The short version, as root on a dedicated x86-64 Linux VM with Docker Engine 28 or newer:
 
 ```sh
-docker run --rm -v /usr/local/sbin:/host ghcr.io/colloq-edu/colloq-server:<version> install-host /host
-colloq-host doctor                        # PASS / WARN / FAIL; fix every FAIL before going on
-COLLOQ_IMAGE=ghcr.io/colloq-edu/colloq-server:<version> \
-COLLOQ_TUNNEL=none PUBLIC_URL=https://colloq.example.edu \
-COLLOQ_BIND=10.0.0.20 TRUSTED_PROXIES=10.0.0.5 \
-  colloq-host up
-colloq-host backup-timer on               # a backup every day at 03:30; copy them off the machine too
+docker run --rm -v /usr/local/sbin:/host ghcr.io/vighneshtule/aulalab-server:<version> install-host /host
+aulalab-host doctor                        # PASS / WARN / FAIL; fix every FAIL before going on
+AULALAB_IMAGE=ghcr.io/vighneshtule/aulalab-server:<version> \
+AULALAB_TUNNEL=none PUBLIC_URL=https://aulalab.example.edu \
+AULALAB_BIND=10.0.0.20 TRUSTED_PROXIES=10.0.0.5 \
+  aulalab-host up
+aulalab-host backup-timer on               # a backup every day at 03:30; copy them off the machine too
 ```
 
-- **The proxy.** It passes WebSocket upgrades, keeps `Host`, sets `X-Forwarded-For` and `X-Forwarded-Proto`, allows bodies of at least 200 MB and does not buffer server-sent events; the guide has nginx and Caddy configurations. A proxy on the same host talks to `127.0.0.1:3000` and needs neither `COLLOQ_BIND` nor `TRUSTED_PROXIES`, because `colloq-host` trusts loopback and the Docker network's gateway by itself. A proxy on another host needs `COLLOQ_BIND` (the server address it connects to) and `TRUSTED_PROXIES` (its own address). A campus NAT that all students share goes into `SHARED_ADDRESSES`.
-- **No quick tunnel, no quiet changes.** Off Vast, `COLLOQ_TUNNEL=auto` never opens a public trycloudflare address, and `colloq-host` never switches off unattended-upgrades or holds packages: that is `COLLOQ_FREEZE_UPDATES=1`, for rented VMs only. Reboot after kernel and driver updates on your own schedule; Docker brings Colloq back.
-- **Without internet.** On a connected machine with Docker, `colloq-host bundle colloq-<version>.tar ghcr.io/colloq-edu/colloq-server:<version>` packs the app image, the room kernels for `KERNEL_PRELOAD` (default `base`) and the matching `colloq-host` into one file. It needs about twice the file's size in free disk while it writes. On the server, with Docker Engine installed from the distribution or a mirror, run `tar -xf colloq-<version>.tar colloq-host && ./colloq-host load colloq-<version>.tar`, then `colloq-host up`. `load` sets `COLLOQ_OFFLINE=1`, and from then on nothing pulls, installs or builds from the network. Updates arrive the same way: a new bundle, `load`, then `colloq-host update`.
-- **Updates.** `colloq-host update ghcr.io/colloq-edu/colloq-server:<new version>` takes a backup first and prints how to roll back (see [Running it](#running-it)).
-- **One organisation per server.** The server holds the Docker socket, which is root on the machine, and one Colloq owns every room container on its daemon (see [Isolation](#isolation-what-users-get)).
+- **The proxy.** It passes WebSocket upgrades, keeps `Host`, sets `X-Forwarded-For` and `X-Forwarded-Proto`, allows bodies of at least 200 MB and does not buffer server-sent events; the guide has nginx and Caddy configurations. A proxy on the same host talks to `127.0.0.1:3000` and needs neither `AULALAB_BIND` nor `TRUSTED_PROXIES`, because `aulalab-host` trusts loopback and the Docker network's gateway by itself. A proxy on another host needs `AULALAB_BIND` (the server address it connects to) and `TRUSTED_PROXIES` (its own address). A campus NAT that all students share goes into `SHARED_ADDRESSES`.
+- **No quick tunnel, no quiet changes.** Off Vast, `AULALAB_TUNNEL=auto` never opens a public trycloudflare address, and `aulalab-host` never switches off unattended-upgrades or holds packages: that is `AULALAB_FREEZE_UPDATES=1`, for rented VMs only. Reboot after kernel and driver updates on your own schedule; Docker brings Aula Lab back.
+- **Without internet.** On a connected machine with Docker, `aulalab-host bundle aulalab-<version>.tar ghcr.io/vighneshtule/aulalab-server:<version>` packs the app image, the room kernels for `KERNEL_PRELOAD` (default `base`) and the matching `aulalab-host` into one file. It needs about twice the file's size in free disk while it writes. On the server, with Docker Engine installed from the distribution or a mirror, run `tar -xf aulalab-<version>.tar aulalab-host && ./aulalab-host load aulalab-<version>.tar`, then `aulalab-host up`. `load` sets `AULALAB_OFFLINE=1`, and from then on nothing pulls, installs or builds from the network. Updates arrive the same way: a new bundle, `load`, then `aulalab-host update`.
+- **Updates.** `aulalab-host update ghcr.io/vighneshtule/aulalab-server:<new version>` takes a backup first and prints how to roll back (see [Running it](#running-it)).
+- **One organisation per server.** The server holds the Docker socket, which is root on the machine, and one Aula Lab owns every room container on its daemon (see [Isolation](#isolation-what-users-get)).
 
 ## Isolation: what users get
 
 These are the same guarantees as the legacy VM service and `make up`:
 
 - **Each room has its own container.** It gets its own memory, CPU and pids limits (cgroups), one GPU slice (`--gpus device=N`), and `/dev/shm` only for GPU rooms. Only that room's folder is mounted. A cell cannot read another room's files and cannot take the whole machine's memory.
-- **Kernels run as uid 1000 (`runner`)** from `kernel/Dockerfile`, each with a Jupyter token derived per room, with every Linux capability dropped, `no-new-privileges` and no IPv6. Kernels share the `colloq` Docker network with the server. They can reach the internet, which `pip install` in a cell needs, but not local addresses: the VM itself, its private network or the cloud metadata at 169.254.169.254. Traffic between containers on the same `colloq` network (the server and other rooms) is filtered too when the VM passes bridged traffic through iptables (`net.bridge.bridge-nf-call-iptables=1`, which Docker normally sets); without it, a room can still reach another room's Jupyter port, but only with that room's token. The server installs that block as iptables rules in its own `COLLOQ-ROOMS-*` chains (hooked from `DOCKER-USER` and `INPUT`) through a short-lived privileged helper container, and a room refuses to start when it cannot. `COLLOQ_ROOM_NETWORK=open` lifts the block for a trusted setup.
+- **Kernels run as uid 1000 (`runner`)** from `kernel/Dockerfile`, each with a Jupyter token derived per room, with every Linux capability dropped, `no-new-privileges` and no IPv6. Kernels share the `aulalab` Docker network with the server. They can reach the internet, which `pip install` in a cell needs, but not local addresses: the VM itself, its private network or the cloud metadata at 169.254.169.254. Traffic between containers on the same `aulalab` network (the server and other rooms) is filtered too when the VM passes bridged traffic through iptables (`net.bridge.bridge-nf-call-iptables=1`, which Docker normally sets); without it, a room can still reach another room's Jupyter port, but only with that room's token. The server installs that block as iptables rules in its own `AULALAB-ROOMS-*` chains (hooked from `DOCKER-USER` and `INPUT`) through a short-lived privileged helper container, and a room refuses to start when it cannot. `AULALAB_ROOM_NETWORK=open` lifts the block for a trusted setup.
 - **All rooms share the VM's Linux kernel.** Containers are not a VM boundary. Treat a VM as belonging to one organisation's classes, as the legacy path already does.
 - **The server holds the Docker socket, which is root on the VM.** A compromise of the server process is a compromise of the VM, and it can reach every room's files. Only the tunnel is exposed: by default the port is published on `127.0.0.1` only.
 - **Stricter isolation** (restricted Pods with a read-only root, NetworkPolicy, a separate runtime broker, digest-pinned releases) is what the k3s path in [docs/deployment-vast.md](../../docs/deployment-vast.md) is for.
@@ -243,8 +243,8 @@ These are the same guarantees as the legacy VM service and `make up`:
 The build context is the repository root:
 
 ```sh
-make vast-image                                  # colloq-vast:dev for this machine's platform
-make vast-image PLATFORM=linux/amd64 TAG=ghcr.io/<owner>/colloq-vast:0.2.0
+make vast-image                                  # aulalab-vast:dev for this machine's platform
+make vast-image PLATFORM=linux/amd64 TAG=ghcr.io/<owner>/aulalab-vast:0.2.0
 ```
 
 The variable is `TAG`, not `VAST_IMAGE`: in `.env`, `VAST_IMAGE` already names the Vast VM image that `make vast-up` rents.
@@ -252,16 +252,16 @@ The variable is `TAG`, not `VAST_IMAGE`: in `.env`, `VAST_IMAGE` already names t
 Vast machines are amd64. `PLATFORM=linux/amd64` also works from an arm64 laptop. The JavaScript build and the tunnel downloads run on the builder's own platform. Only the server's `node_modules` stage runs under emulation, because `better-sqlite3` and `@resvg/resvg-js` are native modules; running esbuild under QEMU crashes with SIGSEGV. Publishing is a separate, deliberate step, and no make target does it:
 
 ```sh
-docker push ghcr.io/<owner>/colloq-vast:<version>
+docker push ghcr.io/<owner>/aulalab-vast:<version>
 ```
 
-A tag release can also publish it from CI: the `image` job of `.github/workflows/publish.yml` pushes `ghcr.io/<owner>/colloq-vast:X.Y.Z` and the same digest as `ghcr.io/<owner>/colloq-server:X.Y.Z` (and `:latest` of both for a non-pre-release) when the repository variable `PUBLISH_IMAGES` is `true`; see [RELEASING.md](../../RELEASING.md). A version published before the second name existed gets it on a rerun, copied rather than rebuilt.
+A tag release can also publish it from CI: the `image` job of `.github/workflows/publish.yml` pushes `ghcr.io/<owner>/aulalab-vast:X.Y.Z` and the same digest as `ghcr.io/<owner>/aulalab-server:X.Y.Z` (and `:latest` of both for a non-pre-release) when the repository variable `PUBLISH_IMAGES` is `true`; see [RELEASING.md](../../RELEASING.md). A version published before the second name existed gets it on a rerun, copied rather than rebuilt.
 
 Before you make the package public, read [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md). The image contains the web bundle and the link-preview card fonts, and both include HSE Sans, whose redistribution license is still unresolved.
 
-The image carries OCI labels (`org.opencontainers.image.version`, `.revision`, `.source`, `.licenses`), and `colloq-vast version` prints the version and revision it was built from. The frpc 0.71.0 and cloudflared 2026.9.1 downloads are pinned by sha256 in the Dockerfile. When you bump one of them, update the version and both checksums together, and keep frpc on the relay's version.
+The image carries OCI labels (`org.opencontainers.image.version`, `.revision`, `.source`, `.licenses`), and `aulalab-vast version` prints the version and revision it was built from. The frpc 0.71.0 and cloudflared 2026.9.1 downloads are pinned by sha256 in the Dockerfile. When you bump one of them, update the version and both checksums together, and keep frpc on the relay's version.
 
-Prebuilt kernel images make the first boot fast, and an offline install possible. Without them, the default `base` environment builds in a few minutes, and `base-gpu` downloads about 3 GB of wheels. The `kernels` job of `publish.yml`, under the same `PUBLISH_IMAGES` switch, publishes `ghcr.io/<owner>/colloq-kernel:vX.Y.Z-base` and `:vX.Y.Z-kaggle-base` for linux/amd64, with the build the entrypoint and the panel run, after a check inside each image (the `kernel/locks` check script for `kaggle-base`). The app image is built with that repository as its default (`COLLOQ_KERNEL_REPO`), so the entrypoint pulls them without any setting. The job does not publish `base-gpu` and `kaggle-gpu`: `base-gpu` is about 9.9 GB, and the job refuses any GPU environment (and `kaggle-gpu` through its parent). They are published at release time by `make kernel-publish` on a machine with a card ([RELEASING.md](../../RELEASING.md#gpu-kernels-at-release-time)), and an instance pulls them when they are listed in `KERNEL_PRELOAD`; it builds the chain itself only when that version's GPU kernels are not published yet or it edited their lists. `scripts/release-build.py --registry ghcr.io/<owner>/colloq` (the manual k3s workflow, `.github/workflows/release.yml`) uses the same names for the environments listed there. Make the new `colloq-kernel` and `colloq-server` packages public once, as `colloq-vast` was.
+Prebuilt kernel images make the first boot fast, and an offline install possible. Without them, the default `base` environment builds in a few minutes, and `base-gpu` downloads about 3 GB of wheels. The `kernels` job of `publish.yml`, under the same `PUBLISH_IMAGES` switch, publishes `ghcr.io/<owner>/aulalab-kernel:vX.Y.Z-base` and `:vX.Y.Z-kaggle-base` for linux/amd64, with the build the entrypoint and the panel run, after a check inside each image (the `kernel/locks` check script for `kaggle-base`). The app image is built with that repository as its default (`AULALAB_KERNEL_REPO`), so the entrypoint pulls them without any setting. The job does not publish `base-gpu` and `kaggle-gpu`: `base-gpu` is about 9.9 GB, and the job refuses any GPU environment (and `kaggle-gpu` through its parent). They are published at release time by `make kernel-publish` on a machine with a card ([RELEASING.md](../../RELEASING.md#gpu-kernels-at-release-time)), and an instance pulls them when they are listed in `KERNEL_PRELOAD`; it builds the chain itself only when that version's GPU kernels are not published yet or it edited their lists. `scripts/release-build.py --registry ghcr.io/<owner>/aulalab` (the manual k3s workflow, `.github/workflows/release.yml`) uses the same names for the environments listed there. Make the new `aulalab-kernel` and `aulalab-server` packages public once, as `aulalab-vast` was.
 
 ## Local smoke test
 
@@ -271,7 +271,7 @@ make vast-image-run      # start it inside docker:dind as a stand-in VM, then ru
 make vast-image-stop     # remove the stand-in and everything in it
 ```
 
-`deploy/vast/smoke.sh` starts `docker:dind`, which is privileged only because it stands in for the VM. It loads the image into it and runs `colloq-host up` exactly as the on-start does. It then waits for `/api/health`, claims the throwaway instance, and runs `scripts/e2e.mts`: two clients edit one notebook, a cell runs in a real per-room kernel container, a file is written from the cell, and the room is removed. Finally it takes a backup. `SEED_KERNEL=1` copies this machine's `colloq-kernel:base` into the stand-in instead of building it. The stand-in has its own Docker daemon, so a `make dev` session on the same machine is never touched.
+`deploy/vast/smoke.sh` starts `docker:dind`, which is privileged only because it stands in for the VM. It loads the image into it and runs `aulalab-host up` exactly as the on-start does. It then waits for `/api/health`, claims the throwaway instance, and runs `scripts/e2e.mts`: two clients edit one notebook, a cell runs in a real per-room kernel container, a file is written from the cell, and the room is removed. Finally it takes a backup. `SEED_KERNEL=1` copies this machine's `aulalab-kernel:base` into the stand-in instead of building it. The stand-in has its own Docker daemon, so a `make dev` session on the same machine is never touched.
 
 ## Open decision: a backend for Vast Docker instances
 
@@ -283,7 +283,7 @@ Ordinary Docker instances are the cheap, instant, plentiful Vast product. Suppor
 - give each room its own Unix uid from a reserved range, via `setuid` (the container is root on Vast). Room folders would be `2770` with a shared group for the server and a kernel umask of `007`, so rooms cannot read each other's files and `/proc/<pid>/environ` stays private;
 - apply `RLIMIT_NPROC`, `RLIMIT_NOFILE` and CPU affinity per room, and set `oom_score_adj=1000` on kernels, so that under memory pressure the kernel dies rather than the server;
 - set `CUDA_VISIBLE_DEVICES` per GPU room;
-- read environments from venvs baked into the image, one per `kernel/environments/*.txt`. The catalog image field would be `local/colloq-env-<name>@sha256:<hash of the frozen lock>`, which satisfies the existing digest-pinned catalog contract;
+- read environments from venvs baked into the image, one per `kernel/environments/*.txt`. The catalog image field would be `local/aulalab-env-<name>@sha256:<hash of the frozen lock>`, which satisfies the existing digest-pinned catalog contract;
 - run the server with `NODE_ENV=production KERNEL_BACKEND=broker` and the runtime on localhost, so nothing in `requireKernelIsolation` is weakened by a flag. `/api/health` and the panel should still say "process isolation" out loud.
 
 **What it cannot give, which the owner must accept:**
@@ -302,19 +302,19 @@ Ordinary Docker instances are the cheap, instant, plentiful Vast product. Suppor
 
 These checks ran on 18 September 2026 on an arm64 laptop, using `docker:dind` as the stand-in VM (`make vast-image-run`):
 
-- **Clean start.** On a clean daemon, the image started and built `colloq-kernel:base` in about 70 seconds, and `/api/health` turned 200.
-- **Room kernel.** The end-to-end check passed: shared editing, and a cell that ran in its own `colloq-room-<id>` container and wrote a file into the room.
+- **Clean start.** On a clean daemon, the image started and built `aulalab-kernel:base` in about 70 seconds, and `/api/health` turned 200.
+- **Room kernel.** The end-to-end check passed: shared editing, and a cell that ran in its own `aulalab-room-<id>` container and wrote a file into the room.
 - **Operations.** Backup, restore with `REPLACE=1`, and a SIGTERM stop all worked. The stop exited 0 with the WAL checkpointed.
 - **Relay.** The relay mode worked against a real frps 0.71.0: the proxy registered, `/api/health` answered through the relay, and a killed frpc was restarted automatically.
 - **Quick tunnel.** The address extraction was checked against cloudflared 2026.9.1.
 - **amd64.** The image also builds for `linux/amd64` (under emulation).
-- **After the review fixes** (same day, arm64, `SEED_KERNEL=1`): the end-to-end check passed again, a repeated `colloq-host up` left the running instance alone, restore and a SIGTERM stop worked, and a non-default `COLLOQ_HOME` was wired to the server's `.env`. With a stub `docker`, repeated boots of a GPU machine no longer recreated the container, and a reboot after `colloq-host update` kept the updated image.
+- **After the review fixes** (same day, arm64, `SEED_KERNEL=1`): the end-to-end check passed again, a repeated `aulalab-host up` left the running instance alone, restore and a SIGTERM stop worked, and a non-default `AULALAB_HOME` was wired to the server's `.env`. With a stub `docker`, repeated boots of a GPU machine no longer recreated the container, and a reboot after `aulalab-host update` kept the updated image.
 
-On a real Vast VM (28 September 2026, RTX 3070, `make vast-vm`): the image pulled from GHCR, `colloq-host` found the GPU and started Colloq, the default environment built, and the class address answered through the relay. The same run found the console, on-start and status behaviour described under [Renting a machine](#renting-a-machine-make-vast-vm). It also found that unattended-upgrades upgraded the NVIDIA userspace under the loaded kernel module 20 minutes after boot ("Driver/library version mismatch"). On a Vast VM `colloq-host up` therefore turns automatic updates off and holds the NVIDIA packages on every start (`COLLOQ_FREEZE_UPDATES=1`, which `onstart.sh` sets; a VM started from an older copy of the on-start is recognised by `/etc/colloq/onstart.sh`, which `make vast-vm` leaves there).
+On a real Vast VM (28 September 2026, RTX 3070, `make vast-vm`): the image pulled from GHCR, `aulalab-host` found the GPU and started Aula Lab, the default environment built, and the class address answered through the relay. The same run found the console, on-start and status behaviour described under [Renting a machine](#renting-a-machine-make-vast-vm). It also found that unattended-upgrades upgraded the NVIDIA userspace under the loaded kernel module 20 minutes after boot ("Driver/library version mismatch"). On a Vast VM `aulalab-host up` therefore turns automatic updates off and holds the NVIDIA packages on every start (`AULALAB_FREEZE_UPDATES=1`, which `onstart.sh` sets; a VM started from an older copy of the on-start is recognised by `/etc/aulalab/onstart.sh`, which `make vast-vm` leaves there).
 
-On a rented VM on 13 October 2026 (61 vCPU, 98 GB, 2 × RTX 4090 24 GB, driver 580.95.05, CUDA 13.0, colloq 0.21.0): a competition on `base-gpu` ran CUDA PyTorch without a card (`torch.cuda.is_available()` false, no `nvidia-smi`) and said nothing about it, which is what [GPU submissions](#gpu-rooms-and-gpu-submissions) replace. The pieces they are built from were tried there by hand: with `--gpus device=0` a submission container's hardening (read-only root, every capability dropped, uid 1000, no network) still held, and PyTorch saw the card; two containers on one card each saw only their own processes in `nvidia-smi`; a 4096 MB cap through `sitecustomize.py` stopped PyTorch at the 17th 256 MiB allocation with `OutOfMemoryError`; the CUDA context took about 458 MB of video memory.
+On a rented VM on 13 October 2026 (61 vCPU, 98 GB, 2 × RTX 4090 24 GB, driver 580.95.05, CUDA 13.0, aulalab 0.21.0): a competition on `base-gpu` ran CUDA PyTorch without a card (`torch.cuda.is_available()` false, no `nvidia-smi`) and said nothing about it, which is what [GPU submissions](#gpu-rooms-and-gpu-submissions) replace. The pieces they are built from were tried there by hand: with `--gpus device=0` a submission container's hardening (read-only root, every capability dropped, uid 1000, no network) still held, and PyTorch saw the card; two containers on one card each saw only their own processes in `nvidia-smi`; a 4096 MB cap through `sitecustomize.py` stopped PyTorch at the 17th 256 MiB allocation with `OutOfMemoryError`; the CUDA context took about 458 MB of video memory.
 
-Later that day the same VM ran the build that adds GPU submissions, an unreleased image built there from source and installed with `colloq-host update`, with a `kaggle-gpu` built by hand at the versions `kernel/environments/kaggle-gpu.txt` now pins:
+Later that day the same VM ran the build that adds GPU submissions, an unreleased image built there from source and installed with `aulalab-host update`, with a `kaggle-gpu` built by hand at the versions `kernel/environments/kaggle-gpu.txt` now pins:
 
 - **The share, inside.** Four submissions to a card gave each a share of 6141 MB, and PyTorch's allocator in a submission was capped at 5.50 GiB, the share less 512 MB. A model that outgrew it failed in its cell with `torch.OutOfMemoryError`, followed by our line naming the share and advising a smaller batch or model.
 - **The share, outside.** A submission that took 10.4 GB of the card, past its share, was stopped by the watchdog and ended as out of memory, with the share in the message.
@@ -339,9 +339,9 @@ Not verified yet:
 - `kaggle-gpu` built by `KERNEL_PRELOAD` on a first boot: the image on that VM was built by hand, at the same versions;
 - on a card, stopping a run whose card cannot be read (the fail-closed rule; checked with stand-ins only, a failing `nvidia-smi` cannot be provoked without breaking the driver);
 - pulling the kernel images `publish.yml` publishes from 0.9.0;
-- on a real Linux VM rather than with stand-ins: `colloq-host doctor`, `bundle` and `load` on an offline machine, `backup-timer`, the backup and rollback around `update`, and the trusted-proxy default behind a proxy on the same host.
+- on a real Linux VM rather than with stand-ins: `aulalab-host doctor`, `bundle` and `load` on an offline machine, `backup-timer`, the backup and rollback around `update`, and the trusted-proxy default behind a proxy on the same host.
 
-The panel's *Resources* tab used to list no cards on this image: `nvidia-smi` exists on the VM but not inside the `colloq-vast` container. Now, for the `KERNEL_GPUS` entries that no local `nvidia-smi` answers for, the server asks the cards themselves through Docker: one throwaway container of a kernel image already on the machine, given every card (`docker run --rm --gpus all --network none --entrypoint nvidia-smi <kernel image> --query-gpu=index,uuid,name,memory.total …`), where the NVIDIA toolkit mounts `nvidia-smi`; an entry that container does not name is asked from a container given only that card (`--gpus device=<id>`). The cards are asked when the server starts, and the answer is cached for ten minutes and refreshed in the background; a size once read is kept when a later refresh gets no answer. Until a kernel image exists, or for a MIG instance (the query would describe the whole physical card), the size stays unknown and the panel says so. GPU rooms and submissions get their cards from `KERNEL_GPUS` either way, which `colloq-host` fills in from the host's `nvidia-smi`.
+The panel's *Resources* tab used to list no cards on this image: `nvidia-smi` exists on the VM but not inside the `aulalab-vast` container. Now, for the `KERNEL_GPUS` entries that no local `nvidia-smi` answers for, the server asks the cards themselves through Docker: one throwaway container of a kernel image already on the machine, given every card (`docker run --rm --gpus all --network none --entrypoint nvidia-smi <kernel image> --query-gpu=index,uuid,name,memory.total …`), where the NVIDIA toolkit mounts `nvidia-smi`; an entry that container does not name is asked from a container given only that card (`--gpus device=<id>`). The cards are asked when the server starts, and the answer is cached for ten minutes and refreshed in the background; a size once read is kept when a later refresh gets no answer. Until a kernel image exists, or for a MIG instance (the query would describe the whole physical card), the size stays unknown and the panel says so. GPU rooms and submissions get their cards from `KERNEL_GPUS` either way, which `aulalab-host` fills in from the host's `nvidia-smi`.
 
 ## Relation to the other Vast paths
 
@@ -350,6 +350,6 @@ The panel's *Resources* tab used to list no cards on this image: `nvidia-smi` ex
 | This image on a VM (`make vast-vm`) | The default for a class on a rented machine: prebuilt, one command, container per room |
 | `make vast-up` (`scripts/vast-legacy.sh`) | Replaced by this image for the common case. It builds from your working tree on the VM, which is still useful for testing unreleased local changes on real GPUs |
 | `RELEASE=… make vast-up` (`scripts/vast.sh`, k3s) | Strict isolation with digest-pinned releases; see [docs/deployment-vast.md](../../docs/deployment-vast.md) |
-| This image in its `runner` mode (`make vast-runner`, `scripts/vast-runner.sh`) | Machines that run another instance's competition submissions, labelled `colloq-runner`: the home keeps the queue, the answers and the metric, and `make runners-update` and `make runners-down` manage the fleet. The class tooling (`vast-up`, `vast-down`, `vast-status`) never takes them for a deployment. See [docs/pages/en/runners.html](../../docs/pages/en/runners.html) ([по-русски](../../docs/pages/ru/runners.html)) |
+| This image in its `runner` mode (`make vast-runner`, `scripts/vast-runner.sh`) | Machines that run another instance's competition submissions, labelled `aulalab-runner`: the home keeps the queue, the answers and the metric, and `make runners-update` and `make runners-down` manage the fleet. The class tooling (`vast-up`, `vast-down`, `vast-status`) never takes them for a deployment. See [docs/pages/en/runners.html](../../docs/pages/en/runners.html) |
 
 Sources for the Vast constraints: [launch modes](https://docs.vast.ai/instances/launch-modes), [virtual machines](https://docs.vast.ai/guides/instances/virtual-machines), [Docker environment](https://docs.vast.ai/guides/instances/docker-environment), [technical FAQ (Docker-in-Docker is disabled)](https://docs.vast.ai/guides/reference/faq/technical).

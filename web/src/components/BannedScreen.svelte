@@ -5,7 +5,7 @@
    *
    * Not an error and not a crash: the person was not let in, and they need
    * to understand who did it, until what time, and whom to go to. Silence
-   * here would read as a broken Colloq, and a red banner as a breakage that
+   * here would read as a broken Aula Lab, and a red banner as a breakage that
    * is not their fault; either one sends them off to fix the wrong thing.
    *
    * Nothing beyond what the server does. Neither "forever" nor "in all

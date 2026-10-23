@@ -20,15 +20,15 @@
 #                   here: release-please writes its notes from the release PR,
 #                   and a second writer would drift from it;
 #   pypi            the wheels to PyPI, only when vars.PUBLISH_PYPI == 'true';
-#   image           the server image to GHCR as colloq-vast and colloq-server
+#   image           the server image to GHCR as aulalab-vast and aulalab-server
 #                   (one build, one digest), only when vars.PUBLISH_IMAGES == 'true';
 #   kernels         the room kernels for base and kaggle-base to GHCR as
-#                   colloq-kernel:vX.Y.Z-<env>, under the same switch;
+#                   aulalab-kernel:vX.Y.Z-<env>, under the same switch;
 #   app-images      the app and the runtime broker for Kubernetes to GHCR as
-#                   colloq-app:vX.Y.Z and colloq-runtime:vX.Y.Z (the root
+#                   aulalab-app:vX.Y.Z and aulalab-runtime:vX.Y.Z (the root
 #                   Dockerfile's targets production and broker), under the same
 #                   switch;
-#   chart           the Helm chart deploy/helm/colloq, its defaults set to this
+#   chart           the Helm chart deploy/helm/aulalab, its defaults set to this
 #                   release (the digests of app-images and kernels, the kernel
 #                   catalog, version = X.Y.Z), to oci://ghcr.io/<owner>/charts
 #                   and to the GitHub Release with values-X.Y.Z.yaml, under the
@@ -148,14 +148,14 @@ jobs:
         run: |
           python3 -m venv "$RUNNER_TEMP/venv"
           "$RUNNER_TEMP/venv/bin/pip" install --quiet python/dist/*.whl
-          got="$(COLLOQ_HOME="$RUNNER_TEMP/colloq-home" NO_COLOR=1 "$RUNNER_TEMP/venv/bin/colloq" --version)"
+          got="$(AULALAB_HOME="$RUNNER_TEMP/aulalab-home" NO_COLOR=1 "$RUNNER_TEMP/venv/bin/aulalab" --version)"
           test "$got" = "$VERSION"
           git diff --exit-code
       # The Node archives are pinned by sha256 in scripts/node-runtime.json.
       # The cache only saves the download; the check runs regardless.
       - uses: actions/cache@v4
         with:
-          path: ~/.cache/colloq/node
+          path: ~/.cache/aulalab/node
           key: node-runtime-${{ hashFiles('scripts/node-runtime.json') }}
       - name: Platform wheels with Node inside
         run: |
@@ -268,7 +268,7 @@ jobs:
     # hand with this same token.
     environment:
       name: pypi
-      url: https://pypi.org/project/colloq/
+      url: https://pypi.org/project/aulalab/
     permissions:
       contents: read
     steps:
@@ -327,12 +327,12 @@ jobs:
             echo "::error::deploy/vast/Dockerfile is missing at this tag; nothing to publish"
             exit 1
           fi
-          name="ghcr.io/${OWNER,,}/colloq-vast"
+          name="ghcr.io/${OWNER,,}/aulalab-vast"
           # The same image under a name that says what it is off Vast: a
-          # university's own server runs exactly this (colloq-host,
+          # university's own server runs exactly this (aulalab-host,
           # docs/pages/en/server.html). One build pushed under both names
           # keeps one digest, so neither can drift from the other.
-          server="ghcr.io/${OWNER,,}/colloq-server"
+          server="ghcr.io/${OWNER,,}/aulalab-server"
           tags="$name:$VERSION,$server:$VERSION"
           # latest only for a release: an rc must not reach whoever put
           # "latest" into their vast template.
@@ -341,9 +341,9 @@ jobs:
             echo "name=$name"
             echo "server=$server"
             echo "tags=$tags"
-            # Baked into the image: where its entry point and colloq-host
+            # Baked into the image: where its entry point and aulalab-host
             # bundle look for this version's kernels (the kernels job).
-            echo "kernels=ghcr.io/${OWNER,,}/colloq-kernel"
+            echo "kernels=ghcr.io/${OWNER,,}/aulalab-kernel"
           } >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@v3
         with:
@@ -363,9 +363,9 @@ jobs:
           fi
       # A version published before the second name existed gets it without a
       # rebuild: the index (image and attestations alike) is copied, so both
-      # names point at one digest. latest follows colloq-vast's latest and is
+      # names point at one digest. latest follows aulalab-vast's latest and is
       # never moved ahead of it, or back.
-      - name: Give an already published version its colloq-server name
+      - name: Give an already published version its aulalab-server name
         if: steps.exists.outputs.skip == 'true'
         env:
           NAME: ${{ steps.image.outputs.name }}
@@ -398,19 +398,19 @@ jobs:
           sbom: true
           tags: ${{ steps.image.outputs.tags }}
           build-args: |
-            COLLOQ_VERSION=${{ needs.build.outputs.version }}
+            AULALAB_VERSION=${{ needs.build.outputs.version }}
             GIT_SHA=${{ needs.build.outputs.commit }}
             SOURCE_URL=${{ github.server_url }}/${{ github.repository }}
-            COLLOQ_KERNEL_REPO=${{ steps.image.outputs.kernels }}
+            AULALAB_KERNEL_REPO=${{ steps.image.outputs.kernels }}
 
   # The room kernels of the shipped CPU environments, so that a new server
   # pulls them instead of building them on first boot from the unpinned
   # kernel/requirements.txt, and an offline one can carry them in
-  # (colloq-host bundle). The build is the one the entry point and the panel
+  # (aulalab-host bundle). The build is the one the entry point and the panel
   # run (deploy/vast/entrypoint.sh · prepare_kernels, environments.ts ·
   # buildCommand): kernel/Dockerfile with KERNEL_ENV, a child on its parent
-  # (`# colloq: from`, here the parent just published, pinned by digest), the
-  # root on the python its list names (`# colloq: python X.Y`; none leaves the
+  # (`# aulalab: from`, here the parent just published, pinned by digest), the
+  # root on the python its list names (`# aulalab: python X.Y`; none leaves the
   # Dockerfile's own default). kernel/locks is not a build input there and is
   # not one here: it records a verified kaggle-base, and its check script is
   # run against the image before it is pushed. base-gpu and kaggle-gpu stay
@@ -430,7 +430,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    # {"base": "ghcr.io/<owner>/colloq-kernel@sha256:…", …}: what this job
+    # {"base": "ghcr.io/<owner>/aulalab-kernel@sha256:…", …}: what this job
     # pushed or found under the version's tags, for the chart's catalog.
     outputs:
       images: ${{ steps.pinned.outputs.images }}
@@ -457,11 +457,11 @@ jobs:
           # very script with a stand-in docker.
           set -euo pipefail
           owner="$(printf '%s' "$OWNER" | tr '[:upper:]' '[:lower:]')"
-          repo="ghcr.io/$owner/colloq-kernel"
-          # One `# colloq: <key> <value>` directive of a list, read the way
+          repo="ghcr.io/$owner/aulalab-kernel"
+          # One `# aulalab: <key> <value>` directive of a list, read the way
           # the entry point and the panel read it.
           directive() {
-            sed -nE "s/^[[:space:]]*#[[:space:]]*colloq:[[:space:]]*$1[[:space:]]+([^[:space:]]+)[[:space:]]*\$/\\1/p" \
+            sed -nE "s/^[[:space:]]*#[[:space:]]*aulalab:[[:space:]]*$1[[:space:]]+([^[:space:]]+)[[:space:]]*\$/\\1/p" \
               "kernel/environments/$2.txt" | head -1
           }
           # Parents first: a child is built on the image published for its parent.
@@ -472,7 +472,7 @@ jobs:
             if [ ! -f "kernel/environments/$1.txt" ]; then
               echo "::error::no kernel/environments/$1.txt"; exit 1
             fi
-            if grep -qE '^[[:space:]]*#[[:space:]]*colloq:[[:space:]]*gpu[[:space:]]*$' "kernel/environments/$1.txt"; then
+            if grep -qE '^[[:space:]]*#[[:space:]]*aulalab:[[:space:]]*gpu[[:space:]]*$' "kernel/environments/$1.txt"; then
               echo "::error::$1 is a GPU environment; this job publishes CPU environments only"; exit 1
             fi
             parent="$(directive from "$1")"
@@ -487,9 +487,9 @@ jobs:
             if [ "$1" = kaggle-base ]; then
               docker run --rm --network none --read-only --tmpfs /tmp:rw,size=512m --user 1000:1000 \
                 --cpus 2 --memory 4g -e HOME=/tmp -e MPLCONFIGDIR=/tmp/mpl -e NUMBA_CACHE_DIR=/tmp/numba \
-                -v "$PWD/scripts/check-kaggle-base.py:/check.py:ro" "colloq-kernel:$1" python /check.py
+                -v "$PWD/scripts/check-kaggle-base.py:/check.py:ro" "aulalab-kernel:$1" python /check.py
             else
-              docker run --rm --network none "colloq-kernel:$1" \
+              docker run --rm --network none "aulalab-kernel:$1" \
                 python -c 'import jupyter_server, ipykernel, numpy, pandas, matplotlib, plotly, sklearn, black'
             fi
           }
@@ -504,13 +504,13 @@ jobs:
               continue
             fi
             args=(--platform linux/amd64 -f kernel/Dockerfile --build-arg "KERNEL_ENV=$name"
-              --label "org.opencontainers.image.title=colloq-kernel"
-              --label "org.opencontainers.image.description=Colloq room kernel: the $name environment"
+              --label "org.opencontainers.image.title=aulalab-kernel"
+              --label "org.opencontainers.image.description=Aula Lab room kernel: the $name environment"
               --label "org.opencontainers.image.version=$VERSION"
               --label "org.opencontainers.image.revision=$COMMIT"
               --label "org.opencontainers.image.source=$SOURCE_URL"
               --label "org.opencontainers.image.licenses=MIT"
-              --label "colloq.environment=$name")
+              --label "aulalab.environment=$name")
             parent="$(directive from "$name")"
             if [ -n "$parent" ]; then
               args+=(--build-arg "PARENT=$repo@$(cat "$digests/$parent")")
@@ -520,7 +520,7 @@ jobs:
             fi
             # Into the runner's docker for the check; attestations belong to the
             # pushed image, and the local image store may not take them.
-            docker buildx build "${args[@]}" --provenance=false --load -t "colloq-kernel:$name" kernel
+            docker buildx build "${args[@]}" --provenance=false --load -t "aulalab-kernel:$name" kernel
             check "$name"
             # The second build is the first one from the builder's cache, pushed.
             docker buildx build "${args[@]}" --push --provenance=mode=max --sbom=true \
@@ -538,11 +538,11 @@ jobs:
           # The files the step above wrote, one per environment it published
           # or found, as one line of JSON: environment -> repository@digest.
           images="$(cd "$RUNNER_TEMP/kernel-digests" && for name in *; do
-            jq -n --arg name "$name" --arg ref "ghcr.io/$owner/colloq-kernel@$(cat "$name")" '{($name): $ref}'
+            jq -n --arg name "$name" --arg ref "ghcr.io/$owner/aulalab-kernel@$(cat "$name")" '{($name): $ref}'
           done | jq -cs add)"
           echo "images=$images" >> "$GITHUB_OUTPUT"
 
-  # The two images the Helm chart runs (deploy/helm/colloq): the app, and the
+  # The two images the Helm chart runs (deploy/helm/aulalab): the app, and the
   # broker that creates a Pod per room and per competition job through the
   # namespaced Kubernetes API. Both are targets of the root Dockerfile and share
   # its build stage, so one job builds both on one builder, and the second build
@@ -550,7 +550,7 @@ jobs:
   # digest once, as scripts/release-build.py does: two builds minutes apart
   # could otherwise stand on two different node:22 images. The digests leave
   # the job as outputs, and the chart job writes exactly those. No :latest,
-  # unlike colloq-vast: the chart installs by digest, and a cluster policy that
+  # unlike aulalab-vast: the chart installs by digest, and a cluster policy that
   # refuses :latest is the usual case in a bank, not the exception.
   app-images:
     name: App and broker images to GHCR
@@ -585,12 +585,12 @@ jobs:
           set -euo pipefail
           owner="$(printf '%s' "$OWNER" | tr '[:upper:]' '[:lower:]')"
           {
-            echo "app=ghcr.io/$owner/colloq-app"
-            echo "runtime=ghcr.io/$owner/colloq-runtime"
+            echo "app=ghcr.io/$owner/aulalab-app"
+            echo "runtime=ghcr.io/$owner/aulalab-runtime"
             echo "tag=v$VERSION"
           } >> "$GITHUB_OUTPUT"
           for kind in app runtime; do
-            ref="ghcr.io/$owner/colloq-$kind:v$VERSION"
+            ref="ghcr.io/$owner/aulalab-$kind:v$VERSION"
             # A published tag is never rebuilt, so what it names is what the
             # first run pushed, and that is the digest the chart gets.
             if digest="$(docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}' 2>/dev/null)"; then
@@ -610,7 +610,7 @@ jobs:
           echo "node=$node" >> "$GITHUB_OUTPUT"
       # The OCI labels are given here: the root Dockerfile, unlike
       # deploy/vast/Dockerfile, writes none. The revision is the tag's commit.
-      - name: Build and push colloq-app
+      - name: Build and push aulalab-app
         id: app
         if: steps.published.outputs.app_digest == ''
         uses: docker/build-push-action@v6
@@ -625,13 +625,13 @@ jobs:
           build-args: |
             NODE_IMAGE=${{ steps.published.outputs.node }}
           labels: |
-            org.opencontainers.image.title=colloq-app
-            org.opencontainers.image.description=Colloq app for Kubernetes: the server the Helm chart deploy/helm/colloq runs next to colloq-runtime
+            org.opencontainers.image.title=aulalab-app
+            org.opencontainers.image.description=Aula Lab app for Kubernetes: the server the Helm chart deploy/helm/aulalab runs next to aulalab-runtime
             org.opencontainers.image.version=${{ needs.build.outputs.version }}
             org.opencontainers.image.revision=${{ needs.build.outputs.commit }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.licenses=MIT
-      - name: Build and push colloq-runtime
+      - name: Build and push aulalab-runtime
         id: runtime
         if: steps.published.outputs.runtime_digest == ''
         uses: docker/build-push-action@v6
@@ -646,8 +646,8 @@ jobs:
           build-args: |
             NODE_IMAGE=${{ steps.published.outputs.node }}
           labels: |
-            org.opencontainers.image.title=colloq-runtime
-            org.opencontainers.image.description=Colloq runtime broker: creates a Pod and a Service per room and per competition job through the namespaced Kubernetes API
+            org.opencontainers.image.title=aulalab-runtime
+            org.opencontainers.image.description=Aula Lab runtime broker: creates a Pod and a Service per room and per competition job through the namespaced Kubernetes API
             org.opencontainers.image.version=${{ needs.build.outputs.version }}
             org.opencontainers.image.revision=${{ needs.build.outputs.commit }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -671,11 +671,11 @@ jobs:
           echo "::notice::$APP@$APP_DIGEST and $RUNTIME@$RUNTIME_DIGEST"
 
   # The Helm chart a university's platform team installs into its own cluster
-  # (deploy/helm/colloq; docs/pages/en/kubernetes.html). Its defaults are this
+  # (deploy/helm/aulalab; docs/pages/en/kubernetes.html). Its defaults are this
   # release: scripts/chart-values.py writes the digests app-images and kernels
   # handed over and the kernel catalog into values.yaml (the catalog by the code
   # that writes release.json's, scripts/release-build.py), and the version into
-  # Chart.yaml. The package goes to oci://ghcr.io/<owner>/charts/colloq and to
+  # Chart.yaml. The package goes to oci://ghcr.io/<owner>/charts/aulalab and to
   # the GitHub Release, next to values-X.Y.Z.yaml, the same values on their
   # own. A chart version in the registry is never pushed twice: a rerun attaches
   # the package it pulls from there, so the registry and the release carry one file.
@@ -716,23 +716,23 @@ jobs:
           KERNEL_IMAGES: ${{ needs.kernels.outputs.images }}
         run: |
           set -euo pipefail
-          if [ ! -f deploy/helm/colloq/Chart.yaml ]; then
-            echo "::error::deploy/helm/colloq is missing at this tag; there is no chart to publish"
+          if [ ! -f deploy/helm/aulalab/Chart.yaml ]; then
+            echo "::error::deploy/helm/aulalab is missing at this tag; there is no chart to publish"
             exit 1
           fi
           mkdir -p out
           python3 scripts/chart-values.py --version "$VERSION" --app-image "$APP_IMAGE" --runtime-image "$RUNTIME_IMAGE" \
             --kernel-images "$KERNEL_IMAGES" --default-environment base \
-            --chart deploy/helm/colloq --output "out/values-$VERSION.yaml"
-          git diff --stat -- deploy/helm/colloq
-          helm lint deploy/helm/colloq
-          helm package deploy/helm/colloq --destination out
-          package="out/colloq-$VERSION.tgz"
+            --chart deploy/helm/aulalab --output "out/values-$VERSION.yaml"
+          git diff --stat -- deploy/helm/aulalab
+          helm lint deploy/helm/aulalab
+          helm package deploy/helm/aulalab --destination out
+          package="out/aulalab-$VERSION.tgz"
           # What goes out is checked in the package itself: its version, and
           # every digest of this release in what its defaults render (with the
           # ingress off: its host is the one value no default can give).
           test "$(helm show chart "$package" | sed -n 's/^version: //p')" = "$VERSION"
-          rendered="$(helm template colloq "$package" --namespace colloq --set ingress.enabled=false)"
+          rendered="$(helm template aulalab "$package" --namespace aulalab --set ingress.enabled=false)"
           for ref in "$APP_IMAGE" "$RUNTIME_IMAGE" $(jq -r '.[]' <<<"$KERNEL_IMAGES"); do
             if ! grep -qF "${ref#*@}" <<<"$rendered"; then
               echo "::error::the packaged chart does not install $ref"; exit 1
@@ -764,12 +764,12 @@ jobs:
           # The login comes after the chart was written and checked: no step
           # that runs code from the repository has the credentials on disk.
           printf '%s' "$TOKEN" | helm registry login ghcr.io --username "$ACTOR" --password-stdin
-          if helm show chart "$charts/colloq" --version "$VERSION" >/dev/null 2>&1; then
-            echo "::notice::$charts/colloq:$VERSION is already published; attaching that package, not this build."
-            rm "out/colloq-$VERSION.tgz"
-            helm pull "$charts/colloq" --version "$VERSION" --destination out
+          if helm show chart "$charts/aulalab" --version "$VERSION" >/dev/null 2>&1; then
+            echo "::notice::$charts/aulalab:$VERSION is already published; attaching that package, not this build."
+            rm "out/aulalab-$VERSION.tgz"
+            helm pull "$charts/aulalab" --version "$VERSION" --destination out
           else
-            helm push "out/colloq-$VERSION.tgz" "$charts"
+            helm push "out/aulalab-$VERSION.tgz" "$charts"
           fi
       - name: Attach the chart to the GitHub Release
         env:
@@ -781,7 +781,7 @@ jobs:
           set -euo pipefail
           assets="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
           upload=()
-          for file in "out/colloq-$VERSION.tgz" "out/values-$VERSION.yaml"; do
+          for file in "out/aulalab-$VERSION.tgz" "out/values-$VERSION.yaml"; do
             grep -qxF "$(basename "$file")" <<<"$assets" || upload+=("$file")
           done
           if [ "${#upload[@]}" -eq 0 ]; then

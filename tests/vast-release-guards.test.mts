@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 test('Vast up refuses missing explicit release before account access', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-vast-guard-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-vast-guard-'))
   try {
     fs.mkdirSync(path.join(dir, 'scripts')); fs.mkdirSync(path.join(dir, 'bin'))
     for (const file of ['vast.sh', 'lib.sh']) fs.copyFileSync(path.join(repo, 'scripts', file), path.join(dir, 'scripts', file))
@@ -25,7 +25,7 @@ test('Vast deployment keeps VM safeguards and deploys only the release commit ar
   assert.match(script, /runtime-backup\.py validate/)
 })
 test('registry credentials and anonymous-pull declaration are checked before account access', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-registry-guard-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-registry-guard-'))
   try {
     fs.mkdirSync(path.join(dir, 'scripts')); fs.mkdirSync(path.join(dir, 'bin'))
     for (const file of ['vast.sh', 'lib.sh']) fs.copyFileSync(path.join(repo, 'scripts', file), path.join(dir, 'scripts', file))
@@ -54,14 +54,14 @@ test('registry credentials and anonymous-pull declaration are checked before acc
  * printed leads.
  */
 test('vast.sh hints route back to vast.sh: RELEASE with make, the script itself without it', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-vast-hints-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-vast-hints-'))
   try {
     fs.mkdirSync(path.join(dir, 'scripts')); fs.mkdirSync(path.join(dir, 'bin'))
     for (const file of ['vast.sh', 'lib.sh']) fs.copyFileSync(path.join(repo, 'scripts', file), path.join(dir, 'scripts', file))
     fs.writeFileSync(path.join(dir, '.env'), 'VAST_TOKEN=test-only\nRELAY_DOMAIN=\n')
     const instances = JSON.stringify({ instances: [
-      { id: 11, label: 'colloq-hse', actual_status: 'running', dph_total: 0.3, gpu_name: 'RTX 5070', num_gpus: 1 },
-      { id: 12, label: 'colloq-demo', actual_status: 'running', dph_total: 0.3, gpu_name: 'RTX 5070', num_gpus: 1 },
+      { id: 11, label: 'aulalab-hse', actual_status: 'running', dph_total: 0.3, gpu_name: 'RTX 5070', num_gpus: 1 },
+      { id: 12, label: 'aulalab-demo', actual_status: 'running', dph_total: 0.3, gpu_name: 'RTX 5070', num_gpus: 1 },
     ] })
     // The vast answer: the body goes to the file after -o, the code to stdout, as curl does with -w.
     fs.writeFileSync(path.join(dir, 'bin/curl'), `#!${process.execPath}
@@ -121,7 +121,7 @@ process.stdout.write('200')
  * a window created by hand (manual) stays alive as a shell after that.
  */
 function rehost(manual: boolean) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-vast-rehost-'))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-vast-rehost-'))
   try {
     const script = fs.readFileSync(path.join(repo, 'scripts/vast.sh'), 'utf8')
     const start = script.indexOf(`TMUX_SESSION='$TMUX_SESSION' PORT='$PORT' bash -s" <<'REMOTE'\n`)
@@ -146,7 +146,7 @@ esac
     fs.writeFileSync(alive, ''); fs.writeFileSync(running, '')
     const began = Date.now()
     const r = spawnSync('bash', [path.join(dir, 'step.sh')], { cwd: dir, encoding: 'utf8', timeout: 60000, env: { ...process.env,
-      PATH: `${bin}:${process.env.PATH}`, REMOTE_DIR: dir, WANT_HOST: 'demo.colloq.ru', TMUX_SESSION: 'colloq-host', PORT: '30080' } })
+      PATH: `${bin}:${process.env.PATH}`, REMOTE_DIR: dir, WANT_HOST: 'demo.example.edu', TMUX_SESSION: 'aulalab-host', PORT: '30080' } })
     assert.equal(r.status, 0, r.stderr)
     const raw = fs.readFileSync(log, 'utf8')
     return { raw, seconds: (Date.now() - began) / 1000, calls: raw.trim().split('\n').map(l => l.split(' ').slice(0, 2).join(' ')) }
@@ -179,18 +179,18 @@ test('re-hosting stops the old tmux session gracefully and waits before health a
   const pattern = raw.match(/^pgrep -f (.*)$/m)?.[1]
   assert.ok(pattern, raw)
   const re = new RegExp(pattern)
-  for (const own of ['bash scripts/host.sh', '/bin/bash ./scripts/host.sh', 'bash /opt/colloq/scripts/host.sh']) assert.match(own, re)
+  for (const own of ['bash scripts/host.sh', '/bin/bash ./scripts/host.sh', 'bash /opt/aulalab/scripts/host.sh']) assert.match(own, re)
   for (const other of [
-    "tmux new-session -d -s colloq-host cd '/opt/colloq' && COLLOQ_CLUSTER=1 COLLOQ_HOSTNAME='demo.colloq.ru' bash scripts/host.sh 2>&1 | tee -i -a host.log",
-    "sh -c cd '/opt/colloq' && COLLOQ_CLUSTER=1 COLLOQ_HOSTNAME='demo.colloq.ru' bash scripts/host.sh 2>&1 | tee -i -a host.log",
-    "bash -c REMOTE_DIR='/opt/colloq' WANT_HOST='x.host.sh' TMUX_SESSION='colloq-host' PORT='30080' bash -s",
+    "tmux new-session -d -s aulalab-host cd '/opt/aulalab' && AULALAB_CLUSTER=1 AULALAB_HOSTNAME='demo.example.edu' bash scripts/host.sh 2>&1 | tee -i -a host.log",
+    "sh -c cd '/opt/aulalab' && AULALAB_CLUSTER=1 AULALAB_HOSTNAME='demo.example.edu' bash scripts/host.sh 2>&1 | tee -i -a host.log",
+    "bash -c REMOTE_DIR='/opt/aulalab' WANT_HOST='x.host.sh' TMUX_SESSION='aulalab-host' PORT='30080' bash -s",
   ]) assert.doesNotMatch(other, re)
   const started = raw.split('\n').find(l => l.startsWith('tmux new-session'))!
-  assert.match(started, /COLLOQ_CLUSTER=1 COLLOQ_HOSTNAME='demo\.colloq\.ru' bash scripts\/host\.sh 2>&1 \| tee -i -a host\.log/)
+  assert.match(started, /AULALAB_CLUSTER=1 AULALAB_HOSTNAME='demo\.aulalab\.ru' bash scripts\/host\.sh 2>&1 \| tee -i -a host\.log/)
 })
 
 /**
- * A window created by hand (`tmux new -s colloq-host` — as vast.sh itself
+ * A window created by hand (`tmux new -s aulalab-host` — as vast.sh itself
  * advises) stays alive as a shell after Ctrl+C. Going by a single has-session,
  * a repeated vast-up would idle here for all two hundred seconds; it is the
  * host.sh cleanup that must be awaited, and the window simply closed after it.

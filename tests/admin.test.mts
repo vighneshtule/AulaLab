@@ -291,7 +291,7 @@ test('the dev server on its own port is not somebody else', async () => {
 
 test('the share tunnel is our own address, though it arrives as 127.0.0.1', async () => {
   /*
-   * `colloq start --share`: cloudflared arrives with Host 127.0.0.1:<port>
+   * `aulalab start --share`: cloudflared arrives with Host 127.0.0.1:<port>
    * (scripts/host.sh substitutes it), while the page sends the Origin of the
    * tunnel address. Before the fix every POST from there got "a different
    * server address", and a sign-in link with a token on the public address
@@ -301,9 +301,9 @@ test('the share tunnel is our own address, though it arrives as 127.0.0.1', asyn
   const owner = oldestOwner()
   assert.ok(owner)
   const cookie = mintCookie(owner)
-  const saved = { session: process.env.COLLOQ_LOCAL_SESSION, url: process.env.COLLOQ_LOCAL_URL }
-  process.env.COLLOQ_LOCAL_SESSION = '1'
-  process.env.COLLOQ_LOCAL_URL = 'https://plug-catalog.trycloudflare.com'
+  const saved = { session: process.env.AULALAB_LOCAL_SESSION, url: process.env.AULALAB_LOCAL_URL }
+  process.env.AULALAB_LOCAL_SESSION = '1'
+  process.env.AULALAB_LOCAL_URL = 'https://plug-catalog.trycloudflare.com'
   try {
     const tunnel = await call('POST', '/api/admin/teachers', {
       cookie,
@@ -319,10 +319,10 @@ test('the share tunnel is our own address, though it arrives as 127.0.0.1', asyn
     })
     assert.equal(other.status, 403)
   } finally {
-    if (saved.session === undefined) delete process.env.COLLOQ_LOCAL_SESSION
-    else process.env.COLLOQ_LOCAL_SESSION = saved.session
-    if (saved.url === undefined) delete process.env.COLLOQ_LOCAL_URL
-    else process.env.COLLOQ_LOCAL_URL = saved.url
+    if (saved.session === undefined) delete process.env.AULALAB_LOCAL_SESSION
+    else process.env.AULALAB_LOCAL_SESSION = saved.session
+    if (saved.url === undefined) delete process.env.AULALAB_LOCAL_URL
+    else process.env.AULALAB_LOCAL_URL = saved.url
   }
   // Without a tunnel an address at *.trycloudflare.com is foreign again.
   const after = await call('POST', '/api/admin/teachers', {

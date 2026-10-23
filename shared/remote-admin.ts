@@ -28,7 +28,7 @@ import type { CLASS_MACHINE_SETTING_BOUNDS, ClassMachineSettings } from './admin
  * once home has path evidence its leases are lost and requeued. `outdated`:
  * heard, but its build differs from home's — it finishes what it holds and
  * takes nothing new (decision 5). `draining`: asked to finish and stop taking
- * work, by the owner or by `colloq-host runner leave`. `quarantined`: drained
+ * work, by the owner or by `aulalab-host runner leave`. `quarantined`: drained
  * by home itself after REMOTE_QUARANTINE_LOSSES losses or
  * REMOTE_QUARANTINE_DECLINES declines within the window. `revoked`:
  * disconnected by the owner; kept for its history, its secret refused.
@@ -125,7 +125,7 @@ export interface RemoteMachine {
   silentSince: number | null
   /** The address its last call came from, as the relay forwarded it. */
   address: string | null
-  /** The colloq version it runs; null — never said. */
+  /** The aulalab version it runs; null — never said. */
   version: string | null
   /** Its build (the sha256 of dist/runner.js) equals home's (decision 5). */
   compatible: boolean
@@ -176,7 +176,7 @@ export interface RemoteMachine {
   codeId?: string | null
   /**
    * With `draining`: the machine drains by itself, not by the owner's or
-   * home's word — its own last sync said so (`colloq-host runner update` or
+   * home's word — its own last sync said so (`aulalab-host runner update` or
    * a stop: `draining`; `leave`: `leaving`). The resume door has nothing to
    * lift then, so the panel offers «Осушить» rather than «Вернуть в работу».
    * Absent — not draining, or drained by the owner (or home's quarantine).
@@ -206,7 +206,7 @@ export interface RemoteMachine {
  * owner's «Вернуть». `winding`: «Принимает занятия» was turned off and it may
  * still hold class containers. `facts`: it has not said yet what it can do
  * (no kernels block since its classes were turned on). `host-network`: its
- * agent runs without `--network host` (D19). `same-daemon`: a Colloq server
+ * agent runs without `--network host` (D19). `same-daemon`: a Aula Lab server
  * shares its Docker (D20). `perimeter`: the class perimeter is not in place
  * (`detail`: the agent's word — `no-dockerd`, `no-iptables`, `refused`,
  * `failing`). `canary`: the admission canary did not pass (`detail`: what
@@ -437,7 +437,7 @@ export interface RemoteCodeView {
   namePrefix?: string | null
   /** Who minted it, as the staff list names them; null — the instance's console, or someone since removed. */
   createdBy?: string | null
-  /** Minted on the instance's console (`colloq-host runner-code`), not in the panel. */
+  /** Minted on the instance's console (`aulalab-host runner-code`), not in the panel. */
   console?: boolean
   /** Its machines take classes from the start («Принимать занятия», D2); never together with `trusted` (D3). */
   classes?: boolean
@@ -540,7 +540,7 @@ export interface RemoteMachineDetail extends RemoteMachine {
 
 /** POST /api/admin/runners/codes — mint a code for the dialog (M2). */
 export interface MintRemoteCodeRequest {
-  /** How many machines may join with it: 1–100, the bound `colloq-host runner-code --machines` has too. */
+  /** How many machines may join with it: 1–100, the bound `aulalab-host runner-code --machines` has too. */
   machines: number
   /** How long it stays valid: 1–24 h (REMOTE_CODE_TTL_MAX_MS). */
   hours: number
@@ -579,7 +579,7 @@ export interface MintRemoteCodeResponse {
   commands: { docker: string; bare: string; vast: string }
   /**
    * The address in the commands is this server's own loopback (a PUBLIC_URL
-   * of localhost or 127.x, colloq-host runner-code warns the same): a machine
+   * of localhost or 127.x, aulalab-host runner-code warns the same): a machine
    * anywhere else cannot reach it, and the dialog says so.
    */
   loopback: boolean
@@ -679,7 +679,7 @@ export interface RemoteConsoleGroup {
   /** A `silent` machine: since when, ms, for «молчит 4 мин» (RemoteMachine.silentSince). Absent — the chip says «молчит» alone. */
   silentSince?: number | null
   /**
-   * The colloq version it runs: a machine's for an `outdated` one's «на ней
+   * The aulalab version it runs: a machine's for an `outdated` one's «на ней
    * 0.23.0, на сервере 0.24.0», and this server's own on this server's group
    * (the other half of that line, read off the server rather than the panel's
    * bundle). Absent — the versions are not named.

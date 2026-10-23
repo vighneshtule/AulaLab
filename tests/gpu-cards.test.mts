@@ -171,7 +171,7 @@ test('inside the app container one container is asked about every card, by index
   }
   useDockerInfo(async (args) => {
     asked.push(args)
-    if (args[0] === 'image') return { code: 0, out: 'colloq-kernel:base\ncolloq-kernel:base-gpu\n' }
+    if (args[0] === 'image') return { code: 0, out: 'aulalab-kernel:base\naulalab-kernel:base-gpu\n' }
     if (args[0] === 'run' && gpusOf(args) === 'all') return allCards
     if (args[0] === 'run') return { code: 0, out: 'NVIDIA GeForce RTX 3090, 24576\n' }
     return { code: 1, out: '' }
@@ -194,7 +194,7 @@ test('inside the app container one container is asked about every card, by index
     assert.ok(run.includes('--rm') && run.includes('--pull=never') && run.includes('--cap-drop=ALL'), run.join(' '))
     assert.equal(value('--network'), 'none')
     assert.equal(value('--entrypoint'), 'nvidia-smi')
-    assert.ok(run.includes('colloq-kernel:base-gpu'))
+    assert.ok(run.includes('aulalab-kernel:base-gpu'))
     assert.ok(run.includes('--query-gpu=index,uuid,name,memory.total'), run.join(' '))
 
     // The all-cards container names card 0 only: card 1 is asked on its own.

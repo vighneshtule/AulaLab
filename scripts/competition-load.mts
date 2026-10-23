@@ -32,7 +32,7 @@
  *   LOAD_ENTRANTS      how many entrants join and send       default 15
  *   LOAD_TIMEOUT_SEC   stop waiting for results after        default 1800
  *   LOAD_SETUP_TOKEN   the setup token, when data/setup-token is not next to it
- *   LOAD_STAFF_COOKIE  a ready `colloq_staff=...` cookie, if there is no token at all
+ *   LOAD_STAFF_COOKIE  a ready `aulalab_staff=...` cookie, if there is no token at all
  *   DATA_DIR           where setup-token lies                default <repo>/data
  * Neither the token nor the cookie is ever printed.
  */
@@ -68,7 +68,7 @@ async function staffCookie(): Promise<string> {
   const given = (process.env.LOAD_STAFF_COOKIE ?? '').trim()
   if (given) {
     const cookie = given.split(';')[0]
-    if (!cookie.startsWith('colloq_staff=')) throw new Error('LOAD_STAFF_COOKIE is not a colloq_staff= cookie')
+    if (!cookie.startsWith('aulalab_staff=')) throw new Error('LOAD_STAFF_COOKIE is not a aulalab_staff= cookie')
     return cookie
   }
   const tokenFile = resolve(process.env.DATA_DIR ?? join(ROOT, 'data'), 'setup-token')
@@ -87,7 +87,7 @@ async function staffCookie(): Promise<string> {
   })
   if (!res.ok) throw new Error(`sign-in refused (${res.status})`)
   const cookie = (res.headers.get('set-cookie') ?? '').split(';')[0]
-  if (!cookie.startsWith('colloq_staff=')) throw new Error('no staff cookie was issued')
+  if (!cookie.startsWith('aulalab_staff=')) throw new Error('no staff cookie was issued')
   return cookie
 }
 
@@ -172,7 +172,7 @@ async function main(): Promise<void> {
       const body = (await res.json().catch(() => null)) as { reason?: string; error?: string } | null
       throw new Error(`joining "${name}" was refused (${res.status} ${body?.reason ?? ''}): ${body?.error ?? ''}`)
     }
-    const entrant = (res.headers.getSetCookie?.() ?? []).find((line) => line.startsWith('colloq_k='))?.split(';')[0]
+    const entrant = (res.headers.getSetCookie?.() ?? []).find((line) => line.startsWith('aulalab_k='))?.split(';')[0]
     if (!entrant) throw new Error('the join answered without an entrant cookie')
     entrants.push({ name, cookie: entrant })
   }

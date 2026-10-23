@@ -21,7 +21,7 @@ import type { SessionState } from './session.svelte'
 // there, and neither Svelte nor the browser gets pulled in there.
 export type { RevealTarget }
 
-export const REVEAL_EVENT = 'colloq:reveal'
+export const REVEAL_EVENT = 'aulalab:reveal'
 
 /**
  * How long to wait for the cells along the way to unfold before bringing the

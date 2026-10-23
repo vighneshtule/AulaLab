@@ -21,7 +21,7 @@ import { config } from '../server/src/config.js'
 import { createSession, db, upsertParticipant } from '../server/src/db.js'
 import { signToken } from '../server/src/auth.js'
 import { tally } from '../server/src/log.js'
-import { COLLOQ_VERSION } from '../server/src/version.js'
+import { AULALAB_VERSION } from '../server/src/version.js'
 import { updateOracleSettings } from '../server/src/admin/settings.js'
 import { createTeacher } from '../server/src/admin/store.js'
 import { issueStaffCookie } from '../server/src/admin/auth.js'
@@ -145,7 +145,7 @@ test('without METRICS_TOKEN the address is a plain 404, token or not, and never 
       assert.equal(res.status, 404, `METRICS_TOKEN=${JSON.stringify(unset)} with ${authorization}`)
       assert.match(res.headers.get('content-type') ?? '', /^text\/plain/)
       const body = await res.text()
-      assert.doesNotMatch(body, /colloq_|<html/i)
+      assert.doesNotMatch(body, /aulalab_|<html/i)
     }
   }
 })
@@ -169,7 +169,7 @@ test('a wrong, missing or differently spelled credential is 401; the right Beare
     assert.equal(res.status, 401, `accepted: ${authorization}`)
     assert.match(res.headers.get('www-authenticate') ?? '', /^Bearer realm=/)
     assert.equal(res.headers.get('cache-control'), 'no-store')
-    assert.doesNotMatch(await res.text(), /colloq_/)
+    assert.doesNotMatch(await res.text(), /aulalab_/)
   }
   assert.equal((await scrape(`Bearer ${TOKEN}`)).status, 200)
   // The scheme is case-insensitive (RFC 7235), the token is not.
@@ -186,38 +186,38 @@ const EXPECTED = [
   'nodejs_heap_size_used_bytes',
   'nodejs_heap_size_total_bytes',
   'process_start_time_seconds',
-  'colloq_uptime_seconds',
-  'colloq_build_info',
-  'colloq_rooms_open',
-  'colloq_participants_online',
-  'colloq_sync_frames_total',
-  'colloq_sync_frames_refused_total',
-  'colloq_kernels',
-  'colloq_kernel_starts_total',
-  'colloq_kernel_start_failures_total',
-  'colloq_cell_runs_queued',
-  'colloq_cell_runs_running',
-  'colloq_notebook_save_failures_total',
-  'colloq_notebooks_unsaved',
-  'colloq_notebook_oldest_unsaved_seconds',
-  'colloq_oracle_requests_total',
-  'colloq_oracle_failures_total',
-  'colloq_competition_queue_waiting',
-  'colloq_competition_queue_running',
-  'colloq_competition_queue_oldest_wait_seconds',
-  'colloq_competition_submissions',
-  'colloq_competition_attempts_started_total',
-  'colloq_competition_attempts_completed_total',
-  'colloq_competition_attempt_retries_total',
-  'colloq_competition_cleanup_failures_total',
-  'colloq_http_requests_total',
-  'colloq_rate_limited_total',
-  'colloq_http_client_aborts_total',
-  'colloq_disk_free_bytes',
-  'colloq_disk_size_bytes',
-  'colloq_db_snapshot_interval_seconds',
-  'colloq_db_snapshots',
-  'colloq_db_snapshot_failures_total',
+  'aulalab_uptime_seconds',
+  'aulalab_build_info',
+  'aulalab_rooms_open',
+  'aulalab_participants_online',
+  'aulalab_sync_frames_total',
+  'aulalab_sync_frames_refused_total',
+  'aulalab_kernels',
+  'aulalab_kernel_starts_total',
+  'aulalab_kernel_start_failures_total',
+  'aulalab_cell_runs_queued',
+  'aulalab_cell_runs_running',
+  'aulalab_notebook_save_failures_total',
+  'aulalab_notebooks_unsaved',
+  'aulalab_notebook_oldest_unsaved_seconds',
+  'aulalab_oracle_requests_total',
+  'aulalab_oracle_failures_total',
+  'aulalab_competition_queue_waiting',
+  'aulalab_competition_queue_running',
+  'aulalab_competition_queue_oldest_wait_seconds',
+  'aulalab_competition_submissions',
+  'aulalab_competition_attempts_started_total',
+  'aulalab_competition_attempts_completed_total',
+  'aulalab_competition_attempt_retries_total',
+  'aulalab_competition_cleanup_failures_total',
+  'aulalab_http_requests_total',
+  'aulalab_rate_limited_total',
+  'aulalab_http_client_aborts_total',
+  'aulalab_disk_free_bytes',
+  'aulalab_disk_size_bytes',
+  'aulalab_db_snapshot_interval_seconds',
+  'aulalab_db_snapshots',
+  'aulalab_db_snapshot_failures_total',
 ]
 
 test('the exposition is the 0.0.4 text format: HELP and TYPE per family, then its samples', async () => {
@@ -240,18 +240,18 @@ test('the exposition is the 0.0.4 text format: HELP and TYPE per family, then it
     }
     for (const sample of family.samples) assert.ok(Number.isFinite(sample.value), `${name} = ${sample.value}`)
   }
-  assert.equal(value(families, 'colloq_build_info', { version: COLLOQ_VERSION }), 1)
+  assert.equal(value(families, 'aulalab_build_info', { version: AULALAB_VERSION }), 1)
   assert.ok(value(families, 'process_resident_memory_bytes') > 1_000_000)
   assert.ok(Math.abs(value(families, 'process_start_time_seconds') - (Date.now() / 1000 - process.uptime())) < 5)
   // Both volumes, even when they share a filesystem (they do here).
-  assert.ok(value(families, 'colloq_disk_free_bytes', { volume: 'data' }) > 0)
-  assert.ok(value(families, 'colloq_disk_size_bytes', { volume: 'workspace' }) > 0)
+  assert.ok(value(families, 'aulalab_disk_free_bytes', { volume: 'data' }) > 0)
+  assert.ok(value(families, 'aulalab_disk_size_bytes', { volume: 'workspace' }) > 0)
   // Every kernel role and state is a series from the start, so an alert on
   // one has something to evaluate before the first kernel ever dies.
-  assert.equal(families.get('colloq_kernels')!.samples.length, 8)
-  assert.equal(value(families, 'colloq_kernels', { backend: 'test', role: 'own', state: 'dead' }), 0)
-  assert.equal(families.get('colloq_competition_submissions')!.samples.length, SUBMISSION_STATES.length)
-  assert.equal(value(families, 'colloq_db_snapshot_interval_seconds'), 0, 'snapshots are off unless DB_SNAPSHOT_HOURS is set')
+  assert.equal(families.get('aulalab_kernels')!.samples.length, 8)
+  assert.equal(value(families, 'aulalab_kernels', { backend: 'test', role: 'own', state: 'dead' }), 0)
+  assert.equal(families.get('aulalab_competition_submissions')!.samples.length, SUBMISSION_STATES.length)
+  assert.equal(value(families, 'aulalab_db_snapshot_interval_seconds'), 0, 'snapshots are off unless DB_SNAPSHOT_HOURS is set')
 })
 
 test('the event loop is measured from the first scrape on, in seconds beyond the due time', async () => {
@@ -259,9 +259,9 @@ test('the event loop is measured from the first scrape on, in seconds beyond the
   await read()
   await new Promise((resolve) => setTimeout(resolve, 150))
   const families = await read()
-  const p50 = value(families, 'colloq_event_loop_lag_p50_seconds')
-  const p99 = value(families, 'colloq_event_loop_lag_p99_seconds')
-  const max = value(families, 'colloq_event_loop_lag_max_seconds')
+  const p50 = value(families, 'aulalab_event_loop_lag_p50_seconds')
+  const p99 = value(families, 'aulalab_event_loop_lag_p99_seconds')
+  const max = value(families, 'aulalab_event_loop_lag_max_seconds')
   assert.ok(p50 >= 0 && p50 <= p99 && p99 <= max, `${p50} ${p99} ${max}`)
   // An idle test process: well under the 20 ms resolution the monitor adds.
   assert.ok(p50 < 0.02, `p50 ${p50}`)
@@ -289,7 +289,7 @@ test('HTTP answers are counted by status class', async () => {
   for (let i = 0; i < 2; i++) assert.equal((await fetch(`${base}/api/no-such-route-${i}`)).status, 404)
   const later = await read()
   const delta = (status: string) =>
-    value(later, 'colloq_http_requests_total', { status_class: status }) - value(before, 'colloq_http_requests_total', { status_class: status })
+    value(later, 'aulalab_http_requests_total', { status_class: status }) - value(before, 'aulalab_http_requests_total', { status_class: status })
   assert.equal(delta('4xx'), 2)
   // The first scrape itself, counted once its answer went out.
   assert.ok(delta('2xx') >= 1)
@@ -335,7 +335,7 @@ test("429s are counted by the limit that refused: the room's two and the Oracle'
 
   const later = await read()
   const delta = (reason: RefusalReason) =>
-    value(later, 'colloq_rate_limited_total', { reason }) - value(before, 'colloq_rate_limited_total', { reason })
+    value(later, 'aulalab_rate_limited_total', { reason }) - value(before, 'aulalab_rate_limited_total', { reason })
   assert.equal(delta('join_address'), 1)
   assert.equal(delta('join_room'), 1)
   assert.equal(delta('oracle'), 1)
@@ -379,35 +379,35 @@ test('kernel starts, Oracle requests and the tallies reach the page as counters'
   tally('gate', 2)
   const later = await read()
   const delta = (name: string, labels: Record<string, string> = {}) => value(later, name, labels) - value(before, name, labels)
-  assert.equal(delta('colloq_kernel_start_failures_total', { backend: 'test', role: 'own' }), 1)
-  assert.equal(delta('colloq_kernel_start_failures_total', { backend: 'test', role: 'room' }), 0)
-  assert.equal(delta('colloq_kernel_starts_total', { backend: 'test', role: 'room' }), 2)
-  assert.equal(delta('colloq_oracle_requests_total'), 1)
-  assert.equal(delta('colloq_oracle_failures_total'), 1)
-  assert.equal(delta('colloq_sync_frames_total'), 5)
-  assert.equal(delta('colloq_sync_frames_refused_total'), 2)
+  assert.equal(delta('aulalab_kernel_start_failures_total', { backend: 'test', role: 'own' }), 1)
+  assert.equal(delta('aulalab_kernel_start_failures_total', { backend: 'test', role: 'room' }), 0)
+  assert.equal(delta('aulalab_kernel_starts_total', { backend: 'test', role: 'room' }), 2)
+  assert.equal(delta('aulalab_oracle_requests_total'), 1)
+  assert.equal(delta('aulalab_oracle_failures_total'), 1)
+  assert.equal(delta('aulalab_sync_frames_total'), 5)
+  assert.equal(delta('aulalab_sync_frames_refused_total'), 2)
 })
 
 /* ---------------------------------------------------------------- labels */
 
 /** Every label the page may carry, with every value it may take. */
 const LABELS: Record<string, Record<string, readonly string[] | RegExp>> = {
-  colloq_build_info: { version: /^\d+\.\d+\.\d+/ },
-  colloq_kernels: { backend: ['broker', 'docker', 'test', 'unknown'], role: ['room', 'own'], state: ['idle', 'busy', 'starting', 'dead'] },
-  colloq_kernel_starts_total: { backend: ['broker', 'docker', 'test', 'unknown'], role: ['room', 'own'] },
-  colloq_kernel_start_failures_total: { backend: ['broker', 'docker', 'test', 'unknown'], role: ['room', 'own'] },
-  colloq_competition_submissions: { state: [...SUBMISSION_STATES, 'other'] },
-  colloq_http_requests_total: { status_class: ['1xx', '2xx', '3xx', '4xx', '5xx'] },
-  colloq_rate_limited_total: { reason: ['join_room', 'join_address', 'oracle', 'competitions', 'other'] },
-  colloq_disk_free_bytes: { volume: ['data', 'workspace'] },
-  colloq_disk_size_bytes: { volume: ['data', 'workspace'] },
+  aulalab_build_info: { version: /^\d+\.\d+\.\d+/ },
+  aulalab_kernels: { backend: ['broker', 'docker', 'test', 'unknown'], role: ['room', 'own'], state: ['idle', 'busy', 'starting', 'dead'] },
+  aulalab_kernel_starts_total: { backend: ['broker', 'docker', 'test', 'unknown'], role: ['room', 'own'] },
+  aulalab_kernel_start_failures_total: { backend: ['broker', 'docker', 'test', 'unknown'], role: ['room', 'own'] },
+  aulalab_competition_submissions: { state: [...SUBMISSION_STATES, 'other'] },
+  aulalab_http_requests_total: { status_class: ['1xx', '2xx', '3xx', '4xx', '5xx'] },
+  aulalab_rate_limited_total: { reason: ['join_room', 'join_address', 'oracle', 'competitions', 'other'] },
+  aulalab_disk_free_bytes: { volume: ['data', 'workspace'] },
+  aulalab_disk_size_bytes: { volume: ['data', 'workspace'] },
   // The machines that run submissions (ops/metrics.ts · runnerFamilies): states and outcomes, never a machine.
-  colloq_runner_machines: { state: ['online', 'silent', 'outdated', 'draining', 'quarantined', 'revoked', 'left'] },
-  colloq_runner_joins_total: { result: ['joined', 'refused'] },
-  colloq_runner_lease_endings_total: { outcome: ['applied', 'refused', 'withdrawn', 'lost', 'declined', 'revoked', 'cancelled', 'failed', 'orphaned'] },
-  colloq_runner_uploads_total: { result: ['stored', 'repeated', 'refused', 'busy', 'replaced', 'stalled'] },
-  colloq_runner_blobs_total: { result: ['served', 'refused', 'gone'] },
-  colloq_runner_blob_streams_cut_total: { why: ['cut', 'stalled'] },
+  aulalab_runner_machines: { state: ['online', 'silent', 'outdated', 'draining', 'quarantined', 'revoked', 'left'] },
+  aulalab_runner_joins_total: { result: ['joined', 'refused'] },
+  aulalab_runner_lease_endings_total: { outcome: ['applied', 'refused', 'withdrawn', 'lost', 'declined', 'revoked', 'cancelled', 'failed', 'orphaned'] },
+  aulalab_runner_uploads_total: { result: ['stored', 'repeated', 'refused', 'busy', 'replaced', 'stalled'] },
+  aulalab_runner_blobs_total: { result: ['served', 'refused', 'gone'] },
+  aulalab_runner_blob_streams_cut_total: { why: ['cut', 'stalled'] },
 }
 
 test('labels come from fixed sets: rooms, people and addresses never reach the page, and classes add no series', async () => {
@@ -448,11 +448,11 @@ test('the newest database snapshot reaches /metrics and /api/instance/operations
   const taken = await takeSnapshot(db, config.dataDir, { keep: 7 })
   assert.ok(taken.ok, JSON.stringify(taken))
   const families = await read()
-  assert.equal(value(families, 'colloq_db_snapshots'), 1)
-  assert.ok(Math.abs(value(families, 'colloq_db_snapshot_last_timestamp_seconds') - Date.now() / 1000) < 5)
-  assert.equal(value(families, 'colloq_db_snapshot_last_size_bytes'), taken.bytes)
-  assert.ok(value(families, 'colloq_db_snapshot_last_duration_seconds') >= 0)
-  assert.equal(value(families, 'colloq_db_snapshot_failures_total'), 0)
+  assert.equal(value(families, 'aulalab_db_snapshots'), 1)
+  assert.ok(Math.abs(value(families, 'aulalab_db_snapshot_last_timestamp_seconds') - Date.now() / 1000) < 5)
+  assert.equal(value(families, 'aulalab_db_snapshot_last_size_bytes'), taken.bytes)
+  assert.ok(value(families, 'aulalab_db_snapshot_last_duration_seconds') >= 0)
+  assert.equal(value(families, 'aulalab_db_snapshot_failures_total'), 0)
 
   let cookie = ''
   issueStaffCookie(

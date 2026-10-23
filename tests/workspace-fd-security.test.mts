@@ -8,7 +8,7 @@ import { createAnchoredFilesystem } from '../server/src/secure-files.js'
 const roots: string[] = []
 after(() => roots.forEach(root => fs.rmSync(root, { recursive: true, force: true })))
 function fixture() {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-fd-')); roots.push(base)
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-fd-')); roots.push(base)
   const root = path.join(base, 'workspace'), outside = path.join(base, 'outside')
   fs.mkdirSync(path.join(root, 'room/sub'), { recursive: true }); fs.mkdirSync(outside)
   fs.writeFileSync(path.join(root, 'room/sub/file'), 'room'); fs.writeFileSync(path.join(outside, 'file'), 'secret')
@@ -18,7 +18,7 @@ const linux = process.platform === 'linux'
 /*
  * This vow used to say the opposite: "outside Linux we refuse rather than
  * quietly substitute a fallback path", and on macOS the files panel did not
- * work at all without `COLLOQ_UNSAFE_DEV_FILES=1` in .env.
+ * work at all without `AULALAB_UNSAFE_DEV_FILES=1` in .env.
  *
  * The word UNSAFE is gone from the teacher's path: a class on a laptop is
  * installed via pip and started with one command, and the first thing a
@@ -34,7 +34,7 @@ const linux = process.platform === 'linux'
  * without any flag.
  */
 test('outside Linux the walk works without the flag too', { skip: linux }, () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-fd-')); roots.push(root)
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-fd-')); roots.push(root)
   assert.deepEqual(createAnchoredFilesystem(root, { allowUnsafeDevelopment: false }).readdirSync(root), [])
 })
 test('opened parent remains confined after a deterministic parent symlink swap', { skip: !linux }, () => {

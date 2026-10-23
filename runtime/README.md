@@ -34,8 +34,8 @@ Secret and catalog files are reread on requests, supporting atomic file updates.
 | Variable                    | Default                                                |
 | --------------------------- | ------------------------------------------------------ |
 | `RUNTIME_PORT`              | `8787`                                                 |
-| `RUNTIME_NAMESPACE`         | `colloq`                                               |
-| `RUNTIME_WORKSPACE_CLAIM`   | `colloq-workspace`                                     |
+| `RUNTIME_NAMESPACE`         | `aulalab`                                               |
+| `RUNTIME_WORKSPACE_CLAIM`   | `aulalab-workspace`                                     |
 | `RUNTIME_KUBE_URL`          | `https://kubernetes.default.svc`                       |
 | `RUNTIME_KUBE_TOKEN_FILE`   | `/var/run/secrets/kubernetes.io/serviceaccount/token`  |
 | `RUNTIME_KUBE_CA_FILE`      | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` |
@@ -125,7 +125,7 @@ whether or not it gets a GPU, has `RUNTIME_COMPETITION_GPU_PULL_SECONDS` (900; 0
 to 3600) to pull it onto a node that has never run it: the broker waits that
 much longer, after the 30 seconds of startup every job has, for `main` to
 start, its `activeDeadlineSeconds` grows by as much (annotation
-`colloq.dev/pull-seconds` keeps the Pod's own number), and so does the package
+`aulalab.dev/pull-seconds` keeps the Pod's own number), and so does the package
 proxy's life for a preparation. The job's limit still counts from `main`'s
 start, in the broker and in the notebook harness, which stops the notebook
 from its own start (`run_notebook.py` · `stop_at`); the app's wait for such a
@@ -139,7 +139,7 @@ scheduled. All are read once at start and a wrong value stops the broker with th
 variable's name in the message.
 
 - `RUNTIME_COLOCATE_WITH_APP=1` adds a required podAffinity to Pods labelled
-  `colloq.dev/role=app` on `kubernetes.io/hostname` to every broker Pod that mounts
+  `aulalab.dev/role=app` on `kubernetes.io/hostname` to every broker Pod that mounts
   the data or workspace claim: room and personal-notebook Pods, competition job
   and resolver Pods (the exporter is a container of the job Pod). The package
   proxy mounts no claim and stays free. Set it when the storage is ReadWriteOnce.
@@ -156,7 +156,7 @@ variable's name in the message.
 - `RUNTIME_PRIORITY_CLASS` is the priorityClassName of every broker Pod; a
   `system-*` class is refused.
 - `RUNTIME_POD_LABELS` / `RUNTIME_POD_ANNOTATIONS` (JSON objects of strings) are
-  added to every broker Pod, never to Services. Keys starting with `colloq.` and
+  added to every broker Pod, never to Services. Keys starting with `aulalab.` and
   `app.kubernetes.io/managed-by` are reserved (they carry the broker's ownership
   and selectors), and annotations choosing an AppArmor or seccomp profile are
   refused. Use them for a policy engine's required labels, cost labels, or to opt
@@ -165,7 +165,7 @@ variable's name in the message.
 On k3s, set `RUNTIME_KERNEL_MEMORY` and `RUNTIME_KERNEL_MEMORY_MAX`, and the
 `RUNTIME_COMPETITION_GPU_*` settings (`RESOURCE`, `COUNT`, `SLOTS`, `SHM_MB`,
 `PULL_SECONDS`), in the operator env file (`--env-file` of `cluster.sh
-install|prepare|update`, kept as `/var/lib/colloq/config.env`). `release.py
+install|prepare|update`, kept as `/var/lib/aulalab/config.env`). `release.py
 render` copies only these seven runtime keys into the broker Deployment,
 validates them with the same grammar and bounds as the broker (and an explicit
 ceiling against the default, `2Gi` when unset), and re-renders them on every
@@ -201,9 +201,9 @@ private cluster network; use a secured transport boundary for remote access.
 | DELETE `/v1/rooms/:id/own`         | no body                    | `{ok: true}` after deletion of the personal-notebook Pod only    |
 
 The role is the path, never a body field: `/own` is the personal-notebook Pod,
-`colloq-room-<hash>-own` with a Service of the same name, labelled
-`colloq.dev/role=kernel` (so the room-isolation NetworkPolicy covers it),
-`colloq.kind=own-kernel` and `colloq.dev/kernel=own`; the room's Service does not
+`aulalab-room-<hash>-own` with a Service of the same name, labelled
+`aulalab.dev/role=kernel` (so the room-isolation NetworkPolicy covers it),
+`aulalab.kind=own-kernel` and `aulalab.dev/kernel=own`; the room's Service does not
 select it, nor its Service the room's Pod. Its Jupyter token is derived apart from
 the room's. A permanent retirement is the room's alone (`/own?retire=true` is
 400) and refuses the personal Pod too (410). Personal and room Pods have separate
@@ -294,7 +294,7 @@ shutdown leaves room Pods alive; a replacement process adopts their existing UID
 The app must use `instanceId` to invalidate terminal/kernel state after replacement.
 
 Permanent deletion first stores a selectorless headless Service carrying both
-the annotation and label `colloq.dev/retired=true`, then stops the Pod. It uses
+the annotation and label `aulalab.dev/retired=true`, then stops the Pod. It uses
 the existing create/delete permissions, without RBAC expansion. A failed stop
 leaves the reservation in place; ordinary idle DELETE preserves it. Deployment
 stop/update must exclude retired Services from normal cleanup. The Service holds
@@ -309,7 +309,7 @@ removes runtime-managed Services including these reservations. Only then does
 rerun with the same validated archive using `--recover`; ordinary start/stop/update
 never silently clear retirement reservations.
 
-Kernels use the unprivileged `colloq-kernel` service account with token automount
+Kernels use the unprivileged `aulalab-kernel` service account with token automount
 disabled, UID/GID 1000, dropped capabilities, RuntimeDefault seccomp, a read-only
 root filesystem, and no privilege escalation. Writable mounts are the single room
 PVC subPath, /tmp, /home/runner and /dev/shm. The app creates the room directory

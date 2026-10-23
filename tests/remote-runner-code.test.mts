@@ -1,11 +1,11 @@
 /**
  * The enrollment minter of the instance's console (server/src/ops/runner-code.ts,
- * built to dist/runner-code.js and run by `colloq-host runner-code` through
+ * built to dist/runner-code.js and run by `aulalab-host runner-code` through
  * the image's entry point): its contract, run as a process on a database of
  * its own.
  *
- * colloq-host reads exactly one JSON line from stdout and nothing else; a
- * refusal must print no code and exit non-zero, or colloq-host would print
+ * aulalab-host reads exactly one JSON line from stdout and nothing else; a
+ * refusal must print no code and exit non-zero, or aulalab-host would print
  * join commands with a code nobody can join with. And the row must be the
  * one the panel writes — by the same function, with the same bounds — or a
  * code minted on the console would join machines the panel's would not.
@@ -46,7 +46,7 @@ function mint(dataDir: string, args: string[]) {
 }
 
 test('the console\'s minter prints one JSON line with the code, writes the panel\'s row by its sha256, and audits the mint', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-runner-code-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-runner-code-'))
   try {
     const data = path.join(root, 'data')
     const before = Date.now()
@@ -64,7 +64,7 @@ test('the console\'s minter prints one JSON line with the code, writes the panel
     assert.equal(answer.classes, false)
     assert.ok(answer.expiresAt >= before + 12 * 3600_000 && answer.expiresAt <= Date.now() + 12 * 3600_000)
     const sha = createHash('sha256').update(answer.code).digest('hex')
-    const db = new Database(path.join(data, 'colloq.db'), { readonly: true })
+    const db = new Database(path.join(data, 'aulalab.db'), { readonly: true })
     try {
       const row = db.prepare('SELECT * FROM remote_runner_codes WHERE code_sha256 = ?').get(sha) as Record<string, unknown> | undefined
       assert.ok(row, 'the row is there, by the code\'s sha256')
@@ -73,7 +73,7 @@ test('the console\'s minter prints one JSON line with the code, writes the panel
       assert.equal(row.trusted, 1)
       assert.equal(row.approved_slots, 4)
       assert.equal(row.name_prefix, 'vast-4090')
-      assert.equal(row.created_by, 'colloq-host')
+      assert.equal(row.created_by, 'aulalab-host')
       assert.equal(row.classes, 0)
       assert.ok(!JSON.stringify(db.prepare('SELECT * FROM remote_runner_codes').all()).includes(answer.code), 'the code itself nowhere')
       // The panel's line in the audit log, by the code's id in the owner's list (store.ts · codeIdOf):
@@ -83,7 +83,7 @@ test('the console\'s minter prints one JSON line with the code, writes the panel
       const event = audited[0]
       assert.deepEqual([event.actor_id, event.actor_name, event.actor_email, event.actor_role, event.ip], [null, null, null, null, null])
       assert.deepEqual([event.target_type, event.target_id, event.target_label], ['runner_code', sha.slice(0, 16), 'vast-4090'])
-      assert.deepEqual(JSON.parse(String(event.detail)), { machines: 3, hours: 12, trusted: true, classes: false, approvedSlots: 4, source: 'colloq-host' })
+      assert.deepEqual(JSON.parse(String(event.detail)), { machines: 3, hours: 12, trusted: true, classes: false, approvedSlots: 4, source: 'aulalab-host' })
       assert.ok(!JSON.stringify(db.prepare('SELECT * FROM admin_audit_log').all()).includes(answer.code), 'nor in the audit log')
     } finally {
       db.close()
@@ -113,12 +113,12 @@ test('the console\'s minter prints one JSON line with the code, writes the panel
     }
 
     // A line for each code minted, the defaults' with no prefix to name it by, and none for a refusal.
-    const log = new Database(path.join(data, 'colloq.db'), { readonly: true })
+    const log = new Database(path.join(data, 'aulalab.db'), { readonly: true })
     try {
       const minted = log.prepare("SELECT target_label, detail FROM admin_audit_log WHERE action = 'runner.code_minted' ORDER BY id").all() as { target_label: string | null; detail: string }[]
       assert.equal(minted.length, 2)
       assert.equal(minted[1].target_label, null)
-      assert.deepEqual(JSON.parse(minted[1].detail), { machines: 1, hours: 24, trusted: false, classes: false, approvedSlots: null, source: 'colloq-host' })
+      assert.deepEqual(JSON.parse(minted[1].detail), { machines: 1, hours: 24, trusted: false, classes: false, approvedSlots: null, source: 'aulalab-host' })
     } finally {
       log.close()
     }
@@ -128,7 +128,7 @@ test('the console\'s minter prints one JSON line with the code, writes the panel
 })
 
 test('--classes mints a code whose machines take classes, into a fresh database that has the columns; never together with --trusted', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-runner-code-classes-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-runner-code-classes-'))
   try {
     const data = path.join(root, 'data')
     const run = mint(data, ['--machines', '2', '--classes', '--prefix', 'lab'])
@@ -137,7 +137,7 @@ test('--classes mints a code whose machines take classes, into a fresh database 
     assert.equal(answer.classes, true)
     assert.equal(answer.trusted, false)
     const sha = createHash('sha256').update(answer.code).digest('hex')
-    const db = new Database(path.join(data, 'colloq.db'), { readonly: true })
+    const db = new Database(path.join(data, 'aulalab.db'), { readonly: true })
     try {
       // A database made from nothing by this release: the columns are there, with their defaults.
       const columns = (table: string) => Object.fromEntries((db.prepare(`PRAGMA table_info(${table})`).all() as { name: string; notnull: number; dflt_value: string | null }[])
@@ -151,7 +151,7 @@ test('--classes mints a code whose machines take classes, into a fresh database 
       assert.equal(row.classes, 1)
       assert.equal(row.trusted, 0)
       const audited = db.prepare("SELECT detail FROM admin_audit_log WHERE action = 'runner.code_minted'").get() as { detail: string }
-      assert.deepEqual(JSON.parse(audited.detail), { machines: 2, hours: 24, trusted: false, classes: true, approvedSlots: null, source: 'colloq-host' })
+      assert.deepEqual(JSON.parse(audited.detail), { machines: 2, hours: 24, trusted: false, classes: true, approvedSlots: null, source: 'aulalab-host' })
     } finally {
       db.close()
     }
@@ -162,7 +162,7 @@ test('--classes mints a code whose machines take classes, into a fresh database 
       assert.equal(refused.stdout, '')
       assert.match(refused.stderr, /--classes and --trusted do not go together: a machine that takes classes is never given the hidden test/)
     }
-    const after = new Database(path.join(data, 'colloq.db'), { readonly: true })
+    const after = new Database(path.join(data, 'aulalab.db'), { readonly: true })
     try {
       assert.equal((after.prepare('SELECT COUNT(*) AS n FROM remote_runner_codes').get() as { n: number }).n, 1)
       assert.equal((after.prepare("SELECT COUNT(*) AS n FROM admin_audit_log WHERE action = 'runner.code_minted'").get() as { n: number }).n, 1)

@@ -1986,7 +1986,7 @@ test('help about a name that was not executed comes from static parsing', async 
   // Silently and without a trace: no output to the room, no line in `In`/`Out`.
   assert.equal(service[0].silent, true)
   assert.equal(service[0].store_history, false)
-  assert.match(service[0].code, /_colloq_inspect/)
+  assert.match(service[0].code, /_aulalab_inspect/)
   assert.match(service[0].code, /import seaborn as sns/, 'the import header did not arrive')
 })
 

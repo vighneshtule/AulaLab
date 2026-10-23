@@ -566,7 +566,7 @@ test('the machine\'s log is worded per kind, with what was measured under it as 
 
 test('the page\'s lede: address, release, code, when it joined and was heard', () => {
   const lede = plain(machineLede(machine(), NOW)) ?? ''
-  assert.match(lede, /^92\.180\.27\.83 · colloq 0\.24\.0, код совпадает с сервером · подключена .+ · на связи 2 с назад$/)
+  assert.match(lede, /^92\.180\.27\.83 · aulalab 0\.24\.0, код совпадает с сервером · подключена .+ · на связи 2 с назад$/)
   const silentAt = NOW - 19 * MIN
   assert.match(machineLede(machine({ state: 'silent', lastSeenAt: silentAt, compatible: false }), NOW), /код отличается от сервера · .* · была на связи в \d\d:\d\d$/)
 })

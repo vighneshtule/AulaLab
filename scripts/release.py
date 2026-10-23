@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate immutable Colloq releases and render single-node Kubernetes resources.
+"""Validate immutable Aula Lab releases and render single-node Kubernetes resources.
 
 Only Python's standard library is needed on the deployment host. Output is JSON,
 which kubectl accepts directly; no templating engine or YAML dependency is needed.
@@ -21,7 +21,7 @@ from pathlib import Path
 # Same canonical reference grammar and bounds as shared/runtime.ts.
 IMAGE = re.compile(r'^(?:[a-z0-9]+(?:[.-][a-z0-9]+)*(?::[0-9]{1,5})?/)?[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)*@sha256:[a-f0-9]{64}$')
 NAME = re.compile(r'^(?:[a-z0-9][a-z0-9-]{0,30}[a-z0-9]|[a-z0-9])$')
-NAMESPACE = 'colloq'
+NAMESPACE = 'aulalab'
 TOOLING_FILES = tuple('scripts/' + name for name in (
     'cluster.sh', 'release.py', 'state-lock.py', 'backup.sh', 'runtime-backup.py',
     'restore.sh', 'host.sh', 'lib.sh'))
@@ -249,13 +249,13 @@ APP_SETTINGS = {
     # TRUSTED_PROXIES every student is that one address.
     'TRUSTED_PROXIES', 'SHARED_ADDRESSES', 'TRUST_CF_CONNECTING_IP', 'HSTS',
     # Room network; on k3s `none` also shapes the room policy below.
-    'COLLOQ_ROOM_NETWORK', 'KERNEL_BLOCKED_CIDRS',
+    'AULALAB_ROOM_NETWORK', 'KERNEL_BLOCKED_CIDRS',
     # Operations: Prometheus metrics behind a token, JSON logs, database snapshots.
     'METRICS_TOKEN', 'LOG_FORMAT', 'DB_SNAPSHOT_HOURS', 'DB_SNAPSHOT_KEEP',
 }
 # Where the institution's CA lands in the app Pod (NODE_EXTRA_CA_CERTS names a
 # file on this node; the Pod gets its content from a ConfigMap).
-EXTRA_CA_DIR = '/etc/colloq-ca'
+EXTRA_CA_DIR = '/etc/aulalab-ca'
 # Destinations the package proxy reaches without a rule of its own: public IPv4 on 443.
 PUBLIC_EXCEPT = ['0.0.0.0/8', '10.0.0.0/8', '100.64.0.0/10', '127.0.0.0/8',
                  '169.254.0.0/16', '172.16.0.0/12', '192.0.0.0/24', '192.0.2.0/24', '192.88.99.0/24',
@@ -334,7 +334,7 @@ def mirror_egress(settings, resolve=socket.getaddrinfo):
 
 # From the operator's file into the broker (for the package proxy Pod) and into
 # the network policies; the app reads the same values from its Secret.
-NETWORK_SETTINGS = ('DEPENDENCY_INDEX_URL', 'DEPENDENCY_FILES_HOSTS', 'COLLOQ_ROOM_NETWORK', 'NODE_EXTRA_CA_CERTS')
+NETWORK_SETTINGS = ('DEPENDENCY_INDEX_URL', 'DEPENDENCY_FILES_HOSTS', 'AULALAB_ROOM_NETWORK', 'NODE_EXTRA_CA_CERTS')
 
 
 def network_settings(file):
@@ -377,7 +377,7 @@ def render(value, node_name, state_dir, runtime_env=None, network=None):
                                     'pod-security.kubernetes.io/warn': 'restricted',
                                     'pod-security.kubernetes.io/warn-version': policy_version}
     for suffix, size in [('data', '10Gi'), ('workspace', '100Gi')]:
-        name = 'colloq-' + suffix
+        name = 'aulalab-' + suffix
         items.append(resource('PersistentVolume', name, {
             'capacity': {'storage': size}, 'volumeMode': 'Filesystem', 'accessModes': ['ReadWriteOnce'],
             'persistentVolumeReclaimPolicy': 'Retain', 'storageClassName': '',
@@ -387,77 +387,77 @@ def render(value, node_name, state_dir, runtime_env=None, network=None):
                 {'key': 'kubernetes.io/hostname', 'operator': 'In', 'values': [node_name]}]}]}}}))
         items.append(resource('PersistentVolumeClaim', name, {'accessModes': ['ReadWriteOnce'],
             'storageClassName': '', 'volumeName': name, 'resources': {'requests': {'storage': size}}}))
-    items.append(resource('ConfigMap', 'colloq-catalog', data={'catalog.json': json.dumps(value['catalog'])}))
+    items.append(resource('ConfigMap', 'aulalab-catalog', data={'catalog.json': json.dumps(value['catalog'])}))
     if network.get('extraCa'):
         # The institution's CA, for the app's own TLS (Node reads NODE_EXTRA_CA_CERTS
         # at start) and for package preparation, which hands it to pip.
-        items.append(resource('ConfigMap', 'colloq-extra-ca', data={'extra-ca.pem': network['extraCa']}))
-    for name in ['colloq-app', 'colloq-runtime', 'colloq-kernel']:
+        items.append(resource('ConfigMap', 'aulalab-extra-ca', data={'extra-ca.pem': network['extraCa']}))
+    for name in ['aulalab-app', 'aulalab-runtime', 'aulalab-kernel']:
         items.append(resource('ServiceAccount', name, automountServiceAccountToken=False))
     # pods/resize is the only write beyond create/delete: it changes a live room's
     # container resources in place (Kubernetes 1.33+), so a memory raise mid-class
     # keeps the room's Python. It cannot alter image, command, mounts or security.
-    items.append(resource('Role', 'colloq-runtime', rules=[{'apiGroups': [''],
+    items.append(resource('Role', 'aulalab-runtime', rules=[{'apiGroups': [''],
         'resources': ['pods', 'services'], 'verbs': ['get', 'list', 'create', 'delete']},
         {'apiGroups': [''], 'resources': ['pods/resize'], 'verbs': ['patch']},
         {'apiGroups': [''], 'resources': ['persistentvolumeclaims'], 'verbs': ['get']},
         {'apiGroups': ['networking.k8s.io'], 'resources': ['networkpolicies'], 'verbs': ['get']}]))
-    items.append(resource('RoleBinding', 'colloq-runtime', roleRef={'apiGroup': 'rbac.authorization.k8s.io',
-        'kind': 'Role', 'name': 'colloq-runtime'}, subjects=[{'kind': 'ServiceAccount',
-        'name': 'colloq-runtime', 'namespace': NAMESPACE}]))
+    items.append(resource('RoleBinding', 'aulalab-runtime', roleRef={'apiGroup': 'rbac.authorization.k8s.io',
+        'kind': 'Role', 'name': 'aulalab-runtime'}, subjects=[{'kind': 'ServiceAccount',
+        'name': 'aulalab-runtime', 'namespace': NAMESPACE}]))
     security = {'runAsNonRoot': True, 'runAsUser': 1000, 'runAsGroup': 1000,
                 'fsGroup': 1000, 'fsGroupChangePolicy': 'OnRootMismatch',
                 'seccompProfile': {'type': 'RuntimeDefault'}}
     container_security = {'allowPrivilegeEscalation': False, 'readOnlyRootFilesystem': True,
                           'capabilities': {'drop': ['ALL']}}
-    catalog_volume = {'name': 'catalog', 'configMap': {'name': 'colloq-catalog'}}
-    token_volume = {'name': 'runtime-token', 'secret': {'secretName': 'colloq-runtime-auth',
+    catalog_volume = {'name': 'catalog', 'configMap': {'name': 'aulalab-catalog'}}
+    token_volume = {'name': 'runtime-token', 'secret': {'secretName': 'aulalab-runtime-auth',
                     'defaultMode': 0o440, 'items': [{'key': 'runtime-token', 'path': 'runtime-token'}]}}
     for role in ('app', 'runtime'):
-        name = 'colloq-' + role
-        labels = {'app.kubernetes.io/name': name, 'colloq.dev/role': role}
+        name = 'aulalab-' + role
+        labels = {'app.kubernetes.io/name': name, 'aulalab.dev/role': role}
         app = role == 'app'
         port = 3000 if app else 8787
         env = {'NODE_ENV': 'production'}
         volumes = [catalog_volume, token_volume, {'name': 'tmp', 'emptyDir': {'sizeLimit': '256Mi'}}]
-        mounts = [{'name': 'catalog', 'mountPath': '/etc/colloq', 'readOnly': True},
+        mounts = [{'name': 'catalog', 'mountPath': '/etc/aulalab', 'readOnly': True},
                   {'name': 'runtime-token', 'mountPath': '/run/secrets', 'readOnly': True},
                   {'name': 'tmp', 'mountPath': '/tmp'}]
         if app:
             env.update({'PORT': '3000', 'BIND_ADDR': '0.0.0.0', 'DATA_DIR': '/data', 'WORKSPACE_DIR': '/workspace',
-                'KERNEL_BACKEND': 'broker', 'KERNEL_RUNTIME_URL': 'http://colloq-runtime:8787',
+                'KERNEL_BACKEND': 'broker', 'KERNEL_RUNTIME_URL': 'http://aulalab-runtime:8787',
                 'KERNEL_RUNTIME_TOKEN_FILE': '/run/secrets/runtime-token',
-                'KERNEL_CATALOG_FILE': '/etc/colloq/catalog.json'})
+                'KERNEL_CATALOG_FILE': '/etc/aulalab/catalog.json'})
             for suffix in ('data', 'workspace'):
-                volumes.append({'name': suffix, 'persistentVolumeClaim': {'claimName': 'colloq-' + suffix}})
+                volumes.append({'name': suffix, 'persistentVolumeClaim': {'claimName': 'aulalab-' + suffix}})
                 mounts.append({'name': suffix, 'mountPath': '/' + suffix})
             if network.get('extraCa'):
                 # An explicit env entry wins over the Secret's value, which names
                 # the file on the node rather than in the Pod.
-                volumes.append({'name': 'extra-ca', 'configMap': {'name': 'colloq-extra-ca'}})
+                volumes.append({'name': 'extra-ca', 'configMap': {'name': 'aulalab-extra-ca'}})
                 mounts.append({'name': 'extra-ca', 'mountPath': EXTRA_CA_DIR, 'readOnly': True})
                 env['NODE_EXTRA_CA_CERTS'] = EXTRA_CA_DIR + '/extra-ca.pem'
         else:
             # /var/run is a symlink to /run in the image. Mounting our read-only
             # secret at /run/secrets prevents creation of Kubernetes' nested SA
             # projection at /var/run/secrets/kubernetes.io/serviceaccount.
-            mounts[1]['mountPath'] = '/etc/colloq-runtime-auth'
-            env.update({'RUNTIME_PORT': '8787', 'RUNTIME_TOKEN_FILE': '/etc/colloq-runtime-auth/runtime-token',
-                'RUNTIME_ROOM_SECRET_FILE': '/run/room-secret/room-secret', 'RUNTIME_CATALOG_FILE': '/etc/colloq/catalog.json',
-                'RUNTIME_NAMESPACE': NAMESPACE, 'RUNTIME_WORKSPACE_CLAIM': 'colloq-workspace',
+            mounts[1]['mountPath'] = '/etc/aulalab-runtime-auth'
+            env.update({'RUNTIME_PORT': '8787', 'RUNTIME_TOKEN_FILE': '/etc/aulalab-runtime-auth/runtime-token',
+                'RUNTIME_ROOM_SECRET_FILE': '/run/room-secret/room-secret', 'RUNTIME_CATALOG_FILE': '/etc/aulalab/catalog.json',
+                'RUNTIME_NAMESPACE': NAMESPACE, 'RUNTIME_WORKSPACE_CLAIM': 'aulalab-workspace',
                 'RUNTIME_COMPETITION_EXPORTER_IMAGE': value['runtimeImage'],
                 'RUNTIME_COMPETITION_INSTANCE_ID': NAMESPACE,
-                'RUNTIME_COMPETITION_DATA_CLAIM': 'colloq-data',
-                'RUNTIME_IMAGE_PULL_SECRET': 'colloq-registry',
+                'RUNTIME_COMPETITION_DATA_CLAIM': 'aulalab-data',
+                'RUNTIME_IMAGE_PULL_SECRET': 'aulalab-registry',
                 'RUNTIME_KUBE_URL': 'https://kubernetes.default.svc',
                 'RUNTIME_KUBE_TOKEN_FILE': '/var/run/secrets/kubernetes.io/serviceaccount/token',
                 'RUNTIME_KUBE_CA_FILE': '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'})
             env.update(runtime_env or {})
             # Passed through to the package proxy Pod, which reads and enforces them.
             env.update({key: network[key] for key in ('DEPENDENCY_INDEX_URL', 'DEPENDENCY_FILES_HOSTS') if network.get(key)})
-            volumes.append({'name': 'room-secret', 'secret': {'secretName': 'colloq-room-secret', 'defaultMode': 0o440}})
+            volumes.append({'name': 'room-secret', 'secret': {'secretName': 'aulalab-room-secret', 'defaultMode': 0o440}})
             mounts.append({'name': 'room-secret', 'mountPath': '/run/room-secret', 'readOnly': True})
-            volumes.append({'name': 'data', 'persistentVolumeClaim': {'claimName': 'colloq-data'}})
+            volumes.append({'name': 'data', 'persistentVolumeClaim': {'claimName': 'aulalab-data'}})
             mounts.append({'name': 'data', 'mountPath': '/data'})
         container = {'name': role, 'image': value['appImage' if app else 'runtimeImage'],
             'imagePullPolicy': 'IfNotPresent', 'ports': [{'containerPort': port, 'name': 'http'}],
@@ -473,25 +473,25 @@ def render(value, node_name, state_dir, runtime_env=None, network=None):
             'readinessProbe': {'httpGet': {'path': '/api/readyz', 'port': port}, 'periodSeconds': 5} if app else
                               {'tcpSocket': {'port': port}, 'periodSeconds': 5}}
         if app:
-            container['envFrom'] = [{'secretRef': {'name': 'colloq-app-config'}}]
+            container['envFrom'] = [{'secretRef': {'name': 'aulalab-app-config'}}]
         items.append(resource('Deployment', name, {'replicas': 0, 'strategy': {'type': 'Recreate'},
             'selector': {'matchLabels': labels}, 'template': {'metadata': {'labels': labels,
-            'annotations': {'colloq.dev/release': value['version']}}, 'spec': {
+            'annotations': {'aulalab.dev/release': value['version']}}, 'spec': {
                 'serviceAccountName': name, 'automountServiceAccountToken': not app,
                 'securityContext': security, 'terminationGracePeriodSeconds': 30,
                 'nodeSelector': {'kubernetes.io/hostname': node_name},
-                'imagePullSecrets': [{'name': 'colloq-registry'}], 'containers': [container], 'volumes': volumes}}}))
+                'imagePullSecrets': [{'name': 'aulalab-registry'}], 'containers': [container], 'volumes': volumes}}}))
         items.append(resource('Service', name, {'type': 'NodePort' if app else 'ClusterIP',
             'selector': labels, 'ports': [{'name': 'http', 'port': port, 'targetPort': port,
                                          **({'nodePort': 30080} if app else {})}]}))
-    select = lambda role: {'podSelector': {'matchLabels': {'colloq.dev/role': role}}}
-    # Rooms reach cluster DNS and nothing else; COLLOQ_ROOM_NETWORK=none takes DNS
+    select = lambda role: {'podSelector': {'matchLabels': {'aulalab.dev/role': role}}}
+    # Rooms reach cluster DNS and nothing else; AULALAB_ROOM_NETWORK=none takes DNS
     # away too, as it does on Docker (server/src/kernel/perimeter.ts).
-    room_dns = [] if network.get('COLLOQ_ROOM_NETWORK', '').strip().lower() == 'none' else [{
+    room_dns = [] if network.get('AULALAB_ROOM_NETWORK', '').strip().lower() == 'none' else [{
         'to': [{'namespaceSelector': {'matchLabels': {'kubernetes.io/metadata.name': 'kube-system'}},
                 'podSelector': {'matchLabels': {'k8s-app': 'kube-dns'}}}],
         'ports': [{'protocol': 'UDP', 'port': 53}, {'protocol': 'TCP', 'port': 53}]}]
-    items.append(resource('NetworkPolicy', 'room-isolation', {'podSelector': {'matchLabels': {'colloq.dev/role': 'kernel'}},
+    items.append(resource('NetworkPolicy', 'room-isolation', {'podSelector': {'matchLabels': {'aulalab.dev/role': 'kernel'}},
         'policyTypes': ['Ingress', 'Egress'], 'ingress': [{'from': [select('app'), select('runtime')],
             'ports': [{'protocol': 'TCP', 'port': 8888}]}], 'egress': room_dns}))
     dns = {'namespaceSelector': {'matchLabels': {'kubernetes.io/metadata.name': 'kube-system'}},
@@ -499,10 +499,10 @@ def render(value, node_name, state_dir, runtime_env=None, network=None):
     dns_ports = [{'protocol': 'UDP', 'port': 53}, {'protocol': 'TCP', 'port': 53}]
     exporter_ingress = [{'from': [select('runtime')], 'ports': [{'protocol': 'TCP', 'port': 8765}]}]
     items.append(resource('NetworkPolicy', 'competition-job-isolation', {
-        'podSelector': {'matchLabels': {'colloq.dev/role': 'competition-job'}},
+        'podSelector': {'matchLabels': {'aulalab.dev/role': 'competition-job'}},
         'policyTypes': ['Ingress', 'Egress'], 'ingress': exporter_ingress, 'egress': []}))
     items.append(resource('NetworkPolicy', 'competition-resolver-isolation', {
-        'podSelector': {'matchLabels': {'colloq.dev/role': 'competition-resolver'}},
+        'podSelector': {'matchLabels': {'aulalab.dev/role': 'competition-resolver'}},
         'policyTypes': ['Ingress', 'Egress'], 'ingress': exporter_ingress,
         'egress': [{'to': [select('competition-proxy')], 'ports': [{'protocol': 'TCP', 'port': 3128}]},
                    {'to': [dns], 'ports': dns_ports}]}))
@@ -511,15 +511,15 @@ def render(value, node_name, state_dir, runtime_env=None, network=None):
     # A campus mirror (DEPENDENCY_INDEX_URL) adds its own addresses and port.
     public_ipv4 = {'ipBlock': {'cidr': '0.0.0.0/0', 'except': list(PUBLIC_EXCEPT)}}
     items.append(resource('NetworkPolicy', 'competition-proxy-isolation', {
-        'podSelector': {'matchLabels': {'colloq.dev/role': 'competition-proxy'}},
+        'podSelector': {'matchLabels': {'aulalab.dev/role': 'competition-proxy'}},
         'policyTypes': ['Ingress', 'Egress'],
         'ingress': [{'from': [select('competition-resolver')], 'ports': [{'protocol': 'TCP', 'port': 3128}]}],
         'egress': [{'to': [dns], 'ports': dns_ports},
                    {'to': [public_ipv4], 'ports': [{'protocol': 'TCP', 'port': 443}]},
                    *mirror_egress(network)]}))
-    items.append(resource('NetworkPolicy', 'runtime-ingress', {'podSelector': {'matchLabels': {'colloq.dev/role': 'runtime'}},
+    items.append(resource('NetworkPolicy', 'runtime-ingress', {'podSelector': {'matchLabels': {'aulalab.dev/role': 'runtime'}},
         'policyTypes': ['Ingress'], 'ingress': [{'from': [select('app')], 'ports': [{'protocol': 'TCP', 'port': 8787}]}]}))
-    items.append(resource('NetworkPolicy', 'app-ingress', {'podSelector': {'matchLabels': {'colloq.dev/role': 'app'}},
+    items.append(resource('NetworkPolicy', 'app-ingress', {'podSelector': {'matchLabels': {'aulalab.dev/role': 'app'}},
         'policyTypes': ['Ingress'], 'ingress': [{'from': [{'ipBlock': {'cidr': '127.0.0.0/8'}}],
             'ports': [{'protocol': 'TCP', 'port': 3000}]}]}))
     return {'apiVersion': 'v1', 'kind': 'List', 'items': items}
@@ -533,8 +533,8 @@ def main():
     parser.add_argument('--data-release')
     parser.add_argument('--tooling-root', default=str(Path(__file__).resolve().parent.parent))
     parser.add_argument('--rollback', action='store_true')
-    parser.add_argument('--node-name', default='colloq')
-    parser.add_argument('--state-dir', default='/var/lib/colloq')
+    parser.add_argument('--node-name', default='aulalab')
+    parser.add_argument('--state-dir', default='/var/lib/aulalab')
     parser.add_argument('--field')
     parser.add_argument('--env-file')
     args = parser.parse_args()
@@ -586,11 +586,11 @@ def main():
     elif args.command == 'gpu':
         gpu = value.get('tooling', {}).get('gpu')
         require(gpu, 'this release has no GPU tooling')
-        labels = {'app.kubernetes.io/name': 'colloq-nvidia-device-plugin'}
-        plugin = resource('DaemonSet', 'colloq-nvidia-device-plugin', {
+        labels = {'app.kubernetes.io/name': 'aulalab-nvidia-device-plugin'}
+        plugin = resource('DaemonSet', 'aulalab-nvidia-device-plugin', {
             'selector': {'matchLabels': labels}, 'template': {'metadata': {'labels': labels}, 'spec': {
                 'runtimeClassName': 'nvidia', 'automountServiceAccountToken': False,
-                'imagePullSecrets': [{'name': 'colloq-registry'}],
+                'imagePullSecrets': [{'name': 'aulalab-registry'}],
                 'containers': [{'name': 'plugin', 'image': gpu['devicePluginImage'],
                     'args': ['--fail-on-init-error=true'], 'env': [
                         {'name': 'NVIDIA_VISIBLE_DEVICES', 'value': 'all'},
@@ -606,9 +606,9 @@ def main():
         env = next((e for e in value['catalog']['environments'] if e['gpu'] and e.get('current', True)), None)
         env = env or next((e for e in value['catalog']['environments'] if e['gpu']), None)
         require(env, 'this release has no GPU environment')
-        print(json.dumps(resource('Pod', 'colloq-gpu-check', {
+        print(json.dumps(resource('Pod', 'aulalab-gpu-check', {
             'restartPolicy': 'Never', 'runtimeClassName': 'nvidia', 'automountServiceAccountToken': False,
-            'imagePullSecrets': [{'name': 'colloq-registry'}], 'activeDeadlineSeconds': 180,
+            'imagePullSecrets': [{'name': 'aulalab-registry'}], 'activeDeadlineSeconds': 180,
             'securityContext': {'runAsNonRoot': True, 'runAsUser': 1000, 'runAsGroup': 1000,
                 'seccompProfile': {'type': 'RuntimeDefault'}},
             'containers': [{'name': 'cuda', 'image': env['image'],
@@ -624,9 +624,9 @@ def main():
                 'readOnlyRootFilesystem': True, 'capabilities': {'drop': ['ALL']}},
             'resources': {'requests': {'cpu': '10m', 'memory': '16Mi'}, 'limits': {'cpu': '100m', 'memory': '64Mi'}}}
             for i, img in enumerate(images)]
-        pod = resource('Pod', 'colloq-image-check', {'restartPolicy': 'Never', 'automountServiceAccountToken': False,
+        pod = resource('Pod', 'aulalab-image-check', {'restartPolicy': 'Never', 'automountServiceAccountToken': False,
             'securityContext': {'runAsNonRoot': True, 'runAsUser': 1000, 'runAsGroup': 1000,
-                'seccompProfile': {'type': 'RuntimeDefault'}}, 'imagePullSecrets': [{'name': 'colloq-registry'}],
+                'seccompProfile': {'type': 'RuntimeDefault'}}, 'imagePullSecrets': [{'name': 'aulalab-registry'}],
             'initContainers': containers[:-1], 'containers': containers[-1:]})
         print(json.dumps(pod))
     elif args.command == 'config':
@@ -636,7 +636,7 @@ def main():
             # stderr: stdout is the Secret itself, piped into kubectl.
             print(f'release: warning: {args.env_file} sets {", ".join(ignored)}, which the k3s installation does not use; '
                   'they are ignored (KERNEL_* and the other Docker-only settings have no effect here)', file=sys.stderr)
-        print(json.dumps(resource('Secret', 'colloq-app-config', type='Opaque', stringData=settings)))
+        print(json.dumps(resource('Secret', 'aulalab-app-config', type='Opaque', stringData=settings)))
     else:
         print('valid release ' + value['version'])
 

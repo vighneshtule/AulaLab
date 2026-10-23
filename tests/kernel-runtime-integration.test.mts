@@ -14,13 +14,13 @@ import {listEnvironments,environmentAbilities,setActiveName,activeName,writeSour
 import {endpointIdentity} from '../server/src/kernel/jupyter.js'
 import {forgetResources,machineResources} from '../server/src/kernel/resources.js'
 
-const image=(c:string)=>`registry.example/colloq/kernel@sha256:${c.repeat(64)}`
+const image=(c:string)=>`registry.example/aulalab/kernel@sha256:${c.repeat(64)}`
 const rev=(c:string)=>`sha256:${c.repeat(64)}`
 
 test('room image pins survive catalog/default updates, and a revision the catalog dropped moves the room to its environment\'s current one',async()=>{
  const old={...process.env};const file=path.join(TEST_ROOT,'catalog.json'),tokenFile=path.join(TEST_ROOT,'broker-token')
  const requests:any[]=[]
- const runtime=http.createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;const input=body?JSON.parse(body):{};requests.push({path:req.url,...input});res.setHeader('content-type','application/json');res.end(JSON.stringify(req.url==='/v1/health'?{ok:true,reason:null,defaultCpus:1.5}:req.url==='/v1/rooms'?{rooms:[{sessionId:'pin-old',instanceId:'pod-1',phase:'ready',environment:'base',revision:rev('a'),cpus:4}]}:{url:'http://room.colloq.svc:8888',token:'r'.repeat(64),instanceId:'pod-1',environment:input.environment,revision:input.revision}))})
+ const runtime=http.createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;const input=body?JSON.parse(body):{};requests.push({path:req.url,...input});res.setHeader('content-type','application/json');res.end(JSON.stringify(req.url==='/v1/health'?{ok:true,reason:null,defaultCpus:1.5}:req.url==='/v1/rooms'?{rooms:[{sessionId:'pin-old',instanceId:'pod-1',phase:'ready',environment:'base',revision:rev('a'),cpus:4}]}:{url:'http://room.aulalab.svc:8888',token:'r'.repeat(64),instanceId:'pod-1',environment:input.environment,revision:input.revision}))})
  await new Promise<void>(r=>runtime.listen(0,'127.0.0.1',r));const port=(runtime.address() as {port:number}).port
  let entries:any[]=[{name:'base',image:image('a'),gpu:false},{name:'cv',image:image('c'),gpu:false}]
  const write=()=>fs.writeFileSync(file,JSON.stringify({schemaVersion:1,release:'v0.2.0',defaultEnvironment:'base',environments:entries}))
@@ -121,7 +121,7 @@ test('a broker that does not serve personal notebooks is refused in words, not s
 })
 
 test('an endpoint incarnation distinguishes replacement pods behind stable Service DNS',()=>{
- const endpoint={url:'http://one.colloq.svc:8888',token:'secret',instanceId:'pod-a'}
+ const endpoint={url:'http://one.aulalab.svc:8888',token:'secret',instanceId:'pod-a'}
  assert.notEqual(endpointIdentity(endpoint),endpointIdentity({...endpoint,instanceId:'pod-b'}))
  assert.equal(endpointIdentity({...endpoint,token:'rotated'}),endpointIdentity(endpoint))
  assert.equal(endpointIdentity({url:endpoint.url,token:'legacy'}),endpoint.url,'retain legacy Docker PTY fingerprint compatibility')
@@ -135,7 +135,7 @@ test('stop drains a pending ensure and prevents concurrent or late kernel attach
  const server=http.createServer(async(req,res)=>{
   methods.push(req.method??'');let raw='';for await(const chunk of req)raw+=chunk
   res.setHeader('content-type','application/json')
-  if(req.method==='POST'){started();await pending;const input=JSON.parse(raw);res.end(JSON.stringify({url:'http://room.colloq.svc:8888',token:'r'.repeat(64),instanceId:'pod-late',...input}))}
+  if(req.method==='POST'){started();await pending;const input=JSON.parse(raw);res.end(JSON.stringify({url:'http://room.aulalab.svc:8888',token:'r'.repeat(64),instanceId:'pod-late',...input}))}
   else res.end(JSON.stringify({ok:true}))
  })
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r))

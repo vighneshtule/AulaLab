@@ -325,7 +325,7 @@ export class TunnelFault {
     return proxy
   }
 
-  /** COLLOQ_RUNNER_JOIN for a machine that calls home through this proxy. */
+  /** AULALAB_RUNNER_JOIN for a machine that calls home through this proxy. */
   joinTarget(code: string): string {
     return `${this.url}#${code}`
   }

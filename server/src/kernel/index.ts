@@ -157,7 +157,7 @@ import {
 import {
   guardPolicySource,
   parseGuardReport,
-  COLLOQ_REFUSED,
+  AULALAB_REFUSED,
   GUARD_REPORT_EXPR,
   GUARD_REPORT_KEY,
 } from './danger.js'
@@ -3125,7 +3125,7 @@ export function ensureKernel(sessionId: string, root: string = CELLS_KEY): Promi
        * Forget the remembered container address.
        *
        * The room container's port is random, and the pool caches it. After
-       * `docker restart colloq-room-<id>` the port is different, but the room
+       * `docker restart aulalab-room-<id>` the port is different, but the room
        * goes to the old one, and will keep going until the whole server is
        * restarted: "No Python kernel after 60s" on every Run, with a live and
        * healthy container right next to it.
@@ -5411,14 +5411,14 @@ async function runOne(runtime: Runtime, item: QueueItem): Promise<void> {
       onError: (ename, evalue, traceback) => {
         /*
          * Our own refusal is one line without a traceback, just like a stop by
-         * the limit. The `<colloq-guard>` frames in it are not student code:
+         * the limit. The `<aulalab-guard>` frames in it are not student code:
          * that is our module explaining why `os._exit()` in a shared notebook
          * takes the kernel down for the whole class, and all of that is already
          * said in human words in the refusal text itself. The code BEFORE the
          * dangerous line ran as usual: a refusal is an exception, not a
          * cancellation of the cell.
          */
-        if (ename === COLLOQ_REFUSED) {
+        if (ename === AULALAB_REFUSED) {
           writer.error('', evalue, [])
           return
         }
@@ -7365,7 +7365,7 @@ async function runCouncilOne(runtime: Runtime, item: QueueItem, job: CouncilJob)
     onError: (ename, evalue, traceback) => {
       /*
        * Our own refusal is one line without a traceback, like a stop by the
-       * limit. The `<colloq-council>` frames in it are not student code,
+       * limit. The `<aulalab-council>` frames in it are not student code,
        * and there is nothing there for them to read: that is our module
        * explaining why `exit()` in an attempt would take the kernel down
        * for the whole room. A worker's gate refusing the attempt (§9.6) is
@@ -7394,7 +7394,7 @@ async function runCouncilOne(runtime: Runtime, item: QueueItem, job: CouncilJob)
     onInputRequest: () => {
       buffer.stream(
         'stderr',
-        tr("server.colloqInputIsNotSupportedInCouncil.fd07fb"),
+        tr("server.aulalabInputIsNotSupportedInCouncil.fd07fb"),
       )
       touchJob(runtime, active)
       void runtime.kernel?.answerInput('').catch(() => {})
@@ -7455,7 +7455,7 @@ async function runCouncilOne(runtime: Runtime, item: QueueItem, job: CouncilJob)
        * now", and running on shared objects is exactly what would cost a class
        * here: the student would get a right-looking answer while spoiling the
        * data for the whole group. One line without a traceback: the
-       * `<colloq-council>` frames are not their code and will tell them
+       * `<aulalab-council>` frames are not their code and will tell them
        * nothing.
        */
       // The exception name is empty for the same reason as with a stop by the
@@ -8292,7 +8292,7 @@ export async function briefIn(
  *
  * This is reading files next to the package (dist-info), not parsing sources:
  * the "module → distribution" map is built once per kernel (84 ms on the
- * colloq-kernel:base image), and after that a question costs a few
+ * aulalab-kernel:base image), and after that a question costs a few
  * milliseconds. The addition is optional, and the kernel's shell is shared:
  * waiting longer for it would delay someone else's Run for the sake of a
  * "Docs: …" line.
@@ -8443,7 +8443,7 @@ function cannedComplete(code: string, cursor: number): CompleteResult {
  * longer than the whole window, and that is exactly where the hint broke in the
  * class of 19 Sep 2026, when it showed the first six lines.
  *
- * The text was taken from a live kernel (`colloq-kernel:base`, seaborn 0.13.2)
+ * The text was taken from a live kernel (`aulalab-kernel:base`, seaborn 0.13.2)
  * and cut at a section boundary; `File:` and `Type:` were added so that the
  * parser sees them too.
  */

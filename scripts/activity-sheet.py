@@ -7,10 +7,10 @@ Seminar activity into a Google Sheet, one row per participant.
     python3 scripts/activity-sheet.py --all                 # every room with activity not yet in the sheet
     python3 scripts/activity-sheet.py y84w9hpc --dry        # only show, write nothing
     python3 scripts/activity-sheet.py y84w9hpc --after-class  # also count visits after the class ended
-    python3 scripts/activity-sheet.py --create "Colloq · activity"   # create the spreadsheet
+    python3 scripts/activity-sheet.py --create "Aula Lab · activity"   # create the spreadsheet
 
 Where to write: ACTIVITY_SHEET_ID from .env (or the environment), or --sheet <id>.
-Where to read: data/colloq.db nearby (the same database as for `make run`), or --db.
+Where to read: data/aulalab.db nearby (the same database as for `make run`), or --db.
 Google is reached through `gws` (the Google Workspace CLI, already authorized: `gws auth status`).
 
 The "Семинары" (seminars) sheet accumulates: one row per person per seminar, keyed
@@ -409,7 +409,7 @@ def main() -> None:
     )
     ap.add_argument("--create", metavar="TITLE", help="create a new spreadsheet with this title")
     ap.add_argument("--sheet", help="spreadsheet id (ACTIVITY_SHEET_ID from .env by default)")
-    ap.add_argument("--db", default=str(ROOT / "data" / "colloq.db"))
+    ap.add_argument("--db", default=str(ROOT / "data" / "aulalab.db"))
     a = ap.parse_args()
 
     con = opendb(Path(a.db))

@@ -150,7 +150,7 @@ export async function cli(argv: string[], deps: Deps = {}): Promise<number> {
   async function countRooms(): Promise<number> {
     const result = await sh.capture(
       'docker',
-      ['ps', '--filter', 'label=colloq.kind=room-kernel', '--format', '{{.Label "colloq.session"}}'],
+      ['ps', '--filter', 'label=aulalab.kind=room-kernel', '--format', '{{.Label "aulalab.session"}}'],
       { timeoutMs: 4000 },
     )
     if (result.code !== 0) return 0
@@ -173,7 +173,7 @@ export async function cli(argv: string[], deps: Deps = {}): Promise<number> {
     // A bare call starts nothing: the package is installed long before class,
     // and the first acquaintance should be a line of "what I can do", not a
     // suddenly taken port and an opened browser. A class starts with a word,
-    // `colloq start`, like `jupyter lab`.
+    // `aulalab start`, like `jupyter lab`.
     if (tokens.length === 0) {
       if (globals.help) renderHelp(ui, commands, env.kernelEnv())
       else renderIntro(ui)
@@ -189,7 +189,7 @@ export async function cli(argv: string[], deps: Deps = {}): Promise<number> {
     if (error instanceof UsageError) return report(2, error.message, error.fix, error.why)
     if (error instanceof PreconditionError) return report(3, error.message, error.fix, error.why)
     const message = error instanceof Error ? error.message : String(error)
-    return report(1, message, 'colloq help')
+    return report(1, message, 'aulalab help')
   }
 
   /** A refusal in three lines, and in --json mode with the same code and not a line outside JSON. */
@@ -236,8 +236,8 @@ export async function cli(argv: string[], deps: Deps = {}): Promise<number> {
 
     // How many tokens the name ate: two only if it was called by exactly the
     // two-word name or a two-word alias. A one-word alias of a two-word command
-    // (`colloq env` = `env list`) eats one, otherwise the flag value after it
-    // would go missing: `colloq env --json`.
+    // (`aulalab env` = `env list`) eats one, otherwise the flag value after it
+    // would go missing: `aulalab env --json`.
     const matchedTwo = Boolean(two) && (found.name === two || (found.aliases ?? []).includes(two))
     const used = matchedTwo ? 2 : 1
     // The tail: everything except the tokens eaten by the command name.
@@ -293,7 +293,7 @@ export async function cli(argv: string[], deps: Deps = {}): Promise<number> {
       throw new UsageError('missing required argument <' + arg.name + '>', 'Usage: ' + found.usage)
     }
     // An extra positional is most often a typo in the command name
-    // (`colloq env cv`): silently turning it into another command is worse
+    // (`aulalab env cv`): silently turning it into another command is worse
     // than refusing.
     if (parsed.positionals.length > declared.length) {
       throw new UsageError(
@@ -335,7 +335,7 @@ export async function cli(argv: string[], deps: Deps = {}): Promise<number> {
       return report(
         2,
         name + ' is a group of commands, not a command',
-        'colloq ' + inGroup.join(' · colloq '),
+        'aulalab ' + inGroup.join(' · aulalab '),
         'the group needs a second word',
       )
     }
@@ -343,7 +343,7 @@ export async function cli(argv: string[], deps: Deps = {}): Promise<number> {
     return report(
       2,
       'no command ' + name,
-      near ? 'did you mean colloq ' + near + '?' : 'colloq help — the list of commands',
+      near ? 'did you mean aulalab ' + near + '?' : 'aulalab help — the list of commands',
     )
   }
 }
@@ -384,7 +384,7 @@ export function respell(input: string[], from: string, to: string): string[] {
  */
 export function parseTrouble(error: unknown, command: Command): UsageError {
   const message = error instanceof Error ? error.message : String(error)
-  const fix = 'colloq ' + command.name + ' --help'
+  const fix = 'aulalab ' + command.name + ' --help'
   if ((error as { code?: string }).code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION') {
     const flag = /'(-[^']+)'/.exec(message)?.[1] ?? ''
     const near = nearestWord(
@@ -470,18 +470,18 @@ function version(io: Io, packagePath: string): string {
  *
  * Four lines and not one extra: what this is, and the three words a class is
  * started with, shown to the class with and ended with. The full list stays
- * behind `colloq help`, as with git and jupyter.
+ * behind `aulalab help`, as with git and jupyter.
  */
 export function renderIntro(ui: ReturnType<typeof createUi>): void {
-  ui.line(ui.bold('colloq') + ' — a class on this computer: notebooks, a Python kernel and a board')
+  ui.line(ui.bold('aulalab') + ' — a class on this computer: notebooks, a Python kernel and a board')
   ui.line()
   ui.table([
-    [ui.cyan('colloq start'), 'start the class and open the browser'],
-    [ui.cyan('colloq host <name>'), 'publish it and give the room a link'],
-    [ui.cyan('colloq stop'), 'end the class'],
+    [ui.cyan('aulalab start'), 'start the class and open the browser'],
+    [ui.cyan('aulalab host <name>'), 'publish it and give the room a link'],
+    [ui.cyan('aulalab stop'), 'end the class'],
   ])
   ui.line()
-  ui.line(ui.dim('More: colloq help · one command: colloq <command> --help'))
+  ui.line(ui.dim('More: aulalab help · one command: aulalab <command> --help'))
 }
 
 /** The list of commands by group. */
@@ -499,10 +499,10 @@ export function renderHelp(
     }
     ui.line()
   }
-  ui.line(ui.dim('Most used: colloq start · colloq host <name> · colloq status · colloq stop'))
+  ui.line(ui.dim('Most used: aulalab start · aulalab host <name> · aulalab status · aulalab stop'))
   ui.line(ui.dim('Everywhere: --dry-run — show what would run and do nothing · --yes — do not ask'))
   ui.line(ui.dim('Kernel environment now: ' + kernelEnv))
-  ui.line(ui.dim('In detail: colloq <command> --help'))
+  ui.line(ui.dim('In detail: aulalab <command> --help'))
 }
 
 /** Help for one command: purpose, usage, arguments, flags, two examples. */

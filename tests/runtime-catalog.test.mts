@@ -9,7 +9,7 @@ import {
   isRuntimeSessionId,
 } from '../shared/runtime.js'
 
-const image = `registry.example/colloq/base@sha256:${'a'.repeat(64)}`
+const image = `registry.example/aulalab/base@sha256:${'a'.repeat(64)}`
 const oldImage = image.replace(/a{64}$/, 'b'.repeat(64))
 const catalog = (environments: unknown[] = [{ name: 'base', image, gpu: false }]) => ({
   schemaVersion: 1,

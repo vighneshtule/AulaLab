@@ -20,7 +20,7 @@ after(() => bases.forEach(base => fs.rmSync(base, { recursive: true, force: true
 /** The class root, a foreign directory next to it, and three ways to get out by a link:
  * as the last component (room/sub/link), the first (escape) and in the MIDDLE (room/escape). */
 function fixture() {
-  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-nofollow-')))
+  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-nofollow-')))
   bases.push(base)
   const root = path.join(base, 'workspace'), outside = path.join(base, 'outside')
   fs.mkdirSync(path.join(root, 'room/sub'), { recursive: true })

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One reentrant flock for Colloq deployment, writer quiescence and recovery.
+"""One reentrant flock for Aula Lab deployment, writer quiescence and recovery.
 
 Shell entry points first invoke `held --state DIR`, otherwise exec
 `run --state DIR -- bash SCRIPT ORIGINAL_ARGS...`. The inherited descriptor is
@@ -13,7 +13,7 @@ from pathlib import Path
 import stat
 import sys
 
-VARIABLE = 'COLLOQ_STATE_LOCK_FD'
+VARIABLE = 'AULALAB_STATE_LOCK_FD'
 
 
 def lock_path(state):

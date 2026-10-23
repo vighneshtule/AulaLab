@@ -379,7 +379,7 @@ test('rebinding, mutation and a new name do not survive the attempt — on a rea
   assert.equal(out.after.same, true, 'after the exit the names drifted apart onto different objects')
   assert.ok(!out.names.includes('secret'), 'the new name survived the attempt')
   // And the entry and the exit left not a single name of their own behind.
-  assert.ok(!out.names.some((n) => n.startsWith('_colloq')), out.names.join(','))
+  assert.ok(!out.names.some((n) => n.startsWith('_aulalab')), out.names.join(','))
   assert.deepEqual(out.names, ['a', 'b', 'ba', 'd', 'lst', 'nested', 'pair', 'shared', 'st'])
 })
 
@@ -567,7 +567,7 @@ test('os._exit() in an attempt refuses instead of shutting down the room\'s kern
   assert.deepEqual(out.after.df, [1], 'the room\'s data did not survive the attempt')
   // The refusal's name is what the server goes by to print one line instead
   // of a traceback.
-  assert.match(out.failure ?? '', /^ColloqRefused: /, `instead of a refusal: ${out.failure}`)
+  assert.match(out.failure ?? '', /^AulaLabRefused: /, `instead of a refusal: ${out.failure}`)
   assert.match(out.failure ?? '', /os\._exit/)
 })
 
@@ -578,7 +578,7 @@ test('os.abort() in an attempt refuses the same way', { skip: noPython }, () => 
     probe: "{'alive': True}",
   })
   assert.equal(out.after.alive, true, 'os.abort() took the process down with it')
-  assert.match(out.failure ?? '', /^ColloqRefused: /, `instead of a refusal: ${out.failure}`)
+  assert.match(out.failure ?? '', /^AulaLabRefused: /, `instead of a refusal: ${out.failure}`)
 })
 
 /**
@@ -646,7 +646,7 @@ test('process state comes back: the RNG, output streams, the path, the environme
       + 'was = [random.random() for _ in range(3)]\n'
       + 'random.seed(1234)\n'
       + 'path_was = list(sys.path)\n'
-      + 'os.environ["COLLOQ_KEEP"] = "да"\n'
+      + 'os.environ["AULALAB_KEEP"] = "да"\n'
       + 'warnings.resetwarnings()\n'
       + 'filters_was = len(warnings.filters)\n'
       + 'limit_was = sys.getrecursionlimit()\n'
@@ -655,8 +655,8 @@ test('process state comes back: the RNG, output streams, the path, the environme
       + 'random.seed(99)\n[random.random() for _ in range(5)]\n'
       + 'sys.stdout = io.StringIO()\n'
       + 'sys.path.insert(0, "/подкинуто")\n'
-      + 'os.environ["COLLOQ_NEW"] = "подкинуто"\n'
-      + 'os.environ["COLLOQ_KEEP"] = "испорчено"\n'
+      + 'os.environ["AULALAB_NEW"] = "подкинуто"\n'
+      + 'os.environ["AULALAB_KEEP"] = "испорчено"\n'
       + 'warnings.filterwarnings("ignore")\n'
       + 'sys.setrecursionlimit(100)\n'
       + 'sys.settrace(lambda *a: None)\n'
@@ -664,8 +664,8 @@ test('process state comes back: the RNG, output streams, the path, the environme
     probe: "{'rng': [random.random() for _ in range(3)] == was,"
       + " 'stdout': sys.stdout is sys.__stdout__,"
       + " 'path': sys.path == path_was,"
-      + " 'env_keep': os.environ.get('COLLOQ_KEEP'),"
-      + " 'env_new': 'COLLOQ_NEW' in os.environ,"
+      + " 'env_keep': os.environ.get('AULALAB_KEEP'),"
+      + " 'env_new': 'AULALAB_NEW' in os.environ,"
       + " 'filters': len(warnings.filters) == filters_was,"
       + " 'reclimit': sys.getrecursionlimit() == limit_was,"
       + " 'trace': sys.gettrace() is None,"
@@ -833,7 +833,7 @@ after(() => {
 })
 
 function folder(): string {
-  const root = mkdtempSync(path.join(tmpdir(), 'colloq-council-'))
+  const root = mkdtempSync(path.join(tmpdir(), 'aulalab-council-'))
   roots.push(root)
   return root
 }
@@ -1004,7 +1004,7 @@ test('a worker\'s copies count against its cap: at most half of it, and the ceil
   const out = drive({
     setup: 'a = bytearray(30 * 1024 * 1024)\nb = bytearray(30 * 1024 * 1024)',
     attempt: 'pass',
-    probe: "__import__('sys').modules['_colloq_council']._colloq_calls",
+    probe: "__import__('sys').modules['_aulalab_council']._aulalab_calls",
     entry: { capMb: 100 },
     prep: [
       'import sys, types',
@@ -1020,7 +1020,7 @@ test('a worker\'s copies count against its cap: at most half of it, and the ceil
       'fake.getrlimit = lambda what: (-1, -1)',
       'fake.setrlimit = lambda what, pair: calls.append(list(pair))',
       "sys.modules['resource'] = fake",
-      'm._colloq_calls = calls',
+      'm._aulalab_calls = calls',
     ].join('\n'),
   })
   assert.equal(out.report.ok, true, out.report.error)

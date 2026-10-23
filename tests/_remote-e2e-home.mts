@@ -518,7 +518,7 @@ export class Home {
     return jupyter
   }
 
-  /** The machine join target for a code: COLLOQ_RUNNER_JOIN. */
+  /** The machine join target for a code: AULALAB_RUNNER_JOIN. */
   joinTarget(code: string): string {
     return `${this.url}#${code}`
   }
@@ -549,14 +549,14 @@ export class Home {
   /**
    * A code minted by the owner in «Подключить машину» (POST
    * /api/admin/runners/codes). One for class machines («Принимать занятия»,
-   * D2) is minted as the instance's console mints it (`colloq-host
+   * D2) is minted as the instance's console mints it (`aulalab-host
    * runner-code --classes`, ops/runner-code.ts · mintRemoteCode), until the
    * panel's door takes `classes`.
    */
   async mintCode(options: { trusted?: boolean; approvedSlots?: number | null; machines?: number; classes?: boolean } = {}): Promise<string> {
     if (options.classes) {
       return mintRemoteCode({
-        machines: options.machines ?? 1, hours: 1, trusted: false, approvedSlots: options.approvedSlots ?? null, classes: true, createdBy: 'colloq-host',
+        machines: options.machines ?? 1, hours: 1, trusted: false, approvedSlots: options.approvedSlots ?? null, classes: true, createdBy: 'aulalab-host',
       }).code
     }
     const minted = await this.admin<{ code: string }>('POST', '/api/admin/runners/codes', {
@@ -641,7 +641,7 @@ export function competition(fleet: Fleet, options: { sealed?: boolean; wallSecon
  */
 export function kernelRevision(fleet: Fleet, environment = 'base', tag = `${process.pid}-${randomBytes(4).toString('hex')}`): { revisionId: string; registryRef: string; layers: string } {
   const diffIds = [`sha256:${sha256(`layer one ${tag}`)}`, `sha256:${sha256(`layer two ${tag}`)}`]
-  const kernel = publishKernel(fleet, `ghcr.io/colloq-edu/colloq-kernel@sha256:${sha256(`kernel ${tag}`)}`, diffIds)
+  const kernel = publishKernel(fleet, `ghcr.io/vighneshtule/aulalab-kernel@sha256:${sha256(`kernel ${tag}`)}`, diffIds)
   const revision = putRevision({
     environmentName: environment, imageDigest: `sha256:${sha256(`image ${tag}`)}`, pythonVersion: '3.11.16', pythonAbi: 'cp311',
     platform: 'linux/amd64', packages: [{ name: 'numpy', version: '2.4.6' }], baseConstraintsHash: 'hash',
@@ -652,7 +652,7 @@ export function kernelRevision(fleet: Fleet, environment = 'base', tag = `${proc
 
 /** A notebook of `cells` code cells, the first one carrying the runners' directive (fake-runner.ts · DIRECTIVE). */
 export function notebook(directive: Record<string, unknown> | null, cells = 2): Buffer {
-  const sources = Array.from({ length: cells }, (_, index) => (index === 0 && directive ? `# colloq-test: ${JSON.stringify(directive)}\nx = 1` : `y${index} = ${index}`))
+  const sources = Array.from({ length: cells }, (_, index) => (index === 0 && directive ? `# aulalab-test: ${JSON.stringify(directive)}\nx = 1` : `y${index} = ${index}`))
   return enc(JSON.stringify({
     cells: sources.map((source) => ({ cell_type: 'code', source, metadata: {}, outputs: [], execution_count: null })),
     metadata: { kernelspec: { name: 'python3', display_name: 'Python 3', language: 'python' } },

@@ -1,14 +1,14 @@
 name: Feature request
-description: Suggest a change to how Colloq works in class or on the server.
+description: Suggest a change to how Aula Lab works in class or on the server.
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Colloq focuses on the live class. It deliberately does not provide an LMS,
+        Aula Lab focuses on the live class. It deliberately does not provide an LMS,
         course progress tracking, automated grading, SSO or video conferencing.
         Requests in those areas are likely to be declined; integrations that keep
-        Colloq focused are welcome.
+        Aula Lab focused are welcome.
   - type: textarea
     id: situation
     attributes:

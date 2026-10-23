@@ -14,7 +14,7 @@ let dir: string
 let BoardView: Component<any>
 let MiniBoard: Component<any>
 before(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-board-render-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-board-render-'))
   const load = async (name: string): Promise<Component<any>> => {
     const source = await readFile(new URL(`../web/src/components/competitions/${name}.svelte`, import.meta.url), 'utf8')
     let code = compile(source, { filename: `${name}.svelte`, generate: 'server' }).js.code

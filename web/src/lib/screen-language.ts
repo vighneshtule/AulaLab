@@ -25,13 +25,9 @@ export type MessageArea = 'room' | 'admin' | 'reader' | 'competitions'
  * eight chunks and naming them predictably (firstPaint looks at these names).
  */
 const MODULES: Record<string, () => Promise<unknown>> = {
-  'room-ru': () => import('./messages/room-ru'),
   'room-en': () => import('./messages/room-en'),
-  'admin-ru': () => import('./messages/admin-ru'),
   'admin-en': () => import('./messages/admin-en'),
-  'reader-ru': () => import('./messages/reader-ru'),
   'reader-en': () => import('./messages/reader-en'),
-  'competitions-ru': () => import('./messages/competitions-ru'),
   'competitions-en': () => import('./messages/competitions-en'),
 }
 
@@ -41,7 +37,7 @@ const shown = new Set<MessageArea>()
 /** One area's dictionary in one language — once per tab. */
 export function loadAreaMessages(area: MessageArea, locale: Locale): Promise<unknown> {
   shown.add(area)
-  const name = `${area}-${locale}`
+  const name = `${area}-en`
   const known = loading.get(name)
   if (known) return known
   const started = MODULES[name]().catch((cause: unknown) => {

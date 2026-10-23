@@ -6,7 +6,7 @@
  * (dist/runner.sha256) is the build home compares before it hands the machine
  * new work (the owner's decision 5).
  *
- *   node dist/runner.js                 the agent: joins when it must (COLLOQ_RUNNER_JOIN), then syncs
+ *   node dist/runner.js                 the agent: joins when it must (AULALAB_RUNNER_JOIN), then syncs
  *   node dist/runner.js join URL CODE   the same, with the join given as words
  *   node dist/runner.js status          JSON; exit 0 when joined and syncing (the container's health check)
  *   node dist/runner.js drain           the running agent takes nothing new; exit 0 once it holds nothing
@@ -14,21 +14,21 @@
  *                                       with no agent running, the machine revokes itself from here
  *   node dist/runner.js version
  *
- * THE ENVIRONMENT IS THE ENTRY POINT'S. COLLOQ_RUNNER_STATE is the tree (by
- * default /var/lib/colloq-runner, the same path inside the agent's container
+ * THE ENVIRONMENT IS THE ENTRY POINT'S. AULALAB_RUNNER_STATE is the tree (by
+ * default /var/lib/aulalab-runner, the same path inside the agent's container
  * and on the host: a submission's container is started by the host's daemon,
  * which resolves `-v` on the host), and DATA_DIR must be its `data/`, set
  * before this process starts: data-dir.ts reads it once, when the storage
  * layout loads, which is before any line here runs (§13b note 10), so the
- * agent checks it and refuses rather than sets it. COLLOQ_RUNNER_JOIN is
+ * agent checks it and refuses rather than sets it. AULALAB_RUNNER_JOIN is
  * `https://<home>#<code>`, the code after the `#` so that it never travels in
  * a request line (the entry point moves `join URL CODE` there too).
- * COLLOQ_RUNNER_CONTAINER and COLLOQ_RUNNER_IMAGE name the agent's own
+ * AULALAB_RUNNER_CONTAINER and AULALAB_RUNNER_IMAGE name the agent's own
  * container and image (sync.ts says what for); always set inside a container
- * (colloq-host passes them, the entry point derives them for a plain docker
+ * (aulalab-host passes them, the entry point derives them for a plain docker
  * run), and unset under make runner-dev, which means no container of its own:
  * never a guess at one, since a container that happens to be called
- * colloq-runner on a developer's daemon is not this agent's to update or
+ * aulalab-runner on a developer's daemon is not this agent's to update or
  * inspect (§13c note 20). HTTPS_PROXY, NO_PROXY and
  * NODE_EXTRA_CA_CERTS are honoured as the server honours them
  * (outbound.ts · installOutboundProxy).
@@ -60,16 +60,16 @@ const EX_CONFIG = 78
 /** A `leave` with no agent running gives up after this: home unreachable that long is not a leave. */
 const ONE_OFF_LEAVE_MS = 10 * 60_000
 
-const USAGE = `colloq-runner: a machine that runs another Colloq instance's submissions
+const USAGE = `aulalab-runner: a machine that runs another Aula Lab instance's submissions
 
-  node dist/runner.js                 run (COLLOQ_RUNNER_JOIN='https://<home>#<code>' on the first start)
+  node dist/runner.js                 run (AULALAB_RUNNER_JOIN='https://<home>#<code>' on the first start)
   node dist/runner.js join URL CODE   run, joining with the words given
   node dist/runner.js status          joined and syncing? (JSON; exit 0 when so)
   node dist/runner.js drain           take nothing new; return once nothing is held
   node dist/runner.js leave           finish what is held, revoke this machine on its home, stop
   node dist/runner.js version
 
-The tree: COLLOQ_RUNNER_STATE (default ${DEFAULT_STATE_ROOT}), with DATA_DIR=<tree>/data.
+The tree: AULALAB_RUNNER_STATE (default ${DEFAULT_STATE_ROOT}), with DATA_DIR=<tree>/data.
 `
 
 /** What the process writes; tests hand their own. */
@@ -86,11 +86,11 @@ const processIo: Io = { out: (text) => process.stdout.write(text), err: (text) =
 /** The command line, run: the exit code. Exported for tests; the bundle runs it when it is the entry. */
 export async function main(argv: readonly string[] = process.argv.slice(2), env: NodeJS.ProcessEnv = process.env, io: Io = processIo, seams: Seams = {}): Promise<number> {
   const [command = 'run', ...rest] = argv
-  const layout = stateLayout(env.COLLOQ_RUNNER_STATE?.trim() || DEFAULT_STATE_ROOT)
+  const layout = stateLayout(env.AULALAB_RUNNER_STATE?.trim() || DEFAULT_STATE_ROOT)
   switch (command) {
     case 'run':
       if (rest.length > 0) return usage(io)
-      return runAgent(layout, env.COLLOQ_RUNNER_JOIN, env, io, seams)
+      return runAgent(layout, env.AULALAB_RUNNER_JOIN, env, io, seams)
     case 'join': {
       if (rest.length !== 2) return usage(io)
       return runAgent(layout, `${rest[0]!.replace(/\/+$/, '')}#${rest[1]}`, env, io, seams)
@@ -128,15 +128,15 @@ function usage(io: Io): number {
  */
 async function configured(layout: StateLayout, env: NodeJS.ProcessEnv, io: Io): Promise<boolean> {
   if (path.resolve(dataDir) !== layout.dataDir) {
-    io.err(`colloq-runner: DATA_DIR is ${dataDir}, and this machine's tree is ${layout.root}: start the agent with DATA_DIR=${layout.dataDir} (the image's entry point does).\n`)
+    io.err(`aulalab-runner: DATA_DIR is ${dataDir}, and this machine's tree is ${layout.root}: start the agent with DATA_DIR=${layout.dataDir} (the image's entry point does).\n`)
     return false
   }
   if ((env.DATA_HOST_DIR ?? '').trim()) {
-    io.err('colloq-runner: DATA_HOST_DIR is set; a machine hands the daemon its own paths, and its tree is mounted at the same path on the host. Unset it.\n')
+    io.err('aulalab-runner: DATA_HOST_DIR is set; a machine hands the daemon its own paths, and its tree is mounted at the same path on the host. Unset it.\n')
     return false
   }
   if (await agentListening(layout.socket)) {
-    io.err(`colloq-runner: another agent already runs on ${layout.root}.\n`)
+    io.err(`aulalab-runner: another agent already runs on ${layout.root}.\n`)
     return false
   }
   return true
@@ -146,34 +146,34 @@ async function runAgent(layout: StateLayout, joinText: string | undefined, env: 
   const given = (joinText ?? '').trim()
   const target = given ? parseRemoteJoinTarget(given) : null
   if (given && !target) {
-    io.err('colloq-runner: COLLOQ_RUNNER_JOIN is not https://<home>#<code> (the home\'s origin, then its owner\'s 32-digit code after #).\n')
+    io.err('aulalab-runner: AULALAB_RUNNER_JOIN is not https://<home>#<code> (the home\'s origin, then its owner\'s 32-digit code after #).\n')
     return EX_CONFIG
   }
   const identity = readIdentity(layout)
   if (!target && !joined(identity)) {
-    io.err(`colloq-runner: this machine has not joined a home, and COLLOQ_RUNNER_JOIN is not set: -e COLLOQ_RUNNER_JOIN='https://<home>#<code>'.\n`)
+    io.err(`aulalab-runner: this machine has not joined a home, and AULALAB_RUNNER_JOIN is not set: -e AULALAB_RUNNER_JOIN='https://<home>#<code>'.\n`)
     return EX_CONFIG
   }
   if (!(await configured(layout, env, io))) return EX_CONFIG
   await installOutboundProxy(env)
   const build = runnerBuild()
   const version = runnerVersion({ env })
-  io.err(`colloq-runner ${version} (build ${build === REMOTE_BUILD_DEV ? REMOTE_BUILD_DEV : build.slice(0, 12)}), tree ${layout.root}\n`)
+  io.err(`aulalab-runner ${version} (build ${build === REMOTE_BUILD_DEV ? REMOTE_BUILD_DEV : build.slice(0, 12)}), tree ${layout.root}\n`)
   const agent = new Agent({
     ...seams,
     layout,
     join: target,
     build,
     version,
-    container: env.COLLOQ_RUNNER_CONTAINER?.trim() || null,
-    image: env.COLLOQ_RUNNER_IMAGE?.trim() || null,
+    container: env.AULALAB_RUNNER_CONTAINER?.trim() || null,
+    image: env.AULALAB_RUNNER_IMAGE?.trim() || null,
     env,
   })
   let server: Awaited<ReturnType<typeof serveControl>>
   try {
     server = await serveControl(agent, layout.socket)
   } catch (error) {
-    io.err(`colloq-runner: ${error instanceof Error ? error.message : String(error)}\n`)
+    io.err(`aulalab-runner: ${error instanceof Error ? error.message : String(error)}\n`)
     return EX_CONFIG
   }
   const signals = (): void => {
@@ -183,7 +183,7 @@ async function runAgent(layout: StateLayout, joinText: string | undefined, env: 
   process.on('SIGINT', signals)
   try {
     const exit = await agent.run()
-    if (exit.detail && exit.code !== 0) io.err(`colloq-runner: ${exit.detail}\n`)
+    if (exit.detail && exit.code !== 0) io.err(`aulalab-runner: ${exit.detail}\n`)
     return exit.code
   } finally {
     process.off('SIGTERM', signals)
@@ -269,8 +269,8 @@ function alive(pid: number): boolean {
 
 function progress(io: Io): (message: ControlMessage) => void {
   return (message) => {
-    if ('held' in message) io.err(`colloq-runner: ${message.held} run(s) held, finishing (${message.state})\n`)
-    else if ('error' in message) io.err(`colloq-runner: ${message.error}\n`)
+    if ('held' in message) io.err(`aulalab-runner: ${message.held} run(s) held, finishing (${message.state})\n`)
+    else if ('error' in message) io.err(`aulalab-runner: ${message.error}\n`)
   }
 }
 
@@ -282,14 +282,14 @@ async function drain(layout: StateLayout, io: Io): Promise<number> {
     said(message)
   })
   if (how === 'no-agent') {
-    io.err('colloq-runner: no agent runs on this tree, so nothing is held.\n')
+    io.err('aulalab-runner: no agent runs on this tree, so nothing is held.\n')
     return 1
   }
   if (!drained) {
-    io.err('colloq-runner: the agent did not finish draining (it restarted or stopped); its runs go back to the home\'s queue when it stops.\n')
+    io.err('aulalab-runner: the agent did not finish draining (it restarted or stopped); its runs go back to the home\'s queue when it stops.\n')
     return 1
   }
-  io.err('colloq-runner: drained: nothing is held.\n')
+  io.err('aulalab-runner: drained: nothing is held.\n')
   return 0
 }
 
@@ -306,17 +306,17 @@ async function leave(layout: StateLayout, env: NodeJS.ProcessEnv, io: Io, seams:
   })
   if (how !== 'no-agent') {
     // Revoked by its owner while it drained: gone from its home all the same, which is what a leave is for.
-    if (left) io.err(`colloq-runner: left: the home no longer counts on this machine${revoked ? ' (its owner revoked it while it finished its runs)' : ''}.\n`)
+    if (left) io.err(`aulalab-runner: left: the home no longer counts on this machine${revoked ? ' (its owner revoked it while it finished its runs)' : ''}.\n`)
     return left ? 0 : 1
   }
   // No agent runs here (the machine's container is stopped): this process revokes the machine itself.
   const identity = readIdentity(layout)
   if (!joined(identity)) {
-    io.err('colloq-runner: this machine has not joined a home: there is nothing to leave.\n')
+    io.err('aulalab-runner: this machine has not joined a home: there is nothing to leave.\n')
     return 0
   }
   if (retired(identity)) {
-    io.err(`colloq-runner: this machine has already ${identity.leftAt !== undefined ? 'left its home' : 'been revoked by its home'}.\n`)
+    io.err(`aulalab-runner: this machine has already ${identity.leftAt !== undefined ? 'left its home' : 'been revoked by its home'}.\n`)
     return 0
   }
   if (!(await configured(layout, env, io))) return EX_CONFIG
@@ -328,8 +328,8 @@ async function leave(layout: StateLayout, env: NodeJS.ProcessEnv, io: Io, seams:
     join: null,
     build: runnerBuild(),
     version: runnerVersion({ env }),
-    container: env.COLLOQ_RUNNER_CONTAINER?.trim() || null,
-    image: env.COLLOQ_RUNNER_IMAGE?.trim() || null,
+    container: env.AULALAB_RUNNER_CONTAINER?.trim() || null,
+    image: env.AULALAB_RUNNER_IMAGE?.trim() || null,
   })
   void agent.requestLeave()
   agent.leaveAcknowledged()
@@ -338,10 +338,10 @@ async function leave(layout: StateLayout, env: NodeJS.ProcessEnv, io: Io, seams:
   try {
     const exit = await agent.run()
     if (exit.reason === 'left' || exit.reason === 'revoked') {
-      io.err('colloq-runner: left: the home no longer counts on this machine.\n')
+      io.err('aulalab-runner: left: the home no longer counts on this machine.\n')
       return 0
     }
-    io.err(`colloq-runner: the machine did not leave: ${exit.detail ?? exit.reason}.\n`)
+    io.err(`aulalab-runner: the machine did not leave: ${exit.detail ?? exit.reason}.\n`)
     return 1
   } finally {
     clearTimeout(timer)
@@ -367,7 +367,7 @@ if (process.argv[1] && realPath(process.argv[1]) === realPath(fileURLToPath(impo
   main().then(
     (code) => process.exit(code),
     (error: unknown) => {
-      process.stderr.write(`colloq-runner: ${error instanceof Error ? error.stack ?? error.message : String(error)}\n`)
+      process.stderr.write(`aulalab-runner: ${error instanceof Error ? error.stack ?? error.message : String(error)}\n`)
       process.exit(1)
     },
   )

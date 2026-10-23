@@ -45,7 +45,7 @@ import { fileURLToPath } from 'node:url'
 
 const SCRIPTS = path.dirname(fileURLToPath(import.meta.url))
 
-/** server/: the working directory the entry is named from, as the command line's under `npm run build -w @colloq/server`. */
+/** server/: the working directory the entry is named from, as the command line's under `npm run build -w @aulalab/server`. */
 export const SERVER = path.resolve(SCRIPTS, '..')
 const SHARED = path.resolve(SERVER, '..', 'shared')
 
@@ -66,7 +66,7 @@ export const RUNNER_BUNDLE = 'runner.js'
 export const RUNNER_OPTIONS = Object.freeze({ bundle: true, platform: 'node', format: 'esm', target: 'node22', packages: 'external' })
 
 /** What the plugin passes to its own resolve, so that its callback stays out of it. */
-const RESOLVING = Object.freeze({ resolving: 'colloq-runner-i18n' })
+const RESOLVING = Object.freeze({ resolving: 'aulalab-runner-i18n' })
 
 /** A file's real path: a checkout reached through a symbolic link must compare as itself. */
 function real(file) {
@@ -93,7 +93,7 @@ const inside = (file, dir) => {
  */
 export function withoutTranslations() {
   return {
-    name: 'colloq-runner-without-translations',
+    name: 'aulalab-runner-without-translations',
     setup(builder) {
       builder.onResolve({ filter: /i18n/ }, async (args) => {
         if (args.pluginData === RESOLVING) return undefined

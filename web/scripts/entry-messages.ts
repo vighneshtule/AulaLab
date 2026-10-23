@@ -50,7 +50,7 @@ function resolveImport(root: string, importer: string, name: string): string | n
   const base = name.startsWith('@shared/') ? path.join(root, 'shared', name.slice(8))
     : name.startsWith('@/') ? path.join(root, 'web/src', name.slice(2))
       : name.startsWith('.') ? path.resolve(path.dirname(importer), name) : null
-  if (!base) return null // vendor code has no Colloq display-copy keys
+  if (!base) return null // vendor code has no Aula Lab display-copy keys
   for (const file of [base, base.replace(/\.js$/, '.ts'), base + '.ts', base + '.svelte', path.join(base, 'index.ts')]) {
     if (/\.(?:ts|svelte)$/.test(file) && fs.existsSync(file) && fs.statSync(file).isFile()) return file
   }

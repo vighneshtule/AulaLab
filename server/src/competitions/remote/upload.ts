@@ -3,7 +3,7 @@
  * `executed.ipynb` of one attempt, gzipped, one PUT each.
  *
  * WHAT COMES BACK IS PARTICIPANT DATA (§6), and is taken in as such. Only the
- * two names; the body is gzip, and X-Colloq-Sha256 and X-Colloq-Bytes say
+ * two names; the body is gzip, and X-AulaLab-Sha256 and X-AulaLab-Bytes say
  * what the file is uncompressed. The caps apply AFTER decompression — the
  * answer at most its lease's `targetBytes`, the notebook at most
  * REMOTE_FILE_BYTES — and decompression stops at the declared length plus
@@ -47,7 +47,7 @@
  * add up to (stagingRoom). The staged name carries the sha256, so a PUT of the
  * same name with other bytes used to land beside the first — and a machine
  * could stage gigabytes under one lease from kilobytes of gzip, on the volume
- * colloq.db shares, down to the disk floor. A file with a new hash for a name
+ * aulalab.db shares, down to the disk floor. A file with a new hash for a name
  * now replaces the one staged under it, and a PUT past the attempt's room is
  * refused before its body is read. An honest agent never meets either: its
  * hashes are fixed in its persisted outcome.
@@ -498,7 +498,7 @@ const DECIMAL = /^(?:0|[1-9][0-9]{0,15})$/
 /**
  * PUT rooms/:sessionId/files?path=&gen= (remote-classes.md §8.3, §15): a
  * file this server pulled from a class's folder copy (kernel/remote/files.ts
- * · pullFor), gzipped, its X-Colloq-Sha256 and X-Colloq-Bytes checked after
+ * · pullFor), gzipped, its X-AulaLab-Sha256 and X-AulaLab-Bytes checked after
  * decompression, staged under a temporary name at the top of the class
  * folder (the anchored file system: never through a link, never outside the
  * folder), then put in place by the same compare-and-swap as a report's
@@ -557,7 +557,7 @@ export interface CouncilFileStored {
   bytes: number
 }
 
-/** The X-Colloq-Sha256 and X-Colloq-Bytes of a council file, and its encoding: what its body is to be. */
+/** The X-AulaLab-Sha256 and X-AulaLab-Bytes of a council file, and its encoding: what its body is to be. */
 function councilMeta(req: Request, gzip: boolean): { sha256: string; bytes: number } {
   const encoding = req.headers['content-encoding']
   const sha256 = req.headers[REMOTE_SHA256_HEADER.toLowerCase()]
@@ -575,7 +575,7 @@ function councilMeta(req: Request, gzip: boolean): { sha256: string; bytes: numb
  * epoch whose export lies in a container of this machine, that this server
  * asked the machine to `ship` home because the class's pool is on another
  * machine (kernel/remote/epochs.ts · epochUploadFor). Raw, its
- * X-Colloq-Sha256 its name, checked as it lands, read at the classes' pace
+ * X-AulaLab-Sha256 its name, checked as it lands, read at the classes' pace
  * through their upload slots, kept in the epoch store. Refused before a byte
  * is read: a file not asked of this machine (404), a placement since lost or
  * replaced (409 `revoked`, which the agent drops), a length that is not the

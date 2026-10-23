@@ -560,7 +560,7 @@ test('a lease with a package set names it, the set is described with its wheels,
 test('on the hidden test a machine\'s run is clamped and worded for a blind participant exactly as a run here is', async () => {
   // The same forged report from both: a cell far past the notebook's, and a traceback the hidden rows were in memory for.
   const detail = 'Traceback (most recent call last):\n  Cell In[2], line 1\nValueError: the secret row is 42'
-  const cells = [`# colloq-test: ${JSON.stringify({ status: 'cell_error', cell: 48_213, detail })}\nx = 1`, 'y = 2', 'z = 3']
+  const cells = [`# aulalab-test: ${JSON.stringify({ status: 'cell_error', cell: 48_213, detail })}\nx = 1`, 'y = 2', 'z = 3']
   // Here: this server's notebooks on, and its stand-in runner reports it.
   reset({ homeNotebooks: true })
   const c = competition({ sealed: true })

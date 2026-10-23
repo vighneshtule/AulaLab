@@ -6,7 +6,7 @@
  * drawn by the browser and by the server alike. While the rule lived only in
  * `web/src/lib`, the server's static pages (since retired) had their own
  * ternary copy ("n < 5 ? шага : шагов", "N шага"), and it lied: "5 шага",
- * "12 шага", "21 шагов" — in the header of every multi-step page on colloq.ru.
+ * "12 шага", "21 шагов" — in the header of every multi-step page on example.edu.
  *
  * There is one rule and all of it is here: one, except eleven; two to four,
  * except twelve to fourteen; everything else.

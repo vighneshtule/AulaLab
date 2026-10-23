@@ -1,6 +1,6 @@
 # Security policy
 
-Colloq runs untrusted Python for a room of people, so we take isolation bugs
+Aula Lab runs untrusted Python for a room of people, so we take isolation bugs
 seriously. Please report them privately.
 
 ## Reporting a vulnerability
@@ -9,16 +9,16 @@ seriously. Please report them privately.
 
 Report it through GitHub's private vulnerability reporting: open the
 repository's **Security** tab and choose **Report a vulnerability**. You can
-also go straight to <https://github.com/colloq-edu/colloq/security/advisories/new>.
+also go straight to <https://github.com/vighneshtule/AulaLab/security/advisories/new>.
 Only the maintainers can see the report, and we can work on a fix together in a
 private fork.
 
 A useful report includes:
 
-- **Version.** The output of `colloq --version`. For a k3s release, the release
+- **Version.** The output of `aulalab --version`. For a k3s release, the release
   version and `sourceCommit` from `release.json`. For a container image, its tag
   or digest.
-- **Install type.** pip package (`colloq start`), source checkout (`make dev`,
+- **Install type.** pip package (`aulalab start`), source checkout (`make dev`,
   `make run`, `make up`), k3s release, the vast.ai image (`deploy/vast/`), or
   `make vast-up`.
 - **The boundary crossed**, from the list below, and what an attacker needs
@@ -28,13 +28,13 @@ A useful report includes:
   token, teacher sign-in links, relay and cloud tokens, and kernel or runtime
   tokens.
 
-Test only against an instance you run yourself. Classes on `*.colloq.ru` are
+Test only against an instance you run yourself. Classes on `*.example.edu` are
 real classes with real students. Do not probe them, load-test them or join them
 uninvited.
 
 ## What to expect
 
-Colloq has one maintainer, so these are targets, not guarantees:
+Aula Lab has one maintainer, so these are targets, not guarantees:
 
 - We acknowledge a report within **7 days**.
 - We confirm whether it is a vulnerability, and how severe it is, within
@@ -46,7 +46,7 @@ Colloq has one maintainer, so these are targets, not guarantees:
 
 ## Supported versions
 
-Colloq is pre-1.0. Security fixes land on `main` and ship in the next release.
+Aula Lab is pre-1.0. Security fixes land on `main` and ship in the next release.
 We do not backport them.
 
 | Version | Supported |
@@ -57,11 +57,10 @@ We do not backport them.
 
 ## Trust model: what is and isn't a vulnerability
 
-Colloq isolates **classes from each other**. It does not isolate the **people
+Aula Lab isolates **classes from each other**. It does not isolate the **people
 inside a class** from each other. The full boundary is described in
 [runtime/README.md](runtime/README.md) and in the "Isolation and limits" guide
-at <https://colloq.ru/docs/en/security.html> (Russian original:
-<https://colloq.ru/docs/security.html>).
+at <https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/security.html>.
 
 ### In scope
 
@@ -103,7 +102,7 @@ at <https://colloq.ru/docs/en/security.html> (Russian original:
   Kubernetes credentials.
 - **A class machine reaching past its own classes.** A machine the owner
   opened to classes (**Takes classes**, see [classes on
-  machines](https://colloq.ru/docs/en/runners.html#classes)) sees its classes
+  machines](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/runners.html#classes)) sees its classes
   whole, by design (below). In scope: its credential reaching a class not
   placed on it, or one of its classes at a generation that moved away; any
   instance secret reaching it (`SESSION_SECRET`, staff cookies, the AI key,
@@ -169,7 +168,7 @@ at <https://colloq.ru/docs/en/security.html> (Russian original:
   machine, never together with the hidden test), not by cryptography. There is
   no TLS inside the tunnel: whoever controls the reverse proxy or relay where
   TLS ends sees the kernels' traffic, as they see students' traffic today.
-- **Local classes are "my class, my computer."** `colloq start`, `make dev` and
+- **Local classes are "my class, my computer."** `aulalab start`, `make dev` and
   `make up` use the Docker development backend, which has access to the Docker
   socket. It is meant for a trusted workstation, not as a boundary against its
   own operator. The vast.ai image (`deploy/vast/`) and `make vast-up` without a
@@ -179,7 +178,7 @@ at <https://colloq.ru/docs/en/security.html> (Russian original:
   container on this backend that holds Linux capabilities, can regain
   privileges, or opens a connection to a local address (RFC 1918, CGNAT,
   link-local and cloud metadata, loopback, the host itself, another room)
-  while `COLLOQ_ROOM_NETWORK=open` is not set: every room gets that hardened
+  while `AULALAB_ROOM_NETWORK=open` is not set: every room gets that hardened
   profile, and rooms refuse to start when the block cannot be installed
   (see `server/src/kernel/perimeter.ts`). Out of scope here: DNS on port 53,
   which stays open to any address by design; rooms started by a version
@@ -187,7 +186,7 @@ at <https://colloq.ru/docs/en/security.html> (Russian original:
   filesystem and unlimited disk of a local room.
 - **Linux kernel or container runtime escapes.** Room containers and Pods share
   the host kernel, and this is not VM isolation. Report these upstream. A
-  Colloq configuration that makes an escape easier (added capabilities,
+  Aula Lab configuration that makes an escape easier (added capabilities,
   writable host mounts, a missing seccomp profile) *is* in scope.
 - **Documented operator responsibilities:**
   - traffic from a room to services on its own node, which the standard
@@ -200,8 +199,7 @@ at <https://colloq.ru/docs/en/security.html> (Russian original:
 - **Browser bans and rate limits**, which are abuse controls, not identity
   verification.
 - **Vulnerabilities in dependencies** without a demonstrated exploit path
-  through Colloq. Report those upstream; dependency updates land here with a release.
+  through Aula Lab. Report those upstream; dependency updates land here with a release.
 - **Missing hardening headers or best practices** without a concrete attack.
-- **Findings against the maintainer's own infrastructure** (the colloq.ru site,
-  the relay, DNS). Report them privately as above, but do not test them
-  actively.
+- **Findings against infrastructure you do not own or have permission to test.
+  Report only systems you operate or are explicitly authorized to assess.

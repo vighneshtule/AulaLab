@@ -24,7 +24,7 @@ const catalog = parseRuntimeCatalog({
     { name: 'gpu', image: `registry.example/gpu@sha256:${digest}`, gpu: true },
   ],
 })
-const ns = '/api/v1/namespaces/colloq'
+const ns = '/api/v1/namespaces/aulalab'
 
 class Cluster implements KubernetesClient {
   objects = new Map<string, KubeObject>()
@@ -82,7 +82,7 @@ function setup(probe: (endpoint: RuntimeEndpoint) => Promise<boolean> = async ()
   const kube = new Cluster()
   const runtime = new RuntimeController({
     kube,
-    config: { namespace: 'colloq', workspaceClaim: 'colloq-workspace', memory: '2Gi', cpu: '2', ephemeral: '2Gi', ...(maxMemoryMb ? { maxMemoryMb } : {}) },
+    config: { namespace: 'aulalab', workspaceClaim: 'aulalab-workspace', memory: '2Gi', cpu: '2', ephemeral: '2Gi', ...(maxMemoryMb ? { maxMemoryMb } : {}) },
     catalog: () => catalog,
     roomSecret: () => 'secret'.repeat(16),
     probe,
@@ -114,7 +114,7 @@ test('the personal notebooks get a second Pod: no GPU ever, the room folder, the
   // The room folder, and only it, at the same path as in the room's Pod (as on docker).
   assert.deepEqual(kernel.volumeMounts, roomPod.spec.containers[0].volumeMounts)
   assert.deepEqual(kernel.volumeMounts.find((m: any) => m.name === 'workspace'), { name: 'workspace', mountPath: '/workspace/seminar', subPath: 'seminar' })
-  assert.deepEqual(pod.spec.volumes.filter((v: any) => v.persistentVolumeClaim), [{ name: 'workspace', persistentVolumeClaim: { claimName: 'colloq-workspace' } }])
+  assert.deepEqual(pod.spec.volumes.filter((v: any) => v.persistentVolumeClaim), [{ name: 'workspace', persistentVolumeClaim: { claimName: 'aulalab-workspace' } }])
   // The personal notebooks' numbers, capped at the broker's ceiling like a room's.
   assert.equal(kernel.resources.limits.memory, '8192Mi')
   assert.equal(kernel.resources.requests.memory, '8192Mi')
@@ -125,17 +125,17 @@ test('the personal notebooks get a second Pod: no GPU ever, the room folder, the
   assert.equal(pod.spec.automountServiceAccountToken, false)
   // NetworkPolicy role kept: room-isolation covers it. The kind tells the two apart.
   assert.deepEqual(pod.metadata.labels, {
-    'colloq.dev/role': 'kernel',
-    'app.kubernetes.io/managed-by': 'colloq-runtime',
-    'colloq.kind': 'own-kernel',
-    'colloq.dev/session': roomPod.metadata.labels!['colloq.dev/session'],
-    'colloq.dev/kernel': 'own',
-    'colloq.dev/environment': 'gpu',
+    'aulalab.dev/role': 'kernel',
+    'app.kubernetes.io/managed-by': 'aulalab-runtime',
+    'aulalab.kind': 'own-kernel',
+    'aulalab.dev/session': roomPod.metadata.labels!['aulalab.dev/session'],
+    'aulalab.dev/kernel': 'own',
+    'aulalab.dev/environment': 'gpu',
   })
   // Its own token and address: a line in a personal notebook cannot open the lecture's Jupyter.
   assert.notEqual(own.token, room.token)
   assert.notEqual(own.instanceId, room.instanceId)
-  assert.equal(own.url, `http://${ownName('seminar')}.colloq.svc:8888`)
+  assert.equal(own.url, `http://${ownName('seminar')}.aulalab.svc:8888`)
   assert.equal(kernel.env.find((e: any) => e.name === 'JUPYTER_TOKEN').value, own.token)
 })
 
@@ -154,7 +154,7 @@ test("neither Service selects the other role's Pod", async () => {
   assert.deepEqual(ownService.spec.ports, roomService.spec.ports)
   assert.equal(ownService.spec.type, 'ClusterIP')
   // Both are what room-isolation selects.
-  for (const pod of [roomPod, ownPod]) assert.equal(pod.metadata.labels!['colloq.dev/role'], 'kernel')
+  for (const pod of [roomPod, ownPod]) assert.equal(pod.metadata.labels!['aulalab.dev/role'], 'kernel')
 })
 
 test('the census lists both Pods of a class, the personal one marked own, the room row exactly as before', async () => {

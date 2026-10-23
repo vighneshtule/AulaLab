@@ -314,7 +314,7 @@
                   whole output lived in a script. Bokeh, folium, altair
                   without an image, ipywidgets, plotly with the old renderer:
                   the library sends markup whose entire job is in `<script>`,
-                  and Colloq does not and will not execute scripts from output
+                  and Aula Lab does not and will not execute scripts from output
                   (SECURITY.md). Staying silent about it is not an option: an
                   empty space under "Out [7]" reads as "the cell printed
                   nothing".

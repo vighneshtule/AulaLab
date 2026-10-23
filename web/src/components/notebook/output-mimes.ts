@@ -165,7 +165,7 @@ export function isPicture(output: CellOutput, rich: boolean): boolean {
  *
  * The question is not idle, and not about plotly alone. Bokeh, folium, altair
  * without an image, ipywidgets, plotly with an old renderer — all of them send
- * `text/html` whose entire content lies in `<script>`, and Colloq does not
+ * `text/html` whose entire content lies in `<script>`, and Aula Lab does not
  * execute scripts from outputs (SECURITY.md: a cell's output is produced by
  * anyone who is allowed to run). After the sanitizer, such a record leaves an
  * empty `<div>` — and on screen an empty space that reads as "the cell printed

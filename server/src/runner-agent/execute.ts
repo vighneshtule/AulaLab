@@ -6,7 +6,7 @@
  * judged by DockerCompetitionRunner.run() (competitions/docker-runner.ts),
  * unchanged, with a RunRequest built field for field the way home builds its
  * own (runner.ts · runNotebookThenScore): the lease's container name, attempt
- * id and limits; the pinned image under its colloq-revision tag; the package
+ * id and limits; the pinned image under its aulalab-revision tag; the package
  * set's room; the card's share. The paths are this machine's tree, laid out as
  * home lays out its DATA_DIR (competitions/storage.ts), so runArgs, hostPathOf
  * and the harness find what they always do, and the argv is home's but for

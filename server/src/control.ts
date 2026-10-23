@@ -12,7 +12,7 @@ import { tr, formatNumber } from '@shared/i18n'
  *
  * Running a cell is open to every participant. That is not an oversight: a
  * seminar where only the lecturer may press Run is a screen share, and the
- * whole point of Colloq is that a student can try the thing being discussed
+ * whole point of Aula Lab is that a student can try the thing being discussed
  * without leaving the room. Interrupt is the host's, and also whoever started
  * the cell that is running — see the case below. Restart is a room rule
  * (`rules.restart`), host-only by default.

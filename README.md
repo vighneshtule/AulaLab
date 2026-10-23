@@ -1,10 +1,9 @@
 <p align="center">
-  <img src=".github/assets/mark.svg" width="64" height="64" alt="Colloq">
+  <img src=".github/assets/mark.svg" width="64" height="64" alt="Aula Lab">
 </p>
-<h1 align="center">Colloq</h1>
+<h1 align="center">Aula Lab</h1>
 <p align="center">
   <a href="README.md"><img src="https://img.shields.io/badge/English-0F2D69?style=for-the-badge" alt="English — this file"></a>
-  <a href="README.ru.md"><img src="https://img.shields.io/badge/%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9-6B7280?style=for-the-badge" alt="Русский — the same README in Russian"></a>
 </p>
 <p align="center">
   <strong>One link. One live notebook. The whole room.</strong><br>
@@ -12,15 +11,15 @@
   Students join from a browser with just a name.
 </p>
 <p align="center">
-  <a href="https://github.com/colloq-edu/colloq/actions/workflows/ci.yml"><img src="https://github.com/colloq-edu/colloq/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/vighneshtule/AulaLab/actions/workflows/ci.yml"><img src="https://github.com/vighneshtule/AulaLab/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-0f2d69" alt="License: MIT"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/github/package-json/v/colloq-edu/colloq?label=version&color=0fa0d7" alt="Version"></a>
-  <a href="https://colloq.cc/docs/en/"><img src="https://img.shields.io/badge/docs-colloq.cc-374b9b" alt="Documentation"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/github/package-json/v/vighneshtule/aulalab?label=version&color=0fa0d7" alt="Version"></a>
+  <a href="https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/"><img src="https://img.shields.io/badge/docs-Aula%20Lab-374b9b" alt="Documentation"></a>
 </p>
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-a-class-runs">How a class runs</a> ·
-  <a href="https://colloq.cc/docs/en/">Documentation</a> ·
+  <a href="https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/">Documentation</a> ·
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -28,30 +27,30 @@
 <p align="center"><sub>Share one link; the class fills the room and everyone sees where everyone is.</sub></p>
 
 ```bash
-pip install colloq
-colloq start          # a class on this computer, in your browser
-colloq start --share  # …and one link to give your students
+pip install aulalab
+aulalab start          # a class on this computer, in your browser
+aulalab start --share  # …and one link to give your students
 ```
 
 Installing needs **Python 3.9 or newer**; running a class needs **Docker**
 (macOS and Linux; on Windows, WSL 2). On macOS 14+ and Linux x64/arm64 the
 package brings its own Node.js; elsewhere it needs **Node.js 22 or newer**. The
 server, the web app and the room image come with the package, and your classes
-live in `~/.colloq`.
+live in `~/.aulalab`.
 
-**[Documentation](https://colloq.cc/docs/en/)** ·
-[Your first class](https://colloq.cc/docs/en/getting-started.html) ·
-[Releases](https://github.com/colloq-edu/colloq/releases) ·
+**[Documentation](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/)** ·
+[Your first class](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/getting-started.html) ·
+[Releases](https://github.com/vighneshtule/AulaLab/releases) ·
 [From source](#from-source)
 
-## What Colloq is
+## What Aula Lab is
 
 A teacher creates a class and shares its link. Students type a name, get a mark,
 and they are in: the same notebook, the same files and the same running Python
 process as everyone else. There are no student accounts, no installs and no
 environment setup. When someone runs a cell, everyone sees the result.
 
-Colloq runs on your own machine or server, under the MIT license. It is built for
+Aula Lab runs on your own machine or server, under the MIT license. It is built for
 the class that happens together: a live coding exercise, a lecture that opens up
 for questions, or individual attempts the teacher brings back to the room.
 
@@ -62,7 +61,7 @@ for questions, or individual attempts the teacher brings back to the room.
 - **For operators:** a laptop for one class, your own Kubernetes or one Linux VM
   for a term, or a rented GPU box for a deep-learning course.
 
-> **Status:** pre-1.0; the version badge above carries the current one. Colloq
+> **Status:** pre-1.0; the version badge above carries the current one. Aula Lab
 > runs the author's own courses. Before 1.0 a release can still change how
 > something works, so read [CHANGELOG.md](CHANGELOG.md) before upgrading an
 > instance that has classes on it.
@@ -121,7 +120,7 @@ how the room takes part. In any preset, a cell can be:
 
 * **closed** — the room's rules decide who edits and runs it.
 * **open to shared editing** — anyone in the room can edit and run that one cell, even under Lecture rules.
-* **council** — each cell runs **Only me** (teacher-only execution, the default), **Everyone in turn** (students run directly) or **On request** (each student run needs the teacher's approval). Requests work for drafts as well as submitted answers; editing the text invalidates the request. Approval queues the requested version; it does not submit the answer. All attempts run in that notebook's **one kernel**, one after another, so students can use the data the teacher prepared. In a class whose council computes on machines ([the council on machines](https://colloq.cc/docs/en/council.html#machines)) they run instead at the same time on a pool of workers on a class machine, each worker loaded with a snapshot of the notebook's kernel, so the teacher's cells never hold them up; an attempt that uses what the snapshot cannot carry (a database connection, an open file) goes to the one kernel, its card saying why. Each attempt gets personal copies of that data — tables, arrays, containers, torch tensors, models and their optimisers, sparse matrices, and objects of classes defined in the notebook — and afterwards the server restores the namespace exactly as it was: it removes the names the attempt defines and undoes its rebindings, so `data = data.dropna()`, `df.drop(..., inplace=True)`, `del df` or `globals().clear()` in one attempt does not reach the next. The same entry also protects the room from the three ways one attempt could end the class for everybody: `exit()` and `quit()` are refused (in a Jupyter kernel they shut the process down and everyone loses their variables), `os._exit()` and `os.abort()` are refused too (they end the kernel process on the spot, without even a traceback to say why), and an attempt's address space is capped (`COUNCIL_MEMORY_GUARD`) so `np.ones((40000, 40000))` fails with `MemoryError` on its own card instead of the OOM killer taking the notebook's kernel. Process state that would otherwise change everyone's results goes back too: random seeds, `sys.stdout`, `sys.path`, `os.environ`, `builtins`, warning filters, numpy and pandas options, matplotlib figures. Everything else stays shared: files on disk, modules the attempt imported, objects of types that cannot be copied and objects above the `COUNCIL_COPY_MB` budget — an attempt is told in its own output which of its variables were left shared, and which threads it left running. A review mark reaches only the answer's author, and the class sees it only on an answer the teacher shows. Individual sheets are a teaching tool, not independent execution sandboxes or an isolated grading environment.
+* **council** — each cell runs **Only me** (teacher-only execution, the default), **Everyone in turn** (students run directly) or **On request** (each student run needs the teacher's approval). Requests work for drafts as well as submitted answers; editing the text invalidates the request. Approval queues the requested version; it does not submit the answer. All attempts run in that notebook's **one kernel**, one after another, so students can use the data the teacher prepared. In a class whose council computes on machines ([the council on machines](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/council.html#machines)) they run instead at the same time on a pool of workers on a class machine, each worker loaded with a snapshot of the notebook's kernel, so the teacher's cells never hold them up; an attempt that uses what the snapshot cannot carry (a database connection, an open file) goes to the one kernel, its card saying why. Each attempt gets personal copies of that data — tables, arrays, containers, torch tensors, models and their optimisers, sparse matrices, and objects of classes defined in the notebook — and afterwards the server restores the namespace exactly as it was: it removes the names the attempt defines and undoes its rebindings, so `data = data.dropna()`, `df.drop(..., inplace=True)`, `del df` or `globals().clear()` in one attempt does not reach the next. The same entry also protects the room from the three ways one attempt could end the class for everybody: `exit()` and `quit()` are refused (in a Jupyter kernel they shut the process down and everyone loses their variables), `os._exit()` and `os.abort()` are refused too (they end the kernel process on the spot, without even a traceback to say why), and an attempt's address space is capped (`COUNCIL_MEMORY_GUARD`) so `np.ones((40000, 40000))` fails with `MemoryError` on its own card instead of the OOM killer taking the notebook's kernel. Process state that would otherwise change everyone's results goes back too: random seeds, `sys.stdout`, `sys.path`, `os.environ`, `builtins`, warning filters, numpy and pandas options, matplotlib figures. Everything else stays shared: files on disk, modules the attempt imported, objects of types that cannot be copied and objects above the `COUNCIL_COPY_MB` budget — an attempt is told in its own output which of its variables were left shared, and which threads it left running. A review mark reaches only the answer's author, and the class sees it only on an answer the teacher shows. Individual sheets are a teaching tool, not independent execution sandboxes or an isolated grading environment.
 
 <details>
 <summary><strong>Room rules and teacher access</strong></summary>
@@ -155,9 +154,9 @@ private. Adding a teacher does not send an email.
 
 </details>
 
-Guides: [room rules](https://colloq.cc/docs/en/room-rules.html) ·
-[council](https://colloq.cc/docs/en/council.html) ·
-[lectures](https://colloq.cc/docs/en/lectures.html)
+Guides: [room rules](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/room-rules.html) ·
+[council](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/council.html) ·
+[lectures](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/lectures.html)
 
 ## An AI the class can follow
 
@@ -197,7 +196,7 @@ support. Changes apply to the next request.
 
 </details>
 
-Guide: [the Oracle](https://colloq.cc/docs/en/oracle.html)
+Guide: [the Oracle](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/oracle.html)
 
 ## Everything else in the room
 
@@ -208,8 +207,8 @@ Guide: [the Oracle](https://colloq.cc/docs/en/oracle.html)
 | **History** | Notebook versions, plus a filtered activity journal in the teacher's History panel: attendance, Oracle requests, run outcomes, submitted answers and editing participation. See [activity history](docs/activity-history.md). |
 | **Notebooks in and out** | Several notebooks per room and `.ipynb` export. Start a class from a `.ipynb` file (outputs are not imported) or from a GitHub link to a notebook or folder in a public repository. |
 | **End class, resume later** | **End class** makes the room read-only for students and keeps its notebook, files and discussion. **Resume class** brings back the previous rules. |
-| **Courses and class pages** | After class, put the room's notebooks with their outputs, the slides and the data on a class page that keeps its link: a tab per notebook, PDFs in the browser's viewer, everything as one ZIP laid out like the room. **End class** refreshes it from the saved choice. The course page is a timetable by day. The room itself, with its edit history and oracle questions, stays open from the page only to those who were in it, unless the teacher opens it to everyone. [Class pages and courses](https://colloq.cc/docs/en/publishing.html). |
-| **Russian or English** | The owner switches the interface for the whole instance from `/admin`. Open rooms switch live, keeping code, cursors and drafts. [Language settings](https://colloq.cc/docs/en/language.html). |
+| **Courses and class pages** | After class, put the room's notebooks with their outputs, the slides and the data on a class page that keeps its link: a tab per notebook, PDFs in the browser's viewer, everything as one ZIP laid out like the room. **End class** refreshes it from the saved choice. The course page is a timetable by day. The room itself, with its edit history and oracle questions, stays open from the page only to those who were in it, unless the teacher opens it to everyone. [Class pages and courses](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/publishing.html). |
+| **English interface** | The interface language is English. Open rooms keep code, cursors and drafts when the page reloads. |
 | **Python environments** | An environment is a requirements file; each class picks one at creation. GPU environments give each room an exclusive GPU slice. |
 
 ## Competitions
@@ -252,53 +251,53 @@ default one submission runs at a time, the queue is fair per person (a person's
 second submission queues behind everyone else's first), and the teacher can pause
 it or kill the run in progress.
 
-Guide: [competitions](https://colloq.cc/docs/en/competitions.html)
+Guide: [competitions](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/competitions.html)
 
 ## Quick start
 
 ### Install with pip
 
 The whole app ships as a Python package: the server, the built web app, the CLI
-and the room's Dockerfile, behind one `colloq` command. Python itself only
+and the room's Dockerfile, behind one `aulalab` command. Python itself only
 carries them — the class runs on Node and Docker.
 
 ```bash
-pip install colloq     # Python 3.9+, into a virtualenv or with pipx
-colloq start           # a class on this computer, in your browser
+pip install aulalab     # Python 3.9+, into a virtualenv or with pipx
+aulalab start           # a class on this computer, in your browser
 ```
 
 The machine needs **Docker** running. On macOS 14+ and on Linux x64/arm64
 (glibc 2.28+) pip installs a wheel with Node.js and the server's dependencies
 inside, and that is all. Elsewhere (macOS 13, Alpine, other architectures) pip
-takes the universal wheel, which needs **Node.js 22 or newer**: `colloq` finds
+takes the universal wheel, which needs **Node.js 22 or newer**: `aulalab` finds
 it on its own, including under nvm, fnm, volta and asdf, says so in words when
 it is missing, and installs the server's dependencies once on the first run.
 Ctrl+C saves the notebook and stops the class.
 
-1. Open the link `colloq start` prints. Like Jupyter's, it carries the setup
-   token (kept in `~/.colloq/data/setup-token`): the first time it makes you
+1. Open the link `aulalab start` prints. Like Jupyter's, it carries the setup
+   token (kept in `~/.aulalab/data/setup-token`): the first time it makes you
    the owner of the instance, and after that it signs you in.
 2. Create a class and choose its preset and Python environment.
 3. Share the class link, `/s/<id>`, and never a link with `/admin/` in it.
 
-State lives in `~/.colloq`, never inside the package: `.env`, the database,
+State lives in `~/.aulalab`, never inside the package: `.env`, the database,
 `workspace/` and the environments you create. Reinstalling or upgrading leaves
-all of it alone, and `COLLOQ_HOME` moves it elsewhere. `colloq host`, `status`,
-`doctor`, `backup` and `env` cover the rest — `colloq --help` lists them, and
+all of it alone, and `AULALAB_HOME` moves it elsewhere. `aulalab host`, `status`,
+`doctor`, `backup` and `env` cover the rest — `aulalab --help` lists them, and
 [python/README.md](python/README.md) and [cli/README.md](cli/README.md) explain
 them.
 
 <details>
-<summary><strong>One link for your students: <code>colloq start --share</code></strong></summary>
+<summary><strong>One link for your students: <code>aulalab start --share</code></strong></summary>
 
-`colloq start --share` starts the class, opens a quick Cloudflare tunnel and
+`aulalab start --share` starts the class, opens a quick Cloudflare tunnel and
 prints one block: the link to hand out (`https://….trycloudflare.com/s/<id>`),
 or, with no class yet, where to create one. Ctrl+C closes the link together with
 the class, and a quick tunnel takes a new address on every start, so the link is
 a new one each time. The first `--share` downloads a pinned `cloudflared`,
 checked against a pinned SHA-256 before it is ever run and kept in
-`~/.colloq/bin` (`COLLOQ_CLOUDFLARED=/path` uses your own,
-`COLLOQ_CLOUDFLARED_DOWNLOAD=0` forbids the download). macOS and Linux only; on
+`~/.aulalab/bin` (`AULALAB_CLOUDFLARED=/path` uses your own,
+`AULALAB_CLOUDFLARED_DOWNLOAD=0` forbids the download). macOS and Linux only; on
 Windows, use WSL 2.
 
 **The isolation gate.** A class goes online only when every room's Python runs
@@ -309,8 +308,8 @@ locally. What stays true either way: the link is a door, and whoever has it runs
 code in a sandbox on this computer. Keep it for your class.
 
 **Cloudflare addresses do not open from Russia.** For students there, publish
-through a relay of your own: `colloq start --host <name>` with the `RELAY_*`
-lines in `~/.colloq/.env`; from a checkout, `make relay-setup` prepares the
+through a relay of your own: `aulalab start --host <name>` with the `RELAY_*`
+lines in `~/.aulalab/.env`; from a checkout, `make relay-setup` prepares the
 relay ([Give the room an address](#give-the-room-an-address)).
 
 </details>
@@ -320,8 +319,8 @@ relay ([Give the room an address](#give-the-room-an-address)).
 You need **Node.js 22 or newer**, npm, **Docker** (running) and Make.
 
 ```bash
-git clone https://github.com/colloq-edu/colloq.git
-cd colloq
+git clone https://github.com/vighneshtule/AulaLab.git
+cd aulalab
 npm ci
 make dev
 ```
@@ -360,12 +359,12 @@ use. Production uses the private broker described under
 </details>
 
 A checkout also builds the package itself: `make wheel` writes
-`python/dist/colloq-*.whl` (after `npm ci`; it needs Python 3 with pip), and
-installing that wheel gives exactly what `pip install colloq` gives.
+`python/dist/aulalab-*.whl` (after `npm ci`; it needs Python 3 with pip), and
+installing that wheel gives exactly what `pip install aulalab` gives.
 
 ### A rented GPU box on Vast.ai
 
-`colloq-vast` is one ready image for a rented Vast.ai **VM**: the server, the
+`aulalab-vast` is one ready image for a rented Vast.ai **VM**: the server, the
 built web app, the tunnel clients and the kernel build context.
 `make vast-vm HOST=class1` rents the VM over the API and starts the image on it,
 and the machine comes up with a class address and an owner sign-in link. Each room
@@ -378,29 +377,29 @@ but is a preview: no release up to and including 0.9.0 has published its bundle.
 
 ## Deploy for a real class
 
-There are two ways to run Colloq for an institution:
+There are two ways to run Aula Lab for an institution:
 
 - **In your own Kubernetes.** The Helm chart
-  `oci://ghcr.io/colloq-edu/charts/colloq` goes into one namespace: no
+  `oci://ghcr.io/vighneshtule/charts/aulalab` goes into one namespace: no
   cluster-admin and no cluster-scoped objects, restricted Pod Security,
   network policies for every flow, images pinned by digest and rewritten to
   your registry mirror, and secrets taken from existing Secrets (Vault,
   External Secrets), so ArgoCD sees no drift. A non-root app calls a private
   runtime broker, the only component with Kubernetes credentials, which
   creates a separate Jupyter Pod for each room. The guide
-  [Colloq in your Kubernetes](https://colloq.cc/docs/en/kubernetes.html) is
+  [Aula Lab in your Kubernetes](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/kubernetes.html) is
   written for the platform team: assumptions, permissions, network flows,
   storage, sizing, upgrades and backups.
-- **On one VM.** Run the server image `ghcr.io/colloq-edu/colloq-server` with
-  `colloq-host` on one dedicated Linux amd64 VM behind your own HTTPS reverse
+- **On one VM.** Run the server image `ghcr.io/vighneshtule/aulalab-server` with
+  `aulalab-host` on one dedicated Linux amd64 VM behind your own HTTPS reverse
   proxy. Each room still gets its own kernel container; the app holds the
-  Docker socket, so the VM belongs to Colloq alone. Sizing, inbound and
+  Docker socket, so the VM belongs to Aula Lab alone. Sizing, inbound and
   outbound access, nginx and Caddy settings, backups and updates are in the
-  guide [Your own server (university)](https://colloq.cc/docs/en/server.html).
+  guide [Your own server (university)](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/server.html).
 
 The single-node k3s path below is a **preview** for those without a cluster:
 a script installs k3s on a bare VM by itself. No release up to and including
-0.9.0 carries its deployment bundle (`release.json`, `colloq-deploy.tar.gz`,
+0.9.0 carries its deployment bundle (`release.json`, `aulalab-deploy.tar.gz`,
 `SHA256SUMS`), so it cannot be installed from published artifacts yet. It runs
 on **one Linux amd64 VM with k3s/containerd**. A non-root web app
 calls a private runtime broker, which creates a separate Jupyter Pod, token and
@@ -430,14 +429,14 @@ and require a real CUDA preflight.
 
 | Operator guide | What it covers |
 | --- | --- |
-| [Colloq in your Kubernetes](https://colloq.cc/docs/en/kubernetes.html) | The Helm chart in one namespace of your cluster: assumptions, permissions, network flows, storage, registry mirror, ArgoCD, sizing and operations. |
-| [Helm chart](deploy/helm/colloq/README.md) | Every value of the chart and the environment variable it sets. |
-| [Your own server (university)](https://colloq.cc/docs/en/server.html) | The server image with `colloq-host` on a dedicated VM: sizing, network access, reverse proxy, settings, backups, updates and personal data. |
+| [Aula Lab in your Kubernetes](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/kubernetes.html) | The Helm chart in one namespace of your cluster: assumptions, permissions, network flows, storage, registry mirror, ArgoCD, sizing and operations. |
+| [Helm chart](deploy/helm/aulalab/README.md) | Every value of the chart and the environment variable it sets. |
+| [Your own server (university)](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/server.html) | The server image with `aulalab-host` on a dedicated VM: sizing, network access, reverse proxy, settings, backups, updates and personal data. |
 | [Single-node deployment](deploy/k3s/README.md) | The single-node k3s preview for those without a cluster: releases, installation, environments, storage, updates, rollback and GPU prerequisites. |
 | [Runtime boundary](runtime/README.md) | Broker API, credentials, room lifecycle and isolation limits. |
 | [Vast VM with k3s](docs/deployment-vast.md) | Renting a VM, registry credentials, named backups and recovery. Rental and disk destruction require confirmation. |
-| [Vast VM with one image](deploy/vast/README.md) | The `colloq-vast` image, its template and on-start script. |
-| [Guides at colloq.cc](https://colloq.cc/docs/en/) | Installing, networking, environments, backups and updates, for operators and teachers. |
+| [Vast VM with one image](deploy/vast/README.md) | The `aulalab-vast` image, its template and on-start script. |
+| [Guides at github.com/vighneshtule/AulaLab](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/) | Installing, networking, environments, backups and updates, for operators and teachers. |
 
 ### Give the room an address
 
@@ -451,9 +450,9 @@ bundle contains the cluster and recovery tools.
 | Your own relay | `make relay-setup WHERE=root@your-relay`, then `make host HOST=seminar.example.edu` | A public relay, its domain, and relay settings in `.env`. |
 | Direct HTTPS | `sudo make host-direct HOST=seminar.example.edu` | Public Linux host, reachable ports 80/443, and a Cloudflare DNS token; Caddy serves the app. |
 
-From the pip package the first three rows are `colloq start --share` and
-`colloq start --host <name>` (or `colloq host <name>` beside a running class),
-with the `RELAY_*` lines in `~/.colloq/.env`.
+From the pip package the first three rows are `aulalab start --share` and
+`aulalab start --host <name>` (or `aulalab host <name>` beside a running class),
+with the `RELAY_*` lines in `~/.aulalab/.env`.
 
 Test access from the students' network before class. Use your own relay or direct
 hosting where the Cloudflare tunnel is unreachable — it does not open from
@@ -462,7 +461,7 @@ through it depends on that machine.
 
 ### Keep the work recoverable
 
-Production state lives under `/var/lib/colloq`. Local volumes survive Pod
+Production state lives under `/var/lib/aulalab`. Local volumes survive Pod
 replacement; losing the VM disk requires an off-machine backup.
 
 ```bash
@@ -482,9 +481,9 @@ schema-compatible rollback.
 #### An environment is a file
 
 `kernel/environments/<name>.txt` is a pip requirements list, and three header
-lines are directives rather than comments: `# colloq: gpu` claims an exclusive GPU
-slice for every room on it, `# colloq: from <name>` builds this image on another
-environment's image instead of the base, and `# colloq: python 3.12` chooses the
+lines are directives rather than comments: `# aulalab: gpu` claims an exclusive GPU
+slice for every room on it, `# aulalab: from <name>` builds this image on another
+environment's image instead of the base, and `# aulalab: python 3.12` chooses the
 interpreter — 3.10 to 3.13, defaulting to the `ARG PARENT` version in
 `kernel/Dockerfile`. pip treats all three as comments, so they install nothing and
 do not mark a built image stale. Only the **root** of a `from` chain decides the
@@ -528,7 +527,7 @@ and `pdf/` from the build to the relay, which serves those paths itself with the
 same cache headers the app sends; only the live room still travels through the
 tunnel. A missing or stale file falls through to the tunnel, so the mirror never
 breaks a class. `curl -sI https://<host>/assets/<file>` reports
-`X-Colloq-Mirror: hit` when the relay answered. Previous chunk names stay
+`X-AulaLab-Mirror: hit` when the relay answered. Previous chunk names stay
 available for 30 days, so tabs opened before a deploy still load.
 
 #### Local settings
@@ -552,15 +551,15 @@ without a restart.
 | `AUTH_JWT_TEACHER_ROLES` / `AUTH_JWT_OWNER_ROLES` | The proxy's roles that add a person to the staff on their first visit; the roles then decide, so someone removed in the panel comes back while the proxy still gives the role. Unset: nobody is added, and the owner adds colleagues by email. Only an owner role claims an unclaimed instance. |
 | `UI_LANGUAGE` | Interface language (`ru`, the default, or `en`) until the owner chooses one in `/admin`. |
 | `KERNEL_ENV` | Default Python environment for the Docker development backend. |
-| `KERNEL_PIDS` / `KERNEL_ROOM_SUBNET` | Process ceiling of a room container (512 by default) and the subnet of the `colloq-rooms` network (`10.213.0.0/22`). |
+| `KERNEL_PIDS` / `KERNEL_ROOM_SUBNET` | Process ceiling of a room container (512 by default) and the subnet of the `aulalab-rooms` network (`10.213.0.0/22`). |
 | `KERNEL_OWN_MAX` / `KERNEL_OWN_PIDS` | Students' personal notebooks run in a second container per class, one that never receives the class's GPU: how many kernels may live in it at once (60 by default) and its process ceiling (2048, because each kernel is about fifteen threads). Over the first number, a run in a personal notebook is refused in words. |
 | `KERNEL_OWN_IDLE_MIN` | Minutes of idling after which one personal notebook's kernel is stopped (30 by default; `0` never stops them). The class keeps running; the notebook is told in the kernel log, and the next Run brings its kernel back. The container goes with the last kernel in it. |
-| `KERNEL_ROOM_IDLE_MIN` | Minutes a class with nobody inside and nothing computing keeps its kernels (120 by default; `0` keeps them). A running container holds its whole memory limit whatever it uses, so idle classes can starve new ones; the owner also sees and stops kernels by hand under «Ресурсы» → «Работают сейчас». |
-| `COLLOQ_ROOM_NETWORK` | Unset: rooms cannot reach local addresses (LAN, router, the host, cloud metadata), and they refuse to start if that block cannot be installed. `open` lifts the block for a trusted setup; `colloq doctor` then says so. |
+| `KERNEL_ROOM_IDLE_MIN` | Minutes a class with nobody inside and nothing computing keeps its kernels (120 by default; `0` keeps them). A running container holds its whole memory limit whatever it uses, so idle classes can starve new ones; the owner also sees and stops kernels by hand under **Resources → Running now**. |
+| `AULALAB_ROOM_NETWORK` | Unset: rooms cannot reach local addresses (LAN, router, the host, cloud metadata), and they refuse to start if that block cannot be installed. `open` lifts the block for a trusted setup; `aulalab doctor` then says so. |
 | `MAX_UPLOAD_MB` / `MAX_SESSION_MB` | Application upload limits; these do not limit arbitrary writes from Python. |
 | `COUNCIL_COPY_MB` | How much memory one council attempt may spend on personal copies of the room's data (512 by default). Anything above the budget stays shared, and the attempt is told so in its own output. Copy-on-write pandas copies cost nothing and are not counted. |
 | `COUNCIL_MEMORY_GUARD` | Cap the address space of a council attempt at the container's memory limit minus what is already in use (`1` by default; `0` turns it off). A greedy attempt then fails with `MemoryError` on its own card instead of the OOM killer taking the notebook's kernel and everybody's variables. Skipped automatically where it cannot work: outside Linux, without a cgroup limit, or with CUDA nearby. |
-| `COMPETITION_BACKEND` | `broker` executes competition notebooks, metrics and package preparation in isolated Kubernetes Pods with pinned catalog images (the Helm chart or the k3s preview); it is selected automatically by the production broker deployment. `docker` uses throwaway containers on the local Docker (`colloq start`, `make up`, the server image). `test` is a non-executing stand-in and requires `NODE_ENV=test`. The app refuses submissions when the selected executor or preparation capability is unavailable; `/api/health` reports each capability separately. Production does not need a Docker socket in the app Pod. |
+| `COMPETITION_BACKEND` | `broker` executes competition notebooks, metrics and package preparation in isolated Kubernetes Pods with pinned catalog images (the Helm chart or the k3s preview); it is selected automatically by the production broker deployment. `docker` uses throwaway containers on the local Docker (`aulalab start`, `make up`, the server image). `test` is a non-executing stand-in and requires `NODE_ENV=test`. The app refuses submissions when the selected executor or preparation capability is unavailable; `/api/health` reports each capability separately. Production does not need a Docker socket in the app Pod. |
 | `DATA_HOST_DIR` | The competition directory as the Docker daemon sees it — what `WORKSPACE_HOST_DIR` is to rooms. Leave it unset on a host-native server. Under `make up` the server itself lives in a container, and without this a submission silently receives an empty directory instead of its data. |
 
 </details>
@@ -579,11 +578,11 @@ and APIs work; it loses the local network — the LAN, the router, the host
 itself, a neighbouring room, cloud metadata. Port 53 is the deliberate
 exception, because Docker's resolver forwards from addresses that differ per
 machine. A room refuses to start when that block cannot be installed, rather
-than opening quietly; `COLLOQ_ROOM_NETWORK=open` lifts it for a trusted machine,
-and the server and `colloq doctor` say so out loud.
+than opening quietly; `AULALAB_ROOM_NETWORK=open` lifts it for a trusted machine,
+and the server and `aulalab doctor` say so out loud.
 
 What the boundary does not do: containers share the host Linux kernel, so this
-is not VM isolation; on the Docker-based paths (`colloq start`, `make dev`,
+is not VM isolation; on the Docker-based paths (`aulalab start`, `make dev`,
 `make up` and the Vast image) the server controls the Docker daemon, which on a
 Linux host amounts to root; standard Kubernetes NetworkPolicy has a local-node
 traffic exception; one node provides no high availability; and PVC capacity is
@@ -593,21 +592,20 @@ described in [SECURITY.md](SECURITY.md).
 
 ## Documentation
 
-The guides at **[colloq.cc/docs](https://colloq.cc/docs/en/)** cover installing,
+The guides at **[Aula Lab documentation](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/)** cover installing,
 running a class, room rules, lectures, council, the Oracle, competitions,
 environments, publishing, networking, backups and updates, in
-[English](https://colloq.cc/docs/en/) and [Russian](https://colloq.cc/docs/).
+[English](https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/).
 Operator and developer references live next to the code:
-[deploy/helm/colloq](deploy/helm/colloq/README.md), [deploy/k3s](deploy/k3s/README.md),
+[deploy/helm/aulalab](deploy/helm/aulalab/README.md), [deploy/k3s](deploy/k3s/README.md),
 [deploy/vast](deploy/vast/README.md), [runtime](runtime/README.md),
 [tests](tests/README.md), [cli](cli/README.md) and [python](python/README.md).
-This page in Russian: [README.ru.md](README.ru.md).
 
 ## Versions and releases
 
 The version's single source is `"version"` in the root `package.json` (the
 badge at the top shows it). The other copies, including
-`python/colloq/_version.py`, are kept in step, and `make version` checks that
+`python/aulalab/_version.py`, are kept in step, and `make version` checks that
 they agree. Versions are never bumped by hand. Commits on `main` follow
 [Conventional Commits](https://www.conventionalcommits.org/), and
 [release-please](https://github.com/googleapis/release-please) keeps a release
@@ -615,16 +613,20 @@ pull request open that bumps every copy and adds the changelog section. Merging
 that pull request tags `vX.Y.Z`, creates the GitHub Release and attaches the pip
 wheel; a separate workflow publishes that wheel to PyPI, pushes the images to
 GHCR and the Helm chart, with the release's digests in its values, to
-`oci://ghcr.io/colloq-edu/charts/colloq`; the k3s release bundle is a separate
+`oci://ghcr.io/vighneshtule/charts/aulalab`; the k3s release bundle is a separate
 manual workflow, and no release up to and including 0.9.0 has published one. A
 running server reports its version at `/api/health`.
 
 What changed is in [CHANGELOG.md](CHANGELOG.md); how a release is cut is in
 [RELEASING.md](RELEASING.md).
 
+## Project origin
+
+Aula Lab is an independent adaptation of [Colloq](https://github.com/colloq-edu/colloq), an open-source classroom project. This repository retains the upstream Git history and credits the original contributors there. Aula Lab's changes, packaging, and ongoing maintenance are tracked in this repository.
+
 ## Contributing
 
-Colloq is maintained by one person, and help is welcome: a clear bug report, a
+Aula Lab welcomes contributions: a clear bug report, a
 reproduction from a real class, a translation fix or a small, well-tested pull
 request all go a long way. For anything larger, such as a new room mode, a new
 deployment path or a change to the permission model, open an issue first.
@@ -655,7 +657,7 @@ harnesses (`npm run e2e`, `npm run perf`, `make load`) need a running disposable
 instance, never a real class; the header of each script in `scripts/` gives its
 target and settings. Operations such as releases, the relay,
 environments and backups are Make targets: `make help` lists them, with help text
-in Russian.
+in English.
 
 | Directory | Responsibility |
 | --- | --- |
@@ -664,10 +666,10 @@ in Russian.
 | [`shared/`](shared/) | Notebook schema, room rules, protocols and UI strings shared by server and web. |
 | [`runtime/`](runtime/) | Private broker and fixed Kubernetes room templates. |
 | [`kernel/`](kernel/) | Python kernel image and environment definitions. |
-| [`cli/`](cli/) | The `colloq` command and the supervisor behind `make dev`. |
-| [`python/`](python/) | The pip package that carries the built app and the `colloq` command. |
+| [`cli/`](cli/) | The `aulalab` command and the supervisor behind `make dev`. |
+| [`python/`](python/) | The pip package that carries the built app and the `aulalab` command. |
 | [`deploy/`](deploy/) · [`scripts/`](scripts/) | Release tooling, the Helm chart, the k3s and Vast deployments, hosting and operations. |
-| [`site/`](site/) · [`docs/`](docs/) | The colloq.ru landing page and guides (sources in `docs/pages`, built by `docs/build.py`), plus operator notes in `docs/`. |
+| [`site/`](site/) · [`docs/`](docs/) | The example.edu landing page and guides (sources in `docs/pages`, built by `docs/build.py`), plus operator notes in `docs/`. |
 | [`tests/`](tests/) | The `node --test` unit suite; its README explains how the run is set up. |
 
 The server participates in the Yjs document and writes execution results into
@@ -680,9 +682,9 @@ only to the app and never receive Jupyter credentials.
 The animations in this README are generated by `make readme-art`
 ([scripts/readme-art.mts](scripts/readme-art.mts)).
 
-## What Colloq is not
+## What Aula Lab is not
 
-Colloq focuses on the live class. It is not an LMS: there is no course progress
+Aula Lab focuses on the live class. It is not an LMS: there is no course progress
 tracking, automated grading, SSO or video conferencing. Pair it with the call tool
 you already use.
 
@@ -690,6 +692,6 @@ you already use.
 
 <p align="center">
   MIT © 2026 Aleksandr Kalashnikov ·
-  <a href="https://colloq.cc/docs/en/">Documentation</a> ·
-  <a href="https://colloq.ru">colloq.ru</a>
+  <a href="https://github.com/vighneshtule/AulaLab/tree/main/docs/pages/en/">Documentation</a> ·
+  <a href="https://github.com/vighneshtule/AulaLab">example.edu</a>
 </p>

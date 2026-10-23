@@ -1,7 +1,7 @@
 /**
  * The kernels a machine runs (server/src/runner-agent/images.ts): pulled by
  * digest, checked against the pinned layers, smoke-tested on a card when they
- * are GPU kernels, tagged colloq-revision:<id>, and evicted when nobody wanted
+ * are GPU kernels, tagged aulalab-revision:<id>, and evicted when nobody wanted
  * them for a day and the disk runs low.
  *
  * What each check stops: an image whose layers are not the pin is not what
@@ -62,7 +62,7 @@ test('an image whose layers are not the pin is a `layers` problem and never read
   assert.ok(!docker.calls.some((args) => args[0] === 'tag'), 'an image not the pin was tagged')
 
   // The containerd caveat: a ref recorded for a local build that was never pushed. The pull fails, and it says so.
-  const unpushed = { id: 'b'.repeat(32), ref: `ghcr.io/colloq-edu/colloq-kernel@sha256:${'7'.repeat(64)}` }
+  const unpushed = { id: 'b'.repeat(32), ref: `ghcr.io/vighneshtule/aulalab-kernel@sha256:${'7'.repeat(64)}` }
   images.want(want(false, unpushed.id, unpushed.ref))
   await images.idle()
   const problem = images.problemList().find((found) => found.revisionId === unpushed.id)
@@ -143,7 +143,7 @@ test('a pull\'s progress is its layers in place; a failed revision waits before 
   assert.deepEqual(images.fetchingList(), [])
 
   // Another revision whose pull fails: asked again only after its wait, not in a loop.
-  const other = { id: 'c'.repeat(32), ref: `ghcr.io/colloq-edu/colloq-kernel@sha256:${'6'.repeat(64)}` }
+  const other = { id: 'c'.repeat(32), ref: `ghcr.io/vighneshtule/aulalab-kernel@sha256:${'6'.repeat(64)}` }
   images.want([...want(), ...want(false, other.id, other.ref)])
   await images.idle()
   images.want([...want(), ...want(false, other.id, other.ref)])
@@ -236,7 +236,7 @@ test('the smoke test is labelled for this tree as well as for its kind, and name
   const smoke = docker.calls.find((args) => args[0] === 'run' && args.includes('python'))!
   const labels = smoke.flatMap((arg, index) => (smoke[index - 1] === '--label' ? [arg] : []))
   assert.deepEqual(labels.sort(), [CHECK_LABEL, INSTANCE_LABEL].sort())
-  assert.match(INSTANCE_LABEL, /^ru\.colloq\.competition-instance=[a-f0-9]{16}$/)
+  assert.match(INSTANCE_LABEL, /^ru\.aulalab\.competition-instance=[a-f0-9]{16}$/)
   const name = smoke[smoke.indexOf('--name') + 1]!
   assert.ok(name.includes(INSTANCE_LABEL.split('=')[1]!.slice(0, 8)), name)
 })

@@ -9,7 +9,7 @@
    * whether this is the right site and whether it is them.
    *
    * The mark is the product's (`Icon name="logo"`, nine cells), not the one
-   * drawn in the mockup as four squares: Colloq has one logo for all screens,
+   * drawn in the mockup as four squares: Aula Lab has one logo for all screens,
    * and a second version of it on a public page would read as someone else's
    * site.
    */
@@ -40,7 +40,7 @@
     }}
   >
     <Icon name="logo" size={16} class="shrink-0 text-primary" />
-    <span class="shrink-0 text-2xs font-black uppercase tracking-section text-primary">Colloq</span>
+    <span class="shrink-0 text-2xs font-black uppercase tracking-section text-primary">Aula Lab</span>
     <span class="hidden h-[18px] w-px shrink-0 bg-line sm:block" aria-hidden="true"></span>
     <span class="hidden truncate text-2xs text-muted sm:block">{tr('competitions.title')}</span>
   </a>

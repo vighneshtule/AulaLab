@@ -27,7 +27,7 @@ import { courseRoutes } from '../server/src/routes/courses.js'
 import { forgetTree, sessionDir } from '../server/src/workspace.js'
 
 const ROOM = 'nrid0042'
-const staticDir = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-no-room-id-'))
+const staticDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-no-room-id-'))
 let base = ''
 let server: http.Server
 let courseId = ''
@@ -36,7 +36,7 @@ let seminarKey = ''
 
 before(async () => {
   fs.mkdirSync(path.join(staticDir, 'og'), { recursive: true })
-  fs.writeFileSync(path.join(staticDir, 'og', 'colloq.png'), 'not really a png')
+  fs.writeFileSync(path.join(staticDir, 'og', 'aulalab.png'), 'not really a png')
   // Named by hand after its own id, as happens.
   createSession(ROOM, `Неделя 4 (${ROOM})`, null)
   const { doc } = getSessionDoc(ROOM)

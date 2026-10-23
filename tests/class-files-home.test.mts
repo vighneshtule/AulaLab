@@ -875,7 +875,7 @@ test('«Привезти»: a file over the per-file cap is pulled by its hash, 
   // Allowed over the per-file cap, as «Привезти» may: the bytes land and the row is this server's file now.
   const allowed = rigged.files.pullFor(machine, klass.id, 'model.pt', klass.gen, sha(body), body.length)
   assert.equal(allowed.cap, 1024 * 1024 * 1024)
-  const tmp = path.join(klass.dir, '.colloq.uploading-test-fetch')
+  const tmp = path.join(klass.dir, '.aulalab.uploading-test-fetch')
   fs.writeFileSync(tmp, body)
   assert.deepEqual(await rigged.files.landPulled(machine, klass.id, klass.gen, 'model.pt', sha(body), tmp), { accepted: true })
   assert.equal(fs.statSync(path.join(klass.dir, 'model.pt')).size, body.length)
@@ -900,7 +900,7 @@ test('a file the machine left unhashed over a cap is brought as it is: a pull wi
   // Whatever version the PUT names lands, within the room's limit (not the per-file cap).
   const body = Buffer.from('the model as it is now')
   assert.equal(rigged.files.pullFor(machine, klass.id, 'model.pt', klass.gen, sha(body), body.length).target, 'model.pt')
-  const tmp = path.join(klass.dir, '.colloq.uploading-test-unhashed')
+  const tmp = path.join(klass.dir, '.aulalab.uploading-test-unhashed')
   fs.writeFileSync(tmp, body)
   assert.deepEqual(await rigged.files.landPulled(machine, klass.id, klass.gen, 'model.pt', sha(body), tmp), { accepted: true })
   assert.equal(read(klass.dir, 'model.pt'), 'the model as it is now')
@@ -972,7 +972,7 @@ test('«Привезти» on the control socket is staff\'s, and a move of a fi
   noteCall(machine, Date.now(), null)
   dispatch(teacher.ws, klass.id, { sessionId: klass.id, participantId: 'p_teacher', role: 'host' }, { t: 'tree:move', from: 'out.csv', to: 'moved.csv' })
   assert.equal(read(klass.dir, 'out.csv'), 'v0', 'not moved while its newer version is on its way')
-  const tmp = path.join(klass.dir, '.colloq.uploading-test-move')
+  const tmp = path.join(klass.dir, '.aulalab.uploading-test-move')
   fs.writeFileSync(tmp, v1)
   assert.deepEqual(await rigged.files.landPulled(machine, klass.id, klass.gen, 'out.csv', sha(v1), tmp), { accepted: true })
   rigged.files.replySent(machine, rigged.files.replyBlock(machine))
@@ -1086,7 +1086,7 @@ test('«Привезти» answers the press itself: taken, here already, or ref
   assert.equal(teacher.heard.some((one) => one.t === 'error'), false, 'a refusal travels in the answer, not as a stray error')
   // The bytes landed before a second tab's press was read: here already, nothing asked of the machine.
   const body = Buffer.from('the model')
-  const tmp = path.join(klass.dir, '.colloq.uploading-test-fetched')
+  const tmp = path.join(klass.dir, '.aulalab.uploading-test-fetched')
   fs.writeFileSync(tmp, body)
   assert.deepEqual(await rigged.files.landPulled(machine, klass.id, klass.gen, 'model.pt', sha(body), tmp), { accepted: true })
   assert.deepEqual(press('model.pt'), [{ t: 'files:fetched', path: 'model.pt', outcome: 'brought' }])
@@ -1140,7 +1140,7 @@ test('filesSettled asks every machine of the class for a scan and waits for the 
   rigged.files.replySent(machine, asked)
   await says(machine, report(klass, { changed: [{ path: 'new.bin', sha256: sha('n'), bytes: CLASS_INLINE_BYTES + 5, base: null }] }))
   assert.equal(settled, null, 'a pull is still on its way')
-  const tmp = path.join(klass.dir, '.colloq.uploading-test-settle')
+  const tmp = path.join(klass.dir, '.aulalab.uploading-test-settle')
   fs.writeFileSync(tmp, 'n')
   // A version other than the one asked for lands nowhere.
   await assert.rejects(rigged.files.landPulled(machine, klass.id, klass.gen, 'new.bin', sha('other'), tmp))
@@ -1183,7 +1183,7 @@ test('temporary names a crash left in the class folder are swept, and a refused 
   const machine = `m-${randomUUID().slice(0, 6)}`
   const klass = classOn(machine)
   await inStep(machine, klass)
-  const stale = path.join(klass.dir, `.colloq.uploading-${randomUUID()}`)
+  const stale = path.join(klass.dir, `.aulalab.uploading-${randomUUID()}`)
   fs.writeFileSync(stale, 'half a file')
   const hourAgo = (Date.now() - 2 * 60 * 60_000) / 1000
   fs.utimesSync(stale, hourAgo, hourAgo)

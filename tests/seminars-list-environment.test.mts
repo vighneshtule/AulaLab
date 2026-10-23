@@ -59,13 +59,13 @@ fs.mkdirSync(path.join(HOME, 'environments'), { recursive: true })
 const LISTS: Record<string, string> = {
   'xb-plain': '# A plain class environment.\nrich\n',
   'xb-data': '# Another one, for a class that moves.\npolars\n',
-  'xb-gpu': '# colloq: gpu\ntorch\n',
+  'xb-gpu': '# aulalab: gpu\ntorch\n',
   'xb-unbuilt': '# Written down, never built.\nduckdb\n',
 }
 for (const [name, list] of Object.entries(LISTS)) {
   fs.writeFileSync(path.join(HOME, 'environments', `${name}.txt`), list)
 }
-Object.assign(process.env, { COLLOQ_HOME: HOME, KERNEL_ENV: 'xb-plain', KERNEL_GPUS: '', COMPETITION_GPUS: '' })
+Object.assign(process.env, { AULALAB_HOME: HOME, KERNEL_ENV: 'xb-plain', KERNEL_GPUS: '', COMPETITION_GPUS: '' })
 /** After the lists were written, so none of them reads as edited since its build. */
 const BUILT_AT = new Date(Date.now() + 60_000).toISOString()
 
@@ -128,7 +128,7 @@ jupyter.on('upgrade', (req, socket, head) => {
         status: 'ok',
         execution_count: 1,
         ...(guard
-          ? { user_expressions: { colloq: { status: 'ok', data: { 'text/plain': JSON.stringify(guard) }, metadata: {} } } }
+          ? { user_expressions: { aulalab: { status: 'ok', data: { 'text/plain': JSON.stringify(guard) }, metadata: {} } } }
           : {}),
       })
       reply(ws, msg.header, 'status', { execution_state: 'idle' })
@@ -170,7 +170,7 @@ after(async () => {
 /* ------------------------------------------------ which images are built */
 
 const factsOf = (image: string, names: readonly string[]): string | null =>
-  names.includes(image.replace(/^colloq-kernel:/, '')) ? `1500000000\n${BUILT_AT}\n` : null
+  names.includes(image.replace(/^aulalab-kernel:/, '')) ? `1500000000\n${BUILT_AT}\n` : null
 
 let restoreImages: (() => void) | null = null
 
@@ -453,23 +453,23 @@ function dockerClass(): DockerClass {
     }
     // pool.ts · imageExists, sameImage: the tag's image id.
     if (args[0] === 'image' && args[1] === 'inspect' && args.at(-1) === '{{.Id}}') {
-      const name = args[2]!.replace(/^colloq-kernel:/, '')
+      const name = args[2]!.replace(/^aulalab-kernel:/, '')
       return builtNames.includes(name) ? { code: 0, out: `sha256:${name}` } : { code: 1, out: 'Error: No such image' }
     }
     if (args[0] === 'run' && args.includes('--name')) {
       const name = args[args.indexOf('--name') + 1]!
-      const image = args.find((arg) => arg.startsWith('colloq-kernel:'))!
-      imageOf.set(name, `sha256:${image.replace(/^colloq-kernel:/, '')}`)
+      const image = args.find((arg) => arg.startsWith('aulalab-kernel:'))!
+      imageOf.set(name, `sha256:${image.replace(/^aulalab-kernel:/, '')}`)
       networkOf.set(name, args.includes('--network') ? args[args.indexOf('--network') + 1]! : '')
       return undefined
     }
-    if (args[0] === 'inspect' && args[1]?.startsWith('colloq-room-') && args[2] === '--format') {
+    if (args[0] === 'inspect' && args[1]?.startsWith('aulalab-room-') && args[2] === '--format') {
       const name = args[1]!
       const format = args[3]!
       if (!fake.containers.has(name)) return undefined
       if (format === '{{.Image}}') return { code: 0, out: imageOf.get(name) ?? '' }
-      if (format.includes('colloq.profile')) return { code: 0, out: roomProfile() }
-      if (format.includes('colloq.gpu')) return { code: 0, out: '' }
+      if (format.includes('aulalab.profile')) return { code: 0, out: roomProfile() }
+      if (format.includes('aulalab.gpu')) return { code: 0, out: '' }
       if (format === '{{.HostConfig.NetworkMode}}') return { code: 0, out: networkOf.get(name) ?? '' }
       return undefined
     }
@@ -479,7 +479,7 @@ function dockerClass(): DockerClass {
   const realFetch = globalThis.fetch
   globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input)
-    if (!url.startsWith('http://colloq-room-')) return realFetch(input, init)
+    if (!url.startsWith('http://aulalab-room-')) return realFetch(input, init)
     const refused = new URL(url).pathname === '/api/sessions'
     return Promise.resolve(new Response('{}', { status: refused ? 403 : 200 }))
   }) as typeof fetch
@@ -491,8 +491,8 @@ function dockerClass(): DockerClass {
     removedRunning: () => removedRunning,
     runs: (id) =>
       fake.calls
-        .filter((args) => args[0] === 'run' && args[args.indexOf('--name') + 1] === `colloq-room-${id}`)
-        .map((args) => args.find((arg) => arg.startsWith('colloq-kernel:'))!),
+        .filter((args) => args[0] === 'run' && args[args.indexOf('--name') + 1] === `aulalab-room-${id}`)
+        .map((args) => args.find((arg) => arg.startsWith('aulalab-kernel:'))!),
     done: () => {
       globalThis.fetch = realFetch
       fake.restore()
@@ -510,7 +510,7 @@ test('on Docker a class whose container runs is not moved, though this process h
     // Brought up by the pool alone: exactly what a server restart leaves —
     // the container and its kernels running, no scope in this process.
     await endpointForSession(made.id, sessionEnvironment(made.id))
-    assert.deepEqual(docker.runs(made.id), ['colloq-kernel:xb-plain'])
+    assert.deepEqual(docker.runs(made.id), ['aulalab-kernel:xb-plain'])
     assert.deepEqual(kernel.kernelClasses(), [])
     assert.deepEqual(await kernelOf(owner.cookie, made.id), { running: true })
 
@@ -521,18 +521,18 @@ test('on Docker a class whose container runs is not moved, though this process h
     // the running container is the class's still, and nobody loses a thing.
     forgetSessionKernel(made.id)
     await endpointForSession(made.id, sessionEnvironment(made.id))
-    assert.deepEqual(docker.runs(made.id), ['colloq-kernel:xb-plain'])
+    assert.deepEqual(docker.runs(made.id), ['aulalab-kernel:xb-plain'])
     assert.equal(docker.removedRunning(), false)
 
     // The container stops (a machine reboot leaves it exited, and the pool's
     // address of it goes with the first refused call): now the class moves,
     // and its next start replaces the stopped container from the new image.
-    docker.fake.containers.get(`colloq-room-${made.id}`)!.running = false
+    docker.fake.containers.get(`aulalab-room-${made.id}`)!.running = false
     forgetSessionKernel(made.id)
     assert.deepEqual(await kernelOf(owner.cookie, made.id), { running: false })
     assert.equal((await move(owner.cookie, made.id, 'xb-data')).status, 200)
     await endpointForSession(made.id, sessionEnvironment(made.id))
-    assert.deepEqual(docker.runs(made.id), ['colloq-kernel:xb-plain', 'colloq-kernel:xb-data'])
+    assert.deepEqual(docker.runs(made.id), ['aulalab-kernel:xb-plain', 'aulalab-kernel:xb-data'])
     assert.equal(docker.removedRunning(), false)
   } finally {
     await dropRoomKernel(made.id).catch(() => {})

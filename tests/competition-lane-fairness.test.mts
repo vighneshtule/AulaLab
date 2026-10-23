@@ -117,7 +117,7 @@ async function scoredWithSlowAnswer(c: Competition): Promise<Submission> {
   const sent = send(c, 'Пересчёт')
   await drainCompetitionQueue()
   assert.equal(getSubmission(sent.id)?.state, 'scored')
-  competitionsFs.writeFileSync(path.join(resultDir(c.id, sent.id), SUBMISSION_FILE), enc('# colloq-test: {"hold": 60000}\nid,target\n1,0\n2,0\n'), { mode: 0o600 })
+  competitionsFs.writeFileSync(path.join(resultDir(c.id, sent.id), SUBMISSION_FILE), enc('# aulalab-test: {"hold": 60000}\nid,target\n1,0\n2,0\n'), { mode: 0o600 })
   return sent
 }
 
@@ -127,7 +127,7 @@ async function stop(id: string): Promise<void> {
   assert.equal(await settleSubmission(id, 10_000), true)
 }
 
-const HOLD = '# colloq-test: {"hold": 60000}\nmodel.fit()'
+const HOLD = '# aulalab-test: {"hold": 60000}\nmodel.fit()'
 const state = (s: Submission) => queueRow(s.id)?.state
 
 /* ------------------------------------------------------- the pump's rule */

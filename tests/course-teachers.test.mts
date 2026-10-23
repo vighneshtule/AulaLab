@@ -168,13 +168,13 @@ test('the course row names at most three teachers and counts the rest', () => {
 
 test('a sign-in link built on localhost is moved to the address the panel is open on, key intact', () => {
   assert.equal(
-    reachableSignIn('http://localhost:3000/admin/in/abc123?x=1', 'https://vsos.colloq.ru'),
-    'https://vsos.colloq.ru/admin/in/abc123?x=1',
+    reachableSignIn('http://localhost:3000/admin/in/abc123?x=1', 'https://vsos.example.edu'),
+    'https://vsos.example.edu/admin/in/abc123?x=1',
   )
   assert.equal(
-    reachableSignIn('https://colloq.university.ru/admin/in/abc123', 'http://10.0.0.5:3000'),
-    'https://colloq.university.ru/admin/in/abc123',
+    reachableSignIn('https://aulalab.university.ru/admin/in/abc123', 'http://10.0.0.5:3000'),
+    'https://aulalab.university.ru/admin/in/abc123',
     'a usable PUBLIC_URL is believed',
   )
-  assert.equal(reachableSignIn('not a url', 'https://vsos.colloq.ru'), 'not a url')
+  assert.equal(reachableSignIn('not a url', 'https://vsos.example.edu'), 'not a url')
 })

@@ -4,7 +4,7 @@
 #   . ./lib.sh           from scripts/, with ENV_FILE named beforehand (dns.sh)
 #
 # Two things live here, and both are about the same file: where to look for
-# the state directory (COLLOQ_STATE_ROOT, see below) and how to read a line
+# the state directory (AULALAB_STATE_ROOT, see below) and how to read a line
 # from .env.
 #
 # Reading a line used to be copied word for word into three scripts, and all
@@ -20,31 +20,31 @@
 # reading PUBLIC_URL (server/src/config.ts). The inside of the value is not
 # touched at all.
 
-# The STATE root: .env, the receipt of the running class, .colloq.pid, data/.
+# The STATE root: .env, the receipt of the running class, .aulalab.pid, data/.
 #
 # There are two roots, and they do not coincide everywhere. The APPLICATION
 # directory is the one above scripts/: web/dist, kernel/, these very scripts.
-# For colloq installed through pip it lies in <site-packages>/colloq/_app, is
+# For aulalab installed through pip it lies in <site-packages>/aulalab/_app, is
 # read-only and is wiped entirely by every `pip install -U`; the state lives
-# separately, in ~/.colloq, and its address arrives here in the COLLOQ_HOME
+# separately, in ~/.aulalab, and its address arrives here in the AULALAB_HOME
 # variable.
 #
 # The scripts, though, took themselves for the state root ("cd $(dirname
-# $0)/.." in the header), and for installed colloq publishing "succeeded" into
+# $0)/.." in the header), and for installed aulalab publishing "succeeded" into
 # nowhere: PUBLIC_URL went into the .env of the application directory, which
-# nobody reads, while `colloq link` looked into <home>/.env and kept saying
+# nobody reads, while `aulalab link` looked into <home>/.env and kept saying
 # "not exposed to the outside".
 #
-# Without COLLOQ_HOME it is exactly as before: the current directory, that is,
+# Without AULALAB_HOME it is exactly as before: the current directory, that is,
 # the very directory above scripts/ that the script has already moved into on
 # its own. In the repository both roots are that directory, so not a single
 # path moved there.
-COLLOQ_STATE_ROOT="${COLLOQ_HOME:-.}"
+AULALAB_STATE_ROOT="${AULALAB_HOME:-.}"
 
 # The settings file. The scripts work from the repository root, dns.sh from
 # scripts/, and its path is different; there is no other difference between
 # them.
-ENV_FILE="${ENV_FILE:-$COLLOQ_STATE_ROOT/.env}"
+ENV_FILE="${ENV_FILE:-$AULALAB_STATE_ROOT/.env}"
 
 # read_env NAME: the value of the line `NAME=…` from .env, an empty string if
 # there is none. The last one is taken: what was appended to the end of the

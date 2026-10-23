@@ -214,11 +214,11 @@ test('Kubernetes HTTPS client verifies CA, rereads rotating token, and bounds re
       }
       // The API server's refusals of a Pod: a quota, a RuntimeClass, RBAC, a webhook, and a plain bad request.
       const refusals: Record<string, [number, string, string]> = {
-        '/quota': [403, 'Forbidden', `pods "colloq-job-a" is forbidden: exceeded quota: gpu-${'secret-value'}, requested: requests.nvidia.com/gpu=1, used: requests.nvidia.com/gpu=2, limited: requests.nvidia.com/gpu=2`],
-        '/runtimeclass': [403, 'Forbidden', 'pods "colloq-job-a" is forbidden: pod rejected: RuntimeClass "nvidia" not found'],
-        '/rbac': [403, 'Forbidden', 'pods is forbidden: User "system:serviceaccount:colloq:colloq-runtime" cannot create resource "pods" in API group "" in the namespace "colloq"'],
+        '/quota': [403, 'Forbidden', `pods "aulalab-job-a" is forbidden: exceeded quota: gpu-${'secret-value'}, requested: requests.nvidia.com/gpu=1, used: requests.nvidia.com/gpu=2, limited: requests.nvidia.com/gpu=2`],
+        '/runtimeclass': [403, 'Forbidden', 'pods "aulalab-job-a" is forbidden: pod rejected: RuntimeClass "nvidia" not found'],
+        '/rbac': [403, 'Forbidden', 'pods is forbidden: User "system:serviceaccount:aulalab:aulalab-runtime" cannot create resource "pods" in API group "" in the namespace "aulalab"'],
         '/webhook': [400, 'BadRequest', 'admission webhook "validate.kyverno.svc-fail" denied the request: secret-value policy'],
-        '/invalid': [422, 'Invalid', 'Pod "colloq-job-a" is invalid: spec.containers[0].image: Required value'],
+        '/invalid': [422, 'Invalid', 'Pod "aulalab-job-a" is invalid: spec.containers[0].image: Required value'],
       }
       if (refusals[req.url ?? '']) {
         const [code, reason, message] = refusals[req.url!]
@@ -288,13 +288,13 @@ test('Kubernetes HTTPS client verifies CA, rereads rotating token, and bounds re
  * refusedAtAdmission), while the broker's own missing permission does not.
  */
 test('refusals: a quota with its resource names, a missing RuntimeClass, RBAC, and admission of any other kind', () => {
-  const quota = 'pods "colloq-job-a" is forbidden: exceeded quota: compute, requested: limits.memory=2Gi,requests.memory=2Gi,requests.nvidia.com/mig-1g.10gb=1, used: limits.memory=30Gi, limited: limits.memory=31Gi'
+  const quota = 'pods "aulalab-job-a" is forbidden: exceeded quota: compute, requested: limits.memory=2Gi,requests.memory=2Gi,requests.nvidia.com/mig-1g.10gb=1, used: limits.memory=30Gi, limited: limits.memory=31Gi'
   assert.deepEqual(refusalOf(403, quota), { kind: 'quota', resources: ['limits.memory', 'requests.memory', 'requests.nvidia.com/mig-1g.10gb'] })
   // At most three names, whatever the quota lists.
   assert.equal(refusalOf(403, 'exceeded quota: q, requested: a/b=1,c/d=1,e/f=1,g/h=1, used: a/b=1')?.kind, 'quota')
   assert.deepEqual((refusalOf(403, 'exceeded quota: q, requested: a/b=1,c/d=1,e/f=1,g/h=1, used: a/b=1') as any).resources, ['a/b', 'c/d', 'e/f'])
   assert.deepEqual(refusalOf(403, 'pods "x" is forbidden: pod rejected: RuntimeClass "nvidia-cdi" not found'), { kind: 'runtime-class' })
-  assert.deepEqual(refusalOf(403, 'pods is forbidden: User "system:serviceaccount:colloq:colloq-runtime" cannot create resource "pods" in API group ""'), { kind: 'permission' })
+  assert.deepEqual(refusalOf(403, 'pods is forbidden: User "system:serviceaccount:aulalab:aulalab-runtime" cannot create resource "pods" in API group ""'), { kind: 'permission' })
   // Pod Security, a LimitRange, a ValidatingAdmissionPolicy, a webhook with its own code, an empty body: admission.
   for (const message of ['pods "x" is forbidden: violates PodSecurity "restricted:latest": runAsNonRoot != true',
     'pods "x" is forbidden: maximum memory usage per Container is 4Gi, but limit is 8Gi', '', 'admission webhook "gatekeeper" denied the request: no GPUs here'])
@@ -305,5 +305,5 @@ test('refusals: a quota with its resource names, a missing RuntimeClass, RBAC, a
   assert.equal(refusalOf(422, 'Pod "x" is invalid: spec.containers[0].image: Required value'), undefined)
   assert.equal(refusalOf(400, 'the body of the request was in an unknown format'), undefined)
   assert.equal(refusalOf(409, 'pods "x" already exists'), undefined)
-  assert.equal(refusalOf(404, 'namespaces "colloq" not found'), undefined)
+  assert.equal(refusalOf(404, 'namespaces "aulalab" not found'), undefined)
 })

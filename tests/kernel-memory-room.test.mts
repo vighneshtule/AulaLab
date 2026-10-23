@@ -15,7 +15,7 @@
  *  • the kernel log gets one coded line however many entries and presses
  *    repeat the refusal;
  *  • the shell's line is one short sentence in the instance language, coded,
- *    without the English and without the `[colloq]` marker;
+ *    without the English and without the `[aulalab]` marker;
  *  • the kernel's and the shell's coded lines take turns without repeating,
  *    and a refusal older than a few minutes is written again;
  *  • the owner's socket is told it is the owner, nobody else's is, and a
@@ -218,7 +218,7 @@ test('the shared shell says so in one short sentence of the instance language, c
     assert.equal(last.kind, 'system')
     assert.equal(last.code, 'kernel_memory')
     assert.equal(last.text, words)
-    assert.doesNotMatch(JSON.stringify(lines(id)), /Not enough available memory|\[colloq\] /)
+    assert.doesNotMatch(JSON.stringify(lines(id)), /Not enough available memory|\[aulalab\] /)
   }
 })
 

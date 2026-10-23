@@ -3,7 +3,7 @@
     "slug": "index",
     "group": "start",
     "title": "One link. The whole class.",
-    "description": "A guide to Colloq: from your first class to your own server.",
+    "description": "A guide to Aula Lab: from your first class to your own server.",
     "nav": "Docs overview"
   },
   {
@@ -63,7 +63,7 @@
   {
     "slug": "kubernetes",
     "group": "server",
-    "title": "Colloq in your Kubernetes",
+    "title": "Aula Lab in your Kubernetes",
     "description": "A Helm chart in one namespace of a corporate cluster: permissions, security, network, storage, a registry mirror, installing with Helm or ArgoCD, and operations."
   },
   {
@@ -77,12 +77,6 @@
     "group": "server",
     "title": "Installing on k3s",
     "description": "A preview for those without a cluster: a script installs single-node k3s on Linux amd64, an exact release and a separate Pod for each room."
-  },
-  {
-    "slug": "language",
-    "group": "server",
-    "title": "Interface language",
-    "description": "Choose Russian or English for the whole Colloq server."
   },
   {
     "slug": "environments",
@@ -124,13 +118,13 @@
     "slug": "development",
     "group": "server",
     "title": "Local development",
-    "description": "Run Colloq on your workstation with a separate Docker kernel for each room."
+    "description": "Run Aula Lab on your workstation with a separate Docker kernel for each room."
   },
   {
     "slug": "security",
     "group": "server",
     "title": "Isolation and limits",
-    "description": "Which boundaries Colloq provides and what the operator must check."
+    "description": "Which boundaries Aula Lab provides and what the operator must check."
   },
   {
     "slug": "troubleshooting",

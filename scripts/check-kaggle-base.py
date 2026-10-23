@@ -1,4 +1,4 @@
-"""CPU smoke test for Colloq's lightweight kaggle-base image (no network)."""
+"""CPU smoke test for Aula Lab's lightweight kaggle-base image (no network)."""
 import importlib.metadata as metadata
 import json
 import platform

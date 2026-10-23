@@ -5,7 +5,7 @@
  * get a link. The relay, the DNS zone, the named Cloudflare tunnel and the
  * load test rig are not part of it: they install and edit other machines and
  * the zone, that is the workshop, and it lives in the Makefile and scripts/.
- * Of all that, a teacher after `pip install colloq` needs only the link.
+ * Of all that, a teacher after `pip install aulalab` needs only the link.
  *
  * host goes straight to scripts/host.sh, the same way from the wheel and from
  * the sources; the reasoning is at publishCall below. We name the state
@@ -40,8 +40,8 @@ import { PreconditionError, UsageError } from '../ui.js'
  * The perimeter of a local class, said out loud, in the same words in two
  * places.
  *
- * They have to be said where the person decides whom to let in: in `colloq
- * host` (right now they are opening the class to the outside) and in `colloq
+ * They have to be said where the person decides whom to let in: in `aulalab
+ * host` (right now they are opening the class to the outside) and in `aulalab
  * doctor` (before class).
  *
  * What is true here and why exactly so. This used to say "no production
@@ -100,14 +100,14 @@ function checkName(ctx: Ctx): void {
   if (directOf(ctx) && !host) {
     throw new UsageError(
       'direct mode needs a name',
-      'colloq host class.example.org --direct',
+      'aulalab host class.example.org --direct',
       'the certificate is issued for that name, and it cannot be made up for you',
     )
   }
   if (host && !hostNameOk(host)) {
     throw new UsageError(
       'name ' + host + ' will not do',
-      'colloq host class.example.org',
+      'aulalab host class.example.org',
       'a name holds only latin letters, digits, dots and hyphens',
     )
   }
@@ -118,7 +118,7 @@ function checkName(ctx: Ctx): void {
  *
  * The advice here used to be impossible to follow: "cp .env.example .env",
  * a relative path, that is, in whatever directory the person is standing in,
- * and an installed package has no .env.example at all. The first `colloq
+ * and an installed package has no .env.example at all. The first `aulalab
  * start` creates .env and puts it into the state directory, right where we
  * look for it (cli/src/launch-config.ts · localClassEnv), the same way from
  * the wheel and from the sources; that is where we send people, with one
@@ -128,7 +128,7 @@ function needEnv(ctx: Ctx): void {
   if (ctx.io.exists(ctx.env.paths.envFile)) return
   throw new PreconditionError(
     'no ' + ctx.env.paths.envFile + ' — PORT, RELAY_* and CF_TOKEN are read from it',
-    'colloq start creates it on the first run',
+    'aulalab start creates it on the first run',
   )
 }
 
@@ -136,11 +136,11 @@ function needEnv(ctx: Ctx): void {
  * The state directory goes to the child as an explicit variable.
  *
  * The scripts took the directory above scripts/ as their root and looked there
- * for .env, the class receipt and .colloq.pid. For an installed colloq there
+ * for .env, the class receipt and .aulalab.pid. For an installed aulalab there
  * is only the application there: publishing "succeeded", PUBLIC_URL went off
- * into a file nobody reads, and `colloq link` looked into <home>/.env and said
+ * into a file nobody reads, and `aulalab link` looked into <home>/.env and said
  * that nothing was exposed. Now the state root is named to the scripts out
- * loud (scripts/lib.sh · COLLOQ_STATE_ROOT).
+ * loud (scripts/lib.sh · AULALAB_STATE_ROOT).
  *
  * We always name it, not only in the package. In the sources home is the
  * root, and the variable changes nothing there, but then there is no fork
@@ -149,14 +149,14 @@ function needEnv(ctx: Ctx): void {
  * cli/src/commands/local.ts · stateEnv.
  */
 function stateEnv(ctx: Ctx): Record<string, string> {
-  return { COLLOQ_HOME: ctx.env.paths.home }
+  return { AULALAB_HOME: ctx.env.paths.home }
 }
 
 /**
  * The publishing call: scripts/host.sh itself, always.
  *
  * The Makefile targets host and host-direct are two lines over the same
- * script, but the Makefile does not travel into the wheel, and `colloq host`
+ * script, but the Makefile does not travel into the wheel, and `aulalab host`
  * died with "make: command not found" on the one command the class gets its
  * link from. The script meanwhile lies right there (scripts/pack.mts ships
  * scripts/), so we call it directly and with the same variables the target
@@ -164,14 +164,14 @@ function stateEnv(ctx: Ctx): Record<string, string> {
  * depending on where it came from is tested half as well, and the workshop
  * Makefile is called by hand anyway.
  *
- * The order of the variables is as in the host-direct target: COLLOQ_DIRECT
- * before COLLOQ_HOSTNAME. People copy the --dry-run line, and it must match
+ * The order of the variables is as in the host-direct target: AULALAB_DIRECT
+ * before AULALAB_HOSTNAME. People copy the --dry-run line, and it must match
  * the one described in the header of host.sh.
  */
 function publishCall(ctx: Ctx, host: string, direct: boolean): Promise<number> {
   const env: Record<string, string> = { ...stateEnv(ctx) }
-  if (direct) env.COLLOQ_DIRECT = '1'
-  if (host) env.COLLOQ_HOSTNAME = host
+  if (direct) env.AULALAB_DIRECT = '1'
+  if (host) env.AULALAB_HOSTNAME = host
   return ctx.sh.script('./scripts/host.sh', [], { env })
 }
 
@@ -213,7 +213,7 @@ export const commands: Command[] = [
     aliases: ['public'],
     group: 'host',
     summary: 'Publish the running class and get a link',
-    usage: 'colloq host [name] [--direct]',
+    usage: 'aulalab host [name] [--direct]',
     args: [
       {
         name: 'name',
@@ -227,8 +227,8 @@ export const commands: Command[] = [
     confirmWhen: publishWhen,
     confirmQuestion: publishQuestion,
     delegates:
-      'COLLOQ_HOSTNAME=<name> ./scripts/host.sh (with --direct: COLLOQ_DIRECT=1 as well)',
-    examples: ['colloq host class.example.org', 'colloq host class.example.org --direct'],
+      'AULALAB_HOSTNAME=<name> ./scripts/host.sh (with --direct: AULALAB_DIRECT=1 as well)',
+    examples: ['aulalab host class.example.org', 'aulalab host class.example.org --direct'],
     notes:
       'The class must already be running: host.sh publishes, it does not bring anything up — if /api/health is silent, it dies with an instruction. ' +
       'Keep this window open: the tunnel is this very process, and Ctrl+C closes only the tunnel. In a local session the temporary address is taken down without restarting the server and without changing .env. ' +
@@ -237,10 +237,10 @@ export const commands: Command[] = [
       'The price of --direct: caddy takes 80 and 443, /etc/caddy/Caddyfile and its unit are rewritten, and an A record points the name at this machine; ' +
       'after Ctrl+C the name stays live. It needs Linux, systemd, root and a public address: on macOS the script refuses by itself. ' +
       'host.sh publishes nothing unless the server confirms in /api/health that every room runs in a container of its own (Docker or the runtime broker). ' +
-      'Without cloudflared on PATH, the Cloudflare transports get a pinned release downloaded once into <state>/bin and checked by sha256; COLLOQ_CLOUDFLARED=/path names your own file. ' +
-      'For a class started here, colloq start --share does all of this in one step and prints the link for students. ' +
+      'Without cloudflared on PATH, the Cloudflare transports get a pinned release downloaded once into <state>/bin and checked by sha256; AULALAB_CLOUDFLARED=/path names your own file. ' +
+      'For a class started here, aulalab start --share does all of this in one step and prints the link for students. ' +
       'Two lines about the perimeter are printed under the header: every room is a hardened container cut off from your home network, ' +
-      'and the link is still a door to code on this computer. colloq doctor says the same.',
+      'and the link is still a door to code on this computer. aulalab doctor says the same.',
     async run(ctx) {
       const host = nameOf(ctx)
       const direct = directOf(ctx)

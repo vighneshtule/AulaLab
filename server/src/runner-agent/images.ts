@@ -1,7 +1,7 @@
 /**
  * The kernels a machine runs, by digest: what home's `want` names is pulled
  * from its registry, checked against the pin, smoke-tested on a card when it
- * is a GPU kernel, and tagged `colloq-revision:<id>`, the name the machine's
+ * is a GPU kernel, and tagged `aulalab-revision:<id>`, the name the machine's
  * runs start it by (docs/architecture/remote-runners.md §4.4).
  *
  * WHY THE CHECK AFTER THE PULL. A digest names the manifest, and the manifest
@@ -89,7 +89,7 @@ import { driverMajor } from './machine.js'
 import { readJson, writeWhole } from './state.js'
 
 /** The name a machine's runs start a revision by, once its layers matched (DockerCompetitionRunner's RunRequest.imageDigest). */
-export const REVISION_TAG = 'colloq-revision'
+export const REVISION_TAG = 'aulalab-revision'
 export const revisionImage = (id: string): string => `${REVISION_TAG}:${id}`
 
 /**
@@ -97,7 +97,7 @@ export const revisionImage = (id: string): string => `${REVISION_TAG}:${id}`
  * measure of Docker's disk): swept at every start like the runs are, should a
  * life end in the middle of one.
  */
-export const CHECK_LABEL = 'colloq.kind=runner-check'
+export const CHECK_LABEL = 'aulalab.kind=runner-check'
 
 /**
  * This tree's instance label: the very one the Docker runner puts on every
@@ -110,7 +110,7 @@ export const CHECK_LABEL = 'colloq.kind=runner-check'
  * export it; tests/runner-agent-argv.test.mts holds the two equal.
  */
 const INSTANCE_SCOPE = createHash('sha256').update(path.resolve(hostPathOf(dataDir))).digest('hex').slice(0, 16)
-export const INSTANCE_LABEL = `ru.colloq.competition-instance=${INSTANCE_SCOPE}`
+export const INSTANCE_LABEL = `ru.aulalab.competition-instance=${INSTANCE_SCOPE}`
 
 /** The labels of a check container, as `docker run` arguments. */
 export const CHECK_LABELS: readonly string[] = ['--label', CHECK_LABEL, '--label', INSTANCE_LABEL]
@@ -562,7 +562,7 @@ export class Images {
    */
   private async smoke(id: string, ref: string, device: string): Promise<string | 'full' | null> {
     // Named for this tree as well as the revision: another agent on the daemon smoke-testing the same one has a name of its own.
-    const name = `colloq-runner-check-${INSTANCE_SCOPE.slice(0, 8)}-${id.slice(0, 12)}`
+    const name = `aulalab-runner-check-${INSTANCE_SCOPE.slice(0, 8)}-${id.slice(0, 12)}`
     await this.docker(['rm', '-f', name], { timeoutMs: 30_000 })
     const ran = await this.docker([
       'run', '--rm', '--pull=never', '--name', name, ...CHECK_LABELS,

@@ -1,5 +1,5 @@
 /**
- * Colloq's addresses — all there are, and how to read them.
+ * Aula Lab's addresses — all there are, and how to read them.
  *
  * The parsing lives here, not in App's markup, for the same reason
  * `admin/entry.ts` lies next to it: a regex that quietly stopped matching will

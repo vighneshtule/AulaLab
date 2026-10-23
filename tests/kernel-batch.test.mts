@@ -59,8 +59,8 @@ test('a batch puts every frame on the socket before the kernel answers any, in o
   fake.keepFrames = true
   fake.swallowExecutes = true
   const ends = await kernel.executeBatch([
-    { code: 'ENTRY', handlers: quiet(), opts: { silent: true, storeHistory: false, userExpressions: { colloq: 'report' } } },
-    { code: 'attempt', handlers: quiet(), opts: { storeHistory: false, stopOnError: false, metadata: { colloqRun: 'r1' } } },
+    { code: 'ENTRY', handlers: quiet(), opts: { silent: true, storeHistory: false, userExpressions: { aulalab: 'report' } } },
+    { code: 'attempt', handlers: quiet(), opts: { storeHistory: false, stopOnError: false, metadata: { aulalabRun: 'r1' } } },
     { code: 'EXIT', handlers: quiet(), opts: { silent: true, storeHistory: false } },
   ])
   assert.equal(ends.length, 3)
@@ -71,8 +71,8 @@ test('a batch puts every frame on the socket before the kernel answers any, in o
   assert.deepEqual(sent.map((frame) => frame.content.silent), [true, false, true])
   assert.deepEqual(sent.map((frame) => frame.content.store_history), [false, false, false])
   assert.deepEqual(sent.map((frame) => frame.content.stop_on_error), [true, false, true])
-  assert.deepEqual(sent.map((frame) => frame.metadata), [{}, { colloqRun: 'r1' }, {}])
-  assert.deepEqual(sent[0]!.content.user_expressions, { colloq: 'report' })
+  assert.deepEqual(sent.map((frame) => frame.metadata), [{}, { aulalabRun: 'r1' }, {}])
+  assert.deepEqual(sent[0]!.content.user_expressions, { aulalab: 'report' })
   // Each ends when its own reply and idle come.
   const settled: string[] = []
   ends.forEach((end, i) => void end.then((status) => settled.push(`${i}:${status}`)))

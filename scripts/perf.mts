@@ -1,5 +1,5 @@
 /**
- * perf.mts — the measuring stick for "Colloq is fast".
+ * perf.mts — the measuring stick for "Aula Lab is fast".
  *
  * Four numbers, one table, one exit code:
  *   1 BUNDLE     what a student downloads before the page can do anything
@@ -29,7 +29,7 @@ import WS from 'ws'
 
 /*
  * Every budget below is the measured baseline plus deliberate headroom, or a
- * user-facing ceiling derived from the room Colloq is meant to run in:
+ * user-facing ceiling derived from the room Aula Lab is meant to run in:
  * a lecture hall on shared wifi, call it 1.5 Mbit/s ≈ 190 KB/s of real payload.
  * A budget nobody can justify gets deleted the first time it goes red, so each
  * one says where its number came from.
@@ -254,7 +254,7 @@ function htmlRefs(html: string): HtmlRefs {
      * so the join screen does not exist until it lands. Calling it a hint made
      * the harness blind to the only file the first frame really waits on.
      */
-    const heldForFirstPaint = /\bdata-colloq-css\b/i.test(tag)
+    const heldForFirstPaint = /\bdata-aulalab-css\b/i.test(tag)
     if (rel.includes('stylesheet') && (!deferred || heldForFirstPaint)) refs.blockingSheets.push(url)
     else refs.hints.push(url)
   }
@@ -270,7 +270,7 @@ function htmlRefs(html: string): HtmlRefs {
   for (const block of inline.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
     // This script is guarded by a saved room identity. It is not part of a
     // student's cold visit; first-paint.test.mts exercises the emitted guard.
-    if (/\bdata-colloq-room-preload\b/.test(block[1])) continue
+    if (/\bdata-aulalab-room-preload\b/.test(block[1])) continue
     for (const ref of block[2].matchAll(/["'](\/assets\/[^"']+\.(?:js|mjs|css))["']/g)) {
       refs.hints.push(ref[1])
     }
@@ -405,7 +405,7 @@ function bundle(): BundleReport | null {
 function printBundle(b: BundleReport | null): void {
   say(bold('1. BUNDLE') + dim('  — what the browser downloads before anything happens'))
   if (!b) {
-    say(red(`   no build at ${DIST_LABEL} — run: npm run build -w @colloq/web`))
+    say(red(`   no build at ${DIST_LABEL} — run: npm run build -w @aulalab/web`))
     check('missing build', 1, 0, '', 'a perf gate cannot pass without a build to measure')
     say()
     return
@@ -543,7 +543,7 @@ const post = (body: unknown): RequestInit => ({
  * rather than as a mysteriously broken sync path.
  *
  * An unclaimed instance is refused rather than claimed. Claiming it would make
- * the harness its owner — "Perf Harness <perf@colloq.test>" in the panel — and
+ * the harness its owner — "Perf Harness <perf@aulalab.test>" in the panel — and
  * would take the first-run screen away from the teacher the instance is for,
  * which is a lot to do to somebody for the sake of a timing table.
  */
@@ -561,7 +561,7 @@ async function signInAsStaff(): Promise<string | null> {
     const res = await fetch(`${BASE}/api/admin/signin/token`, post({ token }))
     if (!res.ok) return `sign-in refused (${res.status})`
     staffCookie = (res.headers.get('set-cookie') ?? '').split(';')[0]
-    return staffCookie.startsWith('colloq_staff=') ? null : 'no staff cookie was issued'
+    return staffCookie.startsWith('aulalab_staff=') ? null : 'no staff cookie was issued'
   } catch (err) {
     return err instanceof Error ? err.message : 'sign-in failed'
   }
@@ -856,7 +856,7 @@ async function serverUp(): Promise<boolean> {
 
 const startedAt = new Date().toISOString()
 say()
-say(bold('  colloq perf') + dim(`  ${startedAt}  ·  ${BASE}`))
+say(bold('  aulalab perf') + dim(`  ${startedAt}  ·  ${BASE}`))
 say()
 
 const b = bundle()

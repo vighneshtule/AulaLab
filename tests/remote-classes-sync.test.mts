@@ -558,7 +558,7 @@ test('the revisions of classes set to machines join a class machine\'s want: por
   const local = localRevision('base')
   const wanted = (revision: EnvironmentRevision, isGpu: boolean): RemoteWantRevision => {
     const pinned = getRevision(revision.id)!
-    return { id: pinned.id, ref: pinned.registryRef ?? `colloq-revision:${pinned.id}`, layers: pinned.layers ?? 'none', gpu: isGpu }
+    return { id: pinned.id, ref: pinned.registryRef ?? `aulalab-revision:${pinned.id}`, layers: pinned.layers ?? 'none', gpu: isGpu }
   }
   placements.revisions = [wanted(cpu, false), wanted(gpu, true), wanted(local, false)]
   const m = await classMachine()

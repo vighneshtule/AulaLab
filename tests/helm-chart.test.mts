@@ -1,6 +1,6 @@
 /**
  * The Helm chart a bank's platform team deploys into one namespace of its own
- * Kubernetes (deploy/helm/colloq): restricted Pod Security, a policy engine,
+ * Kubernetes (deploy/helm/aulalab): restricted Pod Security, a policy engine,
  * default-deny network policies, images only from its registry, secrets from
  * Vault, ArgoCD. Everything here is checked on what `helm template` actually
  * renders, value set by value set, because that is what the platform's
@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url'
 type Json = any
 type Values = Record<string, unknown>
 
-const CHART = fileURLToPath(new URL('../deploy/helm/colloq', import.meta.url))
+const CHART = fileURLToPath(new URL('../deploy/helm/aulalab', import.meta.url))
 const APP_VERSION = /^appVersion:\s*"?([^"\s]+)"?\s*$/m.exec(fs.readFileSync(path.join(CHART, 'Chart.yaml'), 'utf8'))![1]
 
 function findHelm(): string | null {
@@ -43,7 +43,7 @@ const HELM = findHelm()
 const skip = HELM ? false : 'helm is not installed (set HELM_BIN or put helm on PATH)'
 
 const digest = (c: string) => `sha256:${c.repeat(64)}`
-const KERNEL = (c: string) => `ghcr.io/colloq-edu/colloq-kernel@${digest(c)}`
+const KERNEL = (c: string) => `ghcr.io/vighneshtule/aulalab-kernel@${digest(c)}`
 /** What the release job fills in: digests and the catalog. The host keeps the default Ingress valid. */
 const RELEASE: Values = {
   image: { app: { digest: digest('a') }, runtime: { digest: digest('b') } },
@@ -54,7 +54,7 @@ const RELEASE: Values = {
       { name: 'kaggle-base', image: KERNEL('d'), gpu: false, packages: [] },
     ],
   },
-  ingress: { host: 'colloq.example.edu' },
+  ingress: { host: 'aulalab.example.edu' },
 }
 
 let tmp = ''
@@ -81,7 +81,7 @@ interface RenderOptions { namespace?: string; release?: string; args?: string[];
 /** helm template with the release's values under `values`; the raw YAML. */
 async function template(values: Values = {}, options: RenderOptions = {}): Promise<{ code: number; stdout: string; stderr: string }> {
   const base = options.base === undefined ? RELEASE : options.base
-  const args = ['template', options.release ?? 'colloq', CHART, '--namespace', options.namespace ?? 'colloq', '--kube-version', '1.30.0']
+  const args = ['template', options.release ?? 'aulalab', CHART, '--namespace', options.namespace ?? 'aulalab', '--kube-version', '1.30.0']
   if (base) args.push('-f', valuesFile(base))
   args.push('-f', valuesFile(values), ...(options.args ?? []))
   return helm(args, options.env)
@@ -119,14 +119,14 @@ const container = (objects: Json[], name: string): Json => deployment(objects, n
 const envOf = (c: Json): Record<string, any> =>
   Object.fromEntries((c.env ?? []).map((e: Json) => [e.name, e.valueFrom ?? e.value]))
 const podTemplates = (objects: Json[]) => objects.filter((o) => o.kind === 'Deployment').map((o) => ({ owner: o.metadata.name, template: o.spec.template }))
-const configData = (objects: Json[]): Record<string, string> => find(objects, 'ConfigMap', 'colloq-app-env').data ?? {}
-const catalogOf = (objects: Json[]): Json => JSON.parse(find(objects, 'ConfigMap', 'colloq-catalog').data['catalog.json'])
+const configData = (objects: Json[]): Record<string, string> => find(objects, 'ConfigMap', 'aulalab-app-env').data ?? {}
+const catalogOf = (objects: Json[]): Json => JSON.parse(find(objects, 'ConfigMap', 'aulalab-catalog').data['catalog.json'])
 
 /** Everything optional switched on, so every template is under the checks below. */
 const EVERYTHING: Values = {
   global: { imagePullSecrets: ['harbor-pull'] },
   commonLabels: { 'bank.example/cost-centre': 'edu' },
-  config: { ai: { apiKey: 'sk-test', baseUrl: 'https://llm.bank.local/v1' }, sessionSecret: 'x'.repeat(40), sso: { jwks: '{"keys": []}', audience: 'http://colloq-app.colloq.svc:3000' } },
+  config: { ai: { apiKey: 'sk-test', baseUrl: 'https://llm.bank.local/v1' }, sessionSecret: 'x'.repeat(40), sso: { jwks: '{"keys": []}', audience: 'http://aulalab-app.aulalab.svc:3000' } },
   outbound: { httpsProxy: 'http://proxy.bank.local:3128', extraCa: { pem: '-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n' } },
   dependencies: { indexUrl: 'https://nexus.bank.local/repository/pypi/simple', mirrorEgress: [{ cidrs: ['10.20.30.40/32'], ports: [443] }] },
   metrics: { enabled: true, serviceMonitor: { enabled: true } },
@@ -136,7 +136,7 @@ const EVERYTHING: Values = {
 
 before(async () => {
   if (!HELM) return
-  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-helm-'))
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-helm-'))
   // Helm's own state and kubeconfig stay inside the test: never the user's cluster.
   helmEnv = {
     PATH: process.env.PATH, HOME: tmp,
@@ -177,12 +177,12 @@ test('helm lint --strict passes, with the source tree values and with a release\
 })
 
 test('the source tree carries no digests: it refuses to render and says where the published chart is', { skip }, async () => {
-  const result = await template({}, { base: null, args: ['--set', 'ingress.host=colloq.example.edu'] })
+  const result = await template({}, { base: null, args: ['--set', 'ingress.host=aulalab.example.edu'] })
   assert.notEqual(result.code, 0)
-  assert.match(result.stderr, /image\.app\.digest is empty.*oci:\/\/ghcr\.io\/colloq-edu\/charts\/colloq/)
+  assert.match(result.stderr, /image\.app\.digest is empty.*oci:\/\/ghcr\.io\/vighneshtule\/charts\/aulalab/)
   await refused({ catalog: { environments: [{ name: 'base', image: '', gpu: false }] } }, /catalog\.environments\[0\]\.image \(base\) is empty/)
   await refused({ image: { app: { digest: 'sha256:short' } } }, /image\.app\.digest|does not match pattern/)
-  await refused({ catalog: { environments: [{ name: 'base', image: 'ghcr.io/colloq-edu/colloq-kernel:latest', gpu: false }] } }, /pinned by digest/)
+  await refused({ catalog: { environments: [{ name: 'base', image: 'ghcr.io/vighneshtule/aulalab-kernel:latest', gpu: false }] } }, /pinned by digest/)
 })
 
 test('Kubernetes 1.30 is the floor the chart declares', { skip }, async () => {
@@ -196,10 +196,10 @@ test('only namespaced objects, all in the release namespace: no Namespace, PV, R
   const namespaced = new Set(['NetworkPolicy', 'ServiceAccount', 'Secret', 'ConfigMap', 'PersistentVolumeClaim', 'Role',
     'RoleBinding', 'Service', 'Deployment', 'Ingress', 'ServiceMonitor', 'CiliumNetworkPolicy'])
   for (const values of [{}, EVERYTHING]) {
-    const objects = await render(values, { namespace: 'edu-colloq' })
+    const objects = await render(values, { namespace: 'edu-aulalab' })
     for (const object of objects) {
       assert.ok(namespaced.has(object.kind), `${object.kind} ${object.metadata.name} is not an expected namespaced kind`)
-      assert.equal(object.metadata.namespace, 'edu-colloq', `${object.kind} ${object.metadata.name}`)
+      assert.equal(object.metadata.namespace, 'edu-aulalab', `${object.kind} ${object.metadata.name}`)
     }
   }
 })
@@ -209,7 +209,7 @@ test('every Pod template passes restricted Pod Security and the usual policy-eng
   for (const values of [{}, EVERYTHING]) {
     const objects = await render(values)
     const templates = podTemplates(objects)
-    assert.deepEqual(templates.map((t) => t.owner).sort(), ['colloq-app', 'colloq-runtime'])
+    assert.deepEqual(templates.map((t) => t.owner).sort(), ['aulalab-app', 'aulalab-runtime'])
     for (const { owner, template: pod } of templates) {
       const spec = pod.spec
       for (const host of ['hostNetwork', 'hostPID', 'hostIPC']) assert.notEqual(spec[host], true, `${owner} ${host}`)
@@ -217,7 +217,7 @@ test('every Pod template passes restricted Pod Security and the usual policy-eng
       assert.ok(spec.securityContext.runAsUser > 0, owner)
       assert.equal(spec.securityContext.seccompProfile.type, 'RuntimeDefault', owner)
       // The broker alone talks to the Kubernetes API.
-      assert.equal(spec.automountServiceAccountToken, owner === 'colloq-runtime', owner)
+      assert.equal(spec.automountServiceAccountToken, owner === 'aulalab-runtime', owner)
       assert.equal(spec.enableServiceLinks, false, owner)
       for (const volume of spec.volumes) {
         const type = Object.keys(volume).find((key) => key !== 'name')!
@@ -238,21 +238,21 @@ test('every Pod template passes restricted Pod Security and the usual policy-eng
       }
     }
     // SQLite has one writer: one replica, never two at once.
-    for (const name of ['colloq-app', 'colloq-runtime']) {
+    for (const name of ['aulalab-app', 'aulalab-runtime']) {
       assert.equal(deployment(objects, name).spec.replicas, 1, name)
       assert.equal(deployment(objects, name).spec.strategy.type, 'Recreate', name)
     }
-    const app = container(objects, 'colloq-app')
+    const app = container(objects, 'aulalab-app')
     assert.equal(app.startupProbe.httpGet.path, '/api/livez')
     assert.equal(app.livenessProbe.httpGet.path, '/api/livez')
     assert.equal(app.readinessProbe.httpGet.path, '/api/readyz')
-    const runtime = container(objects, 'colloq-runtime')
+    const runtime = container(objects, 'aulalab-runtime')
     assert.ok(runtime.livenessProbe.tcpSocket && runtime.readinessProbe.tcpSocket)
     // Every ServiceAccount is tokenless by itself; only the broker's Pod asks for one.
     for (const account of objects.filter((o) => o.kind === 'ServiceAccount'))
       assert.equal(account.automountServiceAccountToken, false, account.metadata.name)
     assert.deepEqual(objects.filter((o) => o.kind === 'ServiceAccount').map((o) => o.metadata.name).sort(),
-      ['colloq-app', 'colloq-kernel', 'colloq-runtime'])
+      ['aulalab-app', 'aulalab-kernel', 'aulalab-runtime'])
   }
 })
 
@@ -260,39 +260,39 @@ test('standard labels on every object and Pod template; broker-created Pods get 
   const objects = await render({ commonLabels: { 'bank.example/cost-centre': 'edu' }, rooms: { podLabels: { 'bank.example/tier': 'rooms' } } },
     { release: 'classroom' })
   const expect = (labels: Record<string, string>, where: string) => {
-    assert.equal(labels['app.kubernetes.io/name'], 'colloq', where)
+    assert.equal(labels['app.kubernetes.io/name'], 'aulalab', where)
     assert.equal(labels['app.kubernetes.io/instance'], 'classroom', where)
     assert.equal(labels['app.kubernetes.io/version'], APP_VERSION, where)
     assert.ok(labels['app.kubernetes.io/component'], where)
-    assert.equal(labels['app.kubernetes.io/part-of'], 'colloq', where)
+    assert.equal(labels['app.kubernetes.io/part-of'], 'aulalab', where)
     assert.equal(labels['app.kubernetes.io/managed-by'], 'Helm', where)
     assert.equal(labels['bank.example/cost-centre'], 'edu', where)
   }
   for (const object of objects) expect(object.metadata.labels, `${object.kind} ${object.metadata.name}`)
   for (const { owner, template: pod } of podTemplates(objects)) expect(pod.metadata.labels, `${owner} Pod template`)
   // The roles the policies and the broker's co-location select by.
-  assert.equal(deployment(objects, 'colloq-app').spec.template.metadata.labels['colloq.dev/role'], 'app')
-  assert.equal(deployment(objects, 'colloq-runtime').spec.template.metadata.labels['colloq.dev/role'], 'runtime')
-  const podLabels: Record<string, string> = JSON.parse(envOf(container(objects, 'colloq-runtime')).RUNTIME_POD_LABELS)
+  assert.equal(deployment(objects, 'aulalab-app').spec.template.metadata.labels['aulalab.dev/role'], 'app')
+  assert.equal(deployment(objects, 'aulalab-runtime').spec.template.metadata.labels['aulalab.dev/role'], 'runtime')
+  const podLabels: Record<string, string> = JSON.parse(envOf(container(objects, 'aulalab-runtime')).RUNTIME_POD_LABELS)
   // No version there: a label that changes on every upgrade would make live rooms differ from new ones.
   assert.equal(podLabels['app.kubernetes.io/version'], undefined)
   // No instance either: ArgoCD's label tracking would prune room Pods it cannot find in Git.
   assert.equal(podLabels['app.kubernetes.io/instance'], undefined)
   assert.deepEqual(podLabels, {
-    'app.kubernetes.io/name': 'colloq', 'app.kubernetes.io/part-of': 'colloq',
+    'app.kubernetes.io/name': 'aulalab', 'app.kubernetes.io/part-of': 'aulalab',
     'bank.example/cost-centre': 'edu', 'bank.example/tier': 'rooms',
   })
   // Selectors are the immutable part only.
-  assert.deepEqual(deployment(objects, 'colloq-app').spec.selector.matchLabels, {
-    'app.kubernetes.io/name': 'colloq', 'app.kubernetes.io/instance': 'classroom', 'app.kubernetes.io/component': 'app',
+  assert.deepEqual(deployment(objects, 'aulalab-app').spec.selector.matchLabels, {
+    'app.kubernetes.io/name': 'aulalab', 'app.kubernetes.io/instance': 'classroom', 'app.kubernetes.io/component': 'app',
   })
 })
 
 test('every image is pinned by digest; global.imageRegistry rewrites all of them, the catalog kernels and the exporter included', { skip }, async () => {
   const pinned = /^[a-z0-9.:/_-]+@sha256:[a-f0-9]{64}$/
   const plain = await render({})
-  assert.equal(container(plain, 'colloq-app').image, `ghcr.io/colloq-edu/colloq-app@${digest('a')}`)
-  assert.equal(container(plain, 'colloq-runtime').image, `ghcr.io/colloq-edu/colloq-runtime@${digest('b')}`)
+  assert.equal(container(plain, 'aulalab-app').image, `ghcr.io/vighneshtule/aulalab-app@${digest('a')}`)
+  assert.equal(container(plain, 'aulalab-runtime').image, `ghcr.io/vighneshtule/aulalab-runtime@${digest('b')}`)
 
   const objects = await render({
     global: { imageRegistry: 'harbor.bank.local/ghcr' },
@@ -306,16 +306,16 @@ test('every image is pinned by digest; global.imageRegistry rewrites all of them
       ],
     },
   })
-  for (const name of ['colloq-app', 'colloq-runtime']) {
+  for (const name of ['aulalab-app', 'aulalab-runtime']) {
     const image = container(objects, name).image
     assert.match(image, pinned)
-    assert.ok(image.startsWith('harbor.bank.local/ghcr/colloq-edu/'), image)
+    assert.ok(image.startsWith('harbor.bank.local/ghcr/vighneshtule/'), image)
   }
-  assert.equal(container(objects, 'colloq-app').image, `harbor.bank.local/ghcr/colloq-edu/colloq-app@${digest('a')}`)
-  const exporter = envOf(container(objects, 'colloq-runtime')).RUNTIME_COMPETITION_EXPORTER_IMAGE
-  assert.equal(exporter, `harbor.bank.local/ghcr/colloq-edu/colloq-runtime@${digest('b')}`)
+  assert.equal(container(objects, 'aulalab-app').image, `harbor.bank.local/ghcr/vighneshtule/aulalab-app@${digest('a')}`)
+  const exporter = envOf(container(objects, 'aulalab-runtime')).RUNTIME_COMPETITION_EXPORTER_IMAGE
+  assert.equal(exporter, `harbor.bank.local/ghcr/vighneshtule/aulalab-runtime@${digest('b')}`)
   assert.deepEqual(catalogOf(objects).environments.map((e: Json) => e.image), [
-    `harbor.bank.local/ghcr/colloq-edu/colloq-kernel@${digest('c')}`,
+    `harbor.bank.local/ghcr/vighneshtule/aulalab-kernel@${digest('c')}`,
     `harbor.bank.local/ghcr/library/python@${digest('e')}`,
     `harbor.bank.local/ghcr/team/kernel@${digest('f')}`,
     `harbor.bank.local/ghcr/a/b/c@${digest('1')}`,
@@ -343,19 +343,19 @@ test('the release job can copy release.json\'s catalog in as is', { skip }, asyn
 
 test('pull secrets: every Pod gets all of them, the broker passes the first to the Pods it creates', { skip }, async () => {
   const objects = await render({ global: { imagePullSecrets: ['harbor-pull', { name: 'nexus-pull' }] } })
-  for (const name of ['colloq-app', 'colloq-runtime'])
+  for (const name of ['aulalab-app', 'aulalab-runtime'])
     assert.deepEqual(deployment(objects, name).spec.template.spec.imagePullSecrets, [{ name: 'harbor-pull' }, { name: 'nexus-pull' }])
-  assert.equal(envOf(container(objects, 'colloq-runtime')).RUNTIME_IMAGE_PULL_SECRET, 'harbor-pull')
+  assert.equal(envOf(container(objects, 'aulalab-runtime')).RUNTIME_IMAGE_PULL_SECRET, 'harbor-pull')
   // None configured: no field, and no empty variable (which the broker would refuse as a name).
   const none = await render({})
-  assert.equal(deployment(none, 'colloq-app').spec.template.spec.imagePullSecrets, undefined)
-  assert.equal('RUNTIME_IMAGE_PULL_SECRET' in envOf(container(none, 'colloq-runtime')), false)
+  assert.equal(deployment(none, 'aulalab-app').spec.template.spec.imagePullSecrets, undefined)
+  assert.equal('RUNTIME_IMAGE_PULL_SECRET' in envOf(container(none, 'aulalab-runtime')), false)
 })
 
 /* ------------------------------------------------------------ the broker */
 
 test('the broker\'s Role holds exactly its verbs, in-place resize only when switched on', { skip }, async () => {
-  const rules = (objects: Json[]) => find(objects, 'Role', 'colloq-runtime').rules.map((r: Json) =>
+  const rules = (objects: Json[]) => find(objects, 'Role', 'aulalab-runtime').rules.map((r: Json) =>
     `${r.apiGroups.join(',')}|${r.resources.join(',')}|${r.verbs.join(',')}`)
   const on = await render({})
   assert.deepEqual(rules(on), [
@@ -364,17 +364,17 @@ test('the broker\'s Role holds exactly its verbs, in-place resize only when swit
     '|persistentvolumeclaims|get',
     'networking.k8s.io|networkpolicies|get',
   ])
-  assert.equal(envOf(container(on, 'colloq-runtime')).RUNTIME_IN_PLACE_RESIZE, '1')
+  assert.equal(envOf(container(on, 'aulalab-runtime')).RUNTIME_IN_PLACE_RESIZE, '1')
   const off = await render({ runtime: { inPlaceResize: false } })
   assert.ok(!rules(off).some((rule: string) => rule.includes('pods/resize')))
-  assert.equal(envOf(container(off, 'colloq-runtime')).RUNTIME_IN_PLACE_RESIZE, '0')
-  const binding = find(on, 'RoleBinding', 'colloq-runtime')
-  assert.deepEqual(binding.subjects, [{ kind: 'ServiceAccount', name: 'colloq-runtime', namespace: 'colloq' }])
-  assert.deepEqual(binding.roleRef, { apiGroup: 'rbac.authorization.k8s.io', kind: 'Role', name: 'colloq-runtime' })
+  assert.equal(envOf(container(off, 'aulalab-runtime')).RUNTIME_IN_PLACE_RESIZE, '0')
+  const binding = find(on, 'RoleBinding', 'aulalab-runtime')
+  assert.deepEqual(binding.subjects, [{ kind: 'ServiceAccount', name: 'aulalab-runtime', namespace: 'aulalab' }])
+  assert.deepEqual(binding.roleRef, { apiGroup: 'rbac.authorization.k8s.io', kind: 'Role', name: 'aulalab-runtime' })
 })
 
 test('the broker gets every setting it reads, with the room defaults and the paths the k3s installer used', { skip }, async () => {
-  const env = envOf(container(await render({}, { namespace: 'edu-colloq' }), 'colloq-runtime'))
+  const env = envOf(container(await render({}, { namespace: 'edu-aulalab' }), 'aulalab-runtime'))
   assert.deepEqual({
     RUNTIME_PORT: env.RUNTIME_PORT, RUNTIME_TOKEN_FILE: env.RUNTIME_TOKEN_FILE, RUNTIME_ROOM_SECRET_FILE: env.RUNTIME_ROOM_SECRET_FILE,
     RUNTIME_CATALOG_FILE: env.RUNTIME_CATALOG_FILE, RUNTIME_NAMESPACE: env.RUNTIME_NAMESPACE,
@@ -383,10 +383,10 @@ test('the broker gets every setting it reads, with the room defaults and the pat
     RUNTIME_KERNEL_MEMORY: env.RUNTIME_KERNEL_MEMORY, RUNTIME_KERNEL_CPU: env.RUNTIME_KERNEL_CPU,
     RUNTIME_KERNEL_EPHEMERAL: env.RUNTIME_KERNEL_EPHEMERAL, RUNTIME_GPU_RUNTIME_CLASS: env.RUNTIME_GPU_RUNTIME_CLASS,
   }, {
-    RUNTIME_PORT: '8787', RUNTIME_TOKEN_FILE: '/etc/colloq-runtime-auth/runtime-token', RUNTIME_ROOM_SECRET_FILE: '/run/room-secret/room-secret',
-    RUNTIME_CATALOG_FILE: '/etc/colloq/catalog.json', RUNTIME_NAMESPACE: 'edu-colloq',
-    RUNTIME_WORKSPACE_CLAIM: 'colloq-workspace', RUNTIME_COMPETITION_DATA_CLAIM: 'colloq-data',
-    RUNTIME_COMPETITION_INSTANCE_ID: 'edu-colloq', RUNTIME_KUBE_URL: 'https://kubernetes.default.svc',
+    RUNTIME_PORT: '8787', RUNTIME_TOKEN_FILE: '/etc/aulalab-runtime-auth/runtime-token', RUNTIME_ROOM_SECRET_FILE: '/run/room-secret/room-secret',
+    RUNTIME_CATALOG_FILE: '/etc/aulalab/catalog.json', RUNTIME_NAMESPACE: 'edu-aulalab',
+    RUNTIME_WORKSPACE_CLAIM: 'aulalab-workspace', RUNTIME_COMPETITION_DATA_CLAIM: 'aulalab-data',
+    RUNTIME_COMPETITION_INSTANCE_ID: 'edu-aulalab', RUNTIME_KUBE_URL: 'https://kubernetes.default.svc',
     // 4Gi, not the broker's own 2Gi: two gigabytes is a laptop's number, not a seminar's.
     RUNTIME_KERNEL_MEMORY: '4Gi', RUNTIME_KERNEL_CPU: '2', RUNTIME_KERNEL_EPHEMERAL: '2Gi', RUNTIME_GPU_RUNTIME_CLASS: 'nvidia',
   })
@@ -399,13 +399,13 @@ test('the broker gets every setting it reads, with the room defaults and the pat
   // A GPU catalog image's pull allowance holds with or without the resource: its metric runs on the CPU.
   assert.equal(env.RUNTIME_COMPETITION_GPU_PULL_SECONDS, '900')
   // The broker never reads the database: no data volume, so a ReadWriteOnce claim does not pin it.
-  const runtime = deployment(await render({}), 'colloq-runtime').spec.template.spec
+  const runtime = deployment(await render({}), 'aulalab-runtime').spec.template.spec
   assert.ok(!runtime.volumes.some((v: Json) => v.persistentVolumeClaim), 'no claim mounted in the broker')
   // Its own token stays out of /run/secrets, where it would block the ServiceAccount token's projection.
   assert.ok(runtime.containers[0].volumeMounts.every((m: Json) => !m.mountPath.startsWith('/run/secrets') && !m.mountPath.startsWith('/var/run')))
   // A long namespace still gives a valid competition instance ID.
-  const long = 'a'.repeat(38) + '-colloq-namespace'
-  const id = envOf(container(await render({}, { namespace: long }), 'colloq-runtime')).RUNTIME_COMPETITION_INSTANCE_ID
+  const long = 'a'.repeat(38) + '-aulalab-namespace'
+  const id = envOf(container(await render({}, { namespace: long }), 'aulalab-runtime')).RUNTIME_COMPETITION_INSTANCE_ID
   assert.match(id, /^[a-z0-9-]{1,40}$/)
 })
 
@@ -423,7 +423,7 @@ test('rooms, GPU and placement values become the broker\'s JSON settings', { ski
       { name: 'base-gpu', image: KERNEL('e'), gpu: true, packages: ['torch'] },
     ] },
   })
-  const env = envOf(container(objects, 'colloq-runtime'))
+  const env = envOf(container(objects, 'aulalab-runtime'))
   assert.equal(env.RUNTIME_KERNEL_MEMORY, '8Gi')
   assert.equal(env.RUNTIME_KERNEL_CPU, '1500m')
   assert.equal(env.RUNTIME_KERNEL_MEMORY_MAX, '48Gi')
@@ -438,75 +438,75 @@ test('rooms, GPU and placement values become the broker\'s JSON settings', { ski
   // The extended resource a GPU competition's notebook requests, and how many units: strings, as the broker reads them.
   assert.equal(env.RUNTIME_COMPETITION_GPU_RESOURCE, 'nvidia.com/mig-1g.10gb')
   assert.equal(env.RUNTIME_COMPETITION_GPU_COUNT, '2')
-  const plain = envOf(container(await render({ gpu: { competitions: { resource: 'nvidia.com/gpu' } } }), 'colloq-runtime'))
+  const plain = envOf(container(await render({ gpu: { competitions: { resource: 'nvidia.com/gpu' } } }), 'aulalab-runtime'))
   assert.equal(plain.RUNTIME_COMPETITION_GPU_COUNT, '1')
   // Unsaid slots stay unsaid (the app keeps one at a time); /dev/shm and the pull have their defaults.
   assert.equal('RUNTIME_COMPETITION_GPU_SLOTS' in plain, false)
   assert.deepEqual([plain.RUNTIME_COMPETITION_GPU_SHM_MB, plain.RUNTIME_COMPETITION_GPU_PULL_SECONDS], ['1024', '900'])
   // MPS: 0 is a setting of its own (no /dev/shm of ours), passed, not dropped.
-  const mps = envOf(container(await render({ gpu: { competitions: { resource: 'nvidia.com/gpu.shared', slots: 6, shmMb: 0, pullSeconds: 0 } } }), 'colloq-runtime'))
+  const mps = envOf(container(await render({ gpu: { competitions: { resource: 'nvidia.com/gpu.shared', slots: 6, shmMb: 0, pullSeconds: 0 } } }), 'aulalab-runtime'))
   assert.deepEqual([mps.RUNTIME_COMPETITION_GPU_SLOTS, mps.RUNTIME_COMPETITION_GPU_SHM_MB, mps.RUNTIME_COMPETITION_GPU_PULL_SECONDS], ['6', '0', '0'])
   // Without the resource only the pull allowance remains, whatever else is set.
-  const off = envOf(container(await render({ gpu: { competitions: { slots: 6, shmMb: 0, pullSeconds: 1200 } } }), 'colloq-runtime'))
+  const off = envOf(container(await render({ gpu: { competitions: { slots: 6, shmMb: 0, pullSeconds: 1200 } } }), 'aulalab-runtime'))
   assert.equal(Object.keys(off).filter((key) => key.startsWith('RUNTIME_COMPETITION_GPU')).join(), 'RUNTIME_COMPETITION_GPU_PULL_SECONDS')
   assert.equal(off.RUNTIME_COMPETITION_GPU_PULL_SECONDS, '1200')
   assert.equal(catalogOf(objects).environments[1].gpu, true)
   // An empty runtime class is a setting of its own (none), so it is passed, not dropped.
-  const none = envOf(container(await render({ gpu: { runtimeClassName: '' } }), 'colloq-runtime'))
+  const none = envOf(container(await render({ gpu: { runtimeClassName: '' } }), 'aulalab-runtime'))
   assert.equal(none.RUNTIME_GPU_RUNTIME_CLASS, '')
   // A number is a quantity too.
-  assert.equal(envOf(container(await render({ rooms: { cpu: 4 } }), 'colloq-runtime')).RUNTIME_KERNEL_CPU, '4')
+  assert.equal(envOf(container(await render({ rooms: { cpu: 4 } }), 'aulalab-runtime')).RUNTIME_KERNEL_CPU, '4')
 })
 
 /* --------------------------------------------------------------- storage */
 
 test('ReadWriteOnce storage co-locates the broker\'s Pods with the app; ReadWriteMany does not', { skip }, async () => {
-  const colocate = (objects: Json[]) => envOf(container(objects, 'colloq-runtime')).RUNTIME_COLOCATE_WITH_APP
+  const colocate = (objects: Json[]) => envOf(container(objects, 'aulalab-runtime')).RUNTIME_COLOCATE_WITH_APP
   const modes = (objects: Json[]) => objects.filter((o) => o.kind === 'PersistentVolumeClaim').map((o) => `${o.metadata.name}:${o.spec.accessModes.join(',')}`).sort()
 
   const rwo = await render({})
   assert.equal(colocate(rwo), '1')
-  assert.deepEqual(modes(rwo), ['colloq-data:ReadWriteOnce', 'colloq-workspace:ReadWriteOnce'])
+  assert.deepEqual(modes(rwo), ['aulalab-data:ReadWriteOnce', 'aulalab-workspace:ReadWriteOnce'])
   // The app prefers the node where rooms run: their attachment of the volume is what a new app Pod needs.
-  const affinity = deployment(rwo, 'colloq-app').spec.template.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[0]
+  const affinity = deployment(rwo, 'aulalab-app').spec.template.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[0]
   assert.equal(affinity.podAffinityTerm.topologyKey, 'kubernetes.io/hostname')
   assert.deepEqual(affinity.podAffinityTerm.labelSelector.matchExpressions[0].values, ['kernel', 'own', 'competition-job', 'competition-resolver'])
 
   const rwx = await render({ persistence: { accessMode: 'ReadWriteMany', storageClass: 'cephfs' } })
   assert.equal(colocate(rwx), '0')
-  assert.deepEqual(modes(rwx), ['colloq-data:ReadWriteMany', 'colloq-workspace:ReadWriteMany'])
-  assert.equal(deployment(rwx, 'colloq-app').spec.template.spec.affinity, undefined)
+  assert.deepEqual(modes(rwx), ['aulalab-data:ReadWriteMany', 'aulalab-workspace:ReadWriteMany'])
+  assert.equal(deployment(rwx, 'aulalab-app').spec.template.spec.affinity, undefined)
   for (const claim of rwx.filter((o) => o.kind === 'PersistentVolumeClaim')) assert.equal(claim.spec.storageClassName, 'cephfs')
 
   // One ReadWriteOnce volume is enough: competition jobs mount the data, rooms the workspace.
   const mixed = await render({ persistence: { accessMode: 'ReadWriteMany', data: { accessMode: 'ReadWriteOnce', storageClass: 'rbd' } } })
   assert.equal(colocate(mixed), '1')
-  assert.deepEqual(modes(mixed), ['colloq-data:ReadWriteOnce', 'colloq-workspace:ReadWriteMany'])
-  assert.equal(find(mixed, 'PersistentVolumeClaim', 'colloq-data').spec.storageClassName, 'rbd')
+  assert.deepEqual(modes(mixed), ['aulalab-data:ReadWriteOnce', 'aulalab-workspace:ReadWriteMany'])
+  assert.equal(find(mixed, 'PersistentVolumeClaim', 'aulalab-data').spec.storageClassName, 'rbd')
 
   // An explicit affinity replaces the chart's.
-  const own = await render({ app: { affinity: { nodeAffinity: { requiredDuringSchedulingIgnoredDuringExecution: { nodeSelectorTerms: [{ matchExpressions: [{ key: 'pool', operator: 'In', values: ['colloq'] }] }] } } } } })
-  assert.ok(deployment(own, 'colloq-app').spec.template.spec.affinity.nodeAffinity)
-  assert.equal(deployment(own, 'colloq-app').spec.template.spec.affinity.podAffinity, undefined)
+  const own = await render({ app: { affinity: { nodeAffinity: { requiredDuringSchedulingIgnoredDuringExecution: { nodeSelectorTerms: [{ matchExpressions: [{ key: 'pool', operator: 'In', values: ['aulalab'] }] }] } } } } })
+  assert.ok(deployment(own, 'aulalab-app').spec.template.spec.affinity.nodeAffinity)
+  assert.equal(deployment(own, 'aulalab-app').spec.template.spec.affinity.podAffinity, undefined)
 })
 
 test('claims: sizes, storage classes, existing claims, and kept on uninstall', { skip }, async () => {
   const objects = await render({ persistence: { storageClass: '-', data: { size: '20Gi' }, workspace: { existingClaim: 'rooms-nfs', accessMode: 'ReadWriteMany' } } })
-  const data = find(objects, 'PersistentVolumeClaim', 'colloq-data')
+  const data = find(objects, 'PersistentVolumeClaim', 'aulalab-data')
   assert.equal(data.spec.resources.requests.storage, '20Gi')
   assert.equal(data.spec.storageClassName, '', '"-" means no class')
   assert.equal(data.metadata.annotations['helm.sh/resource-policy'], 'keep')
   assert.equal(data.metadata.annotations['argocd.argoproj.io/sync-options'], 'Prune=false,Delete=false')
-  assert.equal(find(objects, 'PersistentVolumeClaim', 'colloq-workspace'), undefined)
-  const app = deployment(objects, 'colloq-app').spec.template.spec
+  assert.equal(find(objects, 'PersistentVolumeClaim', 'aulalab-workspace'), undefined)
+  const app = deployment(objects, 'aulalab-app').spec.template.spec
   assert.equal(app.volumes.find((v: Json) => v.name === 'workspace').persistentVolumeClaim.claimName, 'rooms-nfs')
-  assert.equal(app.volumes.find((v: Json) => v.name === 'data').persistentVolumeClaim.claimName, 'colloq-data')
-  const env = envOf(container(objects, 'colloq-runtime'))
+  assert.equal(app.volumes.find((v: Json) => v.name === 'data').persistentVolumeClaim.claimName, 'aulalab-data')
+  const env = envOf(container(objects, 'aulalab-runtime'))
   assert.equal(env.RUNTIME_WORKSPACE_CLAIM, 'rooms-nfs')
   assert.equal(env.RUNTIME_COLOCATE_WITH_APP, '1', 'the data claim is still ReadWriteOnce')
   const released = await render({ persistence: { retain: false } })
-  assert.equal(find(released, 'PersistentVolumeClaim', 'colloq-data').metadata.annotations, undefined)
-  const plain = find(await render({}), 'PersistentVolumeClaim', 'colloq-workspace')
+  assert.equal(find(released, 'PersistentVolumeClaim', 'aulalab-data').metadata.annotations, undefined)
+  const plain = find(await render({}), 'PersistentVolumeClaim', 'aulalab-workspace')
   assert.equal(plain.spec.storageClassName, undefined, 'empty: the cluster default')
   assert.equal(plain.spec.resources.requests.storage, '100Gi')
 })
@@ -515,7 +515,7 @@ test('claims: sizes, storage classes, existing claims, and kept on uninstall', {
 
 test('existing secrets are referenced, never rendered', { skip }, async () => {
   const objects = await render({
-    config: { existingSecret: 'vault-colloq' },
+    config: { existingSecret: 'vault-aulalab' },
     secrets: {
       runtimeToken: { existingSecret: 'vault-runtime', existingSecretKey: 'token' },
       roomSecret: { existingSecret: 'vault-rooms', existingSecretKey: 'key' },
@@ -523,49 +523,49 @@ test('existing secrets are referenced, never rendered', { skip }, async () => {
     metrics: { enabled: true, existingSecret: 'vault-metrics', existingSecretKey: 'bearer', serviceMonitor: { enabled: true } },
   })
   assert.deepEqual(objects.filter((o) => o.kind === 'Secret'), [], 'the chart renders no Secret at all')
-  const app = deployment(objects, 'colloq-app').spec.template.spec
-  const runtime = deployment(objects, 'colloq-runtime').spec.template.spec
+  const app = deployment(objects, 'aulalab-app').spec.template.spec
+  const runtime = deployment(objects, 'aulalab-runtime').spec.template.spec
   const volume = (spec: Json, name: string) => spec.volumes.find((v: Json) => v.name === name)?.secret
   assert.deepEqual(volume(app, 'runtime-token'), { secretName: 'vault-runtime', defaultMode: 288, items: [{ key: 'token', path: 'runtime-token' }] })
   assert.deepEqual(volume(runtime, 'runtime-token'), volume(app, 'runtime-token'))
   assert.deepEqual(volume(runtime, 'room-secret'), { secretName: 'vault-rooms', defaultMode: 288, items: [{ key: 'key', path: 'room-secret' }] })
   // The app never sees the key room tokens come from.
   assert.equal(volume(app, 'room-secret'), undefined)
-  assert.deepEqual(app.containers[0].envFrom, [{ configMapRef: { name: 'colloq-app-env' } }, { secretRef: { name: 'vault-colloq' } }])
+  assert.deepEqual(app.containers[0].envFrom, [{ configMapRef: { name: 'aulalab-app-env' } }, { secretRef: { name: 'vault-aulalab' } }])
   assert.deepEqual(envOf(app.containers[0]).METRICS_TOKEN, { secretKeyRef: { name: 'vault-metrics', key: 'bearer' } })
-  assert.deepEqual(find(objects, 'ServiceMonitor', 'colloq-app').spec.endpoints[0].authorization,
+  assert.deepEqual(find(objects, 'ServiceMonitor', 'aulalab-app').spec.endpoints[0].authorization,
     { type: 'Bearer', credentials: { name: 'vault-metrics', key: 'bearer' } })
 })
 
 test('generated secrets are read back from the live Secret, so an upgrade never re-randomises them', { skip }, async () => {
   const fresh = await render({})
   const token = (objects: Json[], name: string, key: string) => Buffer.from(find(objects, 'Secret', name).data[key], 'base64').toString()
-  assert.match(token(fresh, 'colloq-runtime-auth', 'runtime-token'), /^[A-Za-z0-9]{64}$/)
-  assert.match(token(fresh, 'colloq-room-secret', 'room-secret'), /^[A-Za-z0-9]{64}$/)
+  assert.match(token(fresh, 'aulalab-runtime-auth', 'runtime-token'), /^[A-Za-z0-9]{64}$/)
+  assert.match(token(fresh, 'aulalab-room-secret', 'room-secret'), /^[A-Za-z0-9]{64}$/)
   // Without a cluster (ArgoCD renders like this) there is nothing to read back: a new value every time.
-  assert.notEqual(token(fresh, 'colloq-runtime-auth', 'runtime-token'), token(await render({}), 'colloq-runtime-auth', 'runtime-token'))
+  assert.notEqual(token(fresh, 'aulalab-runtime-auth', 'runtime-token'), token(await render({}), 'aulalab-runtime-auth', 'runtime-token'))
 
   const live = { runtime: 'r'.repeat(20) + 'LiveRuntimeToken0123456789abcdefgh', room: 'LiveRoomSecret-0123456789_abcdefghijklmnopqrstu' }
   await withFakeCluster({
-    'colloq-runtime-auth': { 'runtime-token': Buffer.from(live.runtime).toString('base64') },
-    'colloq-room-secret': { 'room-secret': Buffer.from(live.room).toString('base64') },
+    'aulalab-runtime-auth': { 'runtime-token': Buffer.from(live.runtime).toString('base64') },
+    'aulalab-room-secret': { 'room-secret': Buffer.from(live.room).toString('base64') },
   }, async (env) => {
     for (let round = 0; round < 2; round++) {
       const objects = await render({ metrics: { enabled: true } }, { args: ['--dry-run=server'], env })
-      assert.equal(token(objects, 'colloq-runtime-auth', 'runtime-token'), live.runtime)
-      assert.equal(token(objects, 'colloq-room-secret', 'room-secret'), live.room)
+      assert.equal(token(objects, 'aulalab-runtime-auth', 'runtime-token'), live.runtime)
+      assert.equal(token(objects, 'aulalab-room-secret', 'room-secret'), live.room)
       // The metrics Secret does not exist yet: generated now, read back from the next upgrade on.
-      assert.match(token(objects, 'colloq-metrics', 'metrics-token'), /^[A-Za-z0-9]{64}$/)
+      assert.match(token(objects, 'aulalab-metrics', 'metrics-token'), /^[A-Za-z0-9]{64}$/)
     }
   })
   // An explicit value (e.g. from argocd-vault-plugin) is taken as is.
   const explicit = 'Explicit-Value_0123456789abcdefghijklmnopqrstuv'
-  assert.equal(token(await render({ secrets: { roomSecret: { value: explicit } } }), 'colloq-room-secret', 'room-secret'), explicit)
+  assert.equal(token(await render({ secrets: { roomSecret: { value: explicit } } }), 'aulalab-room-secret', 'room-secret'), explicit)
 })
 
 test('a helm upgrade keeps the previous release\'s kernel revisions, not current, so pinned rooms keep their Python', { skip }, async () => {
-  const catalogOf = (objects: Json[]) => JSON.parse(find(objects, 'ConfigMap', 'colloq-catalog').data['catalog.json'])
-  const old = (digit: string) => `ghcr.io/colloq-edu/colloq-kernel@sha256:${digit.repeat(64)}`
+  const catalogOf = (objects: Json[]) => JSON.parse(find(objects, 'ConfigMap', 'aulalab-catalog').data['catalog.json'])
+  const old = (digit: string) => `ghcr.io/vighneshtule/aulalab-kernel@sha256:${digit.repeat(64)}`
   const live = { schemaVersion: 1, release: 'v0.9.0', defaultEnvironment: 'base', environments: [
     { name: 'base', image: old('1'), gpu: false, packages: [] },
     { name: 'base', image: old('2'), gpu: false, packages: [], current: false },
@@ -582,7 +582,7 @@ test('a helm upgrade keeps the previous release\'s kernel revisions, not current
     assert.equal(bounded.environments.filter((e: Json) => e.name === 'base' && e.current === false).length, 1)
     const off = catalogOf(await render({ catalog: { retainPrevious: false } }, { args: ['--dry-run=server'], env }))
     assert.equal(off.environments.some((e: Json) => e.image === old('1')), false)
-  }, { 'colloq-catalog': { 'catalog.json': JSON.stringify(live) } })
+  }, { 'aulalab-catalog': { 'catalog.json': JSON.stringify(live) } })
   // Without a cluster (ArgoCD) there is nothing to keep, and the render is the release's own.
   assert.equal(catalogOf(await render({})).environments.some((e: Json) => e.image === old('1')), false)
 })
@@ -609,26 +609,26 @@ test('app settings reach the app under the documented variable names', { skip },
     HTTP_PROXY: 'http://proxy.bank.local:3128', http_proxy: 'http://proxy.bank.local:3128',
     NO_PROXY: '.bank.local', no_proxy: '.bank.local', COMPETITION_SLOTS: '8',
   })
-  const secret = find(objects, 'Secret', 'colloq-app-config')
+  const secret = find(objects, 'Secret', 'aulalab-app-config')
   assert.deepEqual(Object.fromEntries(Object.entries(secret.data).map(([k, v]) => [k, Buffer.from(String(v), 'base64').toString()])),
     { OPENAI_API_KEY: 'sk-internal', SESSION_SECRET: 's'.repeat(40) })
   // The Secret comes after the ConfigMap: a key in both is the Secret's.
-  assert.deepEqual(container(objects, 'colloq-app').envFrom, [{ configMapRef: { name: 'colloq-app-env' } }, { secretRef: { name: 'colloq-app-config' } }])
+  assert.deepEqual(container(objects, 'aulalab-app').envFrom, [{ configMapRef: { name: 'aulalab-app-env' } }, { secretRef: { name: 'aulalab-app-config' } }])
 
   const defaults = await render({})
   assert.deepEqual(configData(defaults), {
-    PUBLIC_URL: 'https://colloq.example.edu', OPEN_SEMINAR_CREATION: 'false', MAX_UPLOAD_MB: '50', MAX_SESSION_MB: '1024',
+    PUBLIC_URL: 'https://aulalab.example.edu', OPEN_SEMINAR_CREATION: 'false', MAX_UPLOAD_MB: '50', MAX_SESSION_MB: '1024',
     COUNCIL_COPY_MB: '512', COUNCIL_MEMORY_GUARD: '1', DB_SNAPSHOT_HOURS: '24', DB_SNAPSHOT_KEEP: '7', AI_PROVIDER: 'openai',
     AI_REASONING: 'false', TRUSTED_PROXIES: 'private', TRUST_CF_CONNECTING_IP: '0', HSTS: '1',
   })
   // No secret settings: no Secret, and no reference to one.
-  assert.equal(find(defaults, 'Secret', 'colloq-app-config'), undefined)
-  assert.deepEqual(container(defaults, 'colloq-app').envFrom, [{ configMapRef: { name: 'colloq-app-env' } }])
-  const env = envOf(container(defaults, 'colloq-app'))
+  assert.equal(find(defaults, 'Secret', 'aulalab-app-config'), undefined)
+  assert.deepEqual(container(defaults, 'aulalab-app').envFrom, [{ configMapRef: { name: 'aulalab-app-env' } }])
+  const env = envOf(container(defaults, 'aulalab-app'))
   assert.equal(env.KERNEL_BACKEND, 'broker')
-  assert.equal(env.KERNEL_RUNTIME_URL, 'http://colloq-runtime.colloq.svc:8787')
+  assert.equal(env.KERNEL_RUNTIME_URL, 'http://aulalab-runtime.aulalab.svc:8787')
   assert.equal(env.KERNEL_RUNTIME_TOKEN_FILE, '/run/secrets/runtime-token')
-  assert.equal(env.KERNEL_CATALOG_FILE, '/etc/colloq/catalog.json')
+  assert.equal(env.KERNEL_CATALOG_FILE, '/etc/aulalab/catalog.json')
   assert.equal(env.NODE_ENV, 'production')
   assert.equal('METRICS_TOKEN' in env, false)
 })
@@ -636,25 +636,25 @@ test('app settings reach the app under the documented variable names', { skip },
 test('outbound: the CA inline or from a ConfigMap, the mirror for the app, the broker and the proxy policy', { skip }, async () => {
   const pem = '-----BEGIN CERTIFICATE-----\nMIIBbankCA\n-----END CERTIFICATE-----\n'
   const inline = await render({ outbound: { extraCa: { pem } } })
-  assert.equal(find(inline, 'ConfigMap', 'colloq-extra-ca').data['extra-ca.pem'], pem)
-  const app = deployment(inline, 'colloq-app').spec.template.spec
-  assert.equal(envOf(app.containers[0]).NODE_EXTRA_CA_CERTS, '/etc/colloq-ca/extra-ca.pem')
-  assert.deepEqual(app.containers[0].volumeMounts.find((m: Json) => m.name === 'extra-ca'), { name: 'extra-ca', mountPath: '/etc/colloq-ca', readOnly: true })
-  assert.deepEqual(app.volumes.find((v: Json) => v.name === 'extra-ca').configMap, { name: 'colloq-extra-ca', items: [{ key: 'extra-ca.pem', path: 'extra-ca.pem' }] })
+  assert.equal(find(inline, 'ConfigMap', 'aulalab-extra-ca').data['extra-ca.pem'], pem)
+  const app = deployment(inline, 'aulalab-app').spec.template.spec
+  assert.equal(envOf(app.containers[0]).NODE_EXTRA_CA_CERTS, '/etc/aulalab-ca/extra-ca.pem')
+  assert.deepEqual(app.containers[0].volumeMounts.find((m: Json) => m.name === 'extra-ca'), { name: 'extra-ca', mountPath: '/etc/aulalab-ca', readOnly: true })
+  assert.deepEqual(app.volumes.find((v: Json) => v.name === 'extra-ca').configMap, { name: 'aulalab-extra-ca', items: [{ key: 'extra-ca.pem', path: 'extra-ca.pem' }] })
 
   const existing = await render({ outbound: { extraCa: { existingConfigMap: 'bank-root-ca', key: 'ca.crt' } } })
-  assert.equal(find(existing, 'ConfigMap', 'colloq-extra-ca'), undefined)
-  assert.deepEqual(deployment(existing, 'colloq-app').spec.template.spec.volumes.find((v: Json) => v.name === 'extra-ca').configMap,
+  assert.equal(find(existing, 'ConfigMap', 'aulalab-extra-ca'), undefined)
+  assert.deepEqual(deployment(existing, 'aulalab-app').spec.template.spec.volumes.find((v: Json) => v.name === 'extra-ca').configMap,
     { name: 'bank-root-ca', items: [{ key: 'ca.crt', path: 'extra-ca.pem' }] })
   const none = await render({})
-  assert.equal('NODE_EXTRA_CA_CERTS' in envOf(container(none, 'colloq-app')), false)
+  assert.equal('NODE_EXTRA_CA_CERTS' in envOf(container(none, 'aulalab-app')), false)
 
   const mirror = await render({ dependencies: {
     indexUrl: 'https://nexus.bank.local:8443/repository/pypi/simple', filesHosts: 'files.bank.local, 10.9.8.7:8443',
     mirrorEgress: [{ cidrs: ['10.20.30.40/32', '10.20.30.41/32'], ports: [8443] }, { cidrs: ['10.9.8.7/32'], ports: [8443, 443] }],
     publicEgress: false,
   } })
-  for (const name of ['colloq-app', 'colloq-runtime']) {
+  for (const name of ['aulalab-app', 'aulalab-runtime']) {
     const env = envOf(container(mirror, name))
     assert.equal(env.DEPENDENCY_INDEX_URL, 'https://nexus.bank.local:8443/repository/pypi/simple', name)
     assert.equal(env.DEPENDENCY_FILES_HOSTS, 'files.bank.local, 10.9.8.7:8443', name)
@@ -676,7 +676,7 @@ test('outbound: the CA inline or from a ConfigMap, the mirror for the app, the b
 
 test('ingress: what ingress-nginx needs, TLS from a Secret or cert-manager, and a Service-only mode', { skip }, async () => {
   const objects = await render({})
-  const ingress = find(objects, 'Ingress', 'colloq-app')
+  const ingress = find(objects, 'Ingress', 'aulalab-app')
   assert.deepEqual(ingress.metadata.annotations, {
     'nginx.ingress.kubernetes.io/proxy-body-size': '256m',
     'nginx.ingress.kubernetes.io/proxy-read-timeout': '3600',
@@ -684,46 +684,46 @@ test('ingress: what ingress-nginx needs, TLS from a Secret or cert-manager, and 
     'nginx.ingress.kubernetes.io/proxy-buffering': 'off',
   })
   assert.equal(ingress.spec.ingressClassName, 'nginx')
-  assert.deepEqual(ingress.spec.tls, [{ hosts: ['colloq.example.edu'], secretName: 'colloq-tls' }])
-  assert.deepEqual(ingress.spec.rules[0], { host: 'colloq.example.edu', http: { paths: [{ path: '/', pathType: 'Prefix',
-    backend: { service: { name: 'colloq-app', port: { name: 'http' } } } }] } })
-  assert.equal(find(objects, 'Service', 'colloq-app').spec.ports[0].port, 3000)
+  assert.deepEqual(ingress.spec.tls, [{ hosts: ['aulalab.example.edu'], secretName: 'aulalab-tls' }])
+  assert.deepEqual(ingress.spec.rules[0], { host: 'aulalab.example.edu', http: { paths: [{ path: '/', pathType: 'Prefix',
+    backend: { service: { name: 'aulalab-app', port: { name: 'http' } } } }] } })
+  assert.equal(find(objects, 'Service', 'aulalab-app').spec.ports[0].port, 3000)
 
   const managed = await render({ ingress: { className: 'corp-nginx', annotations: { 'nginx.ingress.kubernetes.io/proxy-buffering': null, 'example/extra': 'yes' },
     tls: { secretName: 'corp-cert', certManager: { clusterIssuer: 'corp-ca' } } } })
-  const annotations = find(managed, 'Ingress', 'colloq-app').metadata.annotations
+  const annotations = find(managed, 'Ingress', 'aulalab-app').metadata.annotations
   assert.equal(annotations['cert-manager.io/cluster-issuer'], 'corp-ca')
   assert.equal(annotations['example/extra'], 'yes')
   assert.equal('nginx.ingress.kubernetes.io/proxy-buffering' in annotations, false, 'null drops a default')
-  assert.equal(find(managed, 'Ingress', 'colloq-app').spec.tls[0].secretName, 'corp-cert')
-  assert.equal(find(managed, 'Ingress', 'colloq-app').spec.ingressClassName, 'corp-nginx')
+  assert.equal(find(managed, 'Ingress', 'aulalab-app').spec.tls[0].secretName, 'corp-cert')
+  assert.equal(find(managed, 'Ingress', 'aulalab-app').spec.ingressClassName, 'corp-nginx')
 
   const plainHttp = await render({ ingress: { tls: { enabled: false } } })
-  assert.equal(find(plainHttp, 'Ingress', 'colloq-app').spec.tls, undefined)
-  assert.equal(configData(plainHttp).PUBLIC_URL, 'http://colloq.example.edu')
+  assert.equal(find(plainHttp, 'Ingress', 'aulalab-app').spec.tls, undefined)
+  assert.equal(configData(plainHttp).PUBLIC_URL, 'http://aulalab.example.edu')
 
   const serviceOnly = await render({ ingress: { enabled: false, host: '' } })
-  assert.equal(find(serviceOnly, 'Ingress', 'colloq-app'), undefined)
-  assert.ok(find(serviceOnly, 'Service', 'colloq-app'))
+  assert.equal(find(serviceOnly, 'Ingress', 'aulalab-app'), undefined)
+  assert.ok(find(serviceOnly, 'Service', 'aulalab-app'))
   assert.equal('PUBLIC_URL' in configData(serviceOnly), false)
-  const behindOwnProxy = await render({ ingress: { enabled: false }, config: { publicUrl: 'https://colloq.bank.local' } })
-  assert.equal(configData(behindOwnProxy).PUBLIC_URL, 'https://colloq.bank.local')
+  const behindOwnProxy = await render({ ingress: { enabled: false }, config: { publicUrl: 'https://aulalab.bank.local' } })
+  assert.equal(configData(behindOwnProxy).PUBLIC_URL, 'https://aulalab.bank.local')
 })
 
 test('metrics: a token Secret for the app and a ServiceMonitor that scrapes with it', { skip }, async () => {
   const objects = await render({ metrics: { enabled: true, serviceMonitor: { enabled: true, labels: { release: 'kube-prometheus-stack' } } } })
-  assert.ok(find(objects, 'Secret', 'colloq-metrics').data['metrics-token'])
-  assert.deepEqual(envOf(container(objects, 'colloq-app')).METRICS_TOKEN, { secretKeyRef: { name: 'colloq-metrics', key: 'metrics-token' } })
-  const monitor = find(objects, 'ServiceMonitor', 'colloq-app')
+  assert.ok(find(objects, 'Secret', 'aulalab-metrics').data['metrics-token'])
+  assert.deepEqual(envOf(container(objects, 'aulalab-app')).METRICS_TOKEN, { secretKeyRef: { name: 'aulalab-metrics', key: 'metrics-token' } })
+  const monitor = find(objects, 'ServiceMonitor', 'aulalab-app')
   assert.equal(monitor.metadata.labels.release, 'kube-prometheus-stack')
-  assert.deepEqual(monitor.spec.selector.matchLabels, { 'app.kubernetes.io/name': 'colloq', 'app.kubernetes.io/instance': 'colloq', 'app.kubernetes.io/component': 'app' })
+  assert.deepEqual(monitor.spec.selector.matchLabels, { 'app.kubernetes.io/name': 'aulalab', 'app.kubernetes.io/instance': 'aulalab', 'app.kubernetes.io/component': 'app' })
   assert.deepEqual(monitor.spec.endpoints[0], { port: 'http', path: '/metrics', interval: '30s', scrapeTimeout: '10s',
-    authorization: { type: 'Bearer', credentials: { name: 'colloq-metrics', key: 'metrics-token' } } })
+    authorization: { type: 'Bearer', credentials: { name: 'aulalab-metrics', key: 'metrics-token' } } })
   const off = await render({})
-  assert.equal(find(off, 'ServiceMonitor', 'colloq-app'), undefined)
-  assert.equal(find(off, 'Secret', 'colloq-metrics'), undefined)
+  assert.equal(find(off, 'ServiceMonitor', 'aulalab-app'), undefined)
+  assert.equal(find(off, 'Secret', 'aulalab-metrics'), undefined)
   const explicit = await render({ metrics: { enabled: true, token: 'metrics-token-0123456789' } })
-  assert.equal(Buffer.from(find(explicit, 'Secret', 'colloq-metrics').data['metrics-token'], 'base64').toString(), 'metrics-token-0123456789')
+  assert.equal(Buffer.from(find(explicit, 'Secret', 'aulalab-metrics').data['metrics-token'], 'base64').toString(), 'metrics-token-0123456789')
 })
 
 /* -------------------------------------------------------- network policy */
@@ -785,22 +785,22 @@ function allowed(policies: Json[], namespace: string, from: Endpoint, to: Endpoi
   return (!ours(from) || side(from, 'Egress', to)) && (!ours(to) || side(to, 'Ingress', from))
 }
 
-function world(objects: Json[], namespace = 'colloq') {
+function world(objects: Json[], namespace = 'aulalab') {
   const nsLabels = { 'kubernetes.io/metadata.name': namespace }
-  const podLabels = JSON.parse(envOf(container(objects, 'colloq-runtime')).RUNTIME_POD_LABELS)
+  const podLabels = JSON.parse(envOf(container(objects, 'aulalab-runtime')).RUNTIME_POD_LABELS)
   const pod = (name: string, labels: Record<string, string>): Pod => ({ kind: 'pod', name, namespace, nsLabels, labels })
   const broker = (role: string, extra: Record<string, string> = {}) =>
-    pod(role, { ...podLabels, 'app.kubernetes.io/managed-by': 'colloq-runtime', 'colloq.dev/role': role, ...extra })
+    pod(role, { ...podLabels, 'app.kubernetes.io/managed-by': 'aulalab-runtime', 'aulalab.dev/role': role, ...extra })
   const elsewhere = (name: string, ns: string, labels: Record<string, string>): Pod =>
     ({ kind: 'pod', name, namespace: ns, nsLabels: { 'kubernetes.io/metadata.name': ns }, labels })
   return {
-    app: pod('app', deployment(objects, 'colloq-app').spec.template.metadata.labels),
-    runtime: pod('runtime', deployment(objects, 'colloq-runtime').spec.template.metadata.labels),
-    room: broker('kernel', { 'colloq.kind': 'room-kernel', 'colloq.dev/session': 'abc' }),
+    app: pod('app', deployment(objects, 'aulalab-app').spec.template.metadata.labels),
+    runtime: pod('runtime', deployment(objects, 'aulalab-runtime').spec.template.metadata.labels),
+    room: broker('kernel', { 'aulalab.kind': 'room-kernel', 'aulalab.dev/session': 'abc' }),
     own: broker('own'),
-    job: broker('competition-job', { 'colloq.dev/job': 'j1', 'colloq.dev/instance': namespace }),
-    resolver: broker('competition-resolver', { 'colloq.dev/job': 'j2', 'colloq.dev/instance': namespace }),
-    proxy: broker('competition-proxy', { 'colloq.dev/job': 'j2', 'colloq.dev/instance': namespace }),
+    job: broker('competition-job', { 'aulalab.dev/job': 'j1', 'aulalab.dev/instance': namespace }),
+    resolver: broker('competition-resolver', { 'aulalab.dev/job': 'j2', 'aulalab.dev/instance': namespace }),
+    proxy: broker('competition-proxy', { 'aulalab.dev/job': 'j2', 'aulalab.dev/instance': namespace }),
     stranger: pod('stranger', { app: 'something-else' }),
     ingress: elsewhere('ingress-nginx', 'ingress-nginx', { 'app.kubernetes.io/name': 'ingress-nginx' }),
     otherIngress: elsewhere('traefik', 'kube-system', { 'app.kubernetes.io/name': 'traefik' }),
@@ -813,11 +813,11 @@ function world(objects: Json[], namespace = 'colloq') {
   }
 }
 
-test('network policies admit exactly the flows Colloq needs, in a namespace whose default is deny', { skip }, async () => {
+test('network policies admit exactly the flows Aula Lab needs, in a namespace whose default is deny', { skip }, async () => {
   const objects = await render({ metrics: { enabled: true }, dependencies: { mirrorEgress: [{ cidrs: ['10.20.30.40/32'], ports: [8443] }] } })
   const policies = objects.filter((o) => o.kind === 'NetworkPolicy')
   const w = world(objects)
-  const can = (from: Endpoint, to: Endpoint, port: number, protocol = 'TCP') => allowed(policies, 'colloq', from, to, port, protocol)
+  const can = (from: Endpoint, to: Endpoint, port: number, protocol = 'TCP') => allowed(policies, 'aulalab', from, to, port, protocol)
   const needed: Array<[Endpoint, Endpoint, number, string?]> = [
     [w.ingress, w.app, 3000], [w.prometheus, w.app, 3000],
     [w.app, w.runtime, 8787], [w.app, w.room, 8888], [w.app, w.own, 8888],
@@ -853,7 +853,7 @@ test('network policies admit exactly the flows Colloq needs, in a namespace whos
 
   // Scraping is open only with metrics on.
   const plain = await render({})
-  assert.ok(!allowed(plain.filter((o) => o.kind === 'NetworkPolicy'), 'colloq', w.prometheus, w.app, 3000))
+  assert.ok(!allowed(plain.filter((o) => o.kind === 'NetworkPolicy'), 'aulalab', w.prometheus, w.app, 3000))
 })
 
 test('network policy values: DNS, ingress controller, API servers and the app\'s own egress are the platform\'s to say', { skip }, async () => {
@@ -867,7 +867,7 @@ test('network policy values: DNS, ingress controller, API servers and the app\'s
   const w = world(objects)
   const localDns: Address = { kind: 'ip', name: 'nodelocaldns', ip: '169.254.20.10' }
   const deckhouse: Pod = { kind: 'pod', name: 'controller', namespace: 'd8-ingress-nginx', nsLabels: { 'kubernetes.io/metadata.name': 'd8-ingress-nginx' }, labels: { app: 'controller' } }
-  const can = (from: Endpoint, to: Endpoint, port: number, protocol = 'TCP') => allowed(policies, 'colloq', from, to, port, protocol)
+  const can = (from: Endpoint, to: Endpoint, port: number, protocol = 'TCP') => allowed(policies, 'aulalab', from, to, port, protocol)
   assert.ok(can(w.app, localDns, 53, 'UDP') && can(w.room, localDns, 53, 'UDP'))
   assert.ok(!can(w.app, w.dns, 53, 'UDP'), 'the default DNS peer was replaced')
   assert.ok(can(deckhouse, w.app, 3000) && !can(w.ingress, w.app, 3000))
@@ -877,27 +877,27 @@ test('network policy values: DNS, ingress controller, API servers and the app\'s
   assert.ok(can(w.app, { kind: 'ip', name: 'llm', ip: '10.5.1.1' }, 8443))
   // An empty list admits nobody: an empty `from` in a NetworkPolicy would admit everyone.
   const closed = await render({ networkPolicy: { ingressController: { from: [] } } })
-  const app = find(closed, 'NetworkPolicy', 'colloq-app')
+  const app = find(closed, 'NetworkPolicy', 'aulalab-app')
   assert.deepEqual(app.spec.ingress, [])
-  assert.ok(!allowed(closed.filter((o) => o.kind === 'NetworkPolicy'), 'colloq', w.ingress, w.app, 3000))
+  assert.ok(!allowed(closed.filter((o) => o.kind === 'NetworkPolicy'), 'aulalab', w.ingress, w.app, 3000))
   // Cilium: the API servers by identity, in a namespaced policy.
-  const cilium = find(await render({ networkPolicy: { kubeApiServer: { ciliumEntity: true } } }), 'CiliumNetworkPolicy', 'colloq-runtime-kube-api')
-  assert.deepEqual(cilium.spec, { endpointSelector: { matchLabels: { 'colloq.dev/role': 'runtime' } },
+  const cilium = find(await render({ networkPolicy: { kubeApiServer: { ciliumEntity: true } } }), 'CiliumNetworkPolicy', 'aulalab-runtime-kube-api')
+  assert.deepEqual(cilium.spec, { endpointSelector: { matchLabels: { 'aulalab.dev/role': 'runtime' } },
     egress: [{ toEntities: ['kube-apiserver'], toPorts: [{ ports: [{ port: '443', protocol: 'TCP' }, { port: '6443', protocol: 'TCP' }] }] }] })
 })
 
 test('rooms.network=none takes DNS away from rooms; the app is told the same', { skip }, async () => {
   const objects = await render({ rooms: { network: 'none' } })
   assert.deepEqual(find(objects, 'NetworkPolicy', 'room-isolation').spec.egress, [])
-  assert.equal(envOf(container(objects, 'colloq-app')).COLLOQ_ROOM_NETWORK, 'none')
+  assert.equal(envOf(container(objects, 'aulalab-app')).AULALAB_ROOM_NETWORK, 'none')
   const policies = objects.filter((o) => o.kind === 'NetworkPolicy')
   const w = world(objects)
-  assert.ok(!allowed(policies, 'colloq', w.room, w.dns, 53, 'UDP') && !allowed(policies, 'colloq', w.own, w.dns, 53, 'UDP'))
+  assert.ok(!allowed(policies, 'aulalab', w.room, w.dns, 53, 'UDP') && !allowed(policies, 'aulalab', w.own, w.dns, 53, 'UDP'))
   // Rooms are still reachable for the app and the broker, and the rest keeps its DNS.
-  assert.ok(allowed(policies, 'colloq', w.app, w.room, 8888) && allowed(policies, 'colloq', w.runtime, w.room, 8888))
-  assert.ok(allowed(policies, 'colloq', w.app, w.dns, 53, 'UDP'))
+  assert.ok(allowed(policies, 'aulalab', w.app, w.room, 8888) && allowed(policies, 'aulalab', w.runtime, w.room, 8888))
+  assert.ok(allowed(policies, 'aulalab', w.app, w.dns, 53, 'UDP'))
   const open = await render({})
-  assert.equal('COLLOQ_ROOM_NETWORK' in envOf(container(open, 'colloq-app')), false)
+  assert.equal('AULALAB_ROOM_NETWORK' in envOf(container(open, 'aulalab-app')), false)
 })
 
 /* ------------------------------------------------------------ refusals */
@@ -924,9 +924,9 @@ test('values the app or the broker would refuse stop the render, with the reason
     [{ gpu: { competitions: { resource: 'nvidia.com/gpu', shmMb: 65537 } } }, /shmMb|maximum/],
     [{ gpu: { competitions: { pullSeconds: 3601 } } }, /pullSeconds|maximum/],
     [{ gpu: { competitions: { pullSeconds: 1.5 } } }, /pullSeconds|integer/],
-    [{ rooms: { podLabels: { 'colloq.dev/role': 'kernel' } } }, /rooms\.podLabels\.colloq\.dev\/role/],
+    [{ rooms: { podLabels: { 'aulalab.dev/role': 'kernel' } } }, /rooms\.podLabels\.aulalab\.dev\/role/],
     [{ rooms: { podLabels: { 'app.kubernetes.io/managed-by': 'me' } } }, /rooms\.podLabels\.app\.kubernetes\.io\/managed-by/],
-    [{ rooms: { podAnnotations: { 'colloq.dev/session-id': 'x' } } }, /rooms\.podAnnotations\.colloq\.dev\/session-id/],
+    [{ rooms: { podAnnotations: { 'aulalab.dev/session-id': 'x' } } }, /rooms\.podAnnotations\.aulalab\.dev\/session-id/],
     [{ commonLabels: { 'app.kubernetes.io/part-of': 'lms' } }, /commonLabels\.app\.kubernetes\.io\/part-of/],
     [{ catalog: { defaultEnvironment: 'gpu', environments: [{ name: 'base', image: KERNEL('c'), gpu: false }] } }, /catalog\.defaultEnvironment "gpu"/],
     [{ catalog: { defaultEnvironment: 'base', environments: [{ name: 'base', image: KERNEL('c'), gpu: false }, { name: 'base', image: KERNEL('d'), gpu: false }] } },
@@ -1009,7 +1009,7 @@ async function withFakeCluster(secrets: Record<string, Record<string, string>>, 
 async function notes(values: Values): Promise<string> {
   let text = ''
   await withFakeCluster({}, async (env) => {
-    const result = await helm(['install', 'colloq', CHART, '--namespace', 'colloq', '--dry-run=server', '--disable-openapi-validation',
+    const result = await helm(['install', 'aulalab', CHART, '--namespace', 'aulalab', '--dry-run=server', '--disable-openapi-validation',
       '-f', valuesFile(RELEASE), '-f', valuesFile(values)], env)
     assert.equal(result.code, 0, result.stderr)
     text = result.stdout.slice(result.stdout.indexOf('NOTES:'))
@@ -1017,18 +1017,18 @@ async function notes(values: Values): Promise<string> {
   return text
 }
 
-test('NOTES say how to open Colloq and how the first owner gets in', { skip }, async () => {
+test('NOTES say how to open Aula Lab and how the first owner gets in', { skip }, async () => {
   const text = await notes({})
-  assert.match(text, /https:\/\/colloq\.example\.edu\n/)
-  assert.match(text, /kubectl -n colloq exec deploy\/colloq-app -- cat \/data\/setup-token/)
-  assert.match(text, /https:\/\/colloq\.example\.edu\/admin\/t\/<token>/)
-  assert.match(text, /kubectl -n colloq logs deploy\/colloq-app \| grep \/admin\/t\//)
+  assert.match(text, /https:\/\/aulalab\.example\.edu\n/)
+  assert.match(text, /kubectl -n aulalab exec deploy\/aulalab-app -- cat \/data\/setup-token/)
+  assert.match(text, /https:\/\/aulalab\.example\.edu\/admin\/t\/<token>/)
+  assert.match(text, /kubectl -n aulalab logs deploy\/aulalab-app \| grep \/admin\/t\//)
   assert.match(text, /one replica each, strategy Recreate/)
   assert.match(text, /ReadWriteOnce/)
   assert.match(text, /ArgoCD/)
   const serviceOnly = await notes({ ingress: { enabled: false }, persistence: { accessMode: 'ReadWriteMany' },
     secrets: { runtimeToken: { existingSecret: 'a' }, roomSecret: { existingSecret: 'b' } }, rooms: { maxMemory: '16Gi' } })
-  assert.match(serviceOnly, /kubectl -n colloq port-forward svc\/colloq-app 3000:3000/)
+  assert.match(serviceOnly, /kubectl -n aulalab port-forward svc\/aulalab-app 3000:3000/)
   assert.match(serviceOnly, /Set config\.publicUrl/)
   assert.doesNotMatch(serviceOnly, /ReadWriteOnce|ArgoCD|rooms\.maxMemory is not set/)
 })
@@ -1055,29 +1055,29 @@ test('every rendered object is valid against the Kubernetes 1.30 schemas (KUBECO
 test('sign-in by proxy: the settings reach the app, inline keys are mounted read-only, and one key source is required', { skip }, async () => {
   const off = await render()
   assert.equal(configData(off).AUTH_JWT_JWKS_URL, undefined)
-  assert.equal(envOf(container(off, 'colloq-app')).AUTH_JWT_JWKS_FILE, undefined)
-  assert.equal(find(off, 'ConfigMap', 'colloq-sso-jwks'), undefined)
+  assert.equal(envOf(container(off, 'aulalab-app')).AUTH_JWT_JWKS_FILE, undefined)
+  assert.equal(find(off, 'ConfigMap', 'aulalab-sso-jwks'), undefined)
 
   const byUrl = configData(await render({ config: { sso: {
-    jwksUrl: 'https://teleport.bank.local/.well-known/jwks.json', issuer: 'bank', audience: 'https://colloq.bank.local',
-    teacherRoles: 'colloq-teacher', emailDomain: 'bank.local', claims: { email: 'traits.mail' },
+    jwksUrl: 'https://teleport.bank.local/.well-known/jwks.json', issuer: 'bank', audience: 'https://aulalab.bank.local',
+    teacherRoles: 'aulalab-teacher', emailDomain: 'bank.local', claims: { email: 'traits.mail' },
   } } }))
   assert.equal(byUrl.AUTH_JWT_JWKS_URL, 'https://teleport.bank.local/.well-known/jwks.json')
   assert.equal(byUrl.AUTH_JWT_HEADER, 'teleport-jwt-assertion')
   assert.equal(byUrl.AUTH_JWT_ISSUER, 'bank')
-  assert.equal(byUrl.AUTH_JWT_AUDIENCE, 'https://colloq.bank.local')
+  assert.equal(byUrl.AUTH_JWT_AUDIENCE, 'https://aulalab.bank.local')
   assert.equal(byUrl.AUTH_JWT_EMAIL_CLAIM, 'traits.mail')
   assert.equal(byUrl.AUTH_JWT_EMAIL_DOMAIN, 'bank.local')
-  assert.equal(byUrl.AUTH_JWT_TEACHER_ROLES, 'colloq-teacher')
+  assert.equal(byUrl.AUTH_JWT_TEACHER_ROLES, 'aulalab-teacher')
   assert.equal(byUrl.AUTH_JWT_OWNER_ROLES, undefined, 'an empty value is left out, so the app default applies')
 
   const jwks = JSON.stringify({ keys: [{ kty: 'EC', crv: 'P-256', kid: 'k1', x: 'f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU', y: 'x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0' }] })
   const inline = await render({ config: { sso: { jwks, audience: '*' } } })
-  assert.equal(find(inline, 'ConfigMap', 'colloq-sso-jwks').data['jwks.json'], jwks)
-  const app = container(inline, 'colloq-app')
-  assert.equal(envOf(app).AUTH_JWT_JWKS_FILE, '/etc/colloq-sso/jwks.json')
-  assert.ok(app.volumeMounts.some((m: Json) => m.name === 'sso-jwks' && m.mountPath === '/etc/colloq-sso' && m.readOnly === true))
-  assert.ok(deployment(inline, 'colloq-app').spec.template.spec.volumes.some((v: Json) => v.name === 'sso-jwks' && v.configMap?.name === 'colloq-sso-jwks'))
+  assert.equal(find(inline, 'ConfigMap', 'aulalab-sso-jwks').data['jwks.json'], jwks)
+  const app = container(inline, 'aulalab-app')
+  assert.equal(envOf(app).AUTH_JWT_JWKS_FILE, '/etc/aulalab-sso/jwks.json')
+  assert.ok(app.volumeMounts.some((m: Json) => m.name === 'sso-jwks' && m.mountPath === '/etc/aulalab-sso' && m.readOnly === true))
+  assert.ok(deployment(inline, 'aulalab-app').spec.template.spec.volumes.some((v: Json) => v.name === 'sso-jwks' && v.configMap?.name === 'aulalab-sso-jwks'))
 
   await refused({ config: { sso: { jwksUrl: 'https://teleport.bank.local/jwks', jwks, audience: '*' } } }, /jwksUrl or jwks, not both/)
   await refused({ config: { sso: { jwks: '[1, 2]', audience: '*' } } }, /must be a JWKS document/)

@@ -114,7 +114,7 @@ type FreezePress =
   | { done: 'refused'; words: string | null }
   | { done: 'aborted' }
 
-/** What `colloq-kernel:<name>` names now, as docker would inspect it. */
+/** What `aulalab-kernel:<name>` names now, as docker would inspect it. */
 const images = new Map<string, Image>()
 /** How `python -m pip freeze --all` goes in each image, by id. */
 const frozen = new Map<string, Played>()
@@ -126,7 +126,7 @@ let inspectTrouble: Played | null = null
  * the tag (its own suite, environment-inventory.test.mts, holds how).
  */
 const listOf = async (name: string): Promise<EnvironmentInventory> => {
-  if (!images.has(`colloq-kernel:${name}`)) throw new Error('Environment image is unavailable')
+  if (!images.has(`aulalab-kernel:${name}`)) throw new Error('Environment image is unavailable')
   return { name, python: '3.11.9', packages: [{ name: 'numpy', version: '2.1.3' }] }
 }
 
@@ -217,7 +217,7 @@ before(async () => {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
   base = `http://127.0.0.1:${(server.address() as { port: number }).port}`
 
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-freeze-render-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-freeze-render-'))
   // The window and the placeholder it draws while its list loads, each compiled for the server beside the other.
   for (const name of ['Skeleton', 'EnvironmentDetails']) {
     const source = await readFile(new URL(`../web/src/components/ui/${name}.svelte`, import.meta.url), 'utf8')
@@ -269,7 +269,7 @@ const FREEZE = 'matplotlib==3.9.2\nnumpy==2.1.3\npandas==2.2.3\npip==25.0.1\nsci
 /* ---------------------------------------------------------- the file */
 
 test('a built environment downloads its pip freeze under one line naming the environment, the image and its build', async () => {
-  images.set('colloq-kernel:base', { id: id('a'), created: '2026-10-20T09:15:02.123456789Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('a'), created: '2026-10-20T09:15:02.123456789Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(id('a'), { code: 0, stdout: FREEZE })
   const response = await download('base')
   assert.equal(response.status, 200)
@@ -288,12 +288,12 @@ test('a built environment downloads its pip freeze under one line naming the env
   const run = runs[0]!
   for (const flag of ['--rm', '--pull=never', '--network=none', '--read-only', '--cap-drop=ALL']) assert.ok(run.includes(flag), flag)
   assert.ok(run.includes(id('a')), 'the inspected immutable image, not the tag a rebuild moves')
-  assert.ok(!run.includes('colloq-kernel:base'))
+  assert.ok(!run.includes('aulalab-kernel:base'))
   assert.deepEqual(run.slice(run.indexOf(id('a')) + 1, run.indexOf(id('a')) + 5), ['-m', 'pip', 'freeze', '--all'])
 })
 
 test('a freeze is read once per image id: a second download only inspects, a rebuild reads afresh, an alias reuses it', async () => {
-  images.set('colloq-kernel:kaggle-base', { id: id('b'), created: '2026-10-01T08:00:00Z', platform: 'linux/amd64', python: '3.11.9' })
+  images.set('aulalab-kernel:kaggle-base', { id: id('b'), created: '2026-10-01T08:00:00Z', platform: 'linux/amd64', python: '3.11.9' })
   frozen.set(id('b'), { code: 0, stdout: 'catboost==1.2.7\npip==25.0.1\n' })
   const runsBefore = freezeRuns().length
   const inspectsBefore = inspects().length
@@ -304,7 +304,7 @@ test('a freeze is read once per image id: a second download only inspects, a reb
   assert.equal(inspects().length - inspectsBefore, 2, 'but the tag is asked each time: it may have moved')
 
   // Rebuilt: the tag names another image, and the file follows it.
-  images.set('colloq-kernel:kaggle-base', { id: id('c'), created: '2026-10-21T10:30:00Z', platform: 'linux/amd64', python: '3.11.9' })
+  images.set('aulalab-kernel:kaggle-base', { id: id('c'), created: '2026-10-21T10:30:00Z', platform: 'linux/amd64', python: '3.11.9' })
   frozen.set(id('c'), { code: 0, stdout: 'catboost==1.2.8\npip==25.0.1\n' })
   const rebuilt = await (await download('kaggle-base')).text()
   assert.equal(freezeRuns().length - runsBefore, 2)
@@ -312,7 +312,7 @@ test('a freeze is read once per image id: a second download only inspects, a reb
   assert.match(rebuilt, /^catboost==1\.2\.8$/m)
 
   // Another environment's tag on the very same image: the same freeze, under its own name.
-  images.set('colloq-kernel:base-gpu', { ...images.get('colloq-kernel:kaggle-base')! })
+  images.set('aulalab-kernel:base-gpu', { ...images.get('aulalab-kernel:kaggle-base')! })
   const alias = await (await download('base-gpu')).text()
   assert.equal(freezeRuns().length - runsBefore, 2, 'kept by the image, not by the name')
   assert.match(alias, new RegExp(`^# base-gpu · .* · image ${id('c')} · `))
@@ -320,7 +320,7 @@ test('a freeze is read once per image id: a second download only inspects, a reb
 })
 
 test('what pip says on stderr stays out of the file, and an image without a Python version names none', async () => {
-  images.set('colloq-kernel:base', { id: id('9'), created: '2026-10-21T09:00:00Z', platform: 'linux/amd64', python: '' })
+  images.set('aulalab-kernel:base', { id: id('9'), created: '2026-10-21T09:00:00Z', platform: 'linux/amd64', python: '' })
   frozen.set(id('9'), {
     code: 0,
     stderr: 'WARNING: Ignoring invalid distribution ~orch (/usr/local/lib/python3.11/site-packages)\n',
@@ -331,7 +331,7 @@ test('what pip says on stderr stays out of the file, and an image without a Pyth
 })
 
 test('downloads pressed together share one pip freeze', async () => {
-  images.set('colloq-kernel:kaggle-gpu', { id: id('d'), created: '2026-10-19T12:00:00Z', platform: 'linux/amd64', python: '3.11.9' })
+  images.set('aulalab-kernel:kaggle-gpu', { id: id('d'), created: '2026-10-19T12:00:00Z', platform: 'linux/amd64', python: '3.11.9' })
   frozen.set(id('d'), { code: 0, stdout: 'torch==2.5.1\n' })
   const before = freezeRuns().length
   const answers = await Promise.all([download('kaggle-gpu'), download('kaggle-gpu'), download('kaggle-gpu', 'teacher')])
@@ -341,24 +341,24 @@ test('downloads pressed together share one pip freeze', async () => {
 
 test('the class running on the image is never touched: the freeze has a container of its own, removed after', async () => {
   docker.add('freezeclass', 'room', { environment: 'base' })
-  images.set('colloq-kernel:base', { id: id('e'), created: '2026-10-21T11:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('e'), created: '2026-10-21T11:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(id('e'), { code: 0, stdout: FREEZE })
   const before = docker.calls.length
   assert.equal((await download('base')).status, 200)
   const asked = docker.calls.slice(before)
   assert.ok(!asked.some((args) => args[0] === 'exec'), 'nothing runs inside a room')
-  assert.ok(!asked.some((args) => args.some((arg) => arg.startsWith('colloq-room-'))), 'no room container is named')
-  assert.ok(docker.containers.get('colloq-room-freezeclass')?.running, 'the class is still running')
+  assert.ok(!asked.some((args) => args.some((arg) => arg.startsWith('aulalab-room-'))), 'no room container is named')
+  assert.ok(docker.containers.get('aulalab-room-freezeclass')?.running, 'the class is still running')
   const run = asked.find((args) => args[0] === 'run')!
   const container = run[run.indexOf('--name') + 1]!
-  assert.match(container, /^colloq-freeze-[0-9a-f-]{36}$/)
+  assert.match(container, /^aulalab-freeze-[0-9a-f-]{36}$/)
   assert.ok(asked.some((args) => args[0] === 'rm' && args.includes('-f') && args.at(-1) === container), 'the throwaway container is removed')
 })
 
 /* -------------------------------------------------- words, not a file */
 
 test('an environment with no image is refused in words that ask nobody to build, and docker is asked to run nothing', async () => {
-  images.delete('colloq-kernel:base-gpu')
+  images.delete('aulalab-kernel:base-gpu')
   const before = freezeRuns().length
   const response = await download('base-gpu', 'teacher')
   assert.equal(response.status, 409)
@@ -390,7 +390,7 @@ test('a docker that does not answer is said in its own words, and a failed read 
   }
 
   // An image without pip in it: the reason is python's, and it is not kept as the answer.
-  images.set('colloq-kernel:base', { id: id('f'), created: '2026-10-21T11:30:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('f'), created: '2026-10-21T11:30:00Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(id('f'), { code: 1, stderr: '/usr/local/bin/python: No module named pip\n' })
   const before = freezeRuns().length
   const failed = await download('base')
@@ -403,7 +403,7 @@ test('a docker that does not answer is said in its own words, and a failed read 
 })
 
 test('a failed run is said in stderr\'s last line, never in the package line its stdout ended on', async () => {
-  images.set('colloq-kernel:base', { id: id('1'), created: '2026-10-21T12:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('1'), created: '2026-10-21T12:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
   // Killed by the kernel's OOM halfway through: pins on stdout, the reason on stderr.
   frozen.set(id('1'), {
     code: 137,
@@ -415,7 +415,7 @@ test('a failed run is said in stderr\'s last line, never in the package line its
   assert.doesNotMatch(failed.error, /numpy/)
 
   // Nothing on stderr: the exit code, still not a package.
-  images.set('colloq-kernel:base', { id: id('2'), created: '2026-10-21T12:05:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('2'), created: '2026-10-21T12:05:00Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(id('2'), { code: 137, stdout: 'matplotlib==3.9.2\nnumpy==2.1.3\n' })
   const silent = await refusal(await download('base'))
   assert.match(silent.error, /pip freeze завершился с кодом 137/)
@@ -423,7 +423,7 @@ test('a failed run is said in stderr\'s last line, never in the package line its
 })
 
 test('a run that keeps printing is killed where it passes 1 MB, and nothing it prints after is kept', async () => {
-  images.set('colloq-kernel:base', { id: id('7'), created: '2026-10-21T11:45:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('7'), created: '2026-10-21T11:45:00Z', platform: 'linux/arm64', python: '3.11.9' })
   /*
    * A package's .pth that prints at every interpreter start, forever. Each
    * chunk counts how often it is decoded, which is what keeping one costs
@@ -459,7 +459,7 @@ test('a run that keeps printing is killed where it passes 1 MB, and nothing it p
 test('a run that stalls is given up at its timeout and said to be slow, not by the line it stalled on', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] })
   for (const [digit, printed] of [['3', 'matplotlib==3.9.2\nnumpy==2.1.3\n'], ['4', '']] as const) {
-    images.set('colloq-kernel:base', { id: id(digit), created: '2026-10-21T12:10:00Z', platform: 'linux/arm64', python: '3.11.9' })
+    images.set('aulalab-kernel:base', { id: id(digit), created: '2026-10-21T12:10:00Z', platform: 'linux/arm64', python: '3.11.9' })
     let stalled!: Child
     const started = new Promise<void>((resolve) => {
       frozen.set(id(digit), (made) => {
@@ -480,7 +480,7 @@ test('a run that stalls is given up at its timeout and said to be slow, not by t
 })
 
 test('under the release catalog the answer names the pinned image and where its freeze can be read, and asks docker nothing', async () => {
-  const image = `registry.test/colloq/kernel-base@sha256:${'9'.repeat(64)}`
+  const image = `registry.test/aulalab/kernel-base@sha256:${'9'.repeat(64)}`
   const catalog = path.join(TEST_ROOT, 'catalog-freeze.json')
   fs.writeFileSync(catalog, JSON.stringify({ schemaVersion: 1, release: 'r1', defaultEnvironment: 'base', environments: [{ name: 'base', image, gpu: false, current: true }] }))
   const saved = { KERNEL_BACKEND: process.env.KERNEL_BACKEND, KERNEL_CATALOG_FILE: process.env.KERNEL_CATALOG_FILE }
@@ -505,7 +505,7 @@ test('under the release catalog the answer names the pinned image and where its 
 })
 
 test('every teacher may download, as they read the lists; nobody signed out may', async () => {
-  images.set('colloq-kernel:base', { id: id('a'), created: '2026-10-20T09:15:02Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('a'), created: '2026-10-20T09:15:02Z', platform: 'linux/arm64', python: '3.11.9' })
   assert.equal((await download('base', 'teacher')).status, 200)
   const anonymous = await download('base', null)
   assert.equal(anonymous.status, 401)
@@ -524,7 +524,7 @@ const freezeButton = (html: string) => /<button\b[^>]*>[^<]*pip freeze[^<]*<\/bu
 const dialogTag = (html: string) => /<dialog\b[^>]*>/.exec(html)?.[0] ?? ''
 const footerTag = (html: string) => /<footer\b[^>]*>/.exec(html)?.[0] ?? ''
 const endpoint = '/api/admin/environments/base/freeze'
-const catalogImage = `registry.test/colloq/kernel-base@sha256:${'9'.repeat(64)}`
+const catalogImage = `registry.test/aulalab/kernel-base@sha256:${'9'.repeat(64)}`
 /** The window's words for a list on its way, and for one that failed. */
 const LISTING = /Читаем состав окружения/
 const LIST_FAILED = /Не удалось прочитать состав/
@@ -632,7 +632,7 @@ function page(answer: (path: string) => Promise<globalThis.Response>, signal = n
 const theRoute = (path: string) => fetch(`${base}${path}`, { headers: { cookie: staff('owner') } })
 
 test('the window\'s press saves the route\'s 200 as the file, and a refusal only as words', async () => {
-  images.set('colloq-kernel:base', { id: id('5'), created: '2026-10-21T12:20:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('5'), created: '2026-10-21T12:20:00Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(id('5'), { code: 0, stdout: FREEZE })
   const ok = page(theRoute)
   assert.deepEqual(await windowModule.pressFreeze('base', { endpoint, built: true, catalogImage: null }, ok.effects), { done: 'saved' })
@@ -643,7 +643,7 @@ test('the window\'s press saves the route\'s 200 as the file, and a refusal only
   assert.equal(file.text, `# base · Python 3.11.9 · linux/arm64 · image ${id('5')} · built 2026-10-21T12:20:00Z\n${FREEZE}`)
 
   // A list gone stale: the row said built, the image is gone since. The server's words, and no file.
-  images.delete('colloq-kernel:base-gpu')
+  images.delete('aulalab-kernel:base-gpu')
   const stale = page(theRoute)
   const refused = await windowModule.pressFreeze('base-gpu', { endpoint: '/api/admin/environments/base-gpu/freeze', built: true, catalogImage: null }, stale.effects)
   assert.equal(refused.done, 'refused')
@@ -762,7 +762,7 @@ function pin(c: Competition, image: string, packages: { name: string; version: s
 
 test('a competition window downloads the panel\'s very file for its environment, and one pip freeze serves both doors', async () => {
   expire()
-  images.set('colloq-kernel:base', { id: id('6'), created: '2026-10-22T08:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('6'), created: '2026-10-22T08:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(id('6'), { code: 0, stdout: FREEZE })
   const c = competition('base')
   const runs = freezeRuns().length
@@ -782,7 +782,7 @@ test('a competition window downloads the panel\'s very file for its environment,
 
 test('the freeze is open exactly where the window\'s list is: to anyone with a published competition\'s page, refused for a draft in the list\'s words', async () => {
   expire()
-  images.set('colloq-kernel:base', { id: id('6'), created: '2026-10-22T08:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('6'), created: '2026-10-22T08:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(id('6'), { code: 0, stdout: FREEZE })
   const elsewhere = competition('base')
   const outsider = participant(elsewhere.id, '@freeze_outsider')
@@ -831,7 +831,7 @@ test('a pinned competition\'s freeze is its pinned image\'s, the one its list sh
   expire()
   // The tag names the rebuilt image; the competition's revision keeps the one before, an id no other test plays.
   const before = `sha256:${'7a'.repeat(32)}`
-  images.set('colloq-kernel:kaggle-base', { id: id('8'), created: '2026-10-22T09:00:00Z', platform: 'linux/amd64', python: '3.11.9' })
+  images.set('aulalab-kernel:kaggle-base', { id: id('8'), created: '2026-10-22T09:00:00Z', platform: 'linux/amd64', python: '3.11.9' })
   frozen.set(id('8'), { code: 0, stdout: 'catboost==1.2.8\npip==25.0.1\n' })
   images.set(before, { id: before, created: '2026-09-01T08:00:00Z', platform: 'linux/amd64', python: '3.11.9' })
   frozen.set(before, { code: 0, stdout: 'catboost==1.2.7\npip==24.2\n' })
@@ -846,14 +846,14 @@ test('a pinned competition\'s freeze is its pinned image\'s, the one its list sh
   const file = await (await door(c.slug)).text()
   assert.equal(file, `# kaggle-base · Python 3.11.9 · linux/amd64 · image ${before} · built 2026-09-01T08:00:00Z\ncatboost==1.2.7\npip==24.2\n`)
   const run = freezeRuns().at(-1)!
-  assert.ok(run.includes(before) && !run.includes('colloq-kernel:kaggle-base'), 'the pinned image, by its id')
+  assert.ok(run.includes(before) && !run.includes('aulalab-kernel:kaggle-base'), 'the pinned image, by its id')
   // The panel's window reads the image the rooms start from now.
   assert.match(await (await download('kaggle-base')).text(), new RegExp(`^# kaggle-base · .* · image ${id('8')} · `))
 })
 
 test('a competition\'s freeze refuses in the panel\'s words where there is no image, and in its own where its pinned image is gone', async () => {
   expire()
-  images.delete('colloq-kernel:base-gpu')
+  images.delete('aulalab-kernel:base-gpu')
   const unbuilt = competition('base-gpu')
   const runs = freezeRuns().length
   const refused = await door(unbuilt.slug)
@@ -867,7 +867,7 @@ test('a competition\'s freeze refuses in the panel\'s words where there is no im
   assert.deepEqual(await list.json(), { error: tr('common.environmentUnavailable'), reason: 'unavailable', freeze: { built: false, catalogImage: null } })
 
   // Pinned to an image removed since: the list is the revision's still, and the freeze says what is gone.
-  images.set('colloq-kernel:kaggle-base', { id: id('8'), created: '2026-10-22T09:00:00Z', platform: 'linux/amd64', python: '3.11.9' })
+  images.set('aulalab-kernel:kaggle-base', { id: id('8'), created: '2026-10-22T09:00:00Z', platform: 'linux/amd64', python: '3.11.9' })
   images.delete(id('0'))
   const gone = competition('kaggle-base')
   pin(gone, id('0'), [{ name: 'catboost', version: '1.2.6' }])
@@ -896,7 +896,7 @@ test('a competition\'s freeze that fails is refused as its list is, in readable 
     assert.deepEqual(body, { error: tr('server.environmentFreeze.unavailable', { name: 'base' }), reason: 'unavailable' }, what)
     assert.doesNotMatch(body.error, /docker|daemon|\.sock|No module|private-host|ENOENT/i, what)
   }
-  images.set('colloq-kernel:base', { id: id('6'), created: '2026-10-22T08:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('6'), created: '2026-10-22T08:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
   const c = competition('base')
 
   // A daemon that does not answer: its socket stays on the server, and the panel's staff still read it.
@@ -915,7 +915,7 @@ test('a competition\'s freeze that fails is refused as its list is, in readable 
 
   // An image whose python has no pip: python's words stay on the server too.
   expire()
-  images.set('colloq-kernel:base', { id: pairId('5a'), created: '2026-10-22T08:30:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: pairId('5a'), created: '2026-10-22T08:30:00Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(pairId('5a'), { code: 1, stderr: '/usr/local/bin/python: No module named pip\n' })
   await readable(await door(c.slug), 'a run that failed')
   assert.match(warned.at(-1) ?? '', /could not be read: \/usr\/local\/bin\/python: No module named pip$/)
@@ -937,7 +937,7 @@ test('however many ask at once, a competition\'s window costs docker one inspect
   expire()
   t.mock.method(console, 'warn', () => {})
   const ready = pairId('5b')
-  images.set('colloq-kernel:base', { id: ready, created: '2026-10-22T10:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: ready, created: '2026-10-22T10:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(ready, { code: 0, stdout: FREEZE })
   const c = competition('base')
   const burst = (slug: string, tail: string) => Promise.all(Array.from({ length: 30 }, () => door(slug, null, tail)))
@@ -968,7 +968,7 @@ test('however many ask at once, a competition\'s window costs docker one inspect
 
   // An image whose freeze fails: every press of those seconds is told so by one container, and one more comes after.
   const failing = pairId('5e')
-  images.set('colloq-kernel:base', { id: failing, created: '2026-10-22T10:30:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: failing, created: '2026-10-22T10:30:00Z', platform: 'linux/arm64', python: '3.11.9' })
   frozen.set(failing, { code: 1, stderr: '/usr/local/bin/python: No module named pip\n' })
   expire()
   const before = freezeRuns().length
@@ -1013,7 +1013,7 @@ test('a pinned list answers while docker is still inspecting its image, untold o
 
 test('the list tells its window of the image only when asked: without `?freeze` it is the list it always was, and docker is not asked', async () => {
   expire()
-  images.set('colloq-kernel:base', { id: id('6'), created: '2026-10-22T08:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
+  images.set('aulalab-kernel:base', { id: id('6'), created: '2026-10-22T08:00:00Z', platform: 'linux/arm64', python: '3.11.9' })
   const c = competition('base')
   const listed = { name: 'base', python: '3.11.9', packages: [{ name: 'numpy', version: '2.1.3' }] }
   assert.deepEqual(await (await door(c.slug, null, '?freeze')).json(), { ...listed, freeze: { built: true, catalogImage: null } })
@@ -1023,8 +1023,8 @@ test('the list tells its window of the image only when asked: without `?freeze` 
 })
 
 test('under the release catalog a competition\'s freeze names the image it runs, its pin or the catalog\'s, and docker is asked nothing', async () => {
-  const current = `registry.test/colloq/kernel-base@sha256:${'9'.repeat(64)}`
-  const older = `registry.test/colloq/kernel-base@sha256:${'8'.repeat(64)}`
+  const current = `registry.test/aulalab/kernel-base@sha256:${'9'.repeat(64)}`
+  const older = `registry.test/aulalab/kernel-base@sha256:${'8'.repeat(64)}`
   const catalog = path.join(TEST_ROOT, 'catalog-competition-freeze.json')
   fs.writeFileSync(catalog, JSON.stringify({ schemaVersion: 1, release: 'r2', defaultEnvironment: 'base', environments: [{ name: 'base', image: current, gpu: false, current: true }] }))
   const unpinned = competition('base')

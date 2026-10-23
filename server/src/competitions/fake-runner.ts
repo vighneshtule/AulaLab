@@ -24,7 +24,7 @@
  * Layer two is a default that works by itself, without a single line in the
  * test. The runner READS the submitted notebook and looks for the line
  *
- *     # colloq-test: {"status": "timeout", "cell": 3}
+ *     # aulalab-test: {"status": "timeout", "cell": 3}
  *
  * If it is there, the runner carries it out; if not, it behaves like a
  * conscientious submission: it hands over the answer from the competition's
@@ -62,8 +62,8 @@ import {
 } from './runner-port.js'
 import type { RunVerdict } from '@shared/competitions'
 
-/** `# colloq-test: {...}` — all the stand-in runner ever reads from a notebook. */
-const DIRECTIVE = /^\s*#\s*colloq-test:\s*(\{.*\})\s*$/m
+/** `# aulalab-test: {...}` — all the stand-in runner ever reads from a notebook. */
+const DIRECTIVE = /^\s*#\s*aulalab-test:\s*(\{.*\})\s*$/m
 
 /** The sample answer in the open data — all competitions of this kind call it that. */
 export const SAMPLE_ANSWER_FILE = 'sample_submission.csv'
@@ -272,11 +272,11 @@ export class FakeCompetitionRunner implements CompetitionRunner {
     const stamp = createHash('sha256').update(notebook ?? Buffer.alloc(0)).digest('hex').slice(0, 16)
     // The directive travels to the metric through the answer itself: the
     // second step does not see the notebook.
-    const head = Object.keys(asked).length ? `# colloq-test: ${JSON.stringify(asked)}\n` : ''
+    const head = Object.keys(asked).length ? `# aulalab-test: ${JSON.stringify(asked)}\n` : ''
     const body = Buffer.concat([
       Buffer.from(head, 'utf8'),
       sample,
-      Buffer.from(`\n# colloq-run: ${stamp}\n`, 'utf8'),
+      Buffer.from(`\n# aulalab-run: ${stamp}\n`, 'utf8'),
       read ?? Buffer.alloc(0),
     ])
     competitionsFs.writeFileSync(answer, body, { mode: 0o600 })

@@ -1,5 +1,5 @@
 /**
- * The colloq framework: argv parsing, the dispatcher, refusals, the question,
+ * The aulalab framework: argv parsing, the dispatcher, refusals, the question,
  * output layout.
  *
  * No process is started here and no real file is read: sh is replaced by an
@@ -27,12 +27,12 @@ import {
 const ROOT = '/repo'
 
 const FILES: Record<string, string> = {
-  '/repo/package.json': '{ "name": "colloq", "version": "0.1.0" }',
-  '/repo/cli/package.json': '{ "name": "@colloq/cli", "version": "0.1.0" }',
+  '/repo/package.json': '{ "name": "aulalab", "version": "0.1.0" }',
+  '/repo/cli/package.json': '{ "name": "@aulalab/cli", "version": "0.1.0" }',
   '/repo/.env': [
     'PORT=4000',
     'KERNEL_ENV=cv',
-    'RELAY_DOMAIN=hse.colloq.ru',
+    'RELAY_DOMAIN=hse.example.edu',
     'VAST_GPU="RTX 4090"',
     'JUPYTER_TOKEN=secret',
   ].join('\n'),
@@ -101,19 +101,19 @@ function fakeCommands(): Command[] {
       aliases: ['log'],
       group: 'local',
       summary: 'Watch the log',
-      usage: 'colloq logs',
+      usage: 'aulalab logs',
       flags: [],
       destructive: false,
-      delegates: 'tail -f .colloq.log',
+      delegates: 'tail -f .aulalab.log',
       async run(ctx) {
-        return await ctx.sh.run('tail', ['-f', '.colloq.log'])
+        return await ctx.sh.run('tail', ['-f', '.aulalab.log'])
       },
     },
     {
       name: 'stop',
       group: 'local',
       summary: 'Stop the server',
-      usage: 'colloq stop',
+      usage: 'aulalab stop',
       flags: [],
       destructive: true,
       confirm: 'cli',
@@ -127,7 +127,7 @@ function fakeCommands(): Command[] {
       name: 'env use',
       group: 'env',
       summary: 'Make an environment the default',
-      usage: 'colloq env use <name> [--python <version>]',
+      usage: 'aulalab env use <name> [--python <version>]',
       args: [{ name: 'name', summary: 'Environment name', required: true }],
       flags: [{ name: 'python', arg: 'version', summary: 'Which Python' }],
       destructive: true,
@@ -145,7 +145,7 @@ function fakeCommands(): Command[] {
       name: 'status',
       group: 'tools',
       summary: 'What is running and how',
-      usage: 'colloq status',
+      usage: 'aulalab status',
       flags: [{ name: 'json', summary: 'Machine-readable output' }],
       destructive: false,
       delegates: 'native: status',
@@ -163,10 +163,10 @@ function fakeCommands(): Command[] {
 test("a command's name and its alias lead to the same call", async () => {
   const byName = await run(['logs'], { commands: fakeCommands() })
   assert.equal(byName.code, 0)
-  assert.deepEqual(byName.calls, [['tail', '-f', '.colloq.log']])
+  assert.deepEqual(byName.calls, [['tail', '-f', '.aulalab.log']])
 
   const byAlias = await run(['log'], { commands: fakeCommands() })
-  assert.deepEqual(byAlias.calls, [['tail', '-f', '.colloq.log']])
+  assert.deepEqual(byAlias.calls, [['tail', '-f', '.aulalab.log']])
 })
 
 test('a two-word name is parsed greedily, and the argument and the flag get through', async () => {
@@ -213,13 +213,13 @@ test('check fires before the question: without a terminal it is code 2, not 3', 
   const stop = commands.find((command) => command.name === 'stop')
   if (stop) {
     stop.check = () => {
-      throw new UsageError('that is not allowed', 'colloq stop', 'and here is why')
+      throw new UsageError('that is not allowed', 'aulalab stop', 'and here is why')
     }
   }
   const result = await run(['stop'], { commands, tty: false })
   assert.equal(result.code, 2)
   assert.deepEqual(result.calls, [])
-  assert.deepEqual(result.err, ['✗ that is not allowed', 'and here is why', '→ colloq stop'])
+  assert.deepEqual(result.err, ['✗ that is not allowed', 'and here is why', '→ aulalab stop'])
 })
 
 test('the question can be a function of ctx and can skip counting rooms', async () => {
@@ -275,7 +275,7 @@ test('a destructive command asks; "no" gives code 4 and "cancelled"', async () =
   assert.deepEqual(result.calls, [
     // CLASSES are counted, not containers: one class has two of them (pool.ts ·
     // KernelRole).
-    ['capture', 'docker', 'ps', '--filter', 'label=colloq.kind=room-kernel', '--format', '{{.Label "colloq.session"}}'],
+    ['capture', 'docker', 'ps', '--filter', 'label=aulalab.kind=room-kernel', '--format', '{{.Label "aulalab.session"}}'],
   ])
   assert.match(result.asked[0] ?? '', /stop the server\? \[y\/N\]/)
   assert.deepEqual(result.out, ['cancelled'])
@@ -308,7 +308,7 @@ test('an unknown command gives code 2 and one Levenshtein suggestion', async () 
   const result = await run(['statsu'], { commands: fakeCommands() })
   assert.equal(result.code, 2)
   assert.equal(result.calls.length, 0)
-  assert.match(result.err.join('\n'), /did you mean colloq status\?/)
+  assert.match(result.err.join('\n'), /did you mean aulalab status\?/)
 })
 
 test('the hyphenated name is the command itself: its checks, its question, its flags', async () => {
@@ -327,7 +327,7 @@ test('--help runs nothing: neither the hyphenated twin nor an unknown word', asy
   const twin = await run(['env-use', '--help'], { tty: true, answer: 'y' })
   assert.equal(twin.code, 0)
   assert.deepEqual(twin.calls, [])
-  assert.match(twin.out.join('\n'), /Usage: colloq env use/)
+  assert.match(twin.out.join('\n'), /Usage: aulalab env use/)
 
   const nothing = await run(['statsu', '--help'], { commands: fakeCommands(), tty: true })
   assert.equal(nothing.code, 2)
@@ -341,7 +341,7 @@ test("a bare group name shows the group's commands instead of guessing by letter
   assert.deepEqual(result.calls, [])
   const text = result.err.join('\n')
   assert.match(text, /env is a group of commands/)
-  assert.match(text, /colloq env use/)
+  assert.match(text, /aulalab env use/)
   assert.equal(/did you mean/.test(text), false)
 })
 
@@ -361,14 +361,14 @@ test('a bare call starts nothing: three lines about what lives here', async () =
     assert.deepEqual(result.asked, [])
     assert.deepEqual(result.calls, [])
     const text = result.out.join('\n')
-    assert.match(text, /colloq start/)
-    assert.match(text, /colloq host <name>/)
-    assert.match(text, /colloq stop/)
+    assert.match(text, /aulalab start/)
+    assert.match(text, /aulalab host <name>/)
+    assert.match(text, /aulalab stop/)
   }
   const help = await run(['--help'])
   assert.equal(help.code, 0)
   assert.deepEqual(help.calls, [])
-  assert.match(help.out.join('\n'), /Most used: colloq start/)
+  assert.match(help.out.join('\n'), /Most used: aulalab start/)
 })
 
 test("help lists exactly the teacher's commands, without the workshop and the menu", async () => {
@@ -378,7 +378,7 @@ test("help lists exactly the teacher's commands, without the workshop and the me
   for (const title of ['Locally', 'Class online', 'Kernel environments', 'Tools']) {
     assert.match(text, new RegExp(title))
   }
-  for (const gone of ['vast', 'cluster', 'relay', 'menu', 'colloq make', 'colloq dev']) {
+  for (const gone of ['vast', 'cluster', 'relay', 'menu', 'aulalab make', 'aulalab dev']) {
     assert.equal(text.includes(gone), false, gone)
   }
   assert.equal((await run(['menu'])).code, 2)
@@ -388,7 +388,7 @@ test('help for a command shows the usage and the delegation line', async () => {
   const result = await run(['env', 'use', '--help'], { commands: fakeCommands() })
   assert.equal(result.code, 0)
   const text = result.out.join('\n')
-  assert.match(text, /Usage: colloq env use <name>/)
+  assert.match(text, /Usage: aulalab env use <name>/)
   assert.match(text, /delegates: \.\/scripts\/env\.sh <name>/)
 })
 
@@ -417,11 +417,11 @@ test('kv and hint keep their indents, and the note is separated by a dot and unc
   const out: string[] = []
   const ui = createUi({ out: (line) => void out.push(line) })
   ui.kv('port', '4000')
-  ui.kv('environment', 'cv', 'switch: colloq env use <name>')
+  ui.kv('environment', 'cv', 'switch: aulalab env use <name>')
   ui.hint('to change it: PORT in .env')
   assert.deepEqual(out, [
     '  port        4000',
-    '  environment cv · switch: colloq env use <name>',
+    '  environment cv · switch: aulalab env use <name>',
     '      → to change it: PORT in .env',
   ])
 })
@@ -456,7 +456,7 @@ test('.env is read as in scripts/lib.sh: the ends are trimmed, the inside is not
   assert.equal(env.port(), 4000)
   assert.equal(env.kernelEnv(), 'cv')
   assert.equal(env.read('VAST_GPU'), 'RTX 4090')
-  assert.equal(env.relay().domain, 'hse.colloq.ru')
+  assert.equal(env.relay().domain, 'hse.example.edu')
   assert.equal(env.relay().port, 7000)
 })
 
@@ -481,12 +481,12 @@ test("userPath resolves from the person's directory, not from the root", () => {
 })
 
 test('the --dry-run line is quoted safely and does not substitute .env', () => {
-  assert.equal(quote('hse.colloq.ru'), 'hse.colloq.ru')
+  assert.equal(quote('hse.example.edu'), 'hse.example.edu')
   assert.equal(quote('RTX 4090'), "'RTX 4090'")
   assert.equal(quote(''), "''")
   assert.equal(
-    commandLine('./scripts/host.sh', [], { COLLOQ_HOSTNAME: 'hse.colloq.ru' }),
-    'COLLOQ_HOSTNAME=hse.colloq.ru ./scripts/host.sh',
+    commandLine('./scripts/host.sh', [], { AULALAB_HOSTNAME: 'hse.example.edu' }),
+    'AULALAB_HOSTNAME=hse.example.edu ./scripts/host.sh',
   )
 })
 
@@ -561,11 +561,11 @@ test('registry: usage names every flag of the command', () => {
   }
 })
 
-test('registry: summary in English, usage starts with "colloq ", delegates not empty', () => {
+test('registry: summary in English, usage starts with "aulalab ", delegates not empty', () => {
   for (const command of registry) {
     assert.match(command.summary, /[A-Za-z]/, 'summary without a single letter: ' + command.name)
     assert.doesNotMatch(command.summary, /[а-яА-ЯёЁ]/, 'summary not in English: ' + command.name)
-    assert.ok(command.usage.startsWith('colloq '), 'usage without colloq: ' + command.name)
+    assert.ok(command.usage.startsWith('aulalab '), 'usage without aulalab: ' + command.name)
     assert.notEqual(command.delegates.trim(), '', 'no delegates: ' + command.name)
     assert.ok(command.name.length <= 18, 'the name will not fit in help: ' + command.name)
   }

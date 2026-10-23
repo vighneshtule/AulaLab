@@ -182,7 +182,7 @@ export default {
         // the two are not interchangeable and the rail is where the difference
         // shows, because three of these labels stack in one column.
         section: '0.2em',
-        // The COLLOQ lockup only. Wider than label, because six letters have to
+        // The AULALAB lockup only. Wider than label, because six letters have to
         // hold together as a mark rather than read as a word.
         wordmark: '0.22em',
         // The institution line trailing the lockup — a step tighter than the

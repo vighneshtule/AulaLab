@@ -20,7 +20,7 @@
    * at the end of a feed that first has to be scrolled.
    *
    * Names in an answer are live. The model calls people by name (or by an
-   * `S7` label if names on this Colloq are not sent to it), and a "label →
+   * `S7` label if names on this Aula Lab are not sent to it), and a "label →
    * person" dictionary arrives with the answer; here the label turns into a
    * chip that opens the work. The text is parsed by a pure function in
    * lib/council-oracle-answer.ts: a naive substring replacement would eat

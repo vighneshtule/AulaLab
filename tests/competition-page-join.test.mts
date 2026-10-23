@@ -301,7 +301,7 @@ let List: Component<any>
 let KeyPanel: Component<any>
 
 before(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-join-step-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-join-step-'))
   const compiled = new Map<string, string>()
   async function load(name: string): Promise<Component<any>> {
     const source = await readFile(new URL(`../web/src/components/competitions/${name}.svelte`, import.meta.url), 'utf8')

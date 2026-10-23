@@ -105,7 +105,7 @@ export function colorAllowed(env: NodeJS.ProcessEnv, isTty: boolean): boolean {
 /**
  * Writing to a stream that may have been closed from the other end.
  *
- * `colloq doctor | head` closes the pipe at the tenth line, and the next write
+ * `aulalab doctor | head` closes the pipe at the tenth line, and the next write
  * throws EPIPE. For us this is not an error: the reader has had enough. We go
  * quiet silently, exactly as ordinary utilities do.
  */

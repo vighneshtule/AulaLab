@@ -1,12 +1,12 @@
 /**
- * The public pages are the only Colloq addresses that get opened from a phone,
+ * The public pages are the only Aula Lab addresses that get opened from a phone,
  * from home, a week after the class. And they are also the only place in the
  * product with no socket, no kernel and few pure functions: most of it is
  * markup, and markup breaks quietly and reverts with one line.
  *
  * What is checked is what can be checked without a browser: that course rows
  * are real links, that the class page has tabs a phone can scroll and a
- * table of contents that pushes anchors, that the tab title is not "Colloq",
+ * table of contents that pushes anchors, that the tab title is not "Aula Lab",
  * that the addresses are the ones read out loud, and that a clipboard refusal
  * is visible. The date rules live in course-now.test.mts; layout and the
  * accessibility tree live in scripts/ui-check.mts.
@@ -283,15 +283,15 @@ test('both public pages carry the theme switch', () => {
 
 test('the tab of a course or a class carries its own name', () => {
   /*
-   * The course page is the only Colloq address a person bookmarks, and a class
+   * The course page is the only Aula Lab address a person bookmarks, and a class
    * page is the one sent around in chats. In bookmarks, the history and the
-   * tab switcher every one of them was called "Colloq".
+   * tab switcher every one of them was called "Aula Lab".
    */
-  assert.match(SCREEN, /document\.title = named === null \? 'Colloq' : `\$\{named\} · Colloq`/)
+  assert.match(SCREEN, /document\.title = named === null \? 'Aula Lab' : `\$\{named\} · Aula Lab`/)
   assert.match(SCREEN, /`\$\{ordinal\(page\.n\)\} · \$\{page\.title\}`/, 'the class number is not in the title')
   assert.match(
     SCREEN,
-    /document\.title = 'Colloq'/,
+    /document\.title = 'Aula Lab'/,
     'the title is not restored on exit: the page name would stay hanging over the room',
   )
 })
@@ -442,19 +442,19 @@ test('the browser offers its room keys newest first, capped at the door\'s limit
       broken: { token: 'no-payload' },
       empty: { token: '' },
     }
-    store.set('colloq.identity.v1', JSON.stringify(map))
+    store.set('aulalab.identity.v1', JSON.stringify(map))
     const { newest, middle, old } = map
     assert.deepEqual(storedTokens(), [newest.token, middle.token, old.token, 'no-payload'])
     assert.deepEqual(storedTokens(2), [map.newest.token, map.middle.token])
 
     const many: Record<string, { token: string }> = {}
     for (let i = 0; i < MAX_DOOR_TOKENS + 10; i++) many[`r${i}`] = { token: minted(i) }
-    store.set('colloq.identity.v1', JSON.stringify(many))
+    store.set('aulalab.identity.v1', JSON.stringify(many))
     const sent = storedTokens()
     assert.equal(sent.length, MAX_DOOR_TOKENS, 'the default cap is not the server\'s')
     assert.equal(sent[0], many[`r${MAX_DOOR_TOKENS + 9}`].token)
 
-    store.set('colloq.identity.v1', '{not json')
+    store.set('aulalab.identity.v1', '{not json')
     assert.deepEqual(storedTokens(), [])
   } finally {
     if (real) Object.defineProperty(globalThis, 'localStorage', real)

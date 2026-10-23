@@ -1,16 +1,16 @@
 {
-  "name": "colloq",
+  "name": "aulalab",
   "private": true,
   "version": "0.27.0",
   "description": "One link, one live notebook, one AI. Self-hosted workspace for technical seminars.",
   "license": "MIT",
-  "homepage": "https://colloq.ru",
+  "homepage": "https://github.com/vighneshtule/AulaLab",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/colloq-edu/colloq.git"
+    "url": "git+https://github.com/vighneshtule/AulaLab.git"
   },
   "bugs": {
-    "url": "https://github.com/colloq-edu/colloq/issues"
+    "url": "https://github.com/vighneshtule/AulaLab/issues"
   },
   "workspaces": [
     "server",
@@ -23,12 +23,12 @@
   },
   "scripts": {
     "dev": "node --import tsx cli/src/launch.ts dev",
-    "dev:server": "npm run dev -w @colloq/server",
-    "dev:web": "npm run dev -w @colloq/web",
-    "build": "npm run build -w @colloq/web && npm run build -w @colloq/server && npm run build -w @colloq/runtime",
-    "build:optimized": "npm run build:optimized -w @colloq/web && npm run build -w @colloq/server && npm run build -w @colloq/runtime",
+    "dev:server": "npm run dev -w @aulalab/server",
+    "dev:web": "npm run dev -w @aulalab/web",
+    "build": "npm run build -w @aulalab/web && npm run build -w @aulalab/server && npm run build -w @aulalab/runtime",
+    "build:optimized": "npm run build:optimized -w @aulalab/web && npm run build -w @aulalab/server && npm run build -w @aulalab/runtime",
     "start": "node server/dist/server.js",
-    "typecheck": "npm run typecheck -w @colloq/server && npm run typecheck -w @colloq/web && npm run typecheck -w @colloq/runtime && npm run typecheck -w @colloq/cli",
+    "typecheck": "npm run typecheck -w @aulalab/server && npm run typecheck -w @aulalab/web && npm run typecheck -w @aulalab/runtime && npm run typecheck -w @aulalab/cli",
     "e2e": "tsx scripts/e2e.mts",
     "perf": "tsx scripts/perf.mts",
     "test": "node --import tsx --import ./tests/_cli.mts --test --test-force-exit --test-concurrency=1 tests/*.test.mts",

@@ -2,11 +2,11 @@
  * The owner's enrollment code for the machines that run this instance's
  * submissions («машины для посылок», docs/architecture/remote-runners.md §6),
  * minted on the instance itself: the path when the panel cannot be reached,
- * kept next to Teleport SSH. `colloq-host runner-code` runs it through the
+ * kept next to Teleport SSH. `aulalab-host runner-code` runs it through the
  * image's entry point (deploy/vast/entrypoint.sh · runner_code), as the
  * server's own user and on the database the running server holds open.
  *
- * THE CONTRACT, which the entry point and colloq-host already speak:
+ * THE CONTRACT, which the entry point and aulalab-host already speak:
  *
  *   node dist/runner-code.js --machines N --hours H [--trusted | --classes] [--slots S] [--prefix NAME]
  *
@@ -16,7 +16,7 @@
  * («Принимать занятия», docs/architecture/remote-classes.md D2; never both,
  * D3), offers at most S places per machine with --slots, and names the
  * machines it enrolls after NAME. The code is shown once, inside the join
- * commands colloq-host prints around it; home keeps only its sha256.
+ * commands aulalab-host prints around it; home keeps only its sha256.
  * Anything else — a refusal included — goes to stderr with a non-zero exit
  * (64 for a call that does not parse, 2 for one the minter refuses), and
  * nothing to stdout.
@@ -31,7 +31,7 @@
  * AND THE SAME LINE IN THE AUDIT LOG: `runner.code_minted`, as the panel
  * records it (routes/admin-runners.ts), with no actor — nobody signs in on
  * the console, whoever holds its root shell mints — and `source:
- * 'colloq-host'` in its detail, which the Audit log shows as the server's
+ * 'aulalab-host'` in its detail, which the Audit log shows as the server's
  * console (web/src/admin/audit.ts · auditActorless). The code itself never.
  *
  * WHAT THE LOG BRINGS ALONG. admin/audit-log.ts drops and makes again its
@@ -83,12 +83,12 @@ function parseRunnerCodeArgs(argv: readonly string[]): Asked | string {
 function main(argv: readonly string[]): number {
   const asked = parseRunnerCodeArgs(argv)
   if (typeof asked === 'string') {
-    process.stderr.write(`colloq runner-code: ${asked} (usage: --machines N --hours H [--trusted | --classes] [--slots S] [--prefix NAME])\n`)
+    process.stderr.write(`aulalab runner-code: ${asked} (usage: --machines N --hours H [--trusted | --classes] [--slots S] [--prefix NAME])\n`)
     return 64
   }
   const input = {
     machines: asked.machines, hours: asked.hours, trusted: asked.trusted, classes: asked.classes, approvedSlots: asked.slots, namePrefix: asked.prefix,
-    createdBy: 'colloq-host',
+    createdBy: 'aulalab-host',
   }
   const refusal = mintRefusal(input)
   if (refusal) {
@@ -99,7 +99,7 @@ function main(argv: readonly string[]): number {
       prefix: '--prefix is a short name: letters, digits and hyphens, up to 32',
       classes: '--classes and --trusted do not go together: a machine that takes classes is never given the hidden test',
     }[refusal]
-    process.stderr.write(`colloq runner-code: ${why}\n`)
+    process.stderr.write(`aulalab runner-code: ${why}\n`)
     return 2
   }
   const minted = mintRemoteCode(input)
@@ -108,7 +108,7 @@ function main(argv: readonly string[]): number {
     actor: null,
     action: 'runner.code_minted',
     target: { type: 'runner_code', id: minted.id, label: input.namePrefix || null },
-    detail: { machines: minted.machines, hours: input.hours, trusted: minted.trusted, classes: minted.classes, approvedSlots: minted.approvedSlots, source: 'colloq-host' },
+    detail: { machines: minted.machines, hours: input.hours, trusted: minted.trusted, classes: minted.classes, approvedSlots: minted.approvedSlots, source: 'aulalab-host' },
   })
   process.stdout.write(`${JSON.stringify({ code: minted.code, expiresAt: minted.expiresAt, machines: minted.machines, trusted: minted.trusted, classes: minted.classes })}\n`)
   return 0
@@ -117,7 +117,7 @@ function main(argv: readonly string[]): number {
 try {
   process.exitCode = main(process.argv.slice(2))
 } catch (error) {
-  process.stderr.write(`colloq runner-code: ${error instanceof Error ? error.message : String(error)}\n`)
+  process.stderr.write(`aulalab runner-code: ${error instanceof Error ? error.message : String(error)}\n`)
   process.exitCode = 2
 }
 // The database module keeps a checkpoint timer (unref'd) and the code is written: nothing is left to wait for.

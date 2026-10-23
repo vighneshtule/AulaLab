@@ -59,7 +59,7 @@ before(async () => {
     if (req.method === 'POST') {
       if (req.url?.endsWith('/own') && holdOwn) await holdOwn
       return res.end(JSON.stringify({
-        url: 'http://colloq-room-x.colloq.svc:8888',
+        url: 'http://aulalab-room-x.aulalab.svc:8888',
         token: 't'.repeat(64),
         instanceId: `pod-${req.url}`,
         environment: body.environment,

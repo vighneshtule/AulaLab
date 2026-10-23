@@ -94,7 +94,6 @@
 
 <script lang="ts">
   import { tr } from '@shared/i18n'
-  import LanguageMenu from '@/admin/ui/LanguageMenu.svelte'
   import type { Snippet } from 'svelte'
   import Avatar from '@/components/ui/Avatar.svelte'
   import Icon, { type IconName } from '@/components/ui/Icon.svelte'
@@ -315,7 +314,7 @@
                focus-visible:ring-accent/30 md:justify-start"
       >
         <div class="hidden w-full md:block">
-          <Wordmark version={'v' + __COLLOQ_VERSION__} />
+          <Wordmark version={'v' + __AULALAB_VERSION__} />
         </div>
         <!-- The mark alone: the lockup is a word at 0.22em tracking and there is
              no room for a word here. -->
@@ -327,7 +326,7 @@
     {@render section(tr("admin.instance"), INSTANCE, false)}
 
     {#if adminAuth.isOwner}
-      <LanguageMenu />
+      <div class="mt-auto shrink-0 border-t border-white/15 px-5 py-3 text-xs text-white/75">English</div>
     {/if}
 
     {#if teacher}

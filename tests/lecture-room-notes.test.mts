@@ -49,7 +49,7 @@ before(async () => {
     value: { getItem: () => null, setItem: () => {} },
     configurable: true,
   })
-  dir = await mkdtemp(path.join(tmpdir(), 'colloq-notes-pad-'))
+  dir = await mkdtemp(path.join(tmpdir(), 'aulalab-notes-pad-'))
   // The session and the icon set stand in: neither is what is checked here.
   const session = path.join(dir, 'session.mjs')
   await writeFile(session, 'export function getSessionState() { return globalThis.__notesPadSession }\n')

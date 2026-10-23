@@ -30,11 +30,11 @@ const catalog = parseRuntimeCatalog({
     { name: 'gpu', image: `registry.example/gpu@sha256:${digest}`, gpu: true },
   ],
 })
-const base: WorkloadConfig = { namespace: 'colloq', workspaceClaim: 'colloq-workspace', memory: '2Gi', cpu: '2', ephemeral: '2Gi' }
+const base: WorkloadConfig = { namespace: 'aulalab', workspaceClaim: 'aulalab-workspace', memory: '2Gi', cpu: '2', ephemeral: '2Gi' }
 const APP_AFFINITY = {
   podAffinity: {
     requiredDuringSchedulingIgnoredDuringExecution: [
-      { labelSelector: { matchLabels: { 'colloq.dev/role': 'app' } }, topologyKey: 'kubernetes.io/hostname' },
+      { labelSelector: { matchLabels: { 'aulalab.dev/role': 'app' } }, topologyKey: 'kubernetes.io/hostname' },
     ],
   },
 }
@@ -88,7 +88,7 @@ class Cluster implements KubernetesClient {
     return structuredClone(object) as T
   }
   pod(id: string, suffix = ''): KubeObject {
-    return this.objects.get(`/api/v1/namespaces/colloq/pods/${roomName(id)}${suffix}`)!
+    return this.objects.get(`/api/v1/namespaces/aulalab/pods/${roomName(id)}${suffix}`)!
   }
 }
 function broker(config: Partial<WorkloadConfig> = {}, kube = new Cluster()) {
@@ -130,7 +130,7 @@ test('with every setting absent a room Pod is the Pod of 0.9 plus a liveness pro
       tcpSocket: { port: 8888 }, initialDelaySeconds: 30, periodSeconds: 30, timeoutSeconds: 5, failureThreshold: 10,
     })
   assert.deepEqual(Object.keys(plain.metadata.labels!).sort(), [
-    'app.kubernetes.io/managed-by', 'colloq.dev/environment', 'colloq.dev/role', 'colloq.dev/session', 'colloq.kind',
+    'app.kubernetes.io/managed-by', 'aulalab.dev/environment', 'aulalab.dev/role', 'aulalab.dev/session', 'aulalab.kind',
   ])
 })
 
@@ -149,7 +149,7 @@ test('room Pods created by 0.9, a plain and a GPU one, are adopted with their Py
     const first = await runtime.ensure(id, { environment })
     const pod = kube.pod(id)
     delete pod.spec.containers[0].livenessProbe
-    pod.metadata.annotations!['colloq.dev/template-hash'] = golden
+    pod.metadata.annotations!['aulalab.dev/template-hash'] = golden
     const again = await runtime.ensure(id, { environment })
     assert.equal(again.instanceId, first.instanceId, environment)
     assert.deepEqual(kube.deletes, [], environment)
@@ -160,7 +160,7 @@ test('room Pods created by 0.9, a plain and a GPU one, are adopted with their Py
   // Another hash is another template.
   const { kube, runtime } = broker()
   const first = await runtime.ensure('roomC', { environment: 'base' })
-  kube.pod('roomC').metadata.annotations!['colloq.dev/template-hash'] = 'f'.repeat(64)
+  kube.pod('roomC').metadata.annotations!['aulalab.dev/template-hash'] = 'f'.repeat(64)
   assert.notEqual((await runtime.ensure('roomC', { environment: 'base' })).instanceId, first.instanceId)
 })
 
@@ -191,16 +191,16 @@ const kaggleGpu = parseRuntimeCatalog({ schemaVersion: 1, release: 'v1', default
 function competition(policy: Record<string, unknown>, list = kaggle) {
   const created: KubeObject[] = []
   const objects = new Map<string, any>()
-  objects.set('/api/v1/namespaces/colloq/persistentvolumeclaims/colloq-data', { metadata: { name: 'colloq-data' } })
+  objects.set('/api/v1/namespaces/aulalab/persistentvolumeclaims/aulalab-data', { metadata: { name: 'aulalab-data' } })
   for (const name of ['competition-job-isolation', 'competition-resolver-isolation', 'competition-proxy-isolation'])
-    objects.set(`/apis/networking.k8s.io/v1/namespaces/colloq/networkpolicies/${name}`, { metadata: { name } })
+    objects.set(`/apis/networking.k8s.io/v1/namespaces/aulalab/networkpolicies/${name}`, { metadata: { name } })
   const kube = { async request<T>(method: string, path: string, body?: any): Promise<T> {
     const key = path.split('?')[0]
     if (method === 'GET' && (key.endsWith('/pods') || key.endsWith('/services'))) return { items: [], metadata: {} } as T
     if (method === 'GET') return (objects.get(key) ?? (() => { throw Object.assign(new Error('missing'), { status: 404 }) })()) as T
     if (method === 'POST') {
       const object = { ...body, metadata: { ...body.metadata, uid: `${objects.size + 1}` },
-        ...(body.metadata?.labels?.['colloq.dev/role'] === 'competition-proxy' ? { status: { phase: 'Running', conditions: [{ type: 'Ready', status: 'True' }] } } : {}) }
+        ...(body.metadata?.labels?.['aulalab.dev/role'] === 'competition-proxy' ? { status: { phase: 'Running', conditions: [{ type: 'Ready', status: 'True' }] } } : {}) }
       objects.set(`${key}/${object.metadata.name}`, object)
       if (object.kind === 'Pod') created.push(object)
       return object as T
@@ -208,24 +208,24 @@ function competition(policy: Record<string, unknown>, list = kaggle) {
     return {} as T
   } }
   const jobs = new CompetitionJobs({ kube, catalog: () => list, secret: () => 'x'.repeat(64),
-    config: { namespace: 'colloq', dataClaim: 'colloq-data', exporterImage: `registry.example/runtime@sha256:${'d'.repeat(64)}`, instanceId: 'instance123', ...policy } })
+    config: { namespace: 'aulalab', dataClaim: 'aulalab-data', exporterImage: `registry.example/runtime@sha256:${'d'.repeat(64)}`, instanceId: 'instance123', ...policy } })
   return { jobs, created }
 }
 
 test('competition job and resolver Pods mount the data claim and are co-located; the package proxy is not', async () => {
-  const { jobs, created } = competition({ colocateWithApp: true, priorityClass: 'colloq-batch' })
+  const { jobs, created } = competition({ colocateWithApp: true, priorityClass: 'aulalab-batch' })
   await jobs.start(jobId, { schemaVersion: 1, jobId, kind: 'notebook', environment: 'kaggle-base', revision, limits, competitionId: 'abcd2345', submissionId: 'efgh2345', attemptId })
   const resolverJob = 'e'.repeat(32)
   await jobs.start(resolverJob, { schemaVersion: 1, jobId: resolverJob, kind: 'resolve', environment: 'kaggle-base', revision, limits, preparationId: attemptId })
-  const byRole = (role: string) => created.filter((pod) => pod.metadata.labels?.['colloq.dev/role'] === role)
+  const byRole = (role: string) => created.filter((pod) => pod.metadata.labels?.['aulalab.dev/role'] === role)
   const [job] = byRole('competition-job'), [resolver] = byRole('competition-resolver'), [proxy] = byRole('competition-proxy')
   for (const pod of [job, resolver]) {
-    assert.ok(pod.spec.volumes.some((v: any) => v.persistentVolumeClaim?.claimName === 'colloq-data'), 'mounts the data claim')
+    assert.ok(pod.spec.volumes.some((v: any) => v.persistentVolumeClaim?.claimName === 'aulalab-data'), 'mounts the data claim')
     assert.deepEqual(pod.spec.affinity, APP_AFFINITY)
   }
   assert.equal(proxy.spec.volumes.some((v: any) => v.persistentVolumeClaim), false)
   assert.equal(proxy.spec.affinity, undefined, 'a Pod without a claim is free to run anywhere')
-  for (const pod of [job, resolver, proxy]) assert.equal(pod.spec.priorityClassName, 'colloq-batch')
+  for (const pod of [job, resolver, proxy]) assert.equal(pod.spec.priorityClassName, 'aulalab-batch')
   // Without the rooms' placement set, nobody gets a node selector.
   for (const pod of [job, resolver, proxy]) assert.equal(pod.spec.nodeSelector, undefined)
   /*
@@ -243,12 +243,12 @@ test('competition job and resolver Pods mount the data claim and are co-located;
 })
 
 test("student code goes where rooms go: job and resolver Pods take the rooms' node selector and tolerations, the proxy does not", async () => {
-  const toleration = { key: 'colloq/students', operator: 'Exists', effect: 'NoSchedule' }
+  const toleration = { key: 'aulalab/students', operator: 'Exists', effect: 'NoSchedule' }
   const { jobs, created } = competition({ studentNodeSelector: { pool: 'students' }, studentTolerations: [toleration] })
   await jobs.start(jobId, { schemaVersion: 1, jobId, kind: 'notebook', environment: 'kaggle-base', revision, limits, competitionId: 'abcd2345', submissionId: 'efgh2345', attemptId })
   const resolverJob = 'f'.repeat(32)
   await jobs.start(resolverJob, { schemaVersion: 1, jobId: resolverJob, kind: 'resolve', environment: 'kaggle-base', revision, limits, preparationId: attemptId })
-  const byRole = (role: string) => created.filter((pod) => pod.metadata.labels?.['colloq.dev/role'] === role)
+  const byRole = (role: string) => created.filter((pod) => pod.metadata.labels?.['aulalab.dev/role'] === role)
   const [job] = byRole('competition-job'), [resolver] = byRole('competition-resolver'), [proxy] = byRole('competition-proxy')
   for (const pod of [job, resolver]) {
     assert.deepEqual(pod.spec.nodeSelector, { pool: 'students' })
@@ -259,7 +259,7 @@ test("student code goes where rooms go: job and resolver Pods take the rooms' no
 })
 
 test("a notebook given a card goes where GPU rooms go; the metric, the resolver and the proxy where they always went", async () => {
-  const toleration = { key: 'colloq/students', operator: 'Exists', effect: 'NoSchedule' }
+  const toleration = { key: 'aulalab/students', operator: 'Exists', effect: 'NoSchedule' }
   const gpuToleration = { key: 'nvidia.com/gpu', operator: 'Exists', effect: 'NoSchedule' }
   const { jobs, created } = competition({
     studentNodeSelector: { pool: 'students' }, studentTolerations: [toleration],
@@ -271,7 +271,7 @@ test("a notebook given a card goes where GPU rooms go; the metric, the resolver 
   const metricJob = 'c'.repeat(32), resolverJob = 'f'.repeat(32)
   await jobs.start(metricJob, { ...submission, jobId: metricJob, kind: 'metric' })
   await jobs.start(resolverJob, { schemaVersion: 1, jobId: resolverJob, kind: 'resolve', environment: 'kaggle-gpu', revision, limits, preparationId: attemptId })
-  const byJob = (id: string, role = 'competition-job') => created.find((pod) => pod.metadata.labels?.['colloq.dev/job'] === id && pod.metadata.labels?.['colloq.dev/role'] === role)!
+  const byJob = (id: string, role = 'competition-job') => created.find((pod) => pod.metadata.labels?.['aulalab.dev/job'] === id && pod.metadata.labels?.['aulalab.dev/role'] === role)!
   const notebook = byJob(jobId)
   assert.equal(notebook.spec.runtimeClassName, 'nvidia')
   assert.deepEqual(notebook.spec.nodeSelector, { pool: 'students', 'nvidia.com/gpu.present': 'true' })
@@ -311,7 +311,7 @@ test('room placement reaches room and personal Pods; GPU placement only GPU room
     roomTolerations: [toleration],
     gpuNodeSelector: { 'nvidia.com/gpu.present': 'true' },
     gpuTolerations: [gpuToleration],
-    priorityClass: 'colloq-rooms',
+    priorityClass: 'aulalab-rooms',
   })
   await runtime.ensure('cpuRoom', { environment: 'base' })
   await runtime.ensure('gpuRoom', { environment: 'gpu' })
@@ -325,14 +325,14 @@ test('room placement reaches room and personal Pods; GPU placement only GPU room
   assert.deepEqual(own.spec.nodeSelector, { 'node-role.example/edu': 'true' })
   assert.deepEqual(own.spec.tolerations, [toleration])
   assert.equal(own.spec.runtimeClassName, undefined)
-  for (const pod of [cpu, gpu, own]) assert.equal(pod.spec.priorityClassName, 'colloq-rooms')
+  for (const pod of [cpu, gpu, own]) assert.equal(pod.spec.priorityClassName, 'aulalab-rooms')
 })
 
 /* ------------------------------------------------------------ labels and annotations */
 
 test("the operator's labels and annotations reach every broker Pod under the broker's own, and never the selectors", async () => {
   const policy = {
-    podLabels: { 'app.kubernetes.io/part-of': 'colloq', 'cost-center': 'edu-42' },
+    podLabels: { 'app.kubernetes.io/part-of': 'aulalab', 'cost-center': 'edu-42' },
     podAnnotations: { 'policy.example/owner': 'edu-platform' },
   }
   const { kube, runtime } = broker(policy)
@@ -340,10 +340,10 @@ test("the operator's labels and annotations reach every broker Pod under the bro
   await runtime.ensure('roomA', { environment: 'base' }, 'own')
   for (const pod of kube.creates.filter((o) => o.kind === 'Pod')) {
     assert.equal(pod.metadata.labels!['cost-center'], 'edu-42')
-    assert.equal(pod.metadata.labels!['app.kubernetes.io/part-of'], 'colloq')
-    assert.equal(pod.metadata.labels!['colloq.dev/role'], 'kernel')
+    assert.equal(pod.metadata.labels!['app.kubernetes.io/part-of'], 'aulalab')
+    assert.equal(pod.metadata.labels!['aulalab.dev/role'], 'kernel')
     assert.equal(pod.metadata.annotations!['policy.example/owner'], 'edu-platform')
-    assert.equal(pod.metadata.annotations!['colloq.dev/session-id'], 'roomA')
+    assert.equal(pod.metadata.annotations!['aulalab.dev/session-id'], 'roomA')
   }
   // Services are selectors: the operator's labels stay out of them.
   for (const service of kube.creates.filter((o) => o.kind === 'Service')) {
@@ -354,9 +354,9 @@ test("the operator's labels and annotations reach every broker Pod under the bro
   await jobs.jobs.start(jobId, { schemaVersion: 1, jobId, kind: 'notebook', environment: 'kaggle-base', revision, limits, competitionId: 'abcd2345', submissionId: 'efgh2345', attemptId })
   const [job] = jobs.created
   assert.equal(job.metadata.labels!['cost-center'], 'edu-42')
-  assert.equal(job.metadata.labels!['colloq.dev/job'], jobId)
+  assert.equal(job.metadata.labels!['aulalab.dev/job'], jobId)
   assert.equal(job.metadata.annotations!['policy.example/owner'], 'edu-platform')
-  assert.ok(job.metadata.annotations!['colloq.dev/intent'])
+  assert.ok(job.metadata.annotations!['aulalab.dev/intent'])
 })
 
 /* ------------------------------------------------------------ configuration */
@@ -389,7 +389,7 @@ test('settings are read at start: defaults are the single-node k3s, and each val
       RUNTIME_COLOCATE_WITH_APP: '1',
       RUNTIME_IN_PLACE_RESIZE: '0',
       RUNTIME_GPU_RUNTIME_CLASS: '',
-      RUNTIME_PRIORITY_CLASS: 'colloq-rooms',
+      RUNTIME_PRIORITY_CLASS: 'aulalab-rooms',
       RUNTIME_POD_LABELS: '{"cost-center":"edu-42"}',
       RUNTIME_POD_ANNOTATIONS: '{"policy.example/owner":"edu platform, room 5"}',
       RUNTIME_ROOM_NODE_SELECTOR: '{"node-role.example/edu":"true"}',
@@ -400,7 +400,7 @@ test('settings are read at start: defaults are the single-node k3s, and each val
     assert.equal(set.colocateWithApp, true)
     assert.equal(set.inPlaceResize, false)
     assert.equal(set.gpuRuntimeClass, '', 'empty means no RuntimeClass, not the default')
-    assert.equal(set.priorityClass, 'colloq-rooms')
+    assert.equal(set.priorityClass, 'aulalab-rooms')
     assert.deepEqual(set.podLabels, { 'cost-center': 'edu-42' })
     assert.deepEqual(set.gpuTolerations, [{ key: 'nvidia.com/gpu', operator: 'Exists', effect: 'NoExecute', tolerationSeconds: 60 }])
     assert.equal(loadRuntimeConfig({ ...values, RUNTIME_COLOCATE_WITH_APP: 'true' }, 16384).colocateWithApp, true)
@@ -432,10 +432,10 @@ test('a wrong setting stops the broker at start with the variable named, and res
     const refused: Array<[Record<string, string>, RegExp]> = [
       [{ RUNTIME_COLOCATE_WITH_APP: 'yes' }, /RUNTIME_COLOCATE_WITH_APP must be 0 or 1/],
       [{ RUNTIME_IN_PLACE_RESIZE: '2' }, /RUNTIME_IN_PLACE_RESIZE must be 0 or 1/],
-      [{ RUNTIME_POD_LABELS: '{"colloq.dev/role":"app"}' }, /RUNTIME_POD_LABELS: "colloq.dev\/role" is reserved/],
-      [{ RUNTIME_POD_LABELS: '{"colloq.kind":"room-kernel"}' }, /reserved/],
+      [{ RUNTIME_POD_LABELS: '{"aulalab.dev/role":"app"}' }, /RUNTIME_POD_LABELS: "aulalab.dev\/role" is reserved/],
+      [{ RUNTIME_POD_LABELS: '{"aulalab.kind":"room-kernel"}' }, /reserved/],
       [{ RUNTIME_POD_LABELS: '{"app.kubernetes.io/managed-by":"Helm"}' }, /reserved/],
-      [{ RUNTIME_POD_ANNOTATIONS: '{"colloq.dev/template-hash":"x"}' }, /RUNTIME_POD_ANNOTATIONS: .* is reserved/],
+      [{ RUNTIME_POD_ANNOTATIONS: '{"aulalab.dev/template-hash":"x"}' }, /RUNTIME_POD_ANNOTATIONS: .* is reserved/],
       [{ RUNTIME_POD_ANNOTATIONS: '{"container.apparmor.security.beta.kubernetes.io/kernel":"unconfined"}' }, /security profile/],
       [{ RUNTIME_POD_LABELS: '{"team":7}' }, /value of "team" must be a string/],
       [{ RUNTIME_POD_LABELS: '{"team":"has spaces"}' }, /not a valid Kubernetes label value/],
@@ -468,8 +468,8 @@ test('a wrong setting stops the broker at start with the variable named, and res
     ]
     for (const [extra, message] of refused)
       assert.throws(() => loadRuntimeConfig({ ...values, ...extra }, 16384), message, JSON.stringify(extra))
-    // Node selector keys are node labels: a colloq.* node label is someone's choice, not a broker selector.
-    assert.deepEqual(loadRuntimeConfig({ ...values, RUNTIME_ROOM_NODE_SELECTOR: '{"colloq.dev/pool":"rooms"}' }, 16384).roomNodeSelector, { 'colloq.dev/pool': 'rooms' })
+    // Node selector keys are node labels: a aulalab.* node label is someone's choice, not a broker selector.
+    assert.deepEqual(loadRuntimeConfig({ ...values, RUNTIME_ROOM_NODE_SELECTOR: '{"aulalab.dev/pool":"rooms"}' }, 16384).roomNodeSelector, { 'aulalab.dev/pool': 'rooms' })
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -486,7 +486,7 @@ test('a changed placement setting never takes a running class its Python; its ne
     colocateWithApp: true,
     roomNodeSelector: { pool: 'edu' },
     roomTolerations: [{ key: 'dedicated', operator: 'Exists' }],
-    priorityClass: 'colloq-rooms',
+    priorityClass: 'aulalab-rooms',
     gpuRuntimeClass: 'nvidia-cdi',
   }, kube).runtime
   const warn = console.warn, warned: string[] = []
@@ -506,7 +506,7 @@ test('a changed placement setting never takes a running class its Python; its ne
   const next = kube.pod('liveRoom')
   assert.deepEqual(next.spec.affinity, APP_AFFINITY)
   assert.deepEqual(next.spec.nodeSelector, { pool: 'edu' })
-  assert.equal(next.spec.priorityClassName, 'colloq-rooms')
+  assert.equal(next.spec.priorityClassName, 'aulalab-rooms')
   assert.equal(next.spec.runtimeClassName, 'nvidia-cdi')
 })
 
@@ -524,7 +524,7 @@ test('a Pod that has not started under the old placement is replaced: no Python 
 })
 
 test('placement the cluster fills in at admission is not "a different workload": no 409 right after the broker created the Pod', async () => {
-  const { kube, runtime } = broker({ priorityClass: 'colloq-rooms', gpuRuntimeClass: 'nvidia' })
+  const { kube, runtime } = broker({ priorityClass: 'aulalab-rooms', gpuRuntimeClass: 'nvidia' })
   kube.admit = (pod) => {
     Object.assign(pod.spec, {
       priority: 100000,

@@ -5,7 +5,7 @@
  *
  * The script is shared by the Russian and the English page. Everything that
  * depends on the language (names, number words, forty labels, the kernel's
- * lines) the page puts into window.COLLOQ_I18N before including this file.
+ * lines) the page puts into window.AULALAB_I18N before including this file.
  * Keeping two copies of a thousand lines for the sake of "joined" in two
  * languages is not an option: they would diverge on the very first day, and
  * diverge silently.
@@ -31,13 +31,13 @@
         var link = e.target && e.target.closest ? e.target.closest('a.lang-option') : null
         if (!link) return
         try {
-          localStorage.setItem('colloq-site-lang', link.getAttribute('data-lang'))
+          localStorage.setItem('aulalab-site-lang', link.getAttribute('data-lang'))
         } catch (err) {}
       })
     }
   } catch (e) {}
 
-  var S = window.COLLOQ_I18N
+  var S = window.AULALAB_I18N
   /* No dictionary, nothing to show: the demo consists entirely of its strings. */
   if (!S) return
 

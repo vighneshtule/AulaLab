@@ -8,10 +8,10 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
 const [mode, selectedRoot] = process.argv.slice(2)
-assert.equal(process.env.COLLOQ_RESTORE_DOCKER_TEST, '1', 'opt-in Docker fixture only')
+assert.equal(process.env.AULALAB_RESTORE_DOCKER_TEST, '1', 'opt-in Docker fixture only')
 assert.ok(mode === 'seed' || mode === 'run')
 const root = path.resolve(selectedRoot ?? '')
-assert.equal(fs.readFileSync(path.join(root, '.restore-smoke-root'), 'utf8'), 'colloq-restore-smoke-v1')
+assert.equal(fs.readFileSync(path.join(root, '.restore-smoke-root'), 'utf8'), 'aulalab-restore-smoke-v1')
 assert.equal(fs.realpathSync(root), root, 'fixture root must not be a symlink')
 process.env.DATA_DIR = path.join(root, 'data')
 process.env.WORKSPACE_DIR = path.join(root, 'workspace')
@@ -46,7 +46,7 @@ function readable(directory: string): void {
 
 try {
   if (mode === 'seed') {
-    const imageDigest = await docker(['image','inspect','--format','{{.Id}}','colloq-kernel:kaggle-base'])
+    const imageDigest = await docker(['image','inspect','--format','{{.Id}}','aulalab-kernel:kaggle-base'])
     assert.match(imageDigest, /^sha256:[a-f0-9]{64}$/)
     const inventory = JSON.parse(await docker(['run','--rm','--pull=never','--network=none','--read-only','--entrypoint=python',imageDigest,'-I','-c',
       'import importlib.metadata as m,json,platform,sysconfig; print(json.dumps({"python":platform.python_version(),"abi":sysconfig.get_config_var("SOABI"),"packages":[{"name":d.metadata["Name"],"version":d.version} for d in m.distributions() if d.metadata["Name"]]}))']))
@@ -99,7 +99,7 @@ try {
   for (const dir of [dependenciesDir,storage.openDir(competition.id),storage.inputDir(competition.id,fixture.submissionId),storage.secretDir(competition.id)]) readable(dir)
   const attemptId = randomUUID()
   const resultDir = storage.attemptDir(competition.id,fixture.submissionId,attemptId)
-  const run = await competitionRunner().run({attemptId,competition,submissionId:fixture.submissionId,container:`colloq-restore-run-${attemptId}`,
+  const run = await competitionRunner().run({attemptId,competition,submissionId:fixture.submissionId,container:`aulalab-restore-run-${attemptId}`,
     imageDigest:binding.revision.imageDigest,dependenciesDir,dataDir:storage.openDir(competition.id),inputDir:storage.inputDir(competition.id,fixture.submissionId),
     resultDir,limits:limitsFor(competition,'notebook'),signal:AbortSignal.timeout(120_000)})
   assert.equal(run.status,'ok',JSON.stringify(run))
@@ -108,7 +108,7 @@ try {
   const scoreInput = storage.attemptDir(competition.id,fixture.submissionId,attemptId,'score')
   fs.writeFileSync(path.join(scoreInput,'submission.csv'),answer,{mode:0o444})
   readable(scoreInput)
-  const score = await competitionRunner().score({attemptId,competition,submissionId:fixture.submissionId,container:`colloq-restore-score-${attemptId}`,
+  const score = await competitionRunner().score({attemptId,competition,submissionId:fixture.submissionId,container:`aulalab-restore-score-${attemptId}`,
     imageDigest:binding.revision.imageDigest,secretDir:storage.secretDir(competition.id),submissionDir:scoreInput,
     outDir:storage.attemptDir(competition.id,fixture.submissionId,attemptId,'score-out'),limits:limitsFor(competition,'metric'),signal:AbortSignal.timeout(120_000)})
   assert.equal(score.status,'ok',JSON.stringify(score))

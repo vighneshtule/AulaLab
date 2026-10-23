@@ -30,12 +30,12 @@ test('in host mode a container without --network counts as ours', () => {
 test('in host mode a container from the compose network does not count as ours', () => {
   // There is no road to it: the port is not published, and the host does not
   // reach containers by name. Recreating such a container is right.
-  assert.equal(networkMatches('colloq', ''), false)
+  assert.equal(networkMatches('aulalab', ''), false)
   assert.equal(networkMatches('host', ''), false)
 })
 
 test('in network mode only the named network matches', () => {
-  assert.equal(networkMatches('colloq', 'colloq'), true)
-  assert.equal(networkMatches('bridge', 'colloq'), false)
-  assert.equal(networkMatches('default', 'colloq'), false)
+  assert.equal(networkMatches('aulalab', 'aulalab'), true)
+  assert.equal(networkMatches('bridge', 'aulalab'), false)
+  assert.equal(networkMatches('default', 'aulalab'), false)
 })

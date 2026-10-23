@@ -11,11 +11,11 @@ import { RuntimeError } from './controller.js'
 import { KubernetesError, type KubernetesClient, type KubeObject } from './kubernetes.js'
 import { policyMetadata, policyPlacement, type PodPolicy, type Toleration } from './pod-policy.js'
 
-const MANAGER = 'colloq-runtime'
+const MANAGER = 'aulalab-runtime'
 const IMAGE = /^[a-zA-Z0-9][a-zA-Z0-9._:/-]*@sha256:[a-f0-9]{64}$/
 const ROOT = (namespace: string) => `/api/v1/namespaces/${namespace}`
-const jobName = (id: string) => `colloq-job-${id}`
-const proxyName = (id: string) => `colloq-proxy-${id}`
+const jobName = (id: string) => `aulalab-job-${id}`
+const proxyName = (id: string) => `aulalab-proxy-${id}`
 const iso = (time: number) => new Date(time).toISOString()
 
 /**
@@ -163,7 +163,7 @@ function packageRoom(intent: CompetitionJobIntent): number | null {
  * stays the one it was created with across a broker restart with other
  * settings.
  */
-const PULL_SECONDS = 'colloq.dev/pull-seconds'
+const PULL_SECONDS = 'aulalab.dev/pull-seconds'
 /** The pull allowance a job Pod was created with; 0 for a CPU image's Pod and for one from a broker before it. */
 function pullAllowance(pod: KubeObject): number {
   const seconds = Number(pod.metadata.annotations?.[PULL_SECONDS])
@@ -266,11 +266,11 @@ export class CompetitionJobs {
     return answer(available, preparation)
   }
   private labels(jobId: string, role: string) {
-    return { 'app.kubernetes.io/managed-by': MANAGER, 'colloq.dev/instance': this.options.config.instanceId,
-      'colloq.dev/job': jobId, 'colloq.dev/role': role }
+    return { 'app.kubernetes.io/managed-by': MANAGER, 'aulalab.dev/instance': this.options.config.instanceId,
+      'aulalab.dev/job': jobId, 'aulalab.dev/role': role }
   }
   private annotations(intent: CompetitionJobIntent) {
-    return { 'colloq.dev/intent': JSON.stringify(intent), 'colloq.dev/started-at': String(this.now()) }
+    return { 'aulalab.dev/intent': JSON.stringify(intent), 'aulalab.dev/started-at': String(this.now()) }
   }
   private token(jobId: string) { return createHmac('sha256', this.options.secret()).update(`competition-export:${jobId}`).digest('hex') }
   private destination(intent: CompetitionJobIntent): string {
@@ -481,10 +481,10 @@ export class CompetitionJobs {
     catch (err) { if ((err instanceof KubernetesError || typeof err === 'object') && (err as any).status === 404) return null; throw err }
   }
   private assertOwned(object: KubeObject, jobId: string, role?: string): void {
-    if (!object.metadata.uid || object.metadata.labels?.['colloq.dev/job'] !== jobId ||
-      object.metadata.labels?.['colloq.dev/instance'] !== this.options.config.instanceId ||
+    if (!object.metadata.uid || object.metadata.labels?.['aulalab.dev/job'] !== jobId ||
+      object.metadata.labels?.['aulalab.dev/instance'] !== this.options.config.instanceId ||
       object.metadata.labels?.['app.kubernetes.io/managed-by'] !== MANAGER ||
-      (role && object.metadata.labels?.['colloq.dev/role'] !== role))
+      (role && object.metadata.labels?.['aulalab.dev/role'] !== role))
       throw new RuntimeError('Refusing resource with mismatched competition ownership', 409)
   }
   async start(jobId: string, raw: unknown): Promise<CompetitionJobStatus> {
@@ -536,7 +536,7 @@ export class CompetitionJobs {
     const previous = await this.get('pods', jobName(jobId))
     if (previous) {
       this.assertOwned(previous, jobId)
-      if (previous.metadata.annotations?.['colloq.dev/intent'] !== JSON.stringify(intent)) throw new RuntimeError('Job ID already has another intent', 409)
+      if (previous.metadata.annotations?.['aulalab.dev/intent'] !== JSON.stringify(intent)) throw new RuntimeError('Job ID already has another intent', 409)
       return this.phase(previous, intent)
     }
     if (intent.kind === 'resolve') {
@@ -594,11 +594,11 @@ export class CompetitionJobs {
       progress: null, error: error.slice(0, 300), failure: { code: 'unschedulable', resource: 'gpu' } }
   }
   private parseIntent(pod: KubeObject): CompetitionJobIntent {
-    try { return parseCompetitionJobIntent(JSON.parse(pod.metadata.annotations?.['colloq.dev/intent'] ?? '')) }
+    try { return parseCompetitionJobIntent(JSON.parse(pod.metadata.annotations?.['aulalab.dev/intent'] ?? '')) }
     catch { throw new RuntimeError('Competition Pod has invalid intent metadata', 409) }
   }
   private phase(pod: KubeObject, intent: CompetitionJobIntent): CompetitionJobStatus {
-    const startedAt = Number(pod.metadata.annotations?.['colloq.dev/started-at']) || Date.parse((pod.metadata as any).creationTimestamp ?? '') || this.now()
+    const startedAt = Number(pod.metadata.annotations?.['aulalab.dev/started-at']) || Date.parse((pod.metadata as any).creationTimestamp ?? '') || this.now()
     const main = Array.isArray(pod.status?.containerStatuses) ? pod.status.containerStatuses.find((c: any) => c.name === 'main') : undefined
     const terminated = main?.state?.terminated
     const mainStartedAt = Date.parse(main?.state?.running?.startedAt ?? terminated?.startedAt ?? '')
@@ -744,7 +744,7 @@ export class CompetitionJobs {
     ])
   }
   private async census(kind: 'pods' | 'services'): Promise<KubeObject[]> {
-    const selector = encodeURIComponent(`app.kubernetes.io/managed-by=${MANAGER},colloq.dev/instance=${this.options.config.instanceId}`)
+    const selector = encodeURIComponent(`app.kubernetes.io/managed-by=${MANAGER},aulalab.dev/instance=${this.options.config.instanceId}`)
     const objects: KubeObject[] = []
     const seen = new Set<string>()
     let continuation = ''
@@ -766,33 +766,33 @@ export class CompetitionJobs {
     const owned = (object: KubeObject, id: string, role: string, name: string) =>
       object.metadata.name === name && !!object.metadata.uid &&
       object.metadata.labels?.['app.kubernetes.io/managed-by'] === MANAGER &&
-      object.metadata.labels?.['colloq.dev/instance'] === this.options.config.instanceId &&
-      object.metadata.labels?.['colloq.dev/job'] === id &&
-      object.metadata.labels?.['colloq.dev/role'] === role
+      object.metadata.labels?.['aulalab.dev/instance'] === this.options.config.instanceId &&
+      object.metadata.labels?.['aulalab.dev/job'] === id &&
+      object.metadata.labels?.['aulalab.dev/role'] === role
     const active = new Set(pods.flatMap(pod => {
-      const id = pod.metadata.labels?.['colloq.dev/job'] ?? ''
+      const id = pod.metadata.labels?.['aulalab.dev/job'] ?? ''
       return COMPETITION_JOB_ID.test(id) && owned(pod, id,
-        pod.metadata.labels?.['colloq.dev/role'] === 'competition-resolver' ? 'competition-resolver' : 'competition-job',
+        pod.metadata.labels?.['aulalab.dev/role'] === 'competition-resolver' ? 'competition-resolver' : 'competition-job',
         jobName(id)) ? [id] : []
     }))
     for (const pod of pods) {
-      const id = pod.metadata.labels?.['colloq.dev/job'] ?? ''
+      const id = pod.metadata.labels?.['aulalab.dev/job'] ?? ''
       if (!COMPETITION_JOB_ID.test(id) || !owned(pod, id, 'competition-proxy', proxyName(id)) || active.has(id)) continue
-      const age = this.now() - (Number(pod.metadata.annotations?.['colloq.dev/started-at']) || this.now())
+      const age = this.now() - (Number(pod.metadata.annotations?.['aulalab.dev/started-at']) || this.now())
       if (age >= 120_000) await this.cleanupProxy(id)
     }
     for (const service of services) {
-      const id = service.metadata.labels?.['colloq.dev/job'] ?? ''
+      const id = service.metadata.labels?.['aulalab.dev/job'] ?? ''
       if (!COMPETITION_JOB_ID.test(id) || !owned(service, id, 'competition-proxy', proxyName(id)) || active.has(id)) continue
-      const age = this.now() - (Number(service.metadata.annotations?.['colloq.dev/started-at']) || this.now())
+      const age = this.now() - (Number(service.metadata.annotations?.['aulalab.dev/started-at']) || this.now())
       if (age >= 120_000) await this.deleteOwned('services', proxyName(id), id)
     }
     for (const pod of pods) {
-      const id = pod.metadata.labels?.['colloq.dev/job'] ?? ''
+      const id = pod.metadata.labels?.['aulalab.dev/job'] ?? ''
       if (!COMPETITION_JOB_ID.test(id) || !owned(pod, id,
-        pod.metadata.labels?.['colloq.dev/role'] === 'competition-resolver' ? 'competition-resolver' : 'competition-job',
+        pod.metadata.labels?.['aulalab.dev/role'] === 'competition-resolver' ? 'competition-resolver' : 'competition-job',
         jobName(id))) continue
-      const age = this.now() - (Number(pod.metadata.annotations?.['colloq.dev/started-at']) || this.now())
+      const age = this.now() - (Number(pod.metadata.annotations?.['aulalab.dev/started-at']) || this.now())
       let ttl: number
       // A GPU image's pull allowance is the job's time as much as its limit is.
       try { ttl = Math.max(2 * 3600_000, (this.parseIntent(pod).limits.wallSeconds + pullAllowance(pod)) * 1000 + 600_000) }
@@ -814,7 +814,7 @@ export class CompetitionJobs {
     this.configured()
     const jobs: CompetitionJobStatus[] = []
     for (const pod of await this.census('pods')) {
-        const id = pod.metadata.labels?.['colloq.dev/job'] ?? ''
+        const id = pod.metadata.labels?.['aulalab.dev/job'] ?? ''
         if (!COMPETITION_JOB_ID.test(id) || pod.metadata.name !== jobName(id)) continue
         this.assertOwned(pod, id)
         jobs.push(this.phase(pod, this.parseIntent(pod)))

@@ -1,26 +1,26 @@
-# colloq — the teacher's command
+# aulalab — the teacher's command
 
-This workspace is the `colloq` command a teacher gets from `pip install colloq`.
+This workspace is the `aulalab` command a teacher gets from `pip install aulalab`.
 There is no other CLI: the repository runs on `make` (`make help`), and the
 workshop — machines, releases, the relay, DNS, the load test — lives in the
 Makefile and `scripts/`, not here.
 
 ```bash
-pip install colloq
-colloq                   # three lines about what lives here
-colloq start             # a class: browser, logs in the terminal, Ctrl+C stops
-colloq <command> --help
+pip install aulalab
+aulalab                   # three lines about what lives here
+aulalab start             # a class: browser, logs in the terminal, Ctrl+C stops
+aulalab <command> --help
 ```
 
-State lives **outside the package**, in `~/.colloq`: `.env`, the database,
+State lives **outside the package**, in `~/.aulalab`: `.env`, the database,
 `workspace/`, environments of your own. Reinstalling or upgrading the package
-leaves all of it alone. `COLLOQ_HOME` moves it elsewhere.
+leaves all of it alone. `AULALAB_HOME` moves it elsewhere.
 
 ## How it is built and run
 
-`python/colloq/__main__.py` is a shim: it finds Node, installs the server's
+`python/aulalab/__main__.py` is a shim: it finds Node, installs the server's
 `node_modules` once, and execs the bundled CLI. `make pack` bundles
-`cli/src/bin.ts` into `python/colloq/_app/cli/colloq.mjs` and the supervisor
+`cli/src/bin.ts` into `python/aulalab/_app/cli/aulalab.mjs` and the supervisor
 `cli/src/launch.ts` into `cli/launch.mjs`; `make wheel` builds the wheel into
 `python/dist`. What goes inside and why is explained at the top of
 `scripts/pack.mts`.
@@ -57,17 +57,17 @@ standalone `host` holds the tunnel and nothing else: ending it does not stop
 the server. A local session's tunnel address is temporary — `.env` is not
 rewritten and the server is not restarted.
 
-Ctrl+C and `colloq stop` end the session's processes and the kernels belonging to
+Ctrl+C and `aulalab stop` end the session's processes and the kernels belonging to
 its database. Data, files and any other instance are left alone. A tunnel that
 fails leaves the local session running.
 
 ## `start --share`: one link
 
-`colloq start --share` (from source: `node --import tsx cli/src/main.ts start
+`aulalab start --share` (from source: `node --import tsx cli/src/main.ts start
 --share`; `make dev SHARE=1` for the reloading dev server) starts the class and
 a quick Cloudflare tunnel owned by the supervisor. `scripts/host.sh` opens the
 tunnel as it always has, holds the temporary-address lease and checks the
-address from outside; under `COLLOQ_SHARE=1` it reports the result as one marker
+address from outside; under `AULALAB_SHARE=1` it reports the result as one marker
 line instead of its own summary. The supervisor swallows that line and prints a
 single block (`cli/src/launch-share.ts`): the `/s/<id>` link of the newest class
 from the database — or, with no class yet, the panel on the public address and
@@ -76,15 +76,15 @@ closes the link, that a quick tunnel's address changes every run, and that
 Cloudflare does not open from Russia (use `--host` with your own relay there).
 The setup token is not printed.
 
-cloudflared: `COLLOQ_CLOUDFLARED=/path` wins; then `cloudflared` on `PATH`; then
-colloq's own copy in `<state>/bin` (`~/.colloq/bin`; the clone itself from
+cloudflared: `AULALAB_CLOUDFLARED=/path` wins; then `cloudflared` on `PATH`; then
+aulalab's own copy in `<state>/bin` (`~/.aulalab/bin`; the clone itself from
 source), used only if its SHA-256 matches the pin; otherwise the pinned release
 is downloaded from GitHub (`cli/src/launch-cloudflared-pin.ts` holds the
 version, the per-asset hashes and how to bump them), checked, written 0600,
 checked again from disk and only then made executable. The download is said
-out loud, with the URL. `COLLOQ_CLOUDFLARED_DOWNLOAD=0` forbids it. Windows is
+out loud, with the URL. `AULALAB_CLOUDFLARED_DOWNLOAD=0` forbids it. Windows is
 refused (use WSL 2). `host.sh` asks the same resolver (`launch.ts cloudflared`)
-when there is no cloudflared on `PATH`, so `colloq host` and `make host` need no
+when there is no cloudflared on `PATH`, so `aulalab host` and `make host` need no
 manual install either.
 
 **The isolation gate.** A class goes online only when every room's kernel runs
@@ -93,7 +93,7 @@ starting if `KERNEL_ISOLATION=off` or the backend is not docker/broker, and
 again before the tunnel unless Docker answers and the server confirms it in
 `/api/health` (`isolation: "docker"` or `"broker"`, set only when the kernel
 check passed). `scripts/host.sh` applies the same check to every transport, so
-`colloq host` and `make host` refuse an unconfirmed server too. A refusal
+`aulalab host` and `make host` refuse an unconfirmed server too. A refusal
 leaves the class running locally.
 
 ## Flags that are everywhere
@@ -106,7 +106,7 @@ leaves the class running locally.
 
 There is also `--no-color` (not one escape byte in the stream; `NO_COLOR` and
 output that is not a terminal do the same), `--version` and `-h`. A hyphenated
-name is the command itself: `colloq env-use cv` is `colloq env use cv`.
+name is the command itself: `aulalab env-use cv` is `aulalab env use cv`.
 
 ## Exit codes
 
@@ -137,8 +137,8 @@ It does not kill processes by pattern.
 
 ## State
 
-`.colloq/local-session.json` is the supervisor's session receipt: the run id, the
+`.aulalab/local-session.json` is the supervisor's session receipt: the run id, the
 pid, the port, the local address and the data paths. `stop`, `restart`, `link`
 and `status` pick out the current session by it; the supervisor is what checks
 which processes it owns. It lives in the state directory — the repository in a
-clone, `~/.colloq` for an installed package — never next to the code.
+clone, `~/.aulalab` for an installed package — never next to the code.

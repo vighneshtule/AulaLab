@@ -44,12 +44,12 @@ import { forgetContainerUsage } from '../server/src/kernel/usage.js'
 import { fakeDocker } from './_fake-docker.mts'
 
 /*
- * Package lists are written into COLLOQ_HOME/environments when it is set, and
+ * Package lists are written into AULALAB_HOME/environments when it is set, and
  * into the repository's kernel/environments when it is not. The suite must not
  * write into the checkout it runs from.
  */
-const home = fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-audit-home-'))
-process.env.COLLOQ_HOME = home
+const home = fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-audit-home-'))
+process.env.AULALAB_HOME = home
 
 let base = ''
 let server: http.Server
@@ -478,20 +478,20 @@ test('a teacher cannot create, edit or delete a package list; the owner can, and
 
   const created = await call('PUT', '/api/admin/environments/audit-env', {
     cookie: ownerCookie,
-    body: { source: '# colloq: parent base\n--extra-index-url https://ci:hunter2@pypi.internal.example/simple\npolars\n' },
+    body: { source: '# aulalab: parent base\n--extra-index-url https://ci:hunter2@pypi.internal.example/simple\npolars\n' },
   })
   assert.equal(created.status, 200)
   assert.equal(fs.existsSync(list), true)
   const create = last('environment.created')
   assert.deepEqual(create.target, { type: 'environment', id: 'audit-env', label: 'audit-env' })
   assert.deepEqual(create.detail, {
-    added: ['# colloq: parent base', '--extra-index-url https://***@pypi.internal.example/simple', 'polars'],
+    added: ['# aulalab: parent base', '--extra-index-url https://***@pypi.internal.example/simple', 'polars'],
   })
   assert.equal(JSON.stringify(events()).includes('hunter2'), false, 'a password in an index URL reached the log')
 
   const edited = await call('PUT', '/api/admin/environments/audit-env', {
     cookie: ownerCookie,
-    body: { source: '# colloq: parent base\npolars\nduckdb\n' },
+    body: { source: '# aulalab: parent base\npolars\nduckdb\n' },
   })
   assert.equal(edited.status, 200)
   assert.deepEqual(last('environment.edited').detail, {

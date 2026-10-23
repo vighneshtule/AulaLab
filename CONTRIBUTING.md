@@ -1,6 +1,6 @@
-# Contributing to Colloq
+# Contributing to Aula Lab
 
-Thanks for helping. Colloq is a self-hosted live notebook for teaching: one
+Thanks for helping. Aula Lab is a self-hosted live notebook for teaching: one
 class link, shared notebooks, one Python kernel per notebook. It is maintained
 by one person, so a clear issue or a small, well-verified pull request goes a
 long way.
@@ -31,7 +31,7 @@ make dev
 
 On first launch, `make dev` writes a minimal `.env` with a fresh kernel token.
 Every other setting is documented in `.env.example`. It then builds the room
-kernel image (`colloq-kernel:<env>`) if it is missing or stale. After that it
+kernel image (`aulalab-kernel:<env>`) if it is missing or stale. After that it
 runs the server with reload on `:3000` and Vite on `:5173`, and opens the
 browser. Set `OPEN=0` if you don't want the browser opened. Claim the instance
 at `/admin` with the setup token from `data/setup-token`, then create a class.
@@ -52,14 +52,14 @@ workstation, not as a production security boundary.
 | `server/` | Express API, WebSockets, the server's Yjs participant, SQLite persistence, execution queues, kernel backends (`server/src/kernel/`) and the Oracle (AI assistant). |
 | `web/` | Svelte 5 + Vite UI: the room, the teacher's console, the admin panel (`web/src/admin/`). Logic that needs no DOM lives in `web/src/lib/` so it can be tested. |
 | `shared/` | Code used by server, web and CLI: notebook schema, room rules and permissions, protocol, i18n runtime and message catalogs (`shared/locales/`). |
-| `cli/` | The `colloq` command and the session supervisor behind `make dev` and `colloq start`. |
+| `cli/` | The `aulalab` command and the session supervisor behind `make dev` and `aulalab start`. |
 | `python/` | The pip package: a standard-library shim that finds Node and runs the bundled app. `make pack` puts the app inside it. |
 | `runtime/` | The private room broker for production (k3s). Node built-ins only. See [runtime/README.md](runtime/README.md). |
 | `kernel/` | Kernel Dockerfile, base requirements and `kernel/environments/*.txt`. |
 | `deploy/` | The single-node k3s guide (`deploy/k3s/README.md`), the one-image vast.ai deployment (`deploy/vast/`, see its README) and systemd units. `scripts/release.py` renders the Kubernetes manifests. |
 | `scripts/` | Release build and validation, cluster install, backups, hosting (`host.sh`), and the e2e, perf, load and UI harnesses. Some scripts are maintainer-only (see below). |
-| `docs/` | The public guides: article sources in `docs/pages/ru/` and `docs/pages/en/`, and `docs/build.py`, which renders them into `site/docs/`. The Markdown files are operator notes. |
-| `site/` | The colloq.ru landing page and the generated docs, deployed by `.github/workflows/pages.yml`. |
+| `docs/` | The English public guides in `docs/pages/en/`, rendered by `docs/build.py` into `site/docs/`. The Markdown files are operator notes. |
+| `site/` | The example.edu landing page and the generated docs, deployed by `.github/workflows/pages.yml`. |
 | `tests/` | Unit tests on Node's built-in test runner. See [tests/README.md](tests/README.md). |
 
 ## Checks
@@ -90,27 +90,16 @@ Depending on what you change:
 
 - Frontend or server build: `npm run build`. For the precompressed production
   build, run `npm run build:optimized`.
-- Public guides: edit the article in `docs/pages/ru/` (Russian is the
-  canonical set) and its English counterpart in `docs/pages/en/` if there is
-  one. The page template lives in `docs/build.py`. Run `python3 docs/build.py`
+- Public guides: edit the English article in `docs/pages/en/`. The page template lives in `docs/build.py`. Run `python3 docs/build.py`
   and commit the regenerated `site/docs/` together with the sources. See
   [docs/README.md](docs/README.md).
 - The pip package: `make wheel`.
 
 ## Conventions that matter here
 
-**Comments explain why.** The existing comments are in Russian. They are dense
-and often record the incident or measurement behind a decision. When you change
-code, keep the comment next to it true. Write new comments in the language of
-the file around them. If Russian is a barrier, write them in English and say so
-in the pull request. A clear reason matters more than the language.
+**Comments explain why.** Preserve comments when changing nearby code because they often record the incident or measurement behind a decision. Write new comments in English.
 
-**Every user-facing string is translated.** Text a person reads is a key in
-`shared/locales/*.ts` with both `ru` and `en`, and it is rendered with
-`tr(key, params)` from `shared/i18n.ts`. In Svelte, call `tr()` where the text
-is shown, not in a module-level constant, so that a live language switch
-updates it. Protocol values, file names and user content are never translated.
-Three tests enforce this:
+**User-facing text is English-only.** Use the existing message keys and `tr(key, params)` conventions for interface text. In Svelte, compute labels reactively where they are shown. Protocol values, file names and user content are not translated. Keep the shipped screen bundles English-only. The focused UI checks cover these conventions:
 
 - `tests/i18n.test.mts` checks that both languages exist and have matching
   `{parameters}`.
@@ -231,14 +220,14 @@ Some scripts operate the maintainer's own infrastructure. They stay in the
 repository because they show how the project runs its own deployment, but they
 will not work for you as-is:
 
-- `scripts/dns.sh`: the colloq.ru DNS zone on Cloudflare.
-- `site/CNAME`: the colloq.ru site on GitHub Pages.
+- `scripts/dns.sh`: the example.edu DNS zone on Cloudflare.
+- `site/CNAME`: the example.edu site on GitHub Pages.
 
 Others are shaped by the maintainer's setup but can be configured:
 
 - The relay scripts (`relay-setup.sh`, `relay-assets.py`, `relay-capy.py`,
   `relay-offline.html`) are meant for any operator ("Your own relay" in the
-  README), but they default to the project's `*.colloq.ru` zone. Run
+  README), but they default to the project's `*.example.edu` zone. Run
   `relay-setup.sh` with `DOMAIN=your.zone`. It passes that zone on to the asset
   mirror it installs.
 - `scripts/activity-sheet.py` exports class activity to the Google Sheet named

@@ -100,7 +100,7 @@ export type CompetitionDefaults = Omit<CompetitionLimits, 'gpu'>
  * room's container is on it whatever the holder: a card given to submissions
  * while a class still had it stays with that class until its container ends,
  * and submissions wait for it until then. `heldBySubmission` is the mirror:
- * a submission's container is on it (by the `colloq.gpu` label), so a card
+ * a submission's container is on it (by the `aulalab.gpu` label), so a card
  * given back to classes mid-run stays the submission's until the run ends,
  * and no class can start on it meanwhile (kernel/pool.ts · takeGpu).
  *

@@ -8,7 +8,7 @@ import { BrokerCompetitionRunner, CompetitionResourcePending } from '../server/s
 import type { CompetitionJobIntent, CompetitionJobStatus } from '../shared/competition-runtime.js'
 
 const digest=`sha256:${'a'.repeat(64)}`
-const image=`registry.example/colloq/kaggle-base@${digest}`
+const image=`registry.example/aulalab/kaggle-base@${digest}`
 const attemptId='a'.repeat(32)
 const competitionId='abcdefgh'
 const submissionId='bcdefghi'
@@ -40,7 +40,7 @@ test('broker notebook uses catalog digest, collects owned report and cancels com
     fs.writeFileSync(path.join(resultDir,'submission.csv'),'id,target\n1,2\n')
   })
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  const outcome=await runner.run({competition,submissionId,attemptId,container:'colloq-comp-test',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits})
+  const outcome=await runner.run({competition,submissionId,attemptId,container:'aulalab-comp-test',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits})
   assert.equal(outcome.status,'ok')
   assert.equal(outcome.submission,path.join(resultDir,'submission.csv'))
   assert.equal(outcome.diagnostics.backend,'broker')
@@ -50,7 +50,7 @@ test('broker notebook uses catalog digest, collects owned report and cancels com
 test('broker rejects a local Docker digest without matching catalog image',async()=>{
   const client=fakeClient(()=>{throw new Error('must not start')})
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  await assert.rejects(()=>runner.run({competition,submissionId,attemptId,container:'colloq-comp-test',imageDigest:digest,dataDir:'ignored',inputDir:'ignored',resultDir:'ignored',limits}),/catalog|image|revision/i)
+  await assert.rejects(()=>runner.run({competition,submissionId,attemptId,container:'aulalab-comp-test',imageDigest:digest,dataDir:'ignored',inputDir:'ignored',resultDir:'ignored',limits}),/catalog|image|revision/i)
 })
 
 test('broker collects during exporting before treating the job as complete',async()=>{
@@ -66,7 +66,7 @@ test('broker collects during exporting before treating the job as complete',asyn
     async cancelCompetitionJob(){events.push('delete')},async competitionJobs(){return []},
   }
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  const outcome=await runner.run({competition,submissionId,attemptId,container:'colloq-comp-export',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits})
+  const outcome=await runner.run({competition,submissionId,attemptId,container:'aulalab-comp-export',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits})
   assert.equal(outcome.status,'ok')
   assert.deepEqual(events,['start','status','collect','status','delete'])
 })
@@ -90,7 +90,7 @@ test('broker scorer writes fixed split config and keeps teacher diagnostics priv
     fs.writeFileSync(path.join(outDir,'score.json'),JSON.stringify({attemptId,status:'ok',public:0.42,private:0.31,teacherOnly:'secret traceback'}))
   })
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  const outcome=await runner.score({competition,submissionId,attemptId,container:'colloq-comp-score',imageDigest:image,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
+  const outcome=await runner.score({competition,submissionId,attemptId,container:'aulalab-comp-score',imageDigest:image,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
   assert.equal(outcome.status,'ok')
   assert.equal(outcome.public,0.42)
   assert.equal(outcome.message,null)
@@ -102,7 +102,7 @@ test('abort cancels the active broker job and never accepts its late report',asy
   const client=fakeClient(()=>{},'running')
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
   const resultDir=path.join(TEST_ROOT,'data','competitions',competitionId,'s',submissionId,'attempts',attemptId,'result')
-  const pending=runner.run({competition,submissionId,attemptId,container:'colloq-comp-cancel',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,signal:controller.signal})
+  const pending=runner.run({competition,submissionId,attemptId,container:'aulalab-comp-cancel',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,signal:controller.signal})
   setTimeout(()=>controller.abort(),5)
   await assert.rejects(pending)
   assert.ok(client.cancelled.length>=1)
@@ -119,7 +119,7 @@ test('scorer preserves teacher report after nonzero metric exit',async()=>{
     async cancelCompetitionJob(){},async competitionJobs(){return []},
   }
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  const outcome=await runner.score({competition,submissionId,attemptId,container:'colloq-comp-score-error',imageDigest:image,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
+  const outcome=await runner.score({competition,submissionId,attemptId,container:'aulalab-comp-score-error',imageDigest:image,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
   assert.equal(outcome.status,'metric_error')
   assert.equal(outcome.teacherOnly,'metric traceback')
   assert.equal(outcome.message,null)
@@ -136,7 +136,7 @@ test('participant error remains visible when scorer exits nonzero after writing 
     async cancelCompetitionJob(){},async competitionJobs(){return []},
   }
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  const outcome=await runner.score({competition,submissionId,attemptId,container:'colloq-comp-score-participant',imageDigest:image,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
+  const outcome=await runner.score({competition,submissionId,attemptId,container:'aulalab-comp-score-participant',imageDigest:image,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
   assert.equal(outcome.status,'participant_error')
   assert.equal(outcome.message,'Submission rows do not match.')
   assert.equal(outcome.teacherOnly,null)
@@ -151,7 +151,7 @@ test('only typed unschedulable broker failure requests a queue retry after Pod d
   }
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
   const resultDir=path.join(TEST_ROOT,'data','competitions',competitionId,'s',submissionId,'attempts',attemptId,'result')
-  await assert.rejects(()=>runner.run({competition,submissionId,attemptId,container:'colloq-comp-unschedulable',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits}),error=>error instanceof CompetitionResourcePending&&error.resource==='memory')
+  await assert.rejects(()=>runner.run({competition,submissionId,attemptId,container:'aulalab-comp-unschedulable',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits}),error=>error instanceof CompetitionResourcePending&&error.resource==='memory')
   assert.equal(cancelled.length,1)
 })
 
@@ -164,7 +164,7 @@ test('collected notebook is not accepted when broker cannot confirm Pod cleanup'
   })
   client.cancelCompetitionJob=async()=>{throw new Error('Pod cleanup not confirmed')}
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  await assert.rejects(()=>runner.run({competition,submissionId,attemptId,container:'colloq-comp-cleanup',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits}),/cleanup not confirmed/)
+  await assert.rejects(()=>runner.run({competition,submissionId,attemptId,container:'aulalab-comp-cleanup',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits}),/cleanup not confirmed/)
 })
 
 test('failed notebook export cannot reuse a matching stale report and answer',async()=>{
@@ -178,7 +178,7 @@ test('failed notebook export cannot reuse a matching stale report and answer',as
     async cancelCompetitionJob(){},async competitionJobs(){return []},
   }
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  const outcome=await runner.run({competition,submissionId,attemptId,container:'colloq-comp-stale-run',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits})
+  const outcome=await runner.run({competition,submissionId,attemptId,container:'aulalab-comp-stale-run',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits})
   assert.equal(outcome.status,'harness_error')
   assert.equal(outcome.submission,null)
   assert.equal(outcome.detail,'')
@@ -194,7 +194,7 @@ test('failed scorer export cannot reuse a matching stale score',async()=>{
     async cancelCompetitionJob(){},async competitionJobs(){return []},
   }
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  const outcome=await runner.score({competition,submissionId,attemptId,container:'colloq-comp-stale-score',imageDigest:image,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
+  const outcome=await runner.score({competition,submissionId,attemptId,container:'aulalab-comp-stale-score',imageDigest:image,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
   assert.equal(outcome.status,'metric_error')
   assert.equal(outcome.public,null)
   assert.equal(outcome.private,null)
@@ -217,7 +217,7 @@ test('broker gives a package set the room the app sized, and reads a full room a
     async cancelCompetitionJob(){},async competitionJobs(){return []},
   }
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  const outcome=await runner.run({competition,submissionId,attemptId,container:'colloq-comp-packages',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,
+  const outcome=await runner.run({competition,submissionId,attemptId,container:'aulalab-comp-packages',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,
     dependenciesDir:path.join(TEST_ROOT,'data','dependencies','bundles',bundleId),packagesMb:379})
   assert.equal(sent!.bundleId,bundleId)
   assert.equal(sent!.limits.packagesMb,379)
@@ -230,7 +230,7 @@ test('a notebook asks the broker for a card only when the queue gave its attempt
   const outDir=path.join(TEST_ROOT,'data','competitions',competitionId,'s',submissionId,'attempts',attemptId,'score-out')
   fs.mkdirSync(resultDir,{recursive:true})
   fs.mkdirSync(outDir,{recursive:true})
-  const gpuImage=`registry.example/colloq/kaggle-gpu@${digest}`
+  const gpuImage=`registry.example/aulalab/kaggle-gpu@${digest}`
   const sent:CompetitionJobIntent[]=[]
   const client=fakeClient(intent=>{
     sent.push(intent)
@@ -240,7 +240,7 @@ test('a notebook asks the broker for a card only when the queue gave its attempt
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[
     {name:'kaggle-base',image,gpu:false,current:true},{name:'kaggle-gpu',image:gpuImage,gpu:true,current:true}]}),pollMs:1})
   const onGpu={...competition,environment:'kaggle-gpu'}
-  const run=(extra:object)=>runner.run({submissionId,attemptId,container:'colloq-comp-gpu',dataDir:'ignored',inputDir:'ignored',resultDir,limits,...extra} as any)
+  const run=(extra:object)=>runner.run({submissionId,attemptId,container:'aulalab-comp-gpu',dataDir:'ignored',inputDir:'ignored',resultDir,limits,...extra} as any)
   // The queue gave this attempt a card: the broker gets the bare flag, never a device, a size or a count.
   await run({competition:onGpu,imageDigest:gpuImage,gpu:{device:'cluster',sliceMb:null,perDevice:1}})
   // A GPU environment without a card, and a CPU one: not a word, so an older broker still takes them.
@@ -249,7 +249,7 @@ test('a notebook asks the broker for a card only when the queue gave its attempt
   assert.deepEqual(sent.map(intent=>intent.gpu),[true,undefined,undefined])
   assert.deepEqual(sent.map(intent=>'gpu' in intent),[true,false,false])
   // The metric holds the hidden answers: it runs on the CPU, whatever the notebook had.
-  await runner.score({competition:onGpu,submissionId,attemptId,container:'colloq-comp-gpu-score',imageDigest:gpuImage,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
+  await runner.score({competition:onGpu,submissionId,attemptId,container:'aulalab-comp-gpu-score',imageDigest:gpuImage,secretDir:'ignored',submissionDir:'ignored',outDir,limits})
   assert.equal(sent.at(-1)!.kind,'metric')
   assert.equal('gpu' in sent.at(-1)!,false)
 })
@@ -262,7 +262,7 @@ test('a GPU notebook that found no free card goes back to the queue as a gpu sho
   }
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:true,current:true}]}),pollMs:1})
   const resultDir=path.join(TEST_ROOT,'data','competitions',competitionId,'s',submissionId,'attempts',attemptId,'result')
-  await assert.rejects(()=>runner.run({competition,submissionId,attemptId,container:'colloq-comp-no-card',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,gpu:{device:'cluster',sliceMb:null,perDevice:1}}),
+  await assert.rejects(()=>runner.run({competition,submissionId,attemptId,container:'aulalab-comp-no-card',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,gpu:{device:'cluster',sliceMb:null,perDevice:1}}),
     error=>error instanceof CompetitionResourcePending&&error.resource==='gpu'&&error.kind==='notebook')
 })
 
@@ -272,7 +272,7 @@ test('broker sends no package room without a set',async()=>{
   let sent:CompetitionJobIntent|null=null
   const client=fakeClient(intent=>{sent=intent;fs.writeFileSync(path.join(resultDir,'run.json'),JSON.stringify({attemptId,status:'ok',cell:0,cells:1}))})
   const runner=new BrokerCompetitionRunner(client as any,{catalog:()=>({schemaVersion:1,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:false,current:true}]}),pollMs:1})
-  await runner.run({competition,submissionId,attemptId,container:'colloq-comp-no-set',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,packagesMb:379})
+  await runner.run({competition,submissionId,attemptId,container:'aulalab-comp-no-set',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,packagesMb:379})
   assert.equal(sent!.limits.packagesMb,undefined)
 })
 
@@ -292,7 +292,7 @@ test('a GPU notebook refused at admission waits with the broker\'s words for the
   const catalog=()=>({schemaVersion:1 as const,release:'r',defaultEnvironment:'kaggle-base',environments:[{name:'kaggle-base',image,gpu:true,current:true}]})
   const resultDir=path.join(TEST_ROOT,'data','competitions',competitionId,'s',submissionId,'attempts',attemptId,'result')
   const run=(error:string)=>new BrokerCompetitionRunner(refused(error) as any,{catalog,pollMs:1})
-    .run({competition,submissionId,attemptId,container:'colloq-comp-refused',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,gpu:{device:'',sliceMb:null,perDevice:1}})
+    .run({competition,submissionId,attemptId,container:'aulalab-comp-refused',imageDigest:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits,gpu:{device:'',sliceMb:null,perDevice:1}})
   await assert.rejects(()=>run(words),(error:any)=>error instanceof CompetitionResourcePending&&error.resource==='gpu'&&error.detail===words&&
     error.teacherReason===`Competition Pod unschedulable (gpu): ${words}; retrying automatically.`)
   await assert.rejects(()=>run('Competition resources are unavailable'),(error:any)=>error instanceof CompetitionResourcePending&&error.detail===null&&
@@ -327,14 +327,14 @@ test('the wait for a GPU image\'s job counts from its start, not from the call; 
       async cancelCompetitionJob(){if(phase()!=='complete')cancelled=true},async competitionJobs(){return []},
     }}
   }
-  const gpuImage=`registry.example/colloq/kaggle-gpu@${digest}`
+  const gpuImage=`registry.example/aulalab/kaggle-gpu@${digest}`
   const catalog=()=>({schemaVersion:1 as const,release:'r',defaultEnvironment:'kaggle-base',environments:[
     {name:'kaggle-base',image,gpu:false,current:true},{name:'kaggle-gpu',image:gpuImage,gpu:true,current:true}]})
   const run=(gpu:boolean,queuedFor:number,runFor:number)=>{
     const clock={now:1_000_000}
     const job=timeline(clock,queuedFor,runFor)
     const runner=new BrokerCompetitionRunner(job.client as any,{catalog,pollMs:0,now:()=>clock.now})
-    return {job,outcome:runner.run({competition:gpu?{...competition,environment:'kaggle-gpu'}:competition,submissionId,attemptId,container:'colloq-comp-pull',
+    return {job,outcome:runner.run({competition:gpu?{...competition,environment:'kaggle-gpu'}:competition,submissionId,attemptId,container:'aulalab-comp-pull',
       imageDigest:gpu?gpuImage:image,dataDir:'ignored',inputDir:'ignored',resultDir,limits:{...limits,wallSeconds:wall}})}
   }
   // Five minutes pulling, then the whole limit: the GPU image's job is not given up on.

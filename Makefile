@@ -1,4 +1,4 @@
-# Colloq: everyday commands.
+# Aula Lab: everyday commands.
 #
 # The two things this exists for:
 #
@@ -11,7 +11,7 @@
 # Everything is computed on this machine. `make host` exposes it to the
 # outside with a tunnel, an outgoing connection, so neither a public IP nor
 # port forwarding on the router is needed. The tunnel goes either to
-# Cloudflare or to your own relay under *.colloq.ru (make relay-setup):
+# Cloudflare or to your own relay under *.example.edu (make relay-setup):
 # Cloudflare addresses do not open from Russia.
 #
 # A machine with its own public address has a shorter path: `make host-direct`
@@ -34,10 +34,10 @@ PY_DEFAULT := $(shell sed -nE 's/^ARG PARENT=python:([0-9]+\.[0-9]+)-.*/\1/p' ke
 # Which versions are offered at all: from the same place the panel takes them.
 PY_LIST := $(shell sed -nE "s/^export const PYTHON_VERSIONS = \[(.*)\].*/\1/p" shared/admin.ts | tr -d "' " | tr ',' ' ')
 # Parsing of the two header directives: comments to pip, the mechanism to us.
-PY_FROM = sed -nE 's/^[[:space:]]*\#[[:space:]]*colloq:[[:space:]]*from[[:space:]]+([^[:space:]]+)[[:space:]]*$$/\1/p'
-PY_PICK = sed -nE 's/^[[:space:]]*\#[[:space:]]*colloq:[[:space:]]*python[[:space:]]+(3\.[0-9]+)[[:space:]]*$$/\1/p'
+PY_FROM = sed -nE 's/^[[:space:]]*\#[[:space:]]*aulalab:[[:space:]]*from[[:space:]]+([^[:space:]]+)[[:space:]]*$$/\1/p'
+PY_PICK = sed -nE 's/^[[:space:]]*\#[[:space:]]*aulalab:[[:space:]]*python[[:space:]]+(3\.[0-9]+)[[:space:]]*$$/\1/p'
 # Which Python the environment will run on: the version is set by the ROOT of
-# the `# colloq: from` chain, because it comes from the base image, and a
+# the `# aulalab: from` chain, because it comes from the base image, and a
 # layer on top of a ready image does not change the interpreter. Eight steps:
 # the same ceiling the build has.
 PY_OF = py_of() { n="$$1"; i=0; while [ $$i -lt 8 ]; do u=$$($(PY_FROM) $(ENV_DIR)/$$n.txt 2>/dev/null | head -1); if [ -z "$$u" ] || [ ! -f $(ENV_DIR)/$$u.txt ]; then break; fi; n="$$u"; i=$$((i+1)); done; v=$$($(PY_PICK) $(ENV_DIR)/$$n.txt 2>/dev/null | head -1); printf '%s' "$${v:-$(PY_DEFAULT)}"; }
@@ -74,7 +74,7 @@ OFF  := \033[0m
 up: .env dirs docker-gid ## Local development in Docker: a separate kernel for each room
 	docker compose build kernel
 	docker compose up -d --build app
-	@printf '$(BOLD)colloq at$(OFF) $(CYAN)http://localhost:$(PORT)$(OFF)\n'
+	@printf '$(BOLD)aulalab at$(OFF) $(CYAN)http://localhost:$(PORT)$(OFF)\n'
 	@printf '$(DIM)kernel environment: $(CURRENT_ENV) · expose it: make host$(OFF)\n'
 
 dirs:
@@ -126,14 +126,14 @@ docker-gid:
 DEV := -f docker-compose.yml -f docker-compose.dev.yml
 
 dev: ## Development: the server with reload and Vite, each room with its own kernel. OPEN=0 — no browser, SHARE=1 — a link through a quick tunnel
-	@# The same supervisor that brings up a class for `colloq start`
+	@# The same supervisor that brings up a class for `aulalab start`
 	@# (cli/src/launch.ts): it creates .env itself, builds the kernel image,
 	@# starts the server under tsx watch and Vite, opens the browser, and on
 	@# Ctrl+C shuts everything down together with this database's kernels. A
 	@# server reload does not touch the rooms' kernels. The target used to only
 	@# build the compose kernel, and the server was brought up with a second
 	@# command, which people forgot about.
-	@# SHARE=1 is the same as `colloq start --share` (cli/src/launch-share.ts).
+	@# SHARE=1 is the same as `aulalab start --share` (cli/src/launch-share.ts).
 	@node --import tsx cli/src/launch.ts dev $(if $(filter 0,$(OPEN)),--no-open) $(if $(filter 1,$(SHARE)),--share)
 
 ## How this actually runs.
@@ -145,18 +145,18 @@ dev: ## Development: the server with reload and Vite, each room with its own ker
 ## itself, the server on the host cannot find it, and the seminar files split
 ## across two different folders. The container still looks healthy meanwhile,
 ## so the set of files is given here explicitly.
-PID := .colloq.pid
-LOG := .colloq.log
+PID := .aulalab.pid
+LOG := .aulalab.log
 
 run: .env dirs ## Build and start. FAST=1 — do not precompress the frontend (only for editing code)
 	@$(MAKE) --no-print-directory stop
-	@# The containerized app and the host server are two Colloqs on one port.
+	@# The containerized app and the host server are two AulaLabs on one port.
 	@# The second one used to simply fail with EADDRINUSE, and after `make down`
 	@# it took the same place, empty: the same localhost:3000, a different
 	@# database, a different setup-token, links from the schedule answer 404.
 	@# Now this is said out loud, with the one command that fixes it.
 	@if docker compose ps --status running --services 2>/dev/null | grep -qx app; then \
-	  printf '$(RED)app is already running in docker — that is a second Colloq on the same port$(OFF)\n'; \
+	  printf '$(RED)app is already running in docker — that is a second Aula Lab on the same port$(OFF)\n'; \
 	  printf '$(DIM)stop it: make down · or use it as it is: make logs$(OFF)\n'; \
 	  exit 1; \
 	fi
@@ -176,7 +176,7 @@ run: .env dirs ## Build and start. FAST=1 — do not precompress the frontend (o
 	@if lsof -nP -iTCP:$(PORT) -sTCP:LISTEN -t >/dev/null 2>&1; then \
 	  printf '$(RED)port $(PORT) is already taken:$(OFF)\n'; \
 	  lsof -nP -iTCP:$(PORT) -sTCP:LISTEN | tail -n +2 | awk '{printf "  %s (pid %s)\n", $$1, $$2}'; \
-	  printf '$(DIM)that is a second Colloq — stop it and try again: make stop · make down$(OFF)\n'; \
+	  printf '$(DIM)that is a second Aula Lab — stop it and try again: make stop · make down$(OFF)\n'; \
 	  exit 1; \
 	fi
 	docker compose $(DEV) build kernel
@@ -227,7 +227,7 @@ run: .env dirs ## Build and start. FAST=1 — do not precompress the frontend (o
 	@# The link is PUBLIC_URL, and without it the same thing the server takes
 	@# (config.ts · readPublicUrl): localhost:PORT. The line may be missing
 	@# from .env altogether: it is not in the file that the .env target and
-	@# colloq write, and a ready server was announced with an empty "colloq
+	@# aulalab write, and a ready server was announced with an empty "aulalab
 	@# at".
 	@ok=; for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do \
 	  if ! kill -0 "$$(cat $(PID) 2>/dev/null)" 2>/dev/null; then break; fi; \
@@ -236,7 +236,7 @@ run: .env dirs ## Build and start. FAST=1 — do not precompress the frontend (o
 	done; \
 	if [ -n "$$ok" ]; then \
 	  url="$$(grep -E '^PUBLIC_URL=' .env | tail -1 | cut -d= -f2-)"; \
-	  printf '\n$(BOLD)colloq at$(OFF) $(CYAN)%s$(OFF)\n' "$${url:-http://localhost:$(PORT)}"; \
+	  printf '\n$(BOLD)aulalab at$(OFF) $(CYAN)%s$(OFF)\n' "$${url:-http://localhost:$(PORT)}"; \
 	  printf '$(DIM)logs: make logs-run · stop: make stop · expose it: make host$(OFF)\n'; \
 	elif kill -0 "$$(cat $(PID) 2>/dev/null)" 2>/dev/null; then \
 	  printf '$(RED)the server is running but does not report ready — did the kernel fail to start?$(OFF)\n'; \
@@ -255,7 +255,7 @@ stop: ## Stop the server on the host (the kernel in docker stays)
 	@# We do not know about other receipts: the server may have been started by
 	@# something other than make run, and then its PID is not written anywhere.
 	@# Saying so out loud is the only way not to leave a person with two
-	@# Colloqs, the second of which they do not suspect.
+	@# AulaLabs, the second of which they do not suspect.
 	@others="$$(pgrep -f 'node server/dist/server.js' 2>/dev/null || true)"; \
 	if [ -n "$$others" ]; then \
 	  printf '$(RED)server processes are still running on the host:$(OFF) %s\n' "$$(echo $$others | tr '\n' ' ')"; \
@@ -269,12 +269,12 @@ backup-legacy: ## Backup of the local development instance (the database and the
 	@# The recipe used to live right here as thirty lines, and now it lies in
 	@# scripts/backup-local.sh, exactly as with restore-legacy below and for
 	@# the same reason: scripts/ goes into the pip wheel, the Makefile does
-	@# not, and for installed colloq this backup was out of reach altogether
+	@# not, and for installed aulalab this backup was out of reach altogether
 	@# ("make: command not found"). There must not be a second description of
 	@# the same thing, so one line is left here.
 	@#
-	@# The script takes the directory to back up from COLLOQ_HOME
-	@# (scripts/lib.sh · COLLOQ_STATE_ROOT). Nobody names it here, and rightly
+	@# The script takes the directory to back up from AULALAB_HOME
+	@# (scripts/lib.sh · AULALAB_STATE_ROOT). Nobody names it here, and rightly
 	@# so: in the repository the state root is the repository root.
 	@./scripts/backup-local.sh
 
@@ -307,7 +307,7 @@ down: ## Stop everything (data and seminar files stay)
 	@# the compose network, and a network with foreign containers inside is not
 	@# removed: `docker compose down` would say "Resource is still in use" and
 	@# leave it hanging.
-	@ids="$$(docker ps -aq --filter 'label=colloq.kind=room-kernel' 2>/dev/null)"; \
+	@ids="$$(docker ps -aq --filter 'label=aulalab.kind=room-kernel' 2>/dev/null)"; \
 	if [ -n "$$ids" ]; then \
 	  docker rm -f $$ids >/dev/null && \
 	  printf '$(DIM)seminar containers removed: %s$(OFF)\n' "$$(echo $$ids | wc -w | tr -d ' ')"; \
@@ -318,7 +318,7 @@ down: ## Stop everything (data and seminar files stay)
 	@# working over an empty spot, starting kernels for the rooms anew. Saying
 	@# so is cheaper than stopping the service behind the back of whoever asked
 	@# to remove the containers.
-	@if systemctl is-active --quiet colloq 2>/dev/null; then \
+	@if systemctl is-active --quiet aulalab 2>/dev/null; then \
 	  printf '$(DIM)the server is still running as a service — to stop it: make service-stop$(OFF)\n'; \
 	fi
 
@@ -334,7 +334,7 @@ restart: ## Restart the server in docker without rebuilding (the kernel is left 
 	@# a promise about the server, not about the kernel.
 	@if docker compose ps --status running --services 2>/dev/null | grep -qx app; then \
 	  docker compose restart app; \
-	elif [ -f /etc/systemd/system/colloq.service ]; then \
+	elif [ -f /etc/systemd/system/aulalab.service ]; then \
 	  printf '$(DIM)app is not running in docker, but the service is installed — restart that instead:$(OFF)\n'; \
 	  printf '$(DIM)make service-restart$(OFF)\n'; \
 	else \
@@ -350,14 +350,14 @@ status: ## What is running and in what state
 	@# On a dedicated machine the server runs as a service, and it is not in
 	@# the compose output at all: there are only kernels there. Without this
 	@# line `make status` would show an empty list over a working instance.
-	@if [ -f /etc/systemd/system/colloq.service ]; then \
-	  printf '\n$(DIM)server: systemd service — $(OFF)%s\n' "$$(systemctl is-active colloq 2>/dev/null || echo unknown)"; \
+	@if [ -f /etc/systemd/system/aulalab.service ]; then \
+	  printf '\n$(DIM)server: systemd service — $(OFF)%s\n' "$$(systemctl is-active aulalab 2>/dev/null || echo unknown)"; \
 	  printf '$(DIM)details: make service-status$(OFF)\n'; \
 	fi
 	@# The seminar containers live apart from compose: a pair per room (its own
 	@# and "own", for the students' personal notebooks); they start during the
 	@# class and are removed when the room has been empty for two hours.
-	@rooms="$$(docker ps --filter 'label=colloq.kind=room-kernel' --format '{{.Label "colloq.session"}} {{.Label "colloq.role"}} {{.Status}}' 2>/dev/null)"; \
+	@rooms="$$(docker ps --filter 'label=aulalab.kind=room-kernel' --format '{{.Label "aulalab.session"}} {{.Label "aulalab.role"}} {{.Status}}' 2>/dev/null)"; \
 	if [ -n "$$rooms" ]; then \
 	  printf '\n$(DIM)seminar kernels:$(OFF)\n'; echo "$$rooms" | sed 's/^/  /'; \
 	fi
@@ -379,8 +379,8 @@ shell: ## A shell inside the kernel, to see what is actually installed there
 	@if docker compose ps --status running --services 2>/dev/null | grep -qx kernel; then \
 	  docker compose exec kernel bash; \
 	else \
-	  printf '$(DIM)no shared kernel — opening a throwaway container colloq-kernel:$(CURRENT_ENV)$(OFF)\n'; \
-	  docker run --rm -it colloq-kernel:$(CURRENT_ENV) bash; \
+	  printf '$(DIM)no shared kernel — opening a throwaway container aulalab-kernel:$(CURRENT_ENV)$(OFF)\n'; \
+	  docker run --rm -it aulalab-kernel:$(CURRENT_ENV) bash; \
 	fi
 
 ## ------------------------------------------------------- dedicated machine
@@ -399,7 +399,7 @@ shell: ## A shell inside the kernel, to see what is actually installed there
 ## docker-compose.yml, nor kernel/Dockerfile, nor .env. On the host all of
 ## that lies nearby. The price is named out loud: the service runs as root (it
 ## needs docker.sock anyway, and that is root-equivalent), and Node appears on
-## the machine. Details: the header of deploy/colloq.service and the README.
+## the machine. Details: the header of deploy/aulalab.service and the README.
 
 service-install: ## Compatibility: k3s install, RELEASE=/path/release.json
 	@# It also updates: git pull && make service-install; the build and the
@@ -434,7 +434,7 @@ host: .env ## Expose a seminar to the outside and get a link. HOST=... — your 
 	@# holds as long as the window is open. Where exactly the tunnel goes is
 	@# decided by the name: under RELAY_DOMAIN, to your own relay; anything
 	@# else, to Cloudflare.
-	@COLLOQ_HOSTNAME="$(HOST)" ./scripts/host.sh
+	@AULALAB_HOSTNAME="$(HOST)" ./scripts/host.sh
 
 host-direct: .env ## The same, but straight from this machine: caddy here, no relay. HOST=name
 	@# For a machine with its own public address and real ports 80 and 443.
@@ -452,8 +452,8 @@ host-direct: .env ## The same, but straight from this machine: caddy here, no re
 	@# impossible there.
 	@#
 	@# sudo: privileged ports are taken and the caddy service is installed.
-	@test -n "$(HOST)" || { printf '$(RED)Specify the address: make host-direct HOST=hse.colloq.ru$(OFF)\n'; exit 1; }
-	@COLLOQ_DIRECT=1 COLLOQ_HOSTNAME="$(HOST)" ./scripts/host.sh
+	@test -n "$(HOST)" || { printf '$(RED)Specify the address: make host-direct HOST=hse.example.edu$(OFF)\n'; exit 1; }
+	@AULALAB_DIRECT=1 AULALAB_HOSTNAME="$(HOST)" ./scripts/host.sh
 
 ui: ## Check the interface with a real browser. HEADED=1 — with a visible window
 	@# Added after a button that did nothing: the types matched, the tests were
@@ -476,7 +476,7 @@ load: ## Load test rig: 500 students in one room. N=500 RAMP=60 SPID=<pid>
 	@# Do not run it against ANOTHER room, and there is no way to: the rig
 	@# creates its own and deletes it.
 	@# SPID is the pid of the server process, for CPU and RSS; it is not
-	@# guessed: service: systemctl show -p MainPID colloq, make run: cat $(PID).
+	@# guessed: service: systemctl show -p MainPID aulalab, make run: cat $(PID).
 	@# ulimit: five hundred students are a thousand sockets, and on macOS the
 	@# default is fewer than needed, so the rig would run into the limits of
 	@# its own machine.
@@ -537,7 +537,7 @@ class-probe: ## What the relay does to a class machine's tunnel (K0). MODE=home|
 	@# alone moves a gigabyte. On a bare VM the file runs with node alone
 	@# (its header says how); here tsx runs it. HOST only from the command
 	@# line: zsh keeps the computer's own name in HOST.
-	@test -n "$(MODE)" || { printf '$(RED)Specify the mode: make class-probe MODE=machine HOST=probe-lab.colloq.ru OUT=k0-C.json$(OFF)\n'; exit 1; }
+	@test -n "$(MODE)" || { printf '$(RED)Specify the mode: make class-probe MODE=machine HOST=probe-lab.example.edu OUT=k0-C.json$(OFF)\n'; exit 1; }
 	@node --import tsx scripts/class-probe.mts $(MODE) $(if $(filter command line,$(origin HOST)),--host "$(HOST)",) $(if $(OUT),--out "$(OUT)",) $(ARGS)
 
 class-load: ## A class on machines under load: N students for MIN minutes. URL=… N=30 MIN=60 CLASS=machines|personal|gpu|home OWN=0.5 BIG=150 WORKERS=8 EPOCH=500 OUT=…
@@ -586,22 +586,22 @@ class-load: ## A class on machines under load: N students for MIN minutes. URL=�
 	 $(if $(filter command line,$(origin ENV)),LOAD_ENVIRONMENT="$(ENV)",) $(if $(BASELINE),LOAD_BASELINE="$(BASELINE)",) $(if $(OUT),LOAD_OUT="$(OUT)",) \
 	 exec node --import tsx scripts/class-load.mts
 
-mirror: ## Update the colloq.cc mirror (the same site for those who can reach Cloudflare). DRY=1 — only tell
+mirror: ## Update the github.com/vighneshtule/AulaLab mirror (the same site for those who can reach Cloudflare). DRY=1 — only tell
 	@# A second name, not a second site: the content is the same, from site/,
-	@# and it has one origin, colloq.ru on GitHub Pages. Pages serves a site
+	@# and it has one origin, example.edu on GitHub Pages. Pages serves a site
 	@# under ONE name of its own (site/CNAME), so a second CNAME cannot do this:
-	@# at the Cloudflare edge a worker sits and swaps the Host. colloq.ru itself
+	@# at the Cloudflare edge a worker sits and swaps the Host. example.edu itself
 	@# meanwhile stays grey-clouded and points straight at Pages: Cloudflare
 	@# addresses do not open from Russia, and it must not be touched. Details
-	@# next to the script: deploy/cloudflare/colloq-cc/README.md.
-	@./deploy/cloudflare/colloq-cc/deploy.sh $(if $(DRY),--dry-run,)
+	@# next to the script: deploy/cloudflare/aulalab-cc/README.md.
+	@./deploy/cloudflare/aulalab-cc/deploy.sh $(if $(DRY),--dry-run,)
 
 site-icons: ## Redraw the site icons from site/favicon.svg (favicon.ico, PNG 48/96/192, apple-touch, icon-512)
 	@node --import tsx scripts/site-icons.mts
 
 site-og: ## Redraw the link cards of the landing page (og.png, og-en.png, og-cc.png)
 	@# Three 1200×630 pictures for messenger previews: Russian, English, and the
-	@# same English one captioned colloq.cc for the mirror. After redrawing,
+	@# same English one captioned github.com/vighneshtule/AulaLab for the mirror. After redrawing,
 	@# update the ?v= marks of og:image in site/index.html and
 	@# site/en/index.html (tests/site.test.mts checks them); otherwise a chat
 	@# shows the old picture from its cache.
@@ -619,7 +619,7 @@ course: ## A course from the schedule in a spreadsheet. SHEET=<id> GID=<gid> COL
 	  --sheet "$(SHEET)" --gid "$${GID:-0}" --column "$(COL)" \
 	  $(if $(NAME),--name "$(NAME)",) $(if $(BLURB),--blurb "$(BLURB)",) $(if $(DRY),--dry,)
 
-relay-setup: ## Install the relay for *.colloq.ru. WHERE=root@address
+relay-setup: ## Install the relay for *.example.edu. WHERE=root@address
 	@test -n "$(WHERE)" || { printf '$(RED)Specify the machine: make relay-setup WHERE=root@203.0.113.10$(OFF)\n'; exit 1; }
 	@./scripts/relay-setup.sh "$(WHERE)"
 
@@ -645,19 +645,19 @@ tunnel-setup: ## Set up a permanent address, once. HOST=seminar.example.ru
 ## not a convenience but half of the job. Details and the price of the
 ## decision: the header of scripts/vast.sh and the README.
 ##
-##   make vast-up GPU="RTX 5070" HOST=demo.colloq.ru
+##   make vast-up GPU="RTX 5070" HOST=demo.example.edu
 ##
 ## rents, deploys, restores the backup of this environment from backups/ and
 ## opens the address to the outside. Without HOST and GPU everything is as
 ## before: the card from VAST_* in .env, no address is brought up.
 ##
 ## There can be several environments, and they are several machines:
-## hse.colloq.ru and demo.colloq.ru are two rentals, two bills, two databases,
+## hse.example.edu and demo.example.edu are two rentals, two bills, two databases,
 ## sharing only the code and the relay. An environment is called by one word,
 ## and that word is also the first part of the address, the label on vast and
 ## the backup subdirectory:
 ##
-##   make vast-up NAME=demo HOST=demo.colloq.ru   ·   make vast-sync NAME=demo
+##   make vast-up NAME=demo HOST=demo.example.edu   ·   make vast-sync NAME=demo
 ##
 ## What happened during the class, in one command, without a walk over ssh:
 ##
@@ -669,9 +669,9 @@ tunnel-setup: ## Set up a permanent address, once. HOST=seminar.example.ru
 
 VAST_SCRIPT := $(if $(RELEASE),vast.sh,vast-legacy.sh)
 
-vast-up: ## Rent a GPU machine and deploy Colloq. NAME=environment HOST=name GPU="RTX 5070" OFFER=number
+vast-up: ## Rent a GPU machine and deploy Aula Lab. NAME=environment HOST=name GPU="RTX 5070" OFFER=number
 	@# NAME, HOST and GPU go as the environment, not as arguments, like
-	@# COLLOQ_HOSTNAME in `make host`. Empty, they mean "not asked for": the
+	@# AULALAB_HOSTNAME in `make host`. Empty, they mean "not asked for": the
 	@# script then behaves exactly as before they appeared.
 	@# Two paths. Without RELEASE, the old one (scripts/vast-legacy.sh): the
 	@# working tree, the backup from backups/<environment>/, a systemd service and
@@ -702,7 +702,7 @@ vast-logs: ## Fetch the logs from a rented machine into logs/<environment>/<date
 vast-down: ## Destroy the rented machine, together with everything on it. NAME=environment
 	@NAME="$(NAME)" ./scripts/$(VAST_SCRIPT) down
 
-vast-adopt: ## Make an environment of a machine with the old "colloq" label. NAME=demo
+vast-adopt: ## Make an environment of a machine with the old "aulalab" label. NAME=demo
 	@# The label is changed on the live instance, without re-creating it: the
 	@# seminar on it is not interrupted, the disk and the tunnel stay as they
 	@# are. This is needed exactly once, for a machine rented before there were
@@ -713,7 +713,7 @@ vast-adopt: ## Make an environment of a machine with the old "colloq" label. NAM
 ## ------------------------------------------------------ image for vast
 ##
 ## A ready image instead of a build on the rented machine: the server, the
-## client, the tunnels and the kernel build context in one colloq-vast. On a
+## client, the tunnels and the kernel build context in one aulalab-vast. On a
 ## Vast VM it is started by the template's on-start (deploy/vast/onstart.sh);
 ## the room kernels are sibling containers on this VM's docker. Why a VM and
 ## not a regular Docker instance: deploy/vast/README.md, "Design".
@@ -723,11 +723,11 @@ vast-adopt: ## Make an environment of a machine with the old "colloq" label. NAM
 # would one day tag the build as docker.io/vastai/kvm:… . `=`, not `?=`: an
 # environment variable with the same name does not leak in here, only
 # make TAG=….
-TAG = colloq-vast:dev
+TAG = aulalab-vast:dev
 
 .PHONY: vast-vm vast-image vast-image-run vast-image-stop
 
-vast-vm: ## Rent a Vast VM that boots the colloq-vast image. HOST=name GPU="RTX 3070" GPUS=2 GPU_RAM=24 CPU=48 RAM=96 DISK=100 MAX_PRICE=1.5 OFFER=number INSTANCE=id
+vast-vm: ## Rent a Vast VM that boots the aulalab-vast image. HOST=name GPU="RTX 3070" GPUS=2 GPU_RAM=24 CPU=48 RAM=96 DISK=100 MAX_PRICE=1.5 OFFER=number INSTANCE=id
 	@# Over the API, because only a rent request with "vm": true makes a VM;
 	@# the console's template starts even vastai/kvm as a Docker instance. The
 	@# on-start is backups/vast-onstart.sh (ONSTART=… for another one). Empty
@@ -736,17 +736,17 @@ vast-vm: ## Rent a Vast VM that boots the colloq-vast image. HOST=name GPU="RTX 
 	@NAME="$(NAME)" HOST="$(HOST)" GPU="$(GPU)" GPUS="$(GPUS)" GPU_RAM="$(GPU_RAM)" CPU="$(CPU)" RAM="$(RAM)" \
 	  DISK="$(DISK)" MAX_PRICE="$(MAX_PRICE)" OFFER="$(OFFER)" INSTANCE="$(INSTANCE)" ./scripts/vast-vm.sh
 
-vast-image: ## Build the colloq-vast image. TAG=name:tag PLATFORM=linux/amd64
+vast-image: ## Build the aulalab-vast image. TAG=name:tag PLATFORM=linux/amd64
 	@# The version comes from the root package.json (its only source, see
 	@# scripts/version.mts), the revision from git: both go into the OCI labels
-	@# and into `colloq-vast version`. Publishing is a separate step for the
+	@# and into `aulalab-vast version`. Publishing is a separate step for the
 	@# owner: docker push.
 	@# The revision gets -dirty if the tree differs from HEAD: otherwise the
 	@# label of an image built from uncommitted code would name some other
 	@# commit as its source.
 	docker build -f deploy/vast/Dockerfile \
 	  $(if $(PLATFORM),--platform $(PLATFORM),) \
-	  --build-arg COLLOQ_VERSION="$$(node -p "require('./package.json').version")" \
+	  --build-arg AULALAB_VERSION="$$(node -p "require('./package.json').version")" \
 	  --build-arg GIT_SHA="$$(git rev-parse --short HEAD)$$(git diff --quiet HEAD -- 2>/dev/null || echo -dirty)" \
 	  -t "$(TAG)" .
 
@@ -765,13 +765,13 @@ vast-image-stop: ## Remove the make vast-image-run rig together with everything 
 ## ---------------------------------------------- machines for submissions
 ##
 ## Docker machines that run another instance's submissions («машины для
-## посылок», docs/architecture/remote-runners.md): the same colloq-server image
+## посылок», docs/architecture/remote-runners.md): the same aulalab-server image
 ## in its `runner` mode, joined to a home with its owner's code. The home keeps
 ## the queue, the hidden answers and the metric; a machine only runs notebooks.
 ## On Vast they are rented, updated and destroyed as a fleet, found by their
-## label colloq-runner; anywhere else, colloq-host runner up does it by hand.
+## label aulalab-runner; anywhere else, aulalab-host runner up does it by hand.
 ##
-##   make vast-runner COUNT=3 CODE=<code> URL=https://vsos.colloq.ru
+##   make vast-runner COUNT=3 CODE=<code> URL=https://vsos.example.edu
 ##   make runners-update        ·   make runners-down        (URL=… only that home's machines)
 
 .PHONY: vast-runner runners-update runners-down runner-dev kernel-publish
@@ -779,7 +779,7 @@ vast-image-stop: ## Remove the make vast-image-run rig together with everything 
 vast-runner: ## Rent Vast VMs that run another instance's submissions. COUNT=3 CODE=… URL=https://… GPU="RTX 4090" GPUS=2 DISK=150 MAX_PRICE=1.5 DESTROY_UNJOINED=1
 	@# COUNT copies of scripts/vast-vm.sh with ROLE=runner, rented one after
 	@# another (each takes the cheapest offer, and two at once would go for the
-	@# same machine) and booted together; each waits for `colloq-host runner
+	@# same machine) and booted together; each waits for `aulalab-host runner
 	@# status` on its VM. The on-start carries the home's address and the code,
 	@# never the relay token. DISK defaults to 120 GB: every Vast VM has a card,
 	@# and a machine with cards is asked for the GPU kernels. A machine rented
@@ -789,8 +789,8 @@ vast-runner: ## Rent Vast VMs that run another instance's submissions. COUNT=3 C
 	  CPU="$(CPU)" RAM="$(RAM)" DISK="$(DISK)" MAX_PRICE="$(MAX_PRICE)" DESTROY_UNJOINED="$(DESTROY_UNJOINED)" ./scripts/vast-runner.sh up
 
 runners-update: ## Every rented machine for submissions to its home's version, its runs finished first. URL=… VERSION=… NOW=1 FORCE=1
-	@# Over ssh, `colloq-host runner update` on every instance labelled
-	@# colloq-runner, at once, detached on each machine and polled from here:
+	@# Over ssh, `aulalab-host runner update` on every instance labelled
+	@# aulalab-runner, at once, detached on each machine and polled from here:
 	@# a machine whose runner code differs from its home's gets no new work
 	@# (decision 5), so after updating the home this is the second half. Each
 	@# machine is asked its home first: URL= takes only that home's machines,
@@ -800,12 +800,12 @@ runners-update: ## Every rented machine for submissions to its home's version, i
 	@# home's queue instead of waiting for them; nobody's attempts are spent
 	@# either way. Classes on a machine keep running: its new agent adopts
 	@# their kernels. A machine's first update to 0.25 goes twice: its old
-	@# colloq-host leaves the agent off the host's network, where it takes no
+	@# aulalab-host leaves the agent off the host's network, where it takes no
 	@# classes, and the one that update brought moves it.
 	@NAME="$(NAME)" URL="$(URL)" VERSION="$(VERSION)" NOW="$(NOW)" FORCE="$(FORCE)" ./scripts/vast-runner.sh update
 
 runners-down: ## Every rented machine for submissions leaves its home, then is destroyed. URL=… NOW=1 — without waiting for its runs
-	@# `colloq-host runner leave` over ssh (its runs finish, it revokes itself
+	@# `aulalab-host runner leave` over ssh (its runs finish, it revokes itself
 	@# on the home), then the VM is destroyed with its disk; a leave waits for
 	@# the home only while it answers (ten minutes of silence give it up, and
 	@# the VM goes all the same). The list asked about names each machine's
@@ -839,9 +839,9 @@ runner-dev: ## A machine for submissions on this computer, against a dev home. C
 	@# dev's home has no bundle, so it reports `dev`, which only an agent
 	@# running from the sources matches. DIST=1 runs the built
 	@# server/dist/runner.js instead, for a home started with make run from
-	@# the same build (npm run build -w @colloq/server makes both).
+	@# the same build (npm run build -w @aulalab/server makes both).
 	@#
-	@# Its tree goes into a fresh directory under .colloq/ (removed when the
+	@# Its tree goes into a fresh directory under .aulalab/ (removed when the
 	@# agent stops), not into the system's temp: the submissions' containers
 	@# mount it by its path, and Docker Desktop and colima share the home
 	@# directory with their VM, not /var/folders. STATE= keeps one across
@@ -857,20 +857,20 @@ runner-dev: ## A machine for submissions on this computer, against a dev home. C
 	@# own paths as they are.
 	@test -n "$(CODE)" || { printf '$(RED)Specify the code from the home'"'"'s panel: make runner-dev CODE=<32 hex digits>$(OFF)\n'; exit 1; }
 	@test -n "$(URL)" || { printf '$(RED)Specify the home: make runner-dev URL=http://localhost:<port> CODE=…, a dev home of your own on another port than this checkout'"'"'s server (PORT= in its .env, then make dev there), never the live instance$(OFF)\n'; exit 1; }
-	@$(if $(filter 1,$(DIST)),test -f server/dist/runner.js || { printf '$(RED)No server/dist/runner.js: npm run build -w @colloq/server$(OFF)\n'; exit 1; },:)
+	@$(if $(filter 1,$(DIST)),test -f server/dist/runner.js || { printf '$(RED)No server/dist/runner.js: npm run build -w @aulalab/server$(OFF)\n'; exit 1; },:)
 	@# Ctrl+C reaches the agent, which hands back what it holds; this shell
 	@# waits for it (the INT trap is a no-op, not an ignore, which the agent
 	@# would inherit) and only then removes the tree.
-	@mkdir -p .colloq; \
+	@mkdir -p .aulalab; \
 	 state="$(STATE)"; keep=1; \
-	 if [ -z "$$state" ]; then state="$$(mktemp -d "$$PWD/.colloq/runner-dev.XXXXXX")"; keep=; fi; \
+	 if [ -z "$$state" ]; then state="$$(mktemp -d "$$PWD/.aulalab/runner-dev.XXXXXX")"; keep=; fi; \
 	 case "$$state" in /*) ;; *) state="$$PWD/$$state" ;; esac; \
 	 mkdir -p "$$state"; \
 	 if [ -z "$$keep" ]; then trap 'rm -rf "$$state"' EXIT; trap ':' INT TERM; fi; \
 	 printf '$(DIM)machine tree: %s$(OFF)\n' "$$state"; \
 	 env -u DATA_HOST_DIR -u WORKSPACE_HOST_DIR \
-	 COLLOQ_RUNNER_STATE="$$state" DATA_DIR="$$state/data" NODE_ENV=development KERNEL_BACKEND=docker COMPETITION_BACKEND=docker \
-	 COLLOQ_RUNNER_JOIN="$(URL)#$(CODE)" \
+	 AULALAB_RUNNER_STATE="$$state" DATA_DIR="$$state/data" NODE_ENV=development KERNEL_BACKEND=docker COMPETITION_BACKEND=docker \
+	 AULALAB_RUNNER_JOIN="$(URL)#$(CODE)" \
 	 $(or $(wildcard $(RUNNER_DEV_NODE22)),node) $(if $(filter 1,$(DIST)),server/dist/runner.js,--import tsx server/src/runner-agent/main.ts)
 
 kernel-publish: ## Build, check and push the GPU kernels of this release to GHCR (a builder with a card). ENV=base-gpu,kaggle-gpu OWNER=…
@@ -913,7 +913,7 @@ env-new: ## Create an environment. NAME=cv [PYTHON=3.12]
 	@# default in the Dockerfile is raised one day.
 	@: > $(ENV_DIR)/$(NAME).txt
 	@test -z "$(PYTHON)" || test "$(PYTHON)" = "$(PY_DEFAULT)" || \
-	  printf '# colloq: python $(PYTHON)\n#\n' >> $(ENV_DIR)/$(NAME).txt
+	  printf '# aulalab: python $(PYTHON)\n#\n' >> $(ENV_DIR)/$(NAME).txt
 	@printf '# Environment "$(NAME)". It is installed on top of the base from kernel/requirements.txt,\n' >> $(ENV_DIR)/$(NAME).txt
 	@printf '# so numpy/pandas/matplotlib/plotly/scikit-learn need not be listed.\n#\n' >> $(ENV_DIR)/$(NAME).txt
 	@printf '# One package per line, as in an ordinary requirements.txt:\n#\n' >> $(ENV_DIR)/$(NAME).txt
@@ -924,7 +924,7 @@ env-new: ## Create an environment. NAME=cv [PYTHON=3.12]
 env-build: ## Build an environment image without switching to it. NAME=cv
 	@test -n "$(NAME)" || { printf '$(RED)Specify the name: make env-build NAME=cv$(OFF)\n'; exit 1; }
 	@test -f $(ENV_DIR)/$(NAME).txt || { printf '$(RED)No $(ENV_DIR)/$(NAME).txt — first make env-new NAME=$(NAME)$(OFF)\n'; exit 1; }
-	@# The inheritance chain. `# colloq: from base-gpu` in the header means
+	@# The inheritance chain. `# aulalab: from base-gpu` in the header means
 	@# "build on top of that environment's image": the parent goes first, and
 	@# only if its image does not exist yet. That is what all this is for: an
 	@# edit of the list must not install torch again. A loop or a chain that is
@@ -942,18 +942,18 @@ env-build: ## Build an environment image without switching to it. NAME=cv
 	  chain="$$name $$chain"; \
 	  [ $$(printf '%s' "$$chain" | wc -w) -le 8 ] || { \
 	    printf '$(RED)The environment chain is longer than eight links$(OFF)\n'; exit 1; }; \
-	  name=$$(sed -nE 's/^[[:space:]]*#[[:space:]]*colloq:[[:space:]]*from[[:space:]]+([^[:space:]]+)[[:space:]]*$$/\1/p' $(ENV_DIR)/$$name.txt | head -1); \
+	  name=$$(sed -nE 's/^[[:space:]]*#[[:space:]]*aulalab:[[:space:]]*from[[:space:]]+([^[:space:]]+)[[:space:]]*$$/\1/p' $(ENV_DIR)/$$name.txt | head -1); \
 	  case "$$name" in '') ;; *[!a-z0-9-]*|-*|*-) \
 	    printf '$(RED)"%s" cannot be an environment name — neither as a file nor as an image tag$(OFF)\n' "$$name"; \
 	    exit 1;; esac; \
 	done; \
 	parent=; \
 	for step in $$chain; do \
-	  if [ "$$step" = "$(NAME)" ] || ! docker image inspect colloq-kernel:$$step >/dev/null 2>&1; then \
+	  if [ "$$step" = "$(NAME)" ] || ! docker image inspect aulalab-kernel:$$step >/dev/null 2>&1; then \
 	    printf '$(BOLD)building %s$(OFF)$(DIM)%s$(OFF)\n' "$$step" "$${parent:+ on top of $$parent}"; \
 	    KERNEL_ENV=$$step KERNEL_PARENT=$$parent docker compose build kernel; \
 	  fi; \
-	  parent=colloq-kernel:$$step; \
+	  parent=aulalab-kernel:$$step; \
 	done
 
 env-use: .env ## The default environment for new seminars. NAME=cv
@@ -961,7 +961,7 @@ env-use: .env ## The default environment for new seminars. NAME=cv
 	@# the line below created a .env of a single KERNEL_ENV=… line, and after
 	@# that neither make up nor make dev wrote their own file (it exists, after
 	@# all): the class ran with the defaults, with a well-known kernel token.
-	@# The same bug was in `colloq env use` (cli/src/commands/env.ts); there
+	@# The same bug was in `aulalab env use` (cli/src/commands/env.ts); there
 	@# the same localClassEnv is taken as the base.
 	@test -n "$(NAME)" || { printf '$(RED)Specify the name: make env-use NAME=cv$(OFF)\n'; exit 1; }
 	@test -f $(ENV_DIR)/$(NAME).txt || { printf '$(RED)No $(ENV_DIR)/$(NAME).txt — first make env-new NAME=$(NAME)$(OFF)\n'; exit 1; }
@@ -992,7 +992,7 @@ env-freeze: ## Show the actual versions from the kernel
 	@if docker compose ps --status running --services 2>/dev/null | grep -qx kernel; then \
 	  docker compose exec -T kernel pip freeze; \
 	else \
-	  docker run --rm colloq-kernel:$(CURRENT_ENV) pip freeze; \
+	  docker run --rm aulalab-kernel:$(CURRENT_ENV) pip freeze; \
 	fi
 
 ## ------------------------------------------------------------------- other
@@ -1005,13 +1005,13 @@ check: ## Tests and type checking
 
 ## ---------------------------------------------------------------- package
 
-# The package for the teacher: `pip install colloq`, then `colloq`, and the
+# The package for the teacher: `pip install aulalab`, then `aulalab`, and the
 # class runs on their machine. There is no repository, no make and no tsx
 # there, so everything that today is computed from the sources (the frontend
 # build, the tree fingerprint, npm run build) is computed HERE, once. The sign
-# of "arrived built" is the .colloq-dist.json file at the application root.
+# of "arrived built" is the .aulalab-dist.json file at the application root.
 
-pack: ## Build the pip distribution into python/colloq/_app. SKIP_BUILD=1 — take what is already built
+pack: ## Build the pip distribution into python/aulalab/_app. SKIP_BUILD=1 — take what is already built
 	@# SKIP_BUILD comes in handy in exactly two cases: when the packaging is
 	@# being edited and run again and again, and when a class is running on
 	@# this machine: `npm run build:optimized` wipes web/dist, from which the
@@ -1026,7 +1026,7 @@ wheel: pack ## Build the pip wheel into python/dist (published separately, not h
 	@rm -rf python/dist
 	@python3 -m pip wheel ./python --no-deps --quiet --wheel-dir python/dist
 	@printf '$(BOLD)Wheel:$(OFF) %s\n' "$$(ls python/dist/*.whl)"
-	@printf '$(DIM)To check it: python3 -m venv /tmp/colloq-venv && /tmp/colloq-venv/bin/pip install python/dist/*.whl$(OFF)\n'
+	@printf '$(DIM)To check it: python3 -m venv /tmp/aulalab-venv && /tmp/aulalab-venv/bin/pip install python/dist/*.whl$(OFF)\n'
 
 wheels: wheel ## Platform wheels with Node and node_modules inside (TARGET=darwin-arm64 for one)
 	@# Next to the universal wheel: macOS arm64/x64 and Linux x64/arm64, all
@@ -1037,7 +1037,7 @@ wheels: wheel ## Platform wheels with Node and node_modules inside (TARGET=darwi
 ## ----------------------------------------------------------------- version
 
 # There is one version: "version" in the root package.json. The rest are its
-# copies (the workspaces, the lockfile, python/colloq/_version.py, the
+# copies (the workspaces, the lockfile, python/aulalab/_version.py, the
 # release-please manifest) and derivatives (web, server, wheel, image tags);
 # scripts/version.mts checks them, and so does CI.
 #
@@ -1064,7 +1064,7 @@ bump:
 	  : 'Not a copy of .env.example. That one is the production template,'; \
 	  : 'KERNEL_BACKEND=broker, and after make up (run, host) the make dev'; \
 	  : 'supervisor refused on it as on an installation with a broker. We write'; \
-	  : 'the same file colloq writes on its first run, with its own'; \
+	  : 'the same file aulalab writes on its first run, with its own'; \
 	  : 'JUPYTER_TOKEN; why with the shell and not node: scripts/local-env.sh.'; \
 	  : 'umask 077: there will be login keys inside; if the writer fails, we do'; \
 	  : 'not leave an empty .env behind, otherwise make would count the target done.'; \
@@ -1073,14 +1073,14 @@ bump:
 	}
 
 help: ## Show this list
-	@printf '$(BOLD)Colloq$(OFF) $(DIM)— collaborative seminars on your own hardware$(OFF)\n\n'
+	@printf '$(BOLD)Aula Lab$(OFF) $(DIM)— collaborative seminars on your own hardware$(OFF)\n\n'
 	@grep -hE '^[a-z][a-z-]*:.*?## .*$$' $(MAKEFILE_LIST) \
 	  | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-16s$(OFF) %s\n", $$1, $$2}'
 	@printf '\n$(DIM)Production: make install RELEASE=/path/release.json · make host$(OFF)\n'
 	@printf '$(DIM)Development in Docker: make up$(OFF)\n'
 	@printf '$(DIM)Managing k3s: make cluster-status · cluster-logs · cluster-stop$(OFF)\n'
 	@printf '$(DIM)Kernel environment now: $(BOLD)$(CURRENT_ENV)$(OFF)\n'
-	@printf '$(DIM)Development: make dev · a class run by a teacher: pip install colloq, colloq start$(OFF)\n'
+	@printf '$(DIM)Development: make dev · a class run by a teacher: pip install aulalab, aulalab start$(OFF)\n'
 
 .PHONY: install update rollback cluster-start cluster-stop cluster-status cluster-logs backup backup-legacy restore-legacy release-validate
 install: ## Install a version on a Linux VM. RELEASE=/path/release.json

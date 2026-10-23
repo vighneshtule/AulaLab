@@ -25,7 +25,7 @@ async function port(): Promise<number> {
   return p
 }
 function fixture(p: number): string {
-  const root = fs.mkdtempSync(path.join(tmpdir(), 'colloq-local-process-'))
+  const root = fs.mkdtempSync(path.join(tmpdir(), 'aulalab-local-process-'))
   fs.mkdirSync(path.join(root, 'cli/src'), { recursive: true })
   for (const file of fs
     .readdirSync(path.join(repo, 'cli/src'))
@@ -39,7 +39,7 @@ function fixture(p: number): string {
     'server/dist',
     'server/src/ops',
     'kernel/environments',
-    '.colloq',
+    '.aulalab',
   ])
     fs.mkdirSync(path.join(root, dir), { recursive: true })
   fs.copyFileSync(
@@ -47,15 +47,15 @@ function fixture(p: number): string {
     path.join(root, 'shared/local-public-url-lease.ts'),
   )
   fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}')
-  fs.writeFileSync(path.join(root, '.env'), `PORT=${p}\nCOLLOQ_UNSAFE_DEV_FILES=1\n`)
+  fs.writeFileSync(path.join(root, '.env'), `PORT=${p}\nAULALAB_UNSAFE_DEV_FILES=1\n`)
   fs.writeFileSync(path.join(root, 'kernel/Dockerfile'), 'FROM fake')
   fs.writeFileSync(path.join(root, 'kernel/requirements.txt'), '')
   fs.writeFileSync(path.join(root, 'kernel/environments/base.txt'), '')
   fs.writeFileSync(path.join(root, 'web/dist/index.html'), 'hello')
   const server = `import http from 'node:http';import fs from 'node:fs';
-const s=http.createServer((q,r)=>{r.setHeader('content-type','application/json');r.end(JSON.stringify({ok:true,kernel:true,isolation:process.env.FIXTURE_ISOLATION==='none'?null:'docker',localRunId:process.env.COLLOQ_LOCAL_RUN_ID,publicUrl:process.env.COLLOQ_LOCAL_URL}))});
+const s=http.createServer((q,r)=>{r.setHeader('content-type','application/json');r.end(JSON.stringify({ok:true,kernel:true,isolation:process.env.FIXTURE_ISOLATION==='none'?null:'docker',localRunId:process.env.AULALAB_LOCAL_RUN_ID,publicUrl:process.env.AULALAB_LOCAL_URL}))});
 s.listen(Number(process.env.PORT),'127.0.0.1',()=>fs.appendFileSync('events','start\\n'));
-process.on('SIGTERM',()=>{fs.appendFileSync('events','stop:'+process.env.COLLOQ_STOP_KERNELS_ON_EXIT+'\\n');s.close(()=>process.exit(0))});`
+process.on('SIGTERM',()=>{fs.appendFileSync('events','stop:'+process.env.AULALAB_STOP_KERNELS_ON_EXIT+'\\n');s.close(()=>process.exit(0))});`
   fs.writeFileSync(path.join(root, 'server/dist/server.js'), server)
   fs.writeFileSync(path.join(root, 'server/src/index.ts'), server)
   fs.writeFileSync(
@@ -73,7 +73,7 @@ process.on('SIGTERM',()=>{fs.appendFileSync('events','stop:'+process.env.COLLOQ_
     { mode: 0o755 },
   )
   fs.writeFileSync(
-    path.join(root, '.colloq/build.json'),
+    path.join(root, '.aulalab/build.json'),
     JSON.stringify({ fingerprint: fingerprint(root), fast: false }),
   )
   return root
@@ -115,8 +115,8 @@ test(
     try {
       await until(
         () =>
-          fs.existsSync(path.join(root, '.colloq/local-session.json')) &&
-          JSON.parse(fs.readFileSync(path.join(root, '.colloq/local-session.json'), 'utf8'))
+          fs.existsSync(path.join(root, '.aulalab/local-session.json')) &&
+          JSON.parse(fs.readFileSync(path.join(root, '.aulalab/local-session.json'), 'utf8'))
             .phase === 'ready',
       )
       await until(() => first.output().includes('localhost:' + p))
@@ -128,8 +128,8 @@ test(
       first.child.kill('SIGINT')
       assert.equal(await first.done, 130, first.output())
       assert.match(fs.readFileSync(path.join(root, 'events'), 'utf8'), /stop:1/)
-      assert.equal(fs.existsSync(path.join(root, '.colloq/local-session.json')), false)
-      assert.equal(fs.existsSync(path.join(root, '.colloq.pid')), false)
+      assert.equal(fs.existsSync(path.join(root, '.aulalab/local-session.json')), false)
+      assert.equal(fs.existsSync(path.join(root, '.aulalab.pid')), false)
     } finally {
       first.child.kill('SIGTERM')
       await first.done
@@ -147,22 +147,22 @@ test(
     try {
       assert.equal(await run.done, 0, run.output())
       const receipt = JSON.parse(
-        fs.readFileSync(path.join(root, '.colloq/local-session.json'), 'utf8'),
+        fs.readFileSync(path.join(root, '.aulalab/local-session.json'), 'utf8'),
       )
       assert.equal(receipt.phase, 'ready')
       const restart = invoke(root, ['restart'])
       assert.equal(await restart.done, 0, restart.output())
       const restarted = JSON.parse(
-        fs.readFileSync(path.join(root, '.colloq/local-session.json'), 'utf8'),
+        fs.readFileSync(path.join(root, '.aulalab/local-session.json'), 'utf8'),
       )
       assert.equal(restarted.options.detach, true)
       assert.notEqual(restarted.runId, receipt.runId)
       const stop = invoke(root, ['stop'])
       assert.equal(await stop.done, 0, stop.output())
-      assert.equal(fs.existsSync(path.join(root, '.colloq/local-session.json')), false)
+      assert.equal(fs.existsSync(path.join(root, '.aulalab/local-session.json')), false)
       assert.match(fs.readFileSync(path.join(root, 'events'), 'utf8'), /stop:1/)
     } finally {
-      if (fs.existsSync(path.join(root, '.colloq/local-session.json')))
+      if (fs.existsSync(path.join(root, '.aulalab/local-session.json')))
         await invoke(root, ['stop']).done
       fs.rmSync(root, { recursive: true, force: true })
     }
@@ -215,11 +215,11 @@ test(
     const cloudflared = path.join(root, 'tools/cloudflared')
     fs.mkdirSync(path.join(root, 'tools'))
     fs.writeFileSync(cloudflared, '#!/bin/sh\nexit 0\n', { mode: 0o755 })
-    fs.appendFileSync(path.join(root, '.env'), `COLLOQ_CLOUDFLARED=${cloudflared}\n`)
+    fs.appendFileSync(path.join(root, '.env'), `AULALAB_CLOUDFLARED=${cloudflared}\n`)
     // One class in the database — its link is what the block will name.
     fs.mkdirSync(path.join(root, 'data'))
     const { default: Database } = await import('better-sqlite3')
-    const db = new Database(path.join(root, 'data/colloq.db'))
+    const db = new Database(path.join(root, 'data/aulalab.db'))
     db.exec(
       'CREATE TABLE sessions (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at INTEGER NOT NULL, archived_at INTEGER)',
     )
@@ -230,20 +230,20 @@ test(
       path.join(root, 'scripts/host.sh'),
       [
         '#!/bin/bash',
-        'printf "tunnel share=%s cf=%s name=[%s]\\n" "$COLLOQ_SHARE" "$COLLOQ_CLOUDFLARED" "$COLLOQ_HOSTNAME" >> events',
+        'printf "tunnel share=%s cf=%s name=[%s]\\n" "$AULALAB_SHARE" "$AULALAB_CLOUDFLARED" "$AULALAB_HOSTNAME" >> events',
         `trap 'printf "tunnel-stop\\n" >> events; exit 0' TERM INT`,
         'echo "4/4 checking that it really answers from outside"',
-        'echo "@colloq-share ok https://fixture-share.trycloudflare.com"',
+        'echo "@aulalab-share ok https://fixture-share.trycloudflare.com"',
         'while :; do sleep 0.1; done',
       ].join('\n'),
     )
     const run = invoke(root, ['run', '--share', '--no-open'])
     try {
-      await until(() => run.output().includes('Colloq is online at https://fixture-share'))
+      await until(() => run.output().includes('Aula Lab is online at https://fixture-share'))
       await until(() => run.output().includes('Cloudflare addresses do not open from Russia'))
       const out = run.output()
       assert.match(out, /4\/4 checking that it really answers from outside/)
-      assert.doesNotMatch(out, /@colloq-share/, 'the marker line reached the screen')
+      assert.doesNotMatch(out, /@aulalab-share/, 'the marker line reached the screen')
       assert.match(out, /Give your students this link:/)
       assert.match(out, /https:\/\/fixture-share\.trycloudflare\.com\/s\/k3mnp7qr {3}Linear algebra/)
       assert.match(out, /Never share a link with \/admin\//)
@@ -263,14 +263,14 @@ test(
 )
 
 test(
-  '--share --detach: the parent prints the block once the tunnel holds the address, colloq stop closes it',
+  '--share --detach: the parent prints the block once the tunnel holds the address, aulalab stop closes it',
   { timeout: 25000 },
   async () => {
     const root = fixture(await port())
     const cloudflared = path.join(root, 'tools/cloudflared')
     fs.mkdirSync(path.join(root, 'tools'))
     fs.writeFileSync(cloudflared, '#!/bin/sh\nexit 0\n', { mode: 0o755 })
-    fs.appendFileSync(path.join(root, '.env'), `COLLOQ_CLOUDFLARED=${cloudflared}\n`)
+    fs.appendFileSync(path.join(root, '.env'), `AULALAB_CLOUDFLARED=${cloudflared}\n`)
     fs.mkdirSync(path.join(root, 'scripts'))
     // The real host.sh leases the address; here the same record is written
     // by hand.
@@ -279,8 +279,8 @@ test(
       [
         '#!/bin/bash',
         `until=$(node -e 'console.log(Date.now() + 60000)')`,
-        `printf '{"runId":"%s","owner":"fake","url":"https://fixture-bg.trycloudflare.com","expiresAt":%s}\\n' "$COLLOQ_LOCAL_RUN_ID" "$until" > "$COLLOQ_PUBLIC_URL_LEASE_FILE"`,
-        'echo "@colloq-share ok https://fixture-bg.trycloudflare.com"',
+        `printf '{"runId":"%s","owner":"fake","url":"https://fixture-bg.trycloudflare.com","expiresAt":%s}\\n' "$AULALAB_LOCAL_RUN_ID" "$until" > "$AULALAB_PUBLIC_URL_LEASE_FILE"`,
+        'echo "@aulalab-share ok https://fixture-bg.trycloudflare.com"',
         `trap 'printf "tunnel-stop\\n" >> events; exit 0' TERM INT`,
         'while :; do sleep 0.1; done',
       ].join('\n'),
@@ -288,14 +288,14 @@ test(
     const run = invoke(root, ['run', '--detach', '--share', '--no-open'])
     try {
       assert.equal(await run.done, 0, run.output())
-      assert.match(run.output(), /Colloq is running in the background/)
-      assert.match(run.output(), /Colloq is online at https:\/\/fixture-bg\.trycloudflare\.com/)
-      assert.match(run.output(), /The link lives until colloq stop/)
+      assert.match(run.output(), /AulaLab is running in the background/)
+      assert.match(run.output(), /AulaLab is online at https:\/\/fixture-bg\.trycloudflare\.com/)
+      assert.match(run.output(), /The link lives until aulalab stop/)
       const stop = invoke(root, ['stop'])
       assert.equal(await stop.done, 0, stop.output())
       assert.match(fs.readFileSync(path.join(root, 'events'), 'utf8'), /tunnel-stop/)
     } finally {
-      if (fs.existsSync(path.join(root, '.colloq/local-session.json')))
+      if (fs.existsSync(path.join(root, '.aulalab/local-session.json')))
         await invoke(root, ['stop']).done
       fs.rmSync(root, { recursive: true, force: true })
     }
@@ -341,7 +341,7 @@ test(
       assert.equal(await run.done, 1, run.output())
       assert.match(run.output(), /Not published: KERNEL_ISOLATION=off is set/)
       assert.equal(fs.existsSync(path.join(root, 'events')), false, 'the server was started')
-      assert.equal(fs.existsSync(path.join(root, '.colloq/local-session.json')), false)
+      assert.equal(fs.existsSync(path.join(root, '.aulalab/local-session.json')), false)
     } finally {
       run.child.kill('SIGTERM')
       fs.rmSync(root, { recursive: true, force: true })
@@ -359,7 +359,7 @@ test(
     try {
       assert.equal(await run.done, 1, run.output())
       assert.match(fs.readFileSync(path.join(root, 'events'), 'utf8'), /cleanup/)
-      assert.equal(fs.existsSync(path.join(root, '.colloq/local-session.json')), false)
+      assert.equal(fs.existsSync(path.join(root, '.aulalab/local-session.json')), false)
       assert.equal(fs.existsSync(path.join(root, 'data/.local-session.lock')), false)
     } finally {
       run.child.kill('SIGTERM')
@@ -393,7 +393,7 @@ test(
     )
     const run = invoke(root, ['dev', '--port', String(ui), '--no-open'])
     try {
-      await until(() => run.output().includes('Colloq is running'), 20000)
+      await until(() => run.output().includes('Aula Lab is running'), 20000)
       assert.equal((await fetch(`http://localhost:${ui}`)).status, 200)
       const styles = await fetch(`http://localhost:${ui}/src/index.css`)
       assert.equal(styles.status, 200, await styles.text())
@@ -411,7 +411,7 @@ test(
       run.child.kill('SIGINT')
       assert.equal(await run.done, 130, run.output())
       assert.match(fs.readFileSync(path.join(root, 'events'), 'utf8'), /cleanup/)
-      assert.equal(fs.existsSync(path.join(root, '.colloq/local-session.json')), false)
+      assert.equal(fs.existsSync(path.join(root, '.aulalab/local-session.json')), false)
     } finally {
       run.child.kill('SIGTERM')
       await run.done
@@ -427,16 +427,16 @@ test(
     const root = fixture(await port()),
       run = invoke(root, ['run', '--no-open'])
     try {
-      await until(() => run.output().includes('Colloq is running'))
+      await until(() => run.output().includes('Aula Lab is running'))
       run.child.kill('SIGHUP')
       assert.equal(await run.done, 129, run.output())
       assert.match(fs.readFileSync(path.join(root, 'events'), 'utf8'), /stop:1/)
       assert.match(fs.readFileSync(path.join(root, 'events'), 'utf8'), /cleanup/)
-      assert.equal(fs.existsSync(path.join(root, '.colloq/local-session.json')), false)
+      assert.equal(fs.existsSync(path.join(root, '.aulalab/local-session.json')), false)
     } finally {
-      if (fs.existsSync(path.join(root, '.colloq/local-session.json'))) {
+      if (fs.existsSync(path.join(root, '.aulalab/local-session.json'))) {
         const receipt = JSON.parse(
-          fs.readFileSync(path.join(root, '.colloq/local-session.json'), 'utf8'),
+          fs.readFileSync(path.join(root, '.aulalab/local-session.json'), 'utf8'),
         )
         if (receipt.serverPid)
           try {

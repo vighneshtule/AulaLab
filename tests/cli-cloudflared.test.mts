@@ -5,7 +5,7 @@
  * returns bytes built right in the test, and the pinned table by one of our
  * own, with the sums of those bytes. The real table is checked separately — by
  * its shape, not by a download: the live download is done by
- * `colloq start --share` on a live machine.
+ * `aulalab start --share` on a live machine.
  *
  * The main property this file guards: a file from the internet does not become
  * executable until its sum matches the pinned one. A tampered archive, a
@@ -113,7 +113,7 @@ test('Windows and unknown machines are refused in words, with a way out', () => 
   ])
     assert.throws(
       () => pickCloudflaredAsset(platform!, arch!),
-      /no pinned cloudflared build.*COLLOQ_CLOUDFLARED=\/path\/to\/cloudflared/,
+      /no pinned cloudflared build.*AULALAB_CLOUDFLARED=\/path\/to\/cloudflared/,
       `${platform} ${arch}`,
     )
 })
@@ -226,7 +226,7 @@ function lookup(over: Partial<CloudflaredLookup> & { files?: Record<string, stri
     env: {},
     platform: 'linux',
     arch: 'x64',
-    binDir: '/home/t/.colloq/bin',
+    binDir: '/home/t/.aulalab/bin',
     executable: (file) => file in files,
     hashOf: (file) => files[file] ?? null,
     ...over,
@@ -235,7 +235,7 @@ function lookup(over: Partial<CloudflaredLookup> & { files?: Record<string, stri
 
 test('lookup order: named file, then PATH, then our verified copy, then a download', () => {
   const linux = pickCloudflaredAsset('linux', 'x64')
-  const ours = '/home/t/.colloq/bin/cloudflared'
+  const ours = '/home/t/.aulalab/bin/cloudflared'
   const everything = {
     '/opt/cf/cloudflared': 'x',
     '/usr/local/bin/cloudflared': 'y',
@@ -244,7 +244,7 @@ test('lookup order: named file, then PATH, then our verified copy, then a downlo
   assert.deepEqual(
     resolveCloudflared(
       lookup({
-        env: { COLLOQ_CLOUDFLARED: '/opt/cf/cloudflared', PATH: '/usr/local/bin' },
+        env: { AULALAB_CLOUDFLARED: '/opt/cf/cloudflared', PATH: '/usr/local/bin' },
         files: everything,
       }),
     ),
@@ -257,7 +257,7 @@ test('lookup order: named file, then PATH, then our verified copy, then a downlo
   assert.deepEqual(resolveCloudflared(lookup({ env: { PATH: '/usr/bin' }, files: everything })), {
     kind: 'use',
     path: ours,
-    source: 'colloq',
+    source: 'aulalab',
   })
   assert.deepEqual(resolveCloudflared(lookup({ env: { PATH: '/usr/bin' } })), {
     kind: 'download',
@@ -267,35 +267,35 @@ test('lookup order: named file, then PATH, then our verified copy, then a downlo
 })
 
 test('our copy runs only verified — even when <home>/bin is on PATH', () => {
-  const ours = '/home/t/.colloq/bin/cloudflared'
-  // A copy from an earlier colloq version, or a tampered one: the sum is
+  const ours = '/home/t/.aulalab/bin/cloudflared'
+  // A copy from an earlier aulalab version, or a tampered one: the sum is
   // wrong, so download it again.
   const stale = resolveCloudflared(
-    lookup({ env: { PATH: '/home/t/.colloq/bin' }, files: { [ours]: 'f'.repeat(64) } }),
+    lookup({ env: { PATH: '/home/t/.aulalab/bin' }, files: { [ours]: 'f'.repeat(64) } }),
   )
   assert.equal(stale.kind, 'download')
   assert.equal(stale.kind === 'download' && stale.stale, true)
 })
 
-test('a bad COLLOQ_CLOUDFLARED is a refusal, never a silent fallback', () => {
-  const relative = resolveCloudflared(lookup({ env: { COLLOQ_CLOUDFLARED: 'bin/cloudflared' } }))
+test('a bad AULALAB_CLOUDFLARED is a refusal, never a silent fallback', () => {
+  const relative = resolveCloudflared(lookup({ env: { AULALAB_CLOUDFLARED: 'bin/cloudflared' } }))
   assert.equal(relative.kind, 'refuse')
   assert.match(relative.kind === 'refuse' ? relative.message : '', /absolute path/)
-  const missing = resolveCloudflared(lookup({ env: { COLLOQ_CLOUDFLARED: '/nowhere/cloudflared' } }))
+  const missing = resolveCloudflared(lookup({ env: { AULALAB_CLOUDFLARED: '/nowhere/cloudflared' } }))
   assert.equal(missing.kind, 'refuse')
   assert.match(missing.kind === 'refuse' ? missing.message : '', /not an executable file/)
 })
 
-test('COLLOQ_CLOUDFLARED_DOWNLOAD=0 forbids the download and says what to do', () => {
-  const none = resolveCloudflared(lookup({ env: { COLLOQ_CLOUDFLARED_DOWNLOAD: '0' } }))
+test('AULALAB_CLOUDFLARED_DOWNLOAD=0 forbids the download and says what to do', () => {
+  const none = resolveCloudflared(lookup({ env: { AULALAB_CLOUDFLARED_DOWNLOAD: '0' } }))
   assert.equal(none.kind, 'refuse')
   assert.match(
     none.kind === 'refuse' ? none.message : '',
     /not installed, and downloading is switched off.*brew install cloudflared/,
   )
-  const ours = '/home/t/.colloq/bin/cloudflared'
+  const ours = '/home/t/.aulalab/bin/cloudflared'
   const stale = resolveCloudflared(
-    lookup({ env: { COLLOQ_CLOUDFLARED_DOWNLOAD: '0' }, files: { [ours]: 'old' } }),
+    lookup({ env: { AULALAB_CLOUDFLARED_DOWNLOAD: '0' }, files: { [ours]: 'old' } }),
   )
   assert.match(stale.kind === 'refuse' ? stale.message : '', /is not the pinned cloudflared/)
 })
@@ -320,7 +320,7 @@ function fakeFetch(bytes: Buffer, status = 200): { fetch: typeof fetch; seen: Fe
 }
 
 function home(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'colloq-cloudflared-'))
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'aulalab-cloudflared-'))
 }
 
 test('first run downloads, verifies, installs 0755; the second run uses the verified copy', async () => {
@@ -346,7 +346,7 @@ test('first run downloads, verifies, installs 0755; the second run uses the veri
     // Said out loud: what, which version, and from where.
     assert.deepEqual(seen, [{ url: cloudflaredUrl(asset), redirect: 'follow' }])
     const text = said.join('\n')
-    assert.match(text, /cloudflared is not installed: colloq fetches it once/)
+    assert.match(text, /cloudflared is not installed: aulalab fetches it once/)
     assert.ok(text.includes(`cloudflared ${CLOUDFLARED_VERSION} for Linux x64`), text)
     assert.ok(text.includes(cloudflaredUrl(asset)), text)
     assert.match(text, /sha256 matches the pinned one/)

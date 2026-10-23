@@ -535,9 +535,9 @@
   })
 
   $effect(() => {
-    document.title = `${title} · Colloq`
+    document.title = `${title} · Aula Lab`
     return () => {
-      document.title = 'Colloq'
+      document.title = 'Aula Lab'
     }
   })
 
@@ -646,7 +646,7 @@
 
   /* ------------------------------------------------------------- layout */
 
-  const PANELS_KEY = 'colloq.panels.v1'
+  const PANELS_KEY = 'aulalab.panels.v1'
 
   /*
    * The header lives in the same box as the panels, and that is on purpose.
@@ -986,7 +986,7 @@
    */
   function toProjection(): void {
     const url = `/s/${session.session.id}/screen`
-    const opened = window.open(url, `colloq-screen-${session.session.id}`, 'popup=yes,width=1280,height=720')
+    const opened = window.open(url, `aulalab-screen-${session.session.id}`, 'popup=yes,width=1280,height=720')
     if (opened) {
       opened.focus()
       return
@@ -1691,11 +1691,11 @@
       // On the next frame: the panel has to mount and attach its listener,
       // otherwise the question goes into the void again.
       requestAnimationFrame(() =>
-        window.dispatchEvent(new CustomEvent('colloq:ask-ai', { detail })),
+        window.dispatchEvent(new CustomEvent('aulalab:ask-ai', { detail })),
       )
     }
-    window.addEventListener('colloq:ask-ai', onAsk)
-    return () => window.removeEventListener('colloq:ask-ai', onAsk)
+    window.addEventListener('aulalab:ask-ai', onAsk)
+    return () => window.removeEventListener('aulalab:ask-ai', onAsk)
   })
 
   function toggleTerminal(): void {
@@ -2373,7 +2373,7 @@
     <!--
       The mark leads where the person has something to do — or nowhere.
 
-      The Colloq root is the teacher's panel (see App), and EVERYONE had a link
+      The Aula Lab root is the teacher's panel (see App), and EVERYONE had a link
       to it: a student who tapped the logo in the middle of a class left the
       room with a full navigation to the "paste the setup token" form. Now the
       way up exists for whoever has one: the panel for the presenter, the
@@ -2988,7 +2988,7 @@
             <span
               class="-mr-[0.22em] text-[42px] font-bold uppercase leading-none tracking-wordmark"
             >
-              Colloq
+              Aula Lab
             </span>
           </div>
           <!-- The state is still named in the screen reader's voice: the sign

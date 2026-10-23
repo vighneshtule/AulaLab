@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 
 export function stopsLocalKernelsOnExit(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.COLLOQ_LOCAL_SESSION === '1' && env.COLLOQ_STOP_KERNELS_ON_EXIT === '1'
+  return env.AULALAB_LOCAL_SESSION === '1' && env.AULALAB_STOP_KERNELS_ON_EXIT === '1'
 }
 
 /** Database ownership is the boundary: never enumerate and remove all Docker rooms. */
